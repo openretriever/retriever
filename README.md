@@ -1,4 +1,4 @@
-# Retriever: long-horizon (mobile) manipulation planning system
+# 🐕 Retriever: long-horizon (mobile) manipulation planning system
 
 ![retreiver-dog-illustrative.jpeg](assets%2Fretreiver-dog-illustrative.jpeg)
 
