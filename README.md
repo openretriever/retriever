@@ -1,11 +1,14 @@
-# 🐕 Retriever: long-horizon (mobile) manipulation planning system
+<div align="center">
+  <a href="https://github.com/zhao0625/Retriever"><img width="300px" height="auto" src="https://github.com/zhao0625/Retriever/raw/master/assets/retreiver-dog-illustrative.jpeg"></a>
+</div>
 
-![retreiver-dog-illustrative.jpeg](assets%2Fretreiver-dog-illustrative.jpeg)
+# 🐕 Retriever
 
-This is an active repository. The name is motivated by (Golden) **Retriever** dog and Boston Dynamics Spot.
+**Retriever: long-horizon (mobile) manipulation planning system via foundation models**
 
+> This is an active repository. The name is motivated by (Golden) **Retriever** dog and Boston Dynamics Spot.
 
-See the [Notion page](https://www.notion.so/lfzhao/Page-Retriever-VLPlan-Docs-a23174db1df046779814d9d28bff8711?pvs=4) for tracking progress and documents.
+> See the [Notion page](https://www.notion.so/lfzhao/Page-Retriever-VLPlan-Docs-a23174db1df046779814d9d28bff8711?pvs=4) for tracking progress and documents.
 
 Some included features:
 - Vision-Language Models for Task Planning
