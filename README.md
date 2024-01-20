@@ -1,6 +1,8 @@
 <div align="center">
-  <a href="https://github.com/zhao0625/Retriever"><img width="300px" height="auto" src="https://github.com/zhao0625/Retriever/raw/master/assets/retreiver-dog-illustrative.jpeg"></a>
+  <a href="https://github.com/zhao0625/Retriever"><img width="400px" height="auto" src="assets%2Fretreiver-dog-illustrative.jpeg"></a>
 </div>
+
+
 
 # 🐕 Retriever
 
