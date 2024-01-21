@@ -6,7 +6,7 @@
 
 # 🐕 Retriever
 
-**Retriever: long-horizon (mobile) manipulation planning system via foundation models**
+**Retriever: _bilevel planning_ system for long-horizon (mobile) manipulation via _foundation models_**
 
 > This is an active repository. The name is motivated by (Golden) **Retriever** dog and Boston Dynamics Spot.
 
