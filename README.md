@@ -6,7 +6,7 @@
 
 # 🐕 Retriever
 
-**Retriever: _bilevel planning_ system for long-horizon (mobile) manipulation via _foundation models_**
+**Retriever: open-world _bilevel planning_ for (mobile) manipulation via _foundation models_**
 
 > This is an active repository. The name is motivated by (Golden) **Retriever** dog and Boston Dynamics Spot.
 
@@ -18,7 +18,9 @@ Some included features:
 - ...
 
 ## Development
-- steps for pushing your code
+
+- See our Notion page for more documents and tracking progress.
+- Steps for pushing your code:
     1. create a new branch with `<type>/<short-description>-<date>`
         1. use e.g., `bugfix/<name>-<date>`
         2. different types: e.g., `general/...`, `bugfix/...`, `feature/...`, …
@@ -31,6 +33,3 @@ Some included features:
 
 ## Structure
 TODO
-
-
-## TODOs
