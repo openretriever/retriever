@@ -6,16 +6,21 @@
 
 # 🐕 Retriever
 
-**Retriever: open-world _bilevel planning_ for (mobile) manipulation via _foundation models_**
+**Retriever: infrastructure for open-world bilevel planning for (mobile) manipulation**
 
-> This is an active repository. The name is motivated by (Golden) **Retriever** dog and Boston Dynamics Spot.
+> This is a fast-evolving and early-stage repository that serves as infrastructure for research. It is not directly associated with research projects. The name/logo is motivated by Retriever dog and Boston Dynamics Spot.
 
 > See the [Notion page](https://www.notion.so/lfzhao/Page-Retriever-VLPlan-Docs-a23174db1df046779814d9d28bff8711?pvs=4) for tracking progress and documents.
 
-Some included features:
-- Vision-Language Models for Task Planning
-- Language-driven Scene Map for Task Planning
-- ...
+For `bilevel planning` and `task and motion planning` (TAMP), see the following resources:
+- (Paper) [Practice Makes Perfect: Planning to Learn Skill Parameter Policies](http://ees.csail.mit.edu)
+- (Blog) [Bilevel Planning for Robots: An Illustrated Introduction](https://lis.csail.mit.edu/bilevel-planning-for-robots-an-illustrated-introduction/)
+- (Codebase) LIS [`predicators`](https://github.com/Learning-and-Intelligent-Systems/predicators) and BDAI [`predicators`](https://github.com/bdaiinstitute/predicators)
+
+Two levels here:
+- High-level task planning and perception (AI planners or VLM driven)
+- Low-level skill policy (scripted or learned) and skill parameter policy (scripted or learned)
+
 
 ## Development
 
@@ -32,4 +37,5 @@ Some included features:
 
 
 ## Structure
+
 TODO
