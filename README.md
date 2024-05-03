@@ -1,25 +1,26 @@
 <div align="center">
-  <a href="https://github.com/zhao0625/Retriever"><img width="400px" height="auto" src="assets%2Fretreiver-dog-illustrative.jpeg"></a>
+  <a href="https://github.com/zhao0625/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
 </div>
 
 
 
 # 🐕 Retriever
 
-**Retriever: infrastructure for open-world bilevel planning for (mobile) manipulation**
+**Retriever: open-world robot planning and learning**
 
-> This is a fast-evolving and early-stage repository that serves as infrastructure for research. It is not directly associated with research projects. The name/logo is motivated by Retriever dog and Boston Dynamics Spot.
+> This is an early-stage repository that maintains some infrastructure and research code for open-world robot bilevel planning and learning. The code is not necessarily associated with specific research projects.
 
-> See the [Notion page](https://www.notion.so/lfzhao/Page-Retriever-VLPlan-Docs-a23174db1df046779814d9d28bff8711?pvs=4) for tracking progress and documents.
+> See the [Notion page](https://www.notion.so/retriever-dev/Retriever-Dev-Homepage-bfd5d802e1f346ac81a1ea773f6418e9?pvs=4) for tracking and documents.
 
-For `bilevel planning` and `task and motion planning` (TAMP), see the following resources:
+We use e.g., _bilevel planning_, _skill learning_, _pretrained foundation models_.
+For `bilevel planning` or `task and motion planning` (TAMP), see the following resources:
 - (Paper) [Practice Makes Perfect: Planning to Learn Skill Parameter Policies](http://ees.csail.mit.edu)
 - (Blog) [Bilevel Planning for Robots: An Illustrated Introduction](https://lis.csail.mit.edu/bilevel-planning-for-robots-an-illustrated-introduction/)
 - (Codebase) LIS [`predicators`](https://github.com/Learning-and-Intelligent-Systems/predicators) and BDAI [`predicators`](https://github.com/bdaiinstitute/predicators)
 
 Two levels here:
-- High-level task planning and perception (AI planners or VLM driven)
-- Low-level skill policy (scripted or learned) and skill parameter policy (scripted or learned)
+- High-level task planning and perception (AI planners or VLMs driven)
+- Low-level skills and parameters (scripted functions or learned models)
 
 
 ## Development
@@ -34,8 +35,3 @@ Two levels here:
     4. submit pull request on GitHub
     5. ask people to review & get pass
         1. (to decide more detail)
-
-
-## Structure
-
-TODO
