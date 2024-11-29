@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://github.com/zhao0625/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
+  <a href="https://github.com/linfeng-z/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
 </div>
 
 
