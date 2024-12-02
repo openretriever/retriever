@@ -35,3 +35,69 @@ Two levels here:
     4. submit pull request on GitHub
     5. ask people to review & get pass
         1. (to decide more detail)
+
+
+## Setup
+
+### Pre-commit Hooks
+
+To maintain code quality and consistency, we use pre-commit hooks. These hooks automatically run checks and formatting tools before you make a commit. To set up pre-commit hooks:
+
+1. Install pre-commit:
+    ```sh
+    pip install pre-commit
+    ```
+
+2. Install the git hooks:
+    ```sh
+    pre-commit install
+    ```
+
+3. (Optional) Run hooks manually on all files:
+    ```sh
+    pre-commit run --all-files
+    ```
+
+### Installation
+
+This project uses `pyproject.toml` for dependency management.
+
+1. Ensure you have Python 3.10 or higher installed.
+
+2. Basic installation (core dependencies only):
+    ```sh
+    pip install .
+    ```
+
+3. Install with optional dependencies:
+    ```sh
+    # Install all optional dependencies
+    pip install .[all]
+
+    # Or install specific groups:
+    pip install .[dev]     # Development tools only
+    pip install .[mapper]  # Mapper dependencies only
+    ```
+
+### Dependencies Overview
+
+#### Core Dependencies
+- Installed automatically with `pip install .`
+- Includes essential packages needed to run the project
+
+#### Development Dependencies (`.[dev]`)
+- `black` - Code formatter
+- `ruff` - Fast Python linter
+- `mypy` - Static type checker
+- `pytest` - Testing framework
+- `pre-commit` - Git hooks manager
+- `pytest-cov` - Code coverage tool
+
+#### Mapper Dependencies (`.[mapper]`)
+- `dgl` - Deep Graph Library
+- `open3d` - 3D data processing
+- `lxml` - XML/HTML processing
+
+#### All Dependencies (`.[all]`)
+- Installs everything: core, dev, and mapper dependencies
+
