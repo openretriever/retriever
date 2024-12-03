@@ -57,33 +57,42 @@ To maintain code quality and consistency, we use pre-commit hooks. These hooks a
     ```sh
     pre-commit run --all-files
     ```
-
 ### Installation
 
 This project uses `pyproject.toml` for dependency management.
+We recommend using `uv` for faster package installation:
 
 1. Ensure you have Python 3.10 or higher installed.
 
-2. Basic installation (core dependencies only):
+2. Install uv:
     ```sh
-    pip install .
+    pip install uv
     ```
 
-3. Install with optional dependencies:
+3. Basic installation (core dependencies only):
+    ```sh
+    uv pip install -e .
+    ```
+
+4. Install with optional dependencies:
     ```sh
     # Install all optional dependencies
-    pip install .[all]
+    uv pip install -e ".[all]"
 
     # Or install specific groups:
-    pip install .[dev]     # Development tools only
-    pip install .[mapper]  # Mapper dependencies only
+    uv pip install -e ".[dev]"     # Development tools only
+    uv pip install -e ".[mapper]"  # Mapper dependencies only
+    uv pip install -e ".[models]"  # Foundation models only
     ```
 
 ### Dependencies Overview
 
 #### Core Dependencies
-- Installed automatically with `pip install .`
-- Includes essential packages needed to run the project
+- Installed automatically with `uv pip install .`
+- ML & Framework: PyTorch, Transformers, OpenAI, Accelerate
+- Services & Utils: Ray, LangChain, Supervision
+- Planning: PDDLGym
+- Data Processing: OpenCV, Pillow, NumPy, Pandas
 
 #### Development Dependencies (`.[dev]`)
 - `black` - Code formatter
@@ -97,7 +106,17 @@ This project uses `pyproject.toml` for dependency management.
 - `dgl` - Deep Graph Library
 - `open3d` - 3D data processing
 - `lxml` - XML/HTML processing
+- `PyMCubes` - Marching cubes algorithm
+- `trimesh` - Mesh processing
+- `pyglet` - 3D visualization
+
+#### Foundation Models (`.[models]`)
+- CLIP
+- GroundingDINO
+- Segment Everything
+- Segment Anything
+- Semantic-SAM
+- Detectron2-XYZ
 
 #### All Dependencies (`.[all]`)
-- Installs everything: core, dev, and mapper dependencies
-
+- Installs everything: core, dev, mapper, and foundation model dependencies
