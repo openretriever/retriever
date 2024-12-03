@@ -60,30 +60,37 @@ To maintain code quality and consistency, we use pre-commit hooks. These hooks a
 ### Installation
 
 This project uses `pyproject.toml` for dependency management.
+Ensure you have Python 3.10 or higher installed.
+
 We recommend using `uv` for faster package installation:
 
-1. Ensure you have Python 3.10 or higher installed.
+```sh
+# 1. Create and activate a conda environment
+conda create -n retriever python=3.10
+conda activate retriever
 
-2. Install uv:
-    ```sh
-    pip install uv
-    ```
+# 2. Install uv (much faster than pip)
+pip install uv
 
-3. Basic installation (core dependencies only):
-    ```sh
-    uv pip install -e .
-    ```
+# 3. Install basic dependencies
+uv pip install -e .
 
-4. Install with optional dependencies:
-    ```sh
-    # Install all optional dependencies
-    uv pip install -e ".[all]"
+# Optional: Install additional components
+uv pip install ".[models]"    # Foundation models and vision components
+uv pip install ".[mapper]"    # Mapping related dependencies
+uv pip install ".[training]"  # Training related dependencies
+uv pip install ".[all]"       # Install all optional dependencies
+```
 
-    # Or install specific groups:
-    uv pip install -e ".[dev]"     # Development tools only
-    uv pip install -e ".[mapper]"  # Mapper dependencies only
-    uv pip install -e ".[models]"  # Foundation models only
-    ```
+Alternatively, you can use `pip` directly:
+```sh
+pip install -e .
+```
+
+
+#### Common Issues
+
+
 
 ### Dependencies Overview
 
