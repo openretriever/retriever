@@ -62,17 +62,27 @@ To maintain code quality and consistency, we use pre-commit hooks. These hooks a
 This project uses `pyproject.toml` for dependency management.
 Ensure you have Python 3.10 or higher installed.
 
-We recommend using `uv` for faster package installation:
+#### 1. Environment Setup and PyTorch Installation
 
+First, create a conda environment and install PyTorch:
 ```sh
-# 1. Create and activate a conda environment
+# Create and activate a conda environment
 conda create -n retriever python=3.10
 conda activate retriever
 
-# 2. Install uv (much faster than pip)
+# Install PyTorch with CUDA support (choose based on your CUDA version)
+conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia  # For CUDA 11.8
+```
+
+#### 2. Package Installation
+
+We recommend using `uv` for faster package installation:
+
+```sh
+# Install uv (much faster than pip)
 pip install uv
 
-# 3. Install basic dependencies
+# Install basic dependencies
 uv pip install -e .
 
 # Optional: Install additional components
@@ -87,9 +97,9 @@ Alternatively, you can use `pip` directly:
 pip install -e .
 ```
 
-
 #### Common Issues
 
+- **CUDA Version Conflicts**: Make sure to install PyTorch through conda/mamba with the correct CUDA version before installing the package dependencies. This prevents potential CUDA driver compatibility issues.
 
 
 ### Dependencies Overview
