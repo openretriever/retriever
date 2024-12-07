@@ -86,9 +86,10 @@ pip install uv
 uv pip install -e .
 
 # Optional: Install additional components
+uv pip install ".[spot]"      # Boston Dynamics Spot dependencies
 uv pip install ".[models]"    # Foundation models and vision components
 uv pip install ".[mapper]"    # Mapping related dependencies
-uv pip install ".[training]"  # Training related dependencies
+uv pip install ".[training]"  # Skill Training related dependencies
 uv pip install ".[all]"       # Install all optional dependencies
 ```
 
