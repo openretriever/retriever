@@ -37,8 +37,9 @@ We maintain optimized inference pipelines for foundation models, designed for ef
 The models are wrapped in Ray actors/services for distributed inference and easy integration with other components. See `src/models/` for implementations.
 
 ### 2. Task Planning Approaches 
-We support multiple approaches for high-level task planning:
+We support multiple approaches for high-level task planning or task specification:
 
+- Commandline interface (CLI) for direct interaction with robot
 - Classical symbolic planning with PDDL
 - Learning-based planning with pretrained models
 - Hybrid approaches combining symbolic and learned components
@@ -53,8 +54,8 @@ We maintain a collection of parameterized robot skills, for e.g., Spot robot:
 - Compound skills composed of primitives
 
 Skills are implemented as configurable functions with clear interfaces. Parameters can be:
-- Manually specified
-- Learned from demonstration
+- Manually specified by human
+- Proposed by pretrained models or learned parameter policies
 - Optimized through planning
 
 The modular design allows easy modification of existing skills and addition of new ones. Skills can be composed into more complex behaviors through the task planner.
