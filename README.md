@@ -23,6 +23,44 @@ Two levels here:
 - Low-level skills and parameters (scripted functions or learned models)
 
 
+## Codebase Structure
+
+Our codebase maintains three key components:
+
+### 1. Pretrained Model Integration
+We maintain optimized inference pipelines for foundation models, designed for efficient robot perception and planning:
+
+- Vision-Language Models for open-world perception and goal specification
+- Segmentation Models for object detection and manipulation targets
+- Large Language Models for high-level task planning and reasoning
+
+The models are wrapped in Ray actors/services for distributed inference and easy integration with other components. See `src/models/` for implementations.
+
+### 2. Task Planning Approaches 
+We support multiple approaches for high-level task planning:
+
+- Classical symbolic planning with PDDL
+- Learning-based planning with pretrained models
+- Hybrid approaches combining symbolic and learned components
+
+The planning modules are designed to be modular and extensible. Different planners can be easily swapped in/out based on the task requirements.
+
+### 3. Robot Skills Library
+We maintain a collection of parameterized robot skills, for e.g., Spot robot:
+
+- Basic manipulation primitives (pick, place, push, etc.)
+- Navigation behaviors (e.g., move to a target location, landmark, or object)
+- Compound skills composed of primitives
+
+Skills are implemented as configurable functions with clear interfaces. Parameters can be:
+- Manually specified
+- Learned from demonstration
+- Optimized through planning
+
+The modular design allows easy modification of existing skills and addition of new ones. Skills can be composed into more complex behaviors through the task planner.
+
+
+
 ## Development
 
 - See our Notion page for more documents and tracking progress.
@@ -33,8 +71,7 @@ Two levels here:
     2. make commits to your branch
     3. push the branch to remote
     4. submit pull request on GitHub
-    5. ask people to review & get pass
-        1. (to decide more detail)
+    5. ask for review & merge
 
 
 ## Setup
@@ -101,40 +138,3 @@ pip install -e .
 #### Common Issues
 
 - **CUDA Version Conflicts**: Make sure to install PyTorch through conda/mamba with the correct CUDA version before installing the package dependencies. This prevents potential CUDA driver compatibility issues.
-
-
-### Dependencies Overview
-
-#### Core Dependencies
-- Installed automatically with `uv pip install .`
-- ML & Framework: PyTorch, Transformers, OpenAI, Accelerate
-- Services & Utils: Ray, LangChain, Supervision
-- Planning: PDDLGym
-- Data Processing: OpenCV, Pillow, NumPy, Pandas
-
-#### Development Dependencies (`.[dev]`)
-- `black` - Code formatter
-- `ruff` - Fast Python linter
-- `mypy` - Static type checker
-- `pytest` - Testing framework
-- `pre-commit` - Git hooks manager
-- `pytest-cov` - Code coverage tool
-
-#### Mapper Dependencies (`.[mapper]`)
-- `dgl` - Deep Graph Library
-- `open3d` - 3D data processing
-- `lxml` - XML/HTML processing
-- `PyMCubes` - Marching cubes algorithm
-- `trimesh` - Mesh processing
-- `pyglet` - 3D visualization
-
-#### Foundation Models (`.[models]`)
-- CLIP
-- GroundingDINO
-- Segment Everything
-- Segment Anything
-- Semantic-SAM
-- Detectron2-XYZ
-
-#### All Dependencies (`.[all]`)
-- Installs everything: core, dev, mapper, and foundation model dependencies
