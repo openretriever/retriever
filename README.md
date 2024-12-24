@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://github.com/zhao0625/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
+  <a href="https://github.com/linfeng-z/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
 </div>
 
 
@@ -35,3 +35,106 @@ Two levels here:
     4. submit pull request on GitHub
     5. ask people to review & get pass
         1. (to decide more detail)
+
+
+## Setup
+
+### Pre-commit Hooks
+
+To maintain code quality and consistency, we use pre-commit hooks. These hooks automatically run checks and formatting tools before you make a commit. To set up pre-commit hooks:
+
+1. Install pre-commit:
+    ```sh
+    pip install pre-commit
+    ```
+
+2. Install the git hooks:
+    ```sh
+    pre-commit install
+    ```
+
+3. (Optional) Run hooks manually on all files:
+    ```sh
+    pre-commit run --all-files
+    ```
+### Installation
+
+This project uses `pyproject.toml` for dependency management.
+Ensure you have Python 3.10 or higher installed.
+
+#### 1. Environment Setup and PyTorch Installation
+
+First, create a conda environment and install PyTorch:
+```sh
+# Create and activate a conda environment
+conda create -n retriever python=3.10
+conda activate retriever
+
+# Install PyTorch with CUDA support (choose based on your CUDA version)
+conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia  # For CUDA 11.8
+```
+
+#### 2. Package Installation
+
+We recommend using `uv` for faster package installation:
+
+```sh
+# Install uv (much faster than pip)
+pip install uv
+
+# Install basic dependencies
+uv pip install -e .
+
+# Optional: Install additional components
+uv pip install ".[spot]"      # Boston Dynamics Spot dependencies
+uv pip install ".[models]"    # Foundation models and vision components
+uv pip install ".[mapper]"    # Mapping related dependencies
+uv pip install ".[training]"  # Skill Training related dependencies
+uv pip install ".[all]"       # Install all optional dependencies
+```
+
+Alternatively, you can use `pip` directly:
+```sh
+pip install -e .
+```
+
+#### Common Issues
+
+- **CUDA Version Conflicts**: Make sure to install PyTorch through conda/mamba with the correct CUDA version before installing the package dependencies. This prevents potential CUDA driver compatibility issues.
+
+
+### Dependencies Overview
+
+#### Core Dependencies
+- Installed automatically with `uv pip install .`
+- ML & Framework: PyTorch, Transformers, OpenAI, Accelerate
+- Services & Utils: Ray, LangChain, Supervision
+- Planning: PDDLGym
+- Data Processing: OpenCV, Pillow, NumPy, Pandas
+
+#### Development Dependencies (`.[dev]`)
+- `black` - Code formatter
+- `ruff` - Fast Python linter
+- `mypy` - Static type checker
+- `pytest` - Testing framework
+- `pre-commit` - Git hooks manager
+- `pytest-cov` - Code coverage tool
+
+#### Mapper Dependencies (`.[mapper]`)
+- `dgl` - Deep Graph Library
+- `open3d` - 3D data processing
+- `lxml` - XML/HTML processing
+- `PyMCubes` - Marching cubes algorithm
+- `trimesh` - Mesh processing
+- `pyglet` - 3D visualization
+
+#### Foundation Models (`.[models]`)
+- CLIP
+- GroundingDINO
+- Segment Everything
+- Segment Anything
+- Semantic-SAM
+- Detectron2-XYZ
+
+#### All Dependencies (`.[all]`)
+- Installs everything: core, dev, mapper, and foundation model dependencies
