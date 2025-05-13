@@ -1,0 +1,55 @@
+/* Custom styles for Retriever documentation */
+
+/* Center images in markdown */
+.md-content img {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Style for code blocks */
+.md-typeset pre {
+    border-radius: 0.5rem;
+}
+
+/* Custom admonition styles */
+.md-typeset .admonition {
+    border-radius: 0.5rem;
+}
+
+/* Improve readability of inline code */
+.md-typeset code {
+    font-size: 0.85em;
+    padding: 0.2em 0.4em;
+    border-radius: 0.2em;
+}
+
+/* Custom header styles */
+.md-typeset h1 {
+    color: var(--md-primary-fg-color);
+    font-weight: 700;
+}
+
+.md-typeset h2 {
+    font-weight: 600;
+    margin-top: 2em;
+}
+
+/* Improve table readability */
+.md-typeset table:not([class]) {
+    font-size: 0.85rem;
+}
+
+.md-typeset table:not([class]) th {
+    background-color: var(--md-primary-fg-color--light);
+    color: var(--md-primary-bg-color);
+}
+
+/* Custom footer styles */
+.md-footer {
+    background-color: var(--md-primary-fg-color);
+    color: var(--md-primary-bg-color);
+}
+
+.md-footer-meta {
+    background-color: var(--md-primary-fg-color--dark);
+} 
