@@ -1,69 +1,60 @@
 # 🐕 Retriever
 
-**Retriever: open-world robot planning and learning**
+**Type-safe robotics pipeline framework with Flow-based composition**
 
 <div align="center">
   <strong>Retriever</strong>
 </div>
 
-<div align="center">
-  <img src="assets/codebase-diagram.svg" width="800" alt="Retriever Codebase Architecture">
-</div>
+Retriever is a framework for building type-safe robotics pipelines with composable Flow architecture.
 
-Retriever is a framework for open-world robot bilevel planning and learning. It provides tools and infrastructure for:
-- Integrating pretrained foundation models with robotics
-- Planning and executing complex tasks
-- Learning and deploying robot skills
+## Quick Start
 
-## Key Features
+```python
+from retriever.core.flow import Flow
+from retriever.core.executor import LocalExecutor
 
-### 1. Foundation Model Integration
-- Vision-Language Models for open-world perception and goal specification
-- Segmentation Models for object detection and manipulation targets
-- Large Language Models for high-level task planning and reasoning
+# Build a robotics pipeline
+perception = (
+    Flow.from_module(detect_objects)
+    .then(Flow.from_module(estimate_poses))
+    .then(Flow.from_module(plan_actions))
+)
 
-### 2. Flexible Task Planning 
-- Commandline interface (CLI) for direct interaction
-- Classical symbolic planning with PDDL
-- Learning-based planning with pretrained models
-- Hybrid approaches combining symbolic and learned components
+# Execute
+executor = LocalExecutor()
+result = executor.run(perception, sensor_data)
+```
 
-### 3. Extensible Skills Library
-- Basic manipulation primitives (pick, place, push, etc.)
-- Navigation behaviors (e.g., move to a target location, landmark, or object)
-- Compound skills composed of primitives
+## Documentation
 
-## Getting Started
+📖 **[Complete Guide](README.md)** - Installation, usage, examples, and architecture  
+📚 **[API Reference](API.md)** - Technical reference for classes and methods
 
-- [Installation Guide](getting-started/installation.md) - Set up your environment
-- [Quick Start](getting-started/quick-start.md) - Run your first example
-- [System Setup](setup.md) - Configure your system
-- [Usage Guide](usage.md) - Learn how to use Retriever
+### Quick Links
+- **Installation**: `git clone ... && pip install -e '.[dev]'`
+- **Examples**: `tests/core/test_flow_executor.py` - Real robotics examples
+- **Configuration**: YAML + CLI overrides in `configs/`
 
-## Advanced Topics
+## Current Status
 
-- [Running the System](run-system.md) - System architecture and execution
-- [Training](run-train.md) - Training custom models and skills
-- [Ray Cluster Setup](run-ray-cluster.md) - Distributed computing setup
+**✅ Implemented**:
+- Core Flow system with comprehensive test suite (32+ tests)
+- LocalExecutor for development and testing
+- LLM planning integration (OpenAI/Gemini)
+- Configuration system with YAML + CLI
 
-## Development Resources
+**🚧 Next**:
+- Perception modules (object detection, pose estimation)
+- Robot hardware interfaces (Spot, etc.)
+- High-performance executors (dora-rs integration for 10x speedup)
 
-- [Contributing Guide](contributing.md) - How to contribute to Retriever
-- [Code Style Guide](development/code-style.md) - Coding standards and practices
+## Architecture
 
-## Examples and Tutorials
+**Hierarchy**: Module → Flow → Pipeline  
+**Execution**: LocalExecutor (current) → DoraExecutor (10x speedup) → RayExecutor (massive scale)  
+**Focus**: Type-safe development with clear migration to production performance
 
-- [Examples](examples/) - Ready-to-run examples
-- [Robots](robots/) - Robot-specific documentation
+---
 
-## Getting Help
-
-If you encounter any issues or have questions:
-
-1. Check the [documentation](usage.md)
-2. Open an issue on [GitHub](https://github.com/linfeng-z/Retriever)
-3. Visit our [Notion page](https://www.notion.so/retriever-dev/Retriever-Dev-Homepage-bfd5d802e1f346ac81a1ea773f6418e9?pvs=4) for additional resources
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details. 
+**Get Started**: See [README.md](README.md) for complete documentation
