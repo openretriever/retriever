@@ -2,12 +2,11 @@ import numpy as np
 
 from retriever.core.types import (
     NLCommand,
-    ObjectSymbol,
     ObjectVariable,
     Observation,
     RGBDImage,
 )
-from retriever.grounding.dynamic_grounding import DynamicGroundingModule
+from retriever.planning.grounding.dynamic_grounding import DynamicGroundingModule
 from retriever.models.perception_module import PerceptionModule
 from retriever.models.segmentation.pointing_gemini_sam2_client import (
     PointingGeminiSAM2Client,
