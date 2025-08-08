@@ -139,3 +139,26 @@ pip install -e .
 #### Common Issues
 
 - **CUDA Version Conflicts**: Make sure to install PyTorch through conda/mamba with the correct CUDA version before installing the package dependencies. This prevents potential CUDA driver compatibility issues.
+
+## Documentation
+
+We maintain comprehensive documentation in `docs/` directory. To preview or update the documentation locally:
+
+1. Install MkDocs and required extensions:
+   ```bash
+   pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin
+   ```
+
+2. Preview the documentation:
+   ```bash
+   mkdocs serve
+   ```
+   Then visit `http://127.0.0.1:8000` in your browser.
+
+3. Build the static site:
+   ```bash
+   mkdocs build
+   ```
+   The built site will be in the `site/` directory.
+
+The documentation source is in the `docs/` directory. See `mkdocs.yml` for configuration details.
