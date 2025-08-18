@@ -1,12 +1,13 @@
 """
-Tests for Flow combinators and basic operations.
+Framework Completeness Tests
 
 Tests all core components of the Retriever framework to ensure
 basic functionality works properly.
 """
 
 import pytest
-from retriever import Flow, ExecutionEngine
+from retriever import Flow, Pipeline, ExecutionEngine
+from retriever.types import register_type, get_registered_types
 
 
 class TestFlowComposition:
@@ -87,3 +88,55 @@ class TestExecutionEngine:
         result = engine.run_flow(pipeline, 'input')
         
         assert result == 'step2_step1_input'
+
+
+class TestTypeSystem:
+    """Test type system and registry."""
+    
+    def test_type_registration(self):
+        """Test registering custom types."""
+        @register_type
+        class TestType:
+            def __init__(self, value):
+                self.value = value
+        
+        registered_types = get_registered_types()
+        assert 'TestType' in registered_types
+        
+        type_info = registered_types['TestType']
+        assert type_info.name == 'TestType'
+        assert type_info.type_class == TestType
+    
+    def test_type_registration_with_name(self):
+        """Test registering types with custom names."""
+        @register_type("CustomName")
+        class AnotherType:
+            pass
+        
+        registered_types = get_registered_types()
+        assert 'CustomName' in registered_types
+        
+        type_info = registered_types['CustomName']
+        assert type_info.name == 'CustomName'
+        assert type_info.type_class == AnotherType
+
+
+class TestBackwardCompatibility:
+    """Test backward compatibility features."""
+    
+    def test_arrow_alias(self):
+        """Test that Arrow still works as alias."""
+        from retriever.core.flow import Arrow
+        
+        def double(x): return x * 2
+        
+        # Should work but emit deprecation warning
+        with pytest.warns(DeprecationWarning):
+            arrow = Arrow.arr(double)
+        
+        result = arrow(5)
+        assert result == 10
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
