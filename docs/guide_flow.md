@@ -3,7 +3,8 @@
 **Type-safe composition system for production robotics pipelines**
 
 **Author:** Linfeng  
-**Version:** 5.0 - Updated with v2.4 Proposal Insights
+**Version:** 5.0 - Production Implementation  
+**Status:** ✅ Complete Implementation with Dora Backend
 
 ---
 
@@ -13,8 +14,9 @@ This is the **complete technical reference** for Retriever's Flow architecture, 
 
 **Documentation Hierarchy:**
 - **[README.md](README.md)**: Installation and quick start
+- **[architecture.md](architecture.md)**: Complete technical architecture and design philosophy
 - **[guide_dev.md](guide_dev.md)**: Development workflows and contributing
-- **This guide**: Complete Flow architecture, patterns, and production deployment
+- **This guide**: Complete Flow system reference, patterns, and production deployment
 
 ---
 

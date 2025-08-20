@@ -2,6 +2,8 @@
 
 **Comprehensive guide for contributing to and developing with Retriever**
 
+> **New Contributors**: Start with [contributing.md](contributing.md) for setup and workflow basics, then return here for advanced development topics.
+
 ---
 
 ## Table of Contents
@@ -404,6 +406,8 @@ jobs:
 
 ## Contributing Guidelines
 
+> **Quick Start**: See [contributing.md](contributing.md) for complete contribution workflow, setup, and standards.
+
 ### Adding New Components
 
 1. **Follow Module Protocol**:
@@ -620,7 +624,8 @@ enable_flow_tracing()
 
 ### Documentation
 - [Flow System Guide](guide_flow.md) - Complete Flow architecture reference
-- [Stateful Operations](notes/components/note_stateful_eff v2.md) - Eff monad guide
+- [Architecture Guide](architecture.md) - Complete technical architecture
+- [API Reference](api.md) - Complete API documentation
 - [Robot Integration Guide](robots/README.md) - Adding robot support
 
 ### Examples
@@ -640,7 +645,7 @@ After reading this guide:
 1. **Set up development environment**: `uv run setup-dev`
 2. **Run the test suite**: `uv run test`
 3. **Try the examples**: Start with `examples/simple_flow.py`
-4. **Read the Flow guide**: [guide_flow.md](guide_flow.md) for architecture details
+4. **Read the architecture guide**: [architecture.md](architecture.md) for technical details
 5. **Start contributing**: Pick an issue and follow the contribution workflow
 
 The Retriever framework is designed to make robotics development faster, safer, and more composable. We welcome contributions from the community! 🤖

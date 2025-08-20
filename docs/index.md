@@ -1,12 +1,12 @@
-# 🐕 Retriever
+# 🐕 Retriever Framework
 
-**Type-safe robotics pipeline framework with Flow-based composition**
+**Type-safe, composable framework for production robotics**
 
 <div align="center">
   <strong>Retriever</strong>
 </div>
 
-Retriever is a framework for building type-safe robotics pipelines with composable Flow architecture.
+Retriever provides PyTorch-like abstractions for robotics development, combining type safety, composability, and execution flexibility for building production robot systems.
 
 ## Quick Start
 
@@ -23,38 +23,69 @@ perception = (
 
 # Execute
 executor = LocalExecutor()
-result = executor.run(perception, sensor_data)
+result = executor.execute_sync(perception, sensor_data)
 ```
 
-## Documentation
+## 📚 Documentation
 
-📖 **[Complete Guide](README.md)** - Installation, usage, examples, and architecture  
-📚 **[API Reference](API.md)** - Technical reference for classes and methods
+### Core Documentation
+- **[README.md](README.md)** - Quick start, installation, and overview
+- **[architecture.md](architecture.md)** - Complete technical architecture and design philosophy
+- **[api.md](api.md)** - Complete API reference with examples
 
-### Quick Links
-- **Installation**: `git clone ... && pip install -e '.[dev]'`
-- **Examples**: `tests/core/test_flow_executor.py` - Real robotics examples
-- **Configuration**: YAML + CLI overrides in `configs/`
+### Development Guides  
+- **[guide_flow.md](guide_flow.md)** - Flow system detailed reference and patterns
+- **[guide_dev.md](guide_dev.md)** - Developer guide and contribution workflows
+- **[contributing.md](contributing.md)** - How to contribute to the project
 
-## Current Status
+### Quick Navigation
+- **Getting Started**: [README.md](README.md#quick-start)
+- **Architecture**: [architecture.md](architecture.md#core-architecture)
+- **Examples**: `examples/` directory and `tests/core/`
+- **Registry System**: [architecture.md](architecture.md#registry-ecosystem)
 
-**✅ Implemented**:
-- Core Flow system with comprehensive test suite (32+ tests)
-- LocalExecutor for development and testing
-- LLM planning integration (OpenAI/Gemini)
-- Configuration system with YAML + CLI
+## 🚀 Key Features
 
-**🚧 Next**:
-- Perception modules (object detection, pose estimation)
-- Robot hardware interfaces (Spot, etc.)
-- High-performance executors (dora-rs integration for 10x speedup)
+### ✅ Production Ready
+- **Type-Safe Composition**: Catch errors at development time, not runtime
+- **Multi-Backend Execution**: Sequential, parallel, and distributed backends
+- **Registry System**: PyTorch-style component discovery and substitution
+- **State Management**: Principled robot state handling with Eff monad
+- **Comprehensive Testing**: 50+ tests covering robotics use cases
 
-## Architecture
+### 🎯 Framework Benefits
+- **"PyTorch for Robotics"**: Simple, composable abstractions
+- **Execution Flexibility**: Same code works from development to production
+- **Component Reusability**: Share and discover robotics components
+- **Production Path**: Direct migration from prototype to deployed system
 
-**Hierarchy**: Module → Flow → Pipeline  
-**Execution**: LocalExecutor (current) → DoraExecutor (10x speedup) → RayExecutor (massive scale)  
-**Focus**: Type-safe development with clear migration to production performance
+## 🏗️ Architecture Overview
+
+### Three-Layer Hierarchy
+```python
+# Layer 1: Module[I, O] - Atomic functions
+def detect_objects(image: RGBImage) -> List[Detection]: ...
+
+# Layer 2: Flow[X, Y] - Composable steps  
+detection_flow = Flow.from_module(detect_objects)
+
+# Layer 3: Pipeline - Complete workflows
+manipulation_pipeline = camera_flow >> detection_flow >> planning_flow
+```
+
+### Multi-Backend Execution
+- **Development**: Sequential execution for debugging
+- **Testing**: Parallel execution for performance
+- **Production**: Distributed execution with dora-rs
+
+### Registry System
+```python
+# PyTorch-style component access
+camera = get_flow("camera")
+detector = get_flow("yolo_detector")
+pipeline = camera >> detector
+```
 
 ---
 
-**Get Started**: See [README.md](README.md) for complete documentation
+**Ready to start?** → [README.md](README.md) | **Deep dive** → [architecture.md](architecture.md)

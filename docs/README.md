@@ -1,6 +1,30 @@
 # 🐕 Retriever Documentation
 
-**Type-safe robotics pipeline framework with Flow-based composition**
+**Type-safe, composable framework for production robotics**
+
+## 📚 Documentation Index
+
+### Core Guides
+- **[architecture.md](architecture.md)** - Complete technical architecture and design philosophy
+- **[guide_flow.md](guide_flow.md)** - Flow system detailed reference and patterns  
+- **[guide_dev.md](guide_dev.md)** - Developer guide and contribution workflows
+- **[api.md](api.md)** - Complete API reference with examples
+- **[contributing.md](contributing.md)** - How to contribute to the project
+
+### Getting Started
+- **[Quick Start](#quick-start)** - Installation and first pipeline (below)
+- **[Examples](#examples-and-testing)** - Working examples and test cases
+- **[Configuration](#configuration)** - Setup and customization
+- **[Contributing](contributing.md)** - How to contribute to development
+
+### Advanced Topics
+- **[Multi-Backend Execution](architecture.md#execution-backends)** - Sequential, parallel, distributed
+- **[State Management](architecture.md#state-management)** - Eff monad for robot state
+- **[Registry System](architecture.md#registry-ecosystem)** - Component discovery and substitution
+- **[Production Deployment](architecture.md#production-patterns)** - Testing, deployment, monitoring
+- **[Development Guide](guide_dev.md)** - Contributing and development workflows
+
+---
 
 ## Quick Start
 
@@ -199,16 +223,22 @@ black retriever/ tests/
 retriever/
 ├── core/
 │   ├── flow.py               # Main Flow composition system
-│   ├── executor.py           # LocalExecutor implementation  
+│   ├── executor.py           # Execution engines (Local, distributed)
 │   ├── types.py              # Module protocol, Eff monad
-│   └── symbolic_structs.py   # Robot state/planning types
-├── config.py                 # Configuration system
-├── main.py                   # CLI interface
-└── planning/
-    └── llm_planner.py        # LLM-based planning
+│   └── registry.py           # Component discovery system
+├── types/
+│   ├── core_types.py         # Vision, spatial, action types
+│   └── registry.py           # Type registry system
+├── perception/               # Object detection, tracking
+├── planning/                 # Task planning, VLM integration
+├── robots/                   # Platform integrations (Spot, etc.)
+├── integrations/             # External system integrations
+└── skills/                   # Reusable robot capabilities
 
-tests/core/                   # Comprehensive test suite
-configs/                      # Configuration examples
+tests/                        # Comprehensive test suite
+docs/                         # Complete documentation
+examples/                     # Working examples
+configs/                      # Configuration templates
 ```
 
 ## Troubleshooting

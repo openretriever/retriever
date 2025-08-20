@@ -6,7 +6,12 @@ Tests the core type system, registry, and conversion functionality.
 
 import pytest
 import numpy as np
-from retriever import RGBImage, Detection, BoundingBox
+from retriever import get_type
+
+# Get types via registry
+RGBImage = get_type('RGBImage')
+Detection = get_type('Detection')
+BoundingBox = get_type('BoundingBox')
 from retriever.types.registry import (
     convert_to_arrow, convert_from_arrow, register_type,
     get_registered_types, get_global_registry
