@@ -1,15 +1,18 @@
-# Retriever Examples 🚀
+# Retriever Framework Examples
 
-Learn Retriever step-by-step through **clean, concise** examples.
+Complete examples demonstrating the core capabilities of the Retriever robotics framework.
 
-## 📋 **STREAMLINED STRUCTURE** (Deduplicated Aug 2025)
+## 📁 **Example Categories**
 
 ```
 examples/
-├── 01_core_concepts/              # Essential Flow patterns (3 files)
-├── 02_vision_processing/          # ⭐ Camera + detection (3 files - START HERE)
-├── 03_state_management/           # State & Eff patterns (5 files)  
-└── 04_backend_execution/          # Dora FRP backend execution
+├── 01_core_concepts/              # Essential Flow patterns 
+├── 02_vision_processing/          # ⭐ Camera + detection (START HERE)
+├── 03_state_management/           # State & Eff patterns  
+├── 04_backend_execution/          # Dora FRP backend execution
+├── 05_frp_coordination/           # Multi-rate and timing coordination
+├── 06_feedback_loops/             # 🔄 Closed-loop robotics systems
+└── 07_resource_management/        # ⚡ Ray-style resource allocation
 ```
 
 ## 🎯 **Quick Start**
@@ -48,31 +51,60 @@ python examples/02_vision_processing/01_simple_camera_demo.py
 - `02_dora_backend.py` - True Dora FRP backend with subprocess execution
 - Real YAML generation and Dora operator compilation  
 - Multi-rate coordination (30Hz → 10Hz via FRP timers)
-- Production-ready backend execution patterns
 
-## 💡 **Key Benefits After Deduplication**
+### **🔄 NEW: Feedback Loops** (`06_feedback_loops/`)
+Complete closed-loop robotics systems with adaptive behavior:
 
-✅ **No duplication** - Each concept taught once, clearly  
-✅ **Quick success** - Working camera demo in 2 minutes  
-✅ **Clean progression** - Logical order, no confusion  
-✅ **Simplified patterns** - Clear explanations, no complex nesting  
-✅ **PyTorch-like** - Class-based modules for real robotics  
+- **`01_event_driven_replanning.py`**: Event-triggered replanning with obstacle detection, battery monitoring, tactical and strategic planning
+- **`02_sensor_fusion_feedback.py`**: Multi-sensor fusion with quality monitoring, sensor failure detection, and adaptive weighting  
+- **`03_learning_adaptation_feedback.py`**: Online parameter learning with performance-based skill optimization
 
-## 🔧 **All Examples Work**
+**Key Features**: Real-time event detection, multi-level feedback (strategic + tactical), sensor quality monitoring, online learning from task outcomes, state management with Eff monads.
 
-- ✅ Fixed import issues  
-- ✅ Fixed @flow decorator support  
-- ✅ Fixed data type issues  
-- ✅ Removed confusing nested functions  
-- ✅ Real camera support with test pattern fallback
+### **⚡ NEW: Resource Management** (`07_resource_management/`)
+Ray-style resource annotations and management for robotics flows:
 
-## 🚀 **Ready for Real Robotics**
+- **`01_basic_resource_annotations.py`**: @requires decorator, ResourcePresets, custom resources (camera, robot_arm, lidar)
+- **`02_flow_resource_integration.py`**: Resource-aware execution with automatic allocation, parallel scheduling, constraint handling
+- **`03_multi_robot_resource_coordination.py`**: Fleet-wide resource management across heterogeneous robots
+- **`04_simple_dora_integration.py`**: Resource-aware Dora YAML generation
 
-After these examples, you'll understand:
-- **Flow composition** with >> and & operators
-- **Class-based modules** like PyTorch for robotics  
-- **State management** with Eff patterns
-- **FRP integration** with @flow(rate='30ms') decorators
-- **Real hardware** integration patterns
+**Key Features**: `@requires(cpu=2, gpu=1, memory=8)` decorator, automatic resource allocation and scheduling, multi-robot fleet coordination, real-time resource utilization monitoring.
 
-**Start with `simple_camera_demo.py` and progress through the folders!** 🎯
+## 💡 **Framework Features Demonstrated**
+
+✅ **Flow composition** with >> and & operators  
+✅ **PyTorch-style** class-based modules for robotics  
+✅ **State management** with Eff monads  
+✅ **Feedback loops** for adaptive robot behavior  
+✅ **Resource management** with automatic allocation  
+✅ **Multi-robot coordination** across distributed systems  
+✅ **FRP integration** with time-aware execution  
+
+## 🚀 **Getting Started**
+
+```bash
+# Setup environment
+conda create -n retriever python=3.10
+conda activate retriever  
+pip install -e .
+
+# Quick start - working camera demo
+python examples/02_vision_processing/01_simple_camera_demo.py
+
+# Try feedback loops
+python examples/06_feedback_loops/01_event_driven_replanning.py
+
+# Test resource management  
+python examples/07_resource_management/01_basic_resource_annotations.py
+```
+
+## 📚 **Learning Progression**
+
+1. **Start with core concepts** (01_core_concepts/) - Learn Flow basics
+2. **Explore vision processing** (02_vision_processing/) - Computer vision pipelines  
+3. **Understand state management** (03_state_management/) - Eff monads and robot state
+4. **Try feedback loops** (06_feedback_loops/) - Closed-loop robotics systems
+5. **Add resource management** (07_resource_management/) - Production-ready resource allocation
+
+**All examples are tested and working** - ready for real robotics applications! 🤖
