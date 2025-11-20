@@ -236,6 +236,14 @@ class FlowGraph:
                 predecessors.append(edge.src_node)
         return predecessors
 
+    def get_in_degree(self, node_id: str) -> int:
+        """Get number of incoming edges to a node"""
+        return len(self.get_predecessors(node_id))
+
+    def get_out_degree(self, node_id: str) -> int:
+        """Get number of outgoing edges from a node"""
+        return len(self.get_successors(node_id))
+
     # ========================================================================
     # Topology Analysis
     # ========================================================================
@@ -301,6 +309,171 @@ class FlowGraph:
                     return True
 
         return False
+    
+    def get_cycles(self) -> List[List[str]]:
+        """
+        Get all cycles in the graph.
+
+        Returns SCCs with more than one node (each represents a cycle).
+        """
+        sccs = self.find_strongly_connected_components()
+        return [scc for scc in sccs if len(scc) > 1]
+
+    def find_strongly_connected_components(self) -> List[List[str]]:
+        """
+        Find strongly connected components using Tarjan's algorithm.
+
+        Returns list of SCCs, where each SCC is a list of node IDs.
+        Single-node SCCs represent nodes not in cycles.
+        Multi-node SCCs represent cycles.
+
+        Time complexity: O(V + E)
+        """
+        index_counter = [0]
+        stack = []
+        lowlinks = {}
+        index = {}
+        on_stack = {}
+        sccs = []
+
+        def strongconnect(node: str):
+            """Tarjan's DFS helper"""
+            index[node] = index_counter[0]
+            lowlinks[node] = index_counter[0]
+            index_counter[0] += 1
+            on_stack[node] = True
+            stack.append(node)
+
+            for successor in self.get_successors(node):
+                if successor not in index:
+                    strongconnect(successor)
+                    lowlinks[node] = min(lowlinks[node], lowlinks[successor])
+                elif on_stack.get(successor, False):
+                    lowlinks[node] = min(lowlinks[node], index[successor])
+
+            if lowlinks[node] == index[node]:
+                scc = []
+                while True:
+                    w = stack.pop()
+                    on_stack[w] = False
+                    scc.append(w)
+                    if w == node:
+                        break
+                sccs.append(scc)
+
+        for node in self.nodes:
+            if node not in index:
+                strongconnect(node)
+
+        return sccs
+
+    def get_topological_groups(self) -> List[List[str]]:
+        """
+        Get SCCs in topological order, with nodes ordered within each SCC.
+
+        Returns list where each element is a group (SCC) of node IDs:
+        - Single-node list: node not in a cycle
+        - Multi-node list: nodes in same cycle, ordered by in-degree + DFS
+
+        Example:
+            Graph: A -> B <-> C -> D
+            Returns: [['A'], ['B', 'C'], ['D']]
+
+        SCCs are ordered topologically (respects inter-SCC dependencies).
+        Nodes within each SCC are ordered starting from minimum in-degree node.
+
+        This preserves cycle structure while maintaining topological ordering,
+        useful for partition algorithms and visualization.
+        """
+        sccs = self.find_strongly_connected_components()
+
+        # Create mapping from node to its SCC index
+        node_to_scc = {}
+        for scc_idx, scc in enumerate(sccs):
+            for node in scc:
+                node_to_scc[node] = scc_idx
+
+        # Build condensed graph (edges between SCCs)
+        scc_successors = {i: set() for i in range(len(sccs))}
+        for edge in self.edges:
+            src_scc = node_to_scc[edge.src_node]
+            dst_scc = node_to_scc[edge.dst_node]
+            if src_scc != dst_scc:
+                scc_successors[src_scc].add(dst_scc)
+
+        # Topologically sort SCCs using DFS
+        visited_sccs = set()
+        scc_order = []
+
+        def dfs_scc(scc_idx: int):
+            if scc_idx in visited_sccs:
+                return
+            visited_sccs.add(scc_idx)
+            for succ_scc in scc_successors[scc_idx]:
+                dfs_scc(succ_scc)
+            scc_order.append(scc_idx)
+
+        # Find SCCs with no predecessors
+        scc_has_predecessor = set()
+        for succs in scc_successors.values():
+            scc_has_predecessor.update(succs)
+
+        for scc_idx in range(len(sccs)):
+            if scc_idx not in scc_has_predecessor:
+                dfs_scc(scc_idx)
+
+        # Process remaining SCCs (disconnected)
+        for scc_idx in range(len(sccs)):
+            if scc_idx not in visited_sccs:
+                dfs_scc(scc_idx)
+
+        scc_order.reverse()
+
+        # Return SCCs as groups with ordered nodes
+        groups = []
+        for scc_idx in scc_order:
+            scc = sccs[scc_idx]
+            if len(scc) == 1:
+                groups.append(scc)
+            else:
+                # Cycle: order nodes within SCC
+                groups.append(self._order_nodes_in_scc(scc))
+
+        return groups
+
+    def _order_nodes_in_scc(self, scc: List[str]) -> List[str]:
+        """
+        Order nodes within a strongly connected component (cycle).
+
+        Uses DFS starting from node with minimum in-degree within the SCC.
+        """
+        if len(scc) == 1:
+            return scc
+
+        scc_set = set(scc)
+        in_degree = {node: 0 for node in scc}
+
+        for edge in self.edges:
+            if edge.src_node in scc_set and edge.dst_node in scc_set:
+                in_degree[edge.dst_node] += 1
+
+        start_node = min(scc, key=lambda n: in_degree[n])
+
+        visited = set()
+        order = []
+
+        def dfs(node: str):
+            if node in visited:
+                return
+            visited.add(node)
+            for successor in self.get_successors(node):
+                if successor in scc_set:
+                    dfs(successor)
+            order.append(node)
+
+        dfs(start_node)
+
+        return list(reversed(order))
 
     # ========================================================================
     # Visualization
@@ -327,8 +500,8 @@ class FlowGraph:
                 sensor_0.image → detector_0.camera
 
               Sources: ['sensor_0']
-
               Sinks: ['detector_0']
+              Groups: [['sensor_0'], ['detector_0']]
         """
         lines = ["FlowGraph:"]
 
@@ -349,7 +522,8 @@ class FlowGraph:
 
         # Topology
         lines.append(f"\n  Sources: {self.find_sources()}")
-        lines.append(f"\n  Sinks: {self.find_sinks()}")
+        lines.append(f"  Sinks: {self.find_sinks()}")
+        lines.append(f"  Groups: {self.get_topological_groups()}")
 
         return "\n".join(lines)
 
