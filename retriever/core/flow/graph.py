@@ -61,22 +61,16 @@ class FlowEdge:
         src_port: Source port name
         dst_node: Destination node ID
         dst_port: Destination port name
-        adapter: Adapter config as {adapter_name: adapter_dict}
-        qsize: Queue size for buffering
+        metadata: Edge metadata dict
     """
     src_node: str
     src_port: str
     dst_node: str
     dst_port: str
-    adapter: Dict[str, Any]
-    qsize: int
+    metadata: Dict[str, Any]
 
     def __repr__(self) -> str:
-        adapter_name = next(iter(self.adapter.keys()))
-        return (
-            f"{self.src_node}.{self.src_port} → {self.dst_node}.{self.dst_port} "
-            f"[{adapter_name}, q={self.qsize}]"
-        )
+        return f"{self.src_node}.{self.src_port} → {self.dst_node}.{self.dst_port}"
 
     def __eq__(self, other) -> bool:
         """Check edge equality based on connection"""
@@ -141,10 +135,9 @@ class FlowGraph:
         src_port: str,
         dst_node: str,
         dst_port: str,
-        adapter: Dict[str, Any],
-        qsize: int,
+        metadata: Dict[str, Any],
     ) -> FlowEdge:
-        """Create port-to-port connection"""
+        """Create port-to-port connection with metadata"""
         # Validate nodes exist
         if src_node not in self.nodes:
             raise FlowError(
@@ -180,8 +173,7 @@ class FlowGraph:
             src_port=src_port,
             dst_node=dst_node,
             dst_port=dst_port,
-            adapter=adapter,
-            qsize=qsize,
+            metadata=metadata,
         )
 
         # Check for duplicate edge
@@ -309,7 +301,7 @@ class FlowGraph:
                     return True
 
         return False
-    
+
     def get_cycles(self) -> List[List[str]]:
         """
         Get all cycles in the graph.

@@ -124,8 +124,6 @@ class Hold(Adapter[T]):
     """Zero-order hold with optional debounce."""
 
     debounce: float = 0.0
-    _last_value: Optional[T] = field(default=None, init=False, repr=False)
-    _last_time: float = field(default=0.0, init=False, repr=False)
 
     def __post_init__(self):
         if self.debounce < 0:
@@ -134,6 +132,10 @@ class Hold(Adapter[T]):
                 "Hold debounce must be non-negative",
                 debounce=self.debounce
             )
+
+        # Runtime state (not serde)
+        self._last_value: Optional[T] = None
+        self._last_time: float = 0.0
 
     def __call__(self, queue: TQueue[T]) -> T:
         timestamp, value = queue[-1]
