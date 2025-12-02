@@ -1,36 +1,51 @@
 """
-Adapter module for queue sampling strategies.
+Adapter module for buffer sampling strategies.
 
-Adapters determine how messages are sampled from input queues
+Adapters determine how messages are sampled from input buffers
 for temporal alignment between cross-clock flow connections.
 """
 
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import TypeVar, Generic, List, Tuple, Optional, Any, Type, Dict, Literal
+from dataclasses import dataclass
+from typing import TypeVar, Generic, Optional, Any
+from typing import Type, List, Tuple, Dict, Literal
 from retriever.core.error import FlowError, ErrCode
 
 T = TypeVar('T')
-TQueue = List[Tuple[float, T]]
+TBuffer = List[Tuple[float, T]]
 
 # Global adapter registry
 _adapter_registry: Dict[str, Type['Adapter']] = {}
 
 
+@dataclass
 class Adapter(ABC, Generic[T]):
-    """Abstract base class for queue sampling strategies."""
+    """
+    Abstract base class for buffer sampling strategies.
+
+    All adapters must specify buffer_size to control history depth.
+    """
+    buffer_size: int
+
+    def __post_init__(self):
+        if self.buffer_size < 1:
+            raise FlowError(
+                ErrCode.FLOW_ADAPTER_INVALID,
+                "buffer_size must be >= 1",
+                buffer_size=self.buffer_size
+            )
 
     @abstractmethod
-    def __call__(self, queue: TQueue[T]) -> Any:
+    def __call__(self, buffer: TBuffer[T]) -> Any:
         """
-        Apply sampling strategy to the queue.
+        Apply sampling strategy to the buffer.
 
         Args:
-            queue: List of (timestamp, value) tuples
+            buffer: List of (timestamp, value) tuples
 
         Returns:
-            Sampled value(s) from the queue
+            Sampled value(s) from the buffer
         """
         pass
 
@@ -111,10 +126,11 @@ def is_adapter(cls) -> bool:
 @register_adapter("latest")
 @dataclass
 class Latest(Adapter[T]):
-    """Samples the most recent value from the queue."""
+    """Samples the most recent value from the buffer."""
+    buffer_size: int = 1
 
-    def __call__(self, queue: TQueue[T]) -> T:
-        _, value = queue[-1]
+    def __call__(self, buffer: TBuffer[T]) -> T:
+        _, value = buffer[-1]
         return value
 
 
@@ -122,10 +138,11 @@ class Latest(Adapter[T]):
 @dataclass
 class Hold(Adapter[T]):
     """Zero-order hold with optional debounce."""
-
+    buffer_size: int = 1
     debounce: float = 0.0
 
     def __post_init__(self):
+        super().__post_init__()
         if self.debounce < 0:
             raise FlowError(
                 ErrCode.FLOW_ADAPTER_INVALID,
@@ -137,8 +154,8 @@ class Hold(Adapter[T]):
         self._last_value: Optional[T] = None
         self._last_time: float = 0.0
 
-    def __call__(self, queue: TQueue[T]) -> T:
-        timestamp, value = queue[-1]
+    def __call__(self, buffer: TBuffer[T]) -> T:
+        timestamp, value = buffer[-1]
 
         if self.debounce > 0:
             if self._last_value is not None:
@@ -165,11 +182,12 @@ class Window(Adapter[T]):
     - "min": Minimum value in window
     - "mean": Average of values in window
     """
-
+    buffer_size: int
     duration: float
     agg: Literal["first", "last", "max", "min", "mean"] = "last"
 
     def __post_init__(self):
+        super().__post_init__()
         if self.duration <= 0:
             raise FlowError(
                 ErrCode.FLOW_ADAPTER_INVALID,
@@ -177,14 +195,14 @@ class Window(Adapter[T]):
                 duration=self.duration
             )
 
-    def __call__(self, queue: TQueue[T]) -> T:
+    def __call__(self, buffer: TBuffer[T]) -> T:
         current_time = time.time()
         start_time = current_time - self.duration
 
-        window_values = [value for ts, value in queue if ts >= start_time]
+        window_values = [value for ts, value in buffer if ts >= start_time]
 
         if not window_values:  # falls back to latest
-            _, value = queue[-1]
+            _, value = buffer[-1]
             return value
 
         # Apply aggregation function based on string name
