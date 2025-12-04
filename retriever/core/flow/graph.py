@@ -70,7 +70,7 @@ class FlowEdge:
     metadata: Dict[str, Any]
 
     def __repr__(self) -> str:
-        return f"{self.src_node}.{self.src_port} → {self.dst_node}.{self.dst_port}"
+        return f"{self.src_node}.{self.src_port}->{self.dst_node}.{self.dst_port}"
 
     def __eq__(self, other) -> bool:
         """Check edge equality based on connection"""
