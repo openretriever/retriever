@@ -83,10 +83,7 @@ def register_adapter(name: Optional[str] = None):
             existing = _adapter_registry[adapter_name]
             raise FlowError(
                 ErrCode.FLOW_ADAPTER_INVALID,
-                f"Adapter name '{adapter_name}' already registered to {existing.__name__}",
-                name=adapter_name,
-                existing=existing.__name__,
-                new=cls.__name__
+                f"Adapter '{adapter_name}' already registered to {existing.__name__}"
             )
 
         # Register adapter
