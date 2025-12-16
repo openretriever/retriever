@@ -17,16 +17,30 @@ Example:
     # Or substitute: register_flow("camera")(MockCameraFlow)
 """
 
-from typing import Dict, Type, Any, Optional, Callable, TypeVar, Generic, Union
+from typing import Dict, Type, Optional, Callable, TypeVar, TYPE_CHECKING
 from dataclasses import dataclass
-import inspect
 from collections import defaultdict
+import logging
 
-# Import our Flow base class
-if False:  # TYPE_CHECKING
-    from .flow import Flow
+from retriever.core.flow.base import Flow as FlowBase
 
-F = TypeVar('F', bound='Flow')
+from retriever.core.plugins import load_plugins
+
+logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from retriever.core.flow.base import Flow
+
+F = TypeVar('F', bound=FlowBase)
+
+
+def _ensure_plugins_loaded() -> None:
+    # Best-effort plugin loading: enables external packages to register flows.
+    try:
+        load_plugins()
+    except Exception:
+        # Plugins are optional and should not prevent using local code.
+        pass
 
 @dataclass 
 class FlowInfo:
@@ -88,6 +102,12 @@ class FlowRegistry:
                       description: str,
                       tags: list) -> Type[F]:
         """Internal registration logic."""
+
+        if not issubclass(flow_class, FlowBase):
+            raise TypeError(
+                f"register_flow('{name}') expects a retriever.core.flow.Flow subclass, "
+                f"got: {flow_class}"
+            )
         
         # Extract type information from Flow[I, O] if available
         input_type, output_type = self._extract_flow_types(flow_class)
@@ -96,7 +116,12 @@ class FlowRegistry:
         if name in self._flows:
             existing = self._flows[name]
             if existing.flow_class != flow_class:
-                print(f"⚠️  Warning: Overriding flow '{name}' (was {existing.flow_class.__name__}, now {flow_class.__name__})")
+                logger.warning(
+                    "Overriding flow '%s' (was %s, now %s)",
+                    name,
+                    existing.flow_class.__name__,
+                    flow_class.__name__,
+                )
         
         # Create flow info
         flow_info = FlowInfo(
@@ -137,6 +162,7 @@ class FlowRegistry:
             camera = get_flow("camera", camera_id=1)
             detector = get_flow("yolo_detector", confidence_threshold=0.8)
         """
+        _ensure_plugins_loaded()
         if name not in self._flows:
             available = list(self._flows.keys())
             raise ValueError(f"Flow '{name}' not registered. Available: {available}")
@@ -146,6 +172,7 @@ class FlowRegistry:
     
     def get_flow_class(self, name: str) -> Type['Flow']:
         """Get the Flow class (not instance) by name."""
+        _ensure_plugins_loaded()
         if name not in self._flows:
             available = list(self._flows.keys())
             raise ValueError(f"Flow '{name}' not registered. Available: {available}")
@@ -153,6 +180,7 @@ class FlowRegistry:
     
     def list_flows(self, category: Optional[str] = None) -> Dict[str, FlowInfo]:
         """List all registered flows, optionally filtered by category."""
+        _ensure_plugins_loaded()
         if category is None:
             return dict(self._flows)
         else:
@@ -167,6 +195,7 @@ class FlowRegistry:
                    output_type: Optional[Type] = None,
                    tags: Optional[list] = None) -> Dict[str, FlowInfo]:
         """Find flows by type signature or tags."""
+        _ensure_plugins_loaded()
         results = {}
         
         for name, flow_info in self._flows.items():
