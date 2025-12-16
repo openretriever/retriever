@@ -13,7 +13,9 @@ from typing import Type, List, Tuple, Dict, Literal
 from retriever.core.error import FlowError, ErrCode
 
 T = TypeVar('T')
-TBuffer = List[Tuple[float, T]]
+EventBuffer = List[Tuple[float, T]]
+# Backward-compat alias (older code/docs/tests may still refer to TBuffer).
+TBuffer = EventBuffer
 
 # Global adapter registry
 _adapter_registry: Dict[str, Type['Adapter']] = {}
@@ -37,7 +39,7 @@ class Adapter(ABC, Generic[T]):
             )
 
     @abstractmethod
-    def __call__(self, buffer: TBuffer[T]) -> Any:
+    def __call__(self, buffer: EventBuffer[T]) -> Any:
         """
         Apply sampling strategy to the buffer.
 
@@ -48,6 +50,25 @@ class Adapter(ABC, Generic[T]):
             Sampled value(s) from the buffer
         """
         pass
+
+    def sample(self, buffer: EventBuffer[T], *, now: Optional[float] = None) -> Any:
+        """
+        Sample from a timestamped buffer at a given time.
+
+        This is a thin compatibility layer to support time-aware adapters without
+        breaking older adapters that only implement `__call__(buffer)`.
+
+        Args:
+            buffer: List of (timestamp, value)
+            now: Optional wall-clock timestamp associated with this sampling
+
+        Returns:
+            Sampled value(s)
+        """
+        try:
+            return self.__call__(buffer, now=now)  # type: ignore[misc]
+        except TypeError:
+            return self.__call__(buffer)
 
 
 # ============================================================================
@@ -126,7 +147,7 @@ class Latest(Adapter[T]):
     """Samples the most recent value from the buffer."""
     buffer_size: int = 1
 
-    def __call__(self, buffer: TBuffer[T]) -> T:
+    def __call__(self, buffer: EventBuffer[T]) -> T:
         _, value = buffer[-1]
         return value
 
@@ -151,7 +172,7 @@ class Hold(Adapter[T]):
         self._last_value: Optional[T] = None
         self._last_time: float = 0.0
 
-    def __call__(self, buffer: TBuffer[T]) -> T:
+    def __call__(self, buffer: EventBuffer[T]) -> T:
         timestamp, value = buffer[-1]
 
         if self.debounce > 0:
@@ -192,8 +213,8 @@ class Window(Adapter[T]):
                 duration=self.duration
             )
 
-    def __call__(self, buffer: TBuffer[T]) -> T:
-        current_time = time.time()
+    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None) -> T:
+        current_time = time.time() if now is None else now
         start_time = current_time - self.duration
 
         window_values = [value for ts, value in buffer if ts >= start_time]
@@ -221,3 +242,44 @@ class Window(Adapter[T]):
                 agg=self.agg
             )
 
+
+@register_adapter("events")
+@dataclass
+class Events(Adapter[T]):
+    """
+    Returns a (possibly filtered) slice of the underlying timestamped buffer.
+
+    This is useful for "event stream" style flows that need to reason over
+    recent history rather than a single sampled value.
+
+    Notes:
+      - `buffer_size` controls how much history is retained by subscribers.
+      - When `duration` is set, the window is computed relative to `now` if
+        provided (otherwise wall-clock time).
+    """
+
+    buffer_size: int
+    duration: Optional[float] = None
+    include_timestamps: bool = True
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.duration is not None and self.duration <= 0:
+            raise FlowError(
+                ErrCode.FLOW_ADAPTER_INVALID,
+                "Events duration must be positive",
+                duration=self.duration,
+            )
+
+    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None) -> Any:
+        events: EventBuffer[T]
+        if self.duration is None:
+            events = list(buffer)
+        else:
+            current_time = time.time() if now is None else now
+            start_time = current_time - self.duration
+            events = [(ts, value) for ts, value in buffer if ts >= start_time]
+
+        if self.include_timestamps:
+            return events
+        return [value for _, value in events]
