@@ -5,8 +5,8 @@ Provides base classes and utilities for building dataflow pipelines.
 """
 
 from retriever.core.flow.base import Flow
-from retriever.core.flow.clock import Clock, Rate, Trigger, Hybrid
-from retriever.core.flow.adapter import Adapter, Latest, Hold, Window
+from retriever.core.flow.clock import Clock, Rate, Trigger, Hybrid, Tick
+from retriever.core.flow.adapter import Adapter, Latest, Hold, Window, Events
 from retriever.core.flow.config import FlowConfig
 from retriever.core.flow.handle import FlowHandle
 from retriever.core.flow.context import FlowContext
@@ -21,6 +21,7 @@ __all__ = [
     # Clocks
     'Clock',
     'Rate',
+    'Tick',
     'Trigger',
     'Hybrid',
 
@@ -29,6 +30,7 @@ __all__ = [
     'Latest',
     'Hold',
     'Window',
+    'Events',
 
     # Configuration
     'FlowConfig',
