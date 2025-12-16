@@ -14,8 +14,6 @@
 #
 # USAGE:
 #   pixi run demo-dora              # Run demo in default environment
-#   pixi run -e cpu python train.py # Use CPU PyTorch environment
-#   pixi run -e gpu python train.py # Use GPU PyTorch environment (Linux only)
 #   pixi shell                      # Enter interactive shell
 #
 # For more info: https://pixi.sh and docs/install.md
@@ -32,16 +30,21 @@ platforms = ["osx-arm64", "linux-64"]
 # =============================================================================
 [dependencies]
 python = "3.11.*"
-libheif = "*"  # Required for HEIF image format support
 
 # =============================================================================
 # PyPI Dependencies
 # =============================================================================
 # Note: These are installed via uv after conda deps are resolved
 [pypi-dependencies]
-# Install retriever package from local pyproject.toml with dora extra
-# This pulls in all dependencies defined in pyproject.toml
-retriever = { path = ".", editable = true, extras = ["dora"] }
+# Install retriever package from local pyproject.toml.
+# Keep the default environment lightweight, but include:
+# - `dora`: dora backend support
+# - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
+retriever = { path = ".", editable = true, extras = ["dora", "demo"] }
+
+# Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
+pygments = "*"
+typing-extensions = "*"
 
 # Dora-rs pinned here to ensure version compatibility.
 # Note: The Retriever dora backend currently uses a dataflow schema that may require
@@ -57,37 +60,3 @@ dora-rs-cli = ">=0.3.12"
 demo-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
 demo-detection-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
 demo-request-dora = "python -m examples.00_refact.010_request_response"
-
-# =============================================================================
-# PyTorch Environments
-# =============================================================================
-# PyTorch is NOT in the default environment to keep it lightweight.
-# Use -e cpu or -e gpu to activate a PyTorch environment.
-#
-# Reference: https://pixi.sh/dev/python/pytorch/
-
-# GPU Environment: CUDA 12.4 for Linux
-[feature.gpu]
-platforms = ["linux-64"]  # CUDA only available on Linux
-system-requirements = { cuda = "12.0" }  # Requires CUDA 12.0+ on the system
-
-[feature.gpu.pypi-dependencies]
-# Fetch from PyTorch's CUDA 12.4 index
-torch = { version = ">=2.5.1", index = "https://download.pytorch.org/whl/cu124" }
-torchvision = { version = ">=0.20.1", index = "https://download.pytorch.org/whl/cu124" }
-
-# CPU Environment: Works on all platforms
-[feature.cpu.pypi-dependencies]
-# Fetch from PyTorch's CPU index
-torch = { version = ">=2.5.1", index = "https://download.pytorch.org/whl/cpu" }
-torchvision = { version = ">=0.20.1", index = "https://download.pytorch.org/whl/cpu" }
-
-# =============================================================================
-# Environment Definitions
-# =============================================================================
-[environments]
-# gpu: Linux only, includes CUDA 12.4 PyTorch
-gpu = { features = ["gpu"] }
-# cpu: All platforms, CPU-only PyTorch  
-cpu = { features = ["cpu"] }
-# default: No PyTorch (lightest, fastest to resolve)
