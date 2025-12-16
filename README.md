@@ -64,101 +64,35 @@ The modular design allows easy modification of existing skills and addition of n
 
 ## Development
 
-- See our Notion page for more documents and tracking progress.
-- Steps for pushing your code:
-    1. create a new branch with `<type>/<short-description>-<date>`
-        1. use e.g., `bugfix/<name>-<date>`
-        2. different types: e.g., `general/...`, `bugfix/...`, `feature/...`, …
-    2. make commits to your branch
-    3. push the branch to remote
-    4. submit pull request on GitHub
-    5. ask for review & merge
+- Development workflow, pre-commit hooks, and QA steps: see `docs/contributing.md`.
 
 
-## Setup
+## Setup (overview)
 
-### Pre-commit Hooks
+Use Python 3.10–3.12 (avoid 3.14; some deps lack wheels).
 
-To maintain code quality and consistency, we use pre-commit hooks. These hooks automatically run checks and formatting tools before you make a commit. To set up pre-commit hooks:
-
-1. Install pre-commit:
-    ```sh
-    pip install pre-commit
-    ```
-
-2. Install the git hooks:
-    ```sh
-    pre-commit install
-    ```
-
-3. (Optional) Run hooks manually on all files:
-    ```sh
-    pre-commit run --all-files
-    ```
-### Installation
-
-This project uses `pyproject.toml` for dependency management.
-Ensure you have Python 3.10 or higher installed.
-
-#### 1. Environment Setup and PyTorch Installation
-
-First, create a conda environment and install PyTorch:
+Quick start with [Pixi](https://pixi.sh):
 ```sh
-# Create and activate a conda environment
-conda create -n retriever python=3.10
-conda activate retriever
-
-# Install PyTorch with CUDA support (choose based on your CUDA version)
-conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia  # For CUDA 11.8
+curl -fsSL https://pixi.sh/install.sh | bash
+pixi run demo-dora
+# PyTorch envs:
+pixi run -e cpu python your_script.py      # CPU (all platforms)
+pixi run -e gpu python your_script.py      # GPU with CUDA 12.4 (Linux only)
 ```
 
-#### 2. Package Installation
-
-We recommend using `uv` for faster package installation:
-
+If dora complains about version/schema, kill stale processes:
 ```sh
-# Install uv (much faster than pip)
-pip install uv
-
-# Install basic dependencies
-uv pip install -e .
-
-# Optional: Install additional components
-uv pip install ".[spot]"      # Boston Dynamics Spot dependencies
-uv pip install ".[models]"    # Foundation models and vision components
-uv pip install ".[mapper]"    # Mapping related dependencies
-uv pip install ".[training]"  # Skill Training related dependencies
-uv pip install ".[all]"       # Install all optional dependencies
+pkill -9 dora && pixi run demo-dora
 ```
 
-Alternatively, you can use `pip` directly:
-```sh
-pip install -e .
-```
+`pixi.lock` is multi-platform (osx-arm64, linux-64). Commit it for reproducible installs; other platforms can re-lock after adding the platform to `pixi.toml` and running `pixi install`.
 
-#### Common Issues
+Pixi manages its own env. If you prefer `uv`/`pip`, use a separate conda/venv to avoid mixing managers.
 
-- **CUDA Version Conflicts**: Make sure to install PyTorch through conda/mamba with the correct CUDA version before installing the package dependencies. This prevents potential CUDA driver compatibility issues.
+Pixi installs the PyPI portion using `uv` internally; you usually don't need to run `uv` yourself when using Pixi.
+
+Full installation (Pixi/conda/uv), dora CLI notes, and troubleshooting: see `docs/install.md`.
 
 ## Documentation
 
-We maintain comprehensive documentation in `docs/` directory. To preview or update the documentation locally:
-
-1. Install MkDocs and required extensions:
-   ```bash
-   pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin
-   ```
-
-2. Preview the documentation:
-   ```bash
-   mkdocs serve
-   ```
-   Then visit `http://127.0.0.1:8000` in your browser.
-
-3. Build the static site:
-   ```bash
-   mkdocs build
-   ```
-   The built site will be in the `site/` directory.
-
-The documentation source is in the `docs/` directory. See `mkdocs.yml` for configuration details.
+Docs live in `docs/` (served via MkDocs). See `docs/guide_dev.md` for local preview/build commands.
