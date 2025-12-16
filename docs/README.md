@@ -10,6 +10,7 @@ The canonical workflow is:
 
 - Install: `install.md`
 - Canonical runtime guide: `guide_runtime.md`
+- Time/FRP model: `guide_time.md`
 
 ## Quick Start
 
