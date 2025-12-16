@@ -94,8 +94,8 @@ Key defaults:
 
 - `Rate(hz=...)` samples **all input fields** by default.
 - `Tick(hz=...)` is the explicit “tick-only” clock (samples no inputs).
-- `Trigger(fields=[...])` samples only the triggering fields.
-- `Hybrid(..., rate_fields=[...], trigger_fields=[...])` mixes both behaviors.
+- `Trigger("field")` / `Trigger(on=[...])` samples only the triggering fields.
+- `Hybrid(..., sample=[...], trigger=[...])` mixes both behaviors.
 
 Backends attach a concrete “execution time” to a step:
 
@@ -129,4 +129,3 @@ Entry point group:
 - User guide: `docs/guide_runtime.md`
 - Installation: `docs/install.md`
 - Legacy architecture reference: `docs/architecture_legacy.md`
-

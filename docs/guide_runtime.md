@@ -65,13 +65,13 @@ A `Flow` is a node that implements:
 
 Attach a clock using `flow @ clock`:
 
-- `Rate(hz=..., fields=[...])`: periodic execution
-- `Trigger(fields=[...])`: event-driven execution
-- `Hybrid(hz=..., trigger_fields=[...], rate_fields=[...])`: mixed mode
+- `Rate(hz=..., sample=[...])`: periodic execution (`fields=` is a supported alias)
+- `Trigger("field")` / `Trigger(on=[...])`: event-driven execution
+- `Hybrid(hz=..., trigger=[...], sample=[...])`: mixed mode (`trigger_fields=`/`rate_fields=` also work)
 
 Defaults:
-- `Rate(hz=...)` and `Hybrid(..., rate_fields=...)` sample **all inputs** by default (`["..."]`).
-- Use `fields=[]` (or `Tick(hz=...)`) for tick-only nodes.
+- `Rate(hz=...)` and `Hybrid(..., sample=...)` sample **all inputs** by default (`["..."]`).
+- Use `sample=[]` (or `Tick(hz=...)`) for tick-only nodes.
 
 ### Wiring (edges)
 
