@@ -22,8 +22,8 @@
 
 ### Prerequisites
 
-- **Python 3.10+** with type hint support
-- **uv** (recommended) or pip for dependency management
+- **Python 3.10–3.12** (avoid 3.14; some deps lack wheels)
+- **Pixi** (recommended) or **uv**/**pip** for dependency management
 - **VS Code** (recommended) with Python extension
 - **Git** with pre-commit hooks
 
@@ -34,27 +34,39 @@
 git clone <repository-url>
 cd Retriever
 
-# Install with development dependencies
-uv pip install -e .[dev]
+# Option A: Pixi (quick demo env defined in pixi.toml)
+pixi run demo-dora
+pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 
-# Set up development environment
-uv run setup-dev
+# Option B: uv (in your own venv/conda env)
+# uv pip install -e '.[dev]'
 
 # Verify installation
-uv run demo-flow
+pixi run python -m pytest tests/core -q  # Pixi
+# python -m pytest tests/core -q         # uv/pip (after activating your env)
 ```
+
+### Command Conventions
+
+Command conventions:
+- Prefer Pixi: `pixi run <command>` (uses the Pixi environment)
+- Or run tools directly after activating your env:
+  - Tests: `python -m pytest`
+  - Lint: `ruff check .`
+  - Format: `black .`
+  - Types: `mypy retriever`
 
 ### Development Dependencies
 
 ```bash
-# Core development tools
-uv pip install -e .[dev]      # Black, ruff, mypy, pytest
+# Core development tools (inside Pixi env)
+pixi run python -m pip install -e '.[dev]'
 
-# Optional components
-uv pip install -e .[spot]     # Boston Dynamics Spot integration
-uv pip install -e .[models]   # Foundation models (VLMs, segmentation)
-uv pip install -e .[training] # Skill learning and training
-uv pip install -e .[all]      # All dependencies
+# Optional components (install in your chosen env)
+pixi run python -m pip install -e '.[spot]'
+pixi run python -m pip install -e '.[models]'
+pixi run python -m pip install -e '.[training]'
+pixi run python -m pip install -e '.[all]'
 ```
 
 ## Development Environment
@@ -72,13 +84,31 @@ Launch configurations for common development tasks:
 
 ```bash
 # Install pre-commit hooks
-pre-commit install
+pixi run pre-commit install
 
 # Run manually
-pre-commit run --all-files
+pixi run pre-commit run --all-files
 
-# Quality assurance pipeline
-uv run qa  # Format, lint, typecheck, test
+# Common QA commands
+pixi run ruff check .
+pixi run black .
+pixi run mypy retriever
+pixi run python -m pytest
+```
+
+### Documentation (MkDocs)
+
+MkDocs config lives in `mkdocs.yml`, with pages under `docs/`.
+
+```bash
+# Install mkdocs tooling (in your active env)
+python -m pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin
+
+# Serve docs locally
+mkdocs serve
+
+# Build static site
+mkdocs build
 ```
 
 ### Environment Variables
@@ -148,19 +178,16 @@ manipulation_pipeline = (
    touch retriever/new_module.py
    
    # Run tests continuously
-   uv run test --watch
+   pixi run python -m pytest --maxfail=1 --lf
    ```
 
 3. **Quality Assurance**
    ```bash
-   # Full QA pipeline
-   uv run qa
-   
-   # Individual checks
-   uv run format      # Black formatting
-   uv run lint        # Ruff linting + fixes
-   uv run typecheck   # mypy type checking
-   uv run test        # pytest test suite
+   # Common checks
+   pixi run ruff check .
+   pixi run black .
+   pixi run mypy retriever
+   pixi run python -m pytest
    ```
 
 4. **Documentation**
@@ -396,12 +423,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: uv pip install -e .[dev]
+      - name: Install pixi
+        run: curl -fsSL https://pixi.sh/install.sh | bash
+      - name: Install environment
+        run: pixi install
       - name: Run quality checks
-        run: uv run qa
+        run: |
+          pixi run ruff check .
+          pixi run black .
+          pixi run mypy retriever
+          pixi run python -m pytest
       - name: Run performance tests
-        run: uv run test --performance
+        run: pixi run python -m pytest --performance
 ```
 
 ## Contributing Guidelines
@@ -433,7 +466,7 @@ jobs:
 
 4. **Ensure Type Safety**:
    ```bash
-   uv run typecheck  # Must pass mypy
+   pixi run mypy retriever  # Must pass mypy
    ```
 
 ### Adding Robot Integrations
@@ -500,7 +533,7 @@ def profile_pipeline():
 **Memory Usage Analysis**:
 ```bash
 # Monitor memory during execution
-uv run test --memray
+pixi run python -m pytest --memray
 
 # Memory profiling for specific components
 python -m memray run --live examples/memory_test.py
@@ -548,7 +581,7 @@ detection_flow = Flow.from_module(ray_yolo.predict)
 **Import Errors**:
 ```bash
 # Ensure proper installation
-uv pip install -e .
+pixi run python -m pip install -e .
 
 # Check Python path
 export PYTHONPATH=/path/to/Retriever:$PYTHONPATH
@@ -574,25 +607,25 @@ detection_flow: Flow[RGBImage, List[Detection]] = Flow.from_module(detect_object
 **Performance Issues**:
 ```bash
 # Profile execution
-uv run test --profile
+pixi run python -m pytest --profile
 
 # Check for memory leaks
-uv run test --memray
+pixi run python -m pytest --memray
 
 # Benchmark against baseline
-uv run benchmark --compare
+pixi run python -m pytest --benchmark
 ```
 
 **Testing Failures**:
 ```bash
 # Run specific test module
-uv run test tests/core/test_flow.py
+pixi run python -m pytest tests/core/test_flow.py
 
 # Run with verbose output
-uv run test -v
+pixi run python -m pytest -v
 
 # Run with debugging
-uv run test --pdb
+pixi run python -m pytest --pdb
 ```
 
 ### Debug Mode
@@ -616,7 +649,7 @@ enable_flow_tracing()
 
 1. **Check Documentation**: Start with relevant guide sections
 2. **Search Issues**: Look through GitHub issues for similar problems
-3. **Run Diagnostics**: Use `uv run qa` to identify common issues
+3. **Run Diagnostics**: Try `ruff check .`, `mypy retriever`, and `python -m pytest`
 4. **Check Examples**: Look at working examples in `examples/` directory
 5. **Ask for Help**: Create detailed GitHub issue with reproduction steps
 
@@ -625,8 +658,8 @@ enable_flow_tracing()
 ### Documentation
 - [Flow System Guide](guide_flow.md) - Complete Flow architecture reference
 - [Architecture Guide](architecture.md) - Complete technical architecture
-- [API Reference](api.md) - Complete API documentation
-- [Robot Integration Guide](robots/README.md) - Adding robot support
+- [API Reference](API.md) - Complete API documentation
+- [Spot Setup](robots/spot_setup.md) - Spot configuration
 
 ### Examples
 - `examples/simple_flow.py` - Basic flow composition
@@ -642,8 +675,8 @@ enable_flow_tracing()
 
 After reading this guide:
 
-1. **Set up development environment**: `uv run setup-dev`
-2. **Run the test suite**: `uv run test`
+1. **Set up your environment**: follow `docs/install.md`
+2. **Run the test suite**: `python -m pytest`
 3. **Try the examples**: Start with `examples/simple_flow.py`
 4. **Read the architecture guide**: [architecture.md](architecture.md) for technical details
 5. **Start contributing**: Pick an issue and follow the contribution workflow
