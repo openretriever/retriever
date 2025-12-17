@@ -13,6 +13,7 @@ This repository is evolving to focus on the **Retriever core/runtime**:
 - Author pipelines as a typed graph (`Pipeline` / `FlowContext`)
 - Verify/compile to a backend-agnostic IR (done automatically at runtime)
 - Execute on a backend (`Pipeline.run(...)`): local multiprocessing or dora-rs
+- Debug step-by-step in-process (`Pipeline.step(...)`)
 
 System-level pipelines, integrations (robots/sim), and heavy model stacks will live in a separate **Golden Retriever** (reference system) repository as part of an ongoing split.
 
