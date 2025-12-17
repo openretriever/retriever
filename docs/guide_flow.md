@@ -8,13 +8,16 @@
 
 ---
 
+> Note (2025-12): The canonical runtime is now **Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()**.
+> This document is being updated; see `docs/guide_runtime.md` for the up-to-date user guide.
+
 ## What This Guide Covers
 
 This is the **complete technical reference** for Retriever's Flow architecture, updated with the latest design insights from our research proposal. For general development practices, see [Developer Guide](guide_dev.md).
 
 **Documentation Hierarchy:**
 - **[README.md](README.md)**: Installation and quick start
-- **[architecture.md](architecture.md)**: Complete technical architecture and design philosophy
+- **[architecture_legacy.md](architecture_legacy.md)**: Legacy architecture reference (pre-refactor)
 - **[guide_dev.md](guide_dev.md)**: Development workflows and contributing
 - **This guide**: Complete Flow system reference, patterns, and production deployment
 
@@ -686,11 +689,11 @@ class TaskPlanningSignature(dspy.Signature):
     world_state = dspy.InputField(desc="Current environment state")
     execution_plan = dspy.OutputField(desc="Sequence of subtasks with parameters")
 
-class OptimizedPlanningModule(Module[TaskRequest, ExecutionPlan]):
+class OptimizedPlanningModule(Module[TaskRequest, ExecutionGraph]):
     def __init__(self):
         self.planner = dspy.ChainOfThought(TaskPlanningSignature)
     
-    def __call__(self, request: TaskRequest) -> ExecutionPlan:
+    def __call__(self, request: TaskRequest) -> ExecutionGraph:
         return self.planner(task_request=request.description, world_state=request.context)
 
 # Compile with training examples

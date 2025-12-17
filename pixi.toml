@@ -1,0 +1,62 @@
+# =============================================================================
+# Pixi Configuration for Retriever
+# =============================================================================
+#
+# This file defines the pixi package manager configuration. It works alongside
+# pyproject.toml - NOT a replacement for it.
+#
+# RELATIONSHIP WITH pyproject.toml:
+#   - pyproject.toml: Defines the Python package (retriever) and its dependencies
+#   - pixi.toml: Defines the development environment (conda + pypi packages)
+#   - Pixi installs retriever from pyproject.toml as an editable package
+#   - Both files may specify overlapping deps (e.g., dora-rs) - this is fine,
+#     the more restrictive version wins
+#
+# USAGE:
+#   pixi run demo-dora              # Run demo in default environment
+#   pixi shell                      # Enter interactive shell
+#
+# For more info: https://pixi.sh and docs/install.md
+# =============================================================================
+
+[workspace]
+# Using prefix.dev mirror for faster downloads
+channels = ["https://prefix.dev/conda-forge"]
+# Supported platforms: macOS ARM and Linux x64
+platforms = ["osx-arm64", "linux-64"]
+
+# =============================================================================
+# Base Dependencies (installed via conda-forge)
+# =============================================================================
+[dependencies]
+python = "3.11.*"
+
+# =============================================================================
+# PyPI Dependencies
+# =============================================================================
+# Note: These are installed via uv after conda deps are resolved
+[pypi-dependencies]
+# Install retriever package from local pyproject.toml.
+# Keep the default environment lightweight, but include:
+# - `dora`: dora backend support
+# - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
+retriever = { path = ".", editable = true, extras = ["dora", "demo"] }
+
+# Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
+pygments = "*"
+typing-extensions = "*"
+
+# Dora-rs pinned here to ensure version compatibility.
+# Note: The Retriever dora backend currently uses a dataflow schema that may require
+# a newer `dora` CLI than the one available in some package managers. If `dora start`
+# rejects the generated YAML, see docs/install.md for upgrade/build-from-source steps.
+dora-rs = ">=0.3.12"
+dora-rs-cli = ">=0.3.12"
+
+# =============================================================================
+# Tasks
+# =============================================================================
+[tasks]
+demo-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
+demo-detection-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
+demo-request-dora = "python -m examples.00_refact.010_request_response"

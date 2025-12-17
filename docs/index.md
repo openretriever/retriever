@@ -6,32 +6,57 @@
   <strong>Retriever</strong>
 </div>
 
-Retriever provides PyTorch-like abstractions for robotics development, combining type safety, composability, and execution flexibility for building production robot systems.
+Retriever is a type-safe, composable runtime for building robotics dataflow pipelines, with pluggable execution backends.
 
 ## Quick Start
 
 ```python
-from retriever.core.flow import Flow
-from retriever.core.executor import LocalExecutor
+from dataclasses import dataclass
 
-# Build a robotics pipeline
-perception = (
-    Flow.from_module(detect_objects)
-    .then(Flow.from_module(estimate_poses))
-    .then(Flow.from_module(plan_actions))
-)
+from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
 
-# Execute
-executor = LocalExecutor()
-result = executor.execute_sync(perception, sensor_data)
+
+@flow_io
+@dataclass
+class SrcOut:
+    value: int
+
+
+@flow_io
+@dataclass
+class AddOut:
+    value: int
+
+
+class Source(Flow[None, SrcOut]):
+    def run(self, _):  # type: ignore[override]
+        return SrcOut(value=1)
+
+
+class AddOne(Flow[SrcOut, AddOut]):
+    def run(self, input: SrcOut) -> AddOut:
+        return AddOut(value=input.value + 1)
+
+
+pipe = Pipeline("quickstart")
+src = Source() @ Rate(hz=10)
+add = AddOne() @ Rate(hz=10)
+pipe.connect(src, add, sync=Latest())
+
+pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
 ## 📚 Documentation
 
-### Core Documentation
-- **[README.md](README.md)** - Quick start, installation, and overview
-- **[architecture.md](architecture.md)** - Complete technical architecture and design philosophy
-- **[api.md](api.md)** - Complete API reference with examples
+### Getting Started
+- **[Install](install.md)** - Pixi / uv setup and troubleshooting
+- **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
+- **[Flow Guide](guide_flow.md)** - Legacy guide (pre-refactor; needs update)
+- **[Development Guide](guide_dev.md)** - Dev workflow and architecture
+
+### Reference
+- **[Architecture](architecture.md)** - Design philosophy and system overview
+- **[API](API.md)** - API reference
 
 ### Development Guides  
 - **[guide_flow.md](guide_flow.md)** - Flow system detailed reference and patterns
@@ -39,10 +64,11 @@ result = executor.execute_sync(perception, sensor_data)
 - **[contributing.md](contributing.md)** - How to contribute to the project
 
 ### Quick Navigation
-- **Getting Started**: [README.md](README.md#quick-start)
-- **Architecture**: [architecture.md](architecture.md#core-architecture)
+- **Getting Started**: [Install](install.md)
+- **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
+- **Architecture**: [architecture.md](architecture.md)
 - **Examples**: `examples/` directory and `tests/core/`
-- **Registry System**: [architecture.md](architecture.md#registry-ecosystem)
+- **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
 
 ## 🚀 Key Features
 
@@ -61,16 +87,14 @@ result = executor.execute_sync(perception, sensor_data)
 
 ## 🏗️ Architecture Overview
 
-### Three-Layer Hierarchy
+### Canonical Runtime Workflow
 ```python
-# Layer 1: Module[I, O] - Atomic functions
-def detect_objects(image: RGBImage) -> List[Detection]: ...
+# Author pipelines
+pipe = Pipeline("my_pipeline")
+...
 
-# Layer 2: Flow[X, Y] - Composable steps  
-detection_flow = Flow.from_module(detect_objects)
-
-# Layer 3: Pipeline - Complete workflows
-manipulation_pipeline = camera_flow >> detection_flow >> planning_flow
+# Run on a backend (validates IR internally)
+pipe.run(backend="multiprocessing")
 ```
 
 ### Multi-Backend Execution
@@ -80,10 +104,17 @@ manipulation_pipeline = camera_flow >> detection_flow >> planning_flow
 
 ### Registry System
 ```python
-# PyTorch-style component access
-camera = get_flow("camera")
-detector = get_flow("yolo_detector")
-pipeline = camera >> detector
+# IR-first pipeline registry
+from retriever.core.pipeline_registry import register_pipeline, build_ir
+from retriever.core.flow import Pipeline
+
+@register_pipeline("my_pipeline", overwrite=True)
+def build():
+    pipe = Pipeline("my_pipeline")
+    ...
+    return pipe
+
+ir = build_ir("my_pipeline")
 ```
 
 ---
