@@ -2,7 +2,7 @@
 
 This guide documents the **canonical** Retriever runtime workflow:
 
-`FlowContext → validate() → IRStruct → execute_ir()`
+`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 
@@ -12,7 +12,7 @@ It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 from dataclasses import dataclass
 
 from retriever.core.flow import Flow, FlowContext, Rate, Latest, flow_io
-from retriever.core.ir import validate
+from retriever.core.ir import validate, build_execution
 from retriever.core.rt import execute_ir
 
 
@@ -44,7 +44,8 @@ with FlowContext("quickstart") as ctx:
     src.then(add, sync=Latest())
 
 ir = validate(ctx)
-execute_ir(ir, backend="multiprocessing", duration=1.0)
+graph = build_execution(ir)  # groups flows + attaches placement metadata
+execute_ir(graph, backend="multiprocessing", duration=1.0)
 ```
 
 ## 2) Core concepts
@@ -88,12 +89,23 @@ Connect nodes inside an active `FlowContext`:
 
 `validate(ctx)` turns the `FlowContext` graph into an `IRStruct`. This is the stable boundary for backends.
 
+### Build execution graph (partitioning + placement)
+
+`build_execution(ir)` creates an `ExecutionGraph`, a *physical* graph used to decide:
+
+- which flows should run together (co-location / fusion)
+- where a partition should run (placement hints; currently informational)
+
 ### Run with a backend
 
 `execute_ir(ir, backend=..., duration=..., blocking=...)` runs the IR on:
 
 - `multiprocessing`: local Python multiprocessing backend
 - `dora`: dora-rs backend (requires compatible dora CLI + deps)
+
+`execute_ir(...)` accepts either an `IRStruct` or an `ExecutionGraph`.
+
+Note: `compile_execution(...)` remains as a compatibility alias for `build_execution(...)`.
 
 ## 4) Event/time model (FRP vocabulary)
 

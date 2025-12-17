@@ -2,7 +2,7 @@
 
 This document describes the **refactored runtime** architecture:
 
-`FlowContext → validate() → IRStruct → execute_ir()`
+`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 If you are looking for the older “Flow.from_module / LocalExecutor / ExecutionEngine” material, see
 `docs/architecture_legacy.md`.
@@ -27,11 +27,18 @@ Code lives in `retriever/core/flow/`:
 Code lives in `retriever/core/ir/`:
 
 - `validate(ctx: FlowContext) -> IRStruct`
+- `build_execution(ir: IRStruct) -> ExecutionGraph` (optional, but recommended)
 
-`IRStruct` is the stable boundary for backends. It contains:
+`IRStruct` is the stable logical boundary. It contains:
 
 - nodes (flow class/module identity + clock config + metadata)
 - edges (port mappings + queue policy + queue sizes)
+
+`ExecutionGraph` is the physical graph used for deployment decisions. It contains:
+
+- partitions (groups of flows that should run together)
+- cross-partition edges
+- optional placement hints per partition
 
 ### 1.3 Execution (runtime + backends)
 
@@ -49,6 +56,9 @@ Backends are responsible for:
 - wiring publishers/subscribers per edge
 - scheduling execution (clocks)
 - process lifecycle (start/wait/stop)
+
+Note: `execute_ir(...)` accepts either an `IRStruct` (logical graph) or an `ExecutionGraph`
+(physical plan). When given an execution graph, it is lowered to a backend-friendly IRStruct for execution.
 
 ---
 

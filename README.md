@@ -4,14 +4,15 @@
 
 
 
-# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span> <br />
+# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span>: *Robot Decision-Making Runtime with Functional Composition*
 
-**Retriever: a type-safe runtime for robotics dataflow pipelines**
+<!-- **Retriever: a type-safe runtime for robotics dataflow pipelines** -->
 
 This repository is evolving to focus on the **Retriever core/runtime**:
 
 - Author pipelines as a typed graph (`FlowContext`)
 - Compile to a backend-agnostic IR (`validate() → IRStruct`)
+- Build an execution graph (`build_execution() → ExecutionGraph`)
 - Execute on a backend (`execute_ir()`): local multiprocessing or dora-rs
 
 System-level pipelines, integrations (robots/sim), and heavy model stacks will live in a separate **Golden Retriever** (reference system) repository as part of an ongoing split.
@@ -20,14 +21,14 @@ System-level pipelines, integrations (robots/sim), and heavy model stacks will l
 
 ## Canonical Runtime Workflow
 
-`FlowContext → validate() → IRStruct → execute_ir()`
+`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 Minimal example:
 
 ```py
 from dataclasses import dataclass
 from retriever.core.flow import Flow, FlowContext, Rate, Latest, flow_io
-from retriever.core.ir import validate
+from retriever.core.ir import validate, build_execution
 from retriever.core.rt import execute_ir
 
 @flow_io
@@ -57,7 +58,8 @@ with FlowContext("demo") as ctx:
     src.then(add, sync=Latest())
 
 ir = validate(ctx)
-execute_ir(ir, backend="multiprocessing", duration=1.0)
+graph = build_execution(ir)
+execute_ir(graph, backend="multiprocessing", duration=1.0)
 ```
 
 More details: `docs/guide_runtime.md`
