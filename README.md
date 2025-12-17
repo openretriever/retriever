@@ -10,10 +10,9 @@
 
 This repository is evolving to focus on the **Retriever core/runtime**:
 
-- Author pipelines as a typed graph (`FlowContext`)
-- Compile to a backend-agnostic IR (`validate() → IRStruct`)
-- Build an execution graph (`build_execution() → ExecutionGraph`)
-- Execute on a backend (`execute_ir()`): local multiprocessing or dora-rs
+- Author pipelines as a typed graph (`Pipeline` / `FlowContext`)
+- Verify/compile to a backend-agnostic IR (done automatically at runtime)
+- Execute on a backend (`Pipeline.run(...)`): local multiprocessing or dora-rs
 
 System-level pipelines, integrations (robots/sim), and heavy model stacks will live in a separate **Golden Retriever** (reference system) repository as part of an ongoing split.
 
@@ -21,16 +20,13 @@ System-level pipelines, integrations (robots/sim), and heavy model stacks will l
 
 ## Canonical Runtime Workflow
 
-`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
 
 Minimal example:
 
 ```py
 from dataclasses import dataclass
-from retriever.core.flow import Flow, FlowContext, Rate, Latest, flow_io
-from retriever.core.ir import validate, build_execution
-from retriever.core.rt import execute_ir
-
+from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
 @flow_io
 @dataclass
 class SrcOut:
@@ -52,14 +48,12 @@ class AddOne(Flow[SrcOut, AddOut]):
     def run(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
-with FlowContext("demo") as ctx:
-    src = Source() @ Rate(hz=10)
-    add = AddOne() @ Rate(hz=10)
-    src.then(add, sync=Latest())
+pipe = Pipeline("demo")
+src = Source() @ Rate(hz=10)
+add = AddOne() @ Rate(hz=10)
+pipe.connect(src, add, sync=Latest())
 
-ir = validate(ctx)
-graph = build_execution(ir)
-execute_ir(graph, backend="multiprocessing", duration=1.0)
+pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
 More details: `docs/guide_runtime.md`
