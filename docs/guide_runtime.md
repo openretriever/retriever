@@ -2,7 +2,7 @@
 
 This guide documents the **canonical** Retriever runtime workflow:
 
-`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
 
 It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 
@@ -11,9 +11,7 @@ It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 ```py
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, FlowContext, Rate, Latest, flow_io
-from retriever.core.ir import validate, build_execution
-from retriever.core.rt import execute_ir
+from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
 
 
 @flow_io
@@ -38,14 +36,12 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 
 
-with FlowContext("quickstart") as ctx:
-    src = Source() @ Rate(hz=10)
-    add = AddOne() @ Rate(hz=10)
-    src.then(add, sync=Latest())
+pipe = Pipeline("quickstart")
+src = Source() @ Rate(hz=10)
+add = AddOne() @ Rate(hz=10)
+pipe.connect(src, add, sync=Latest())
 
-ir = validate(ctx)
-graph = build_execution(ir)  # groups flows + attaches placement metadata
-execute_ir(graph, backend="multiprocessing", duration=1.0)
+pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
 ## 2) Core concepts
@@ -76,18 +72,33 @@ Defaults:
 
 ### Wiring (edges)
 
-Connect nodes inside an active `FlowContext`:
+Connect nodes either:
+
+- inside an active `FlowContext`, or
+- by attaching connections to an explicit `Pipeline` (no context manager).
+
+**Option A — FlowContext**
 
 - `a.then(b, sync=Latest(), map={"*": "*"})`
 - `a >> b` (shorthand for `.then(...)` with defaults)
 
 `sync` is an Adapter that defines how the downstream samples its input queue.
 
+**Option B — Pipeline**
+
+```py
+pipe = Pipeline("my_pipeline")
+a = A() @ Rate(hz=10)
+b = B() @ Rate(hz=10)
+pipe.connect(a, b, sync=Latest())
+```
+
 ## 3) Execution model
 
 ### Validate to IR
 
-`validate(ctx)` turns the `FlowContext` graph into an `IRStruct`. This is the stable boundary for backends.
+`validate(ctx)` turns the `Pipeline`/`FlowContext` graph into an `IRStruct`. This happens automatically during `Pipeline.run(...)`,
+but you can call it directly for debugging/inspection.
 
 ### Build execution graph (partitioning + placement)
 
@@ -147,7 +158,7 @@ Adapters decide how to interpret an `EventBuffer` at time `now`:
 Use `retriever.core.pipeline_registry.register_pipeline` to register a pipeline builder that returns:
 
 - an `IRStruct`, or
-- a `FlowContext` (it will be validated automatically)
+- a `Pipeline` / `FlowContext` (it will be validated automatically)
 
 ### Plugin discovery
 
@@ -156,5 +167,7 @@ living in the runtime repo.
 
 ## 6) Notes
 
+- This guide uses `retriever.core.flow.Pipeline`. The top-level `retriever.Pipeline` is legacy/FRP-engine code
+  and is not part of the refactored runtime surface.
 - `retriever.core.rt.signal.Signal` is an internal per-step helper used by executors (sample → transform → publish).
   It is not an `EventStream`.

@@ -14,7 +14,7 @@ pipeline semantics, we are producing a *separate execution graph* that describes
 
 `IRStruct` is produced by validation:
 
-`FlowContext → validate() → IRStruct`
+`Pipeline (or FlowContext) → validate() → IRStruct`
 
 It describes:
 
@@ -46,14 +46,14 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 ## 2) Canonical API
 
 ```py
-from retriever.core.flow import FlowContext
+from retriever.core.flow import Pipeline
 from retriever.core.ir import validate, build_execution
 from retriever.core.rt import execute_ir
 
-with FlowContext("demo") as ctx:
-    ...
+pipe = Pipeline("demo")
+...
 
-ir = validate(ctx)                 # logical graph
+ir = validate(pipe)                # logical graph
 graph = build_execution(ir)        # physical graph (partitions + placement)
 execute_ir(graph, backend="dora")  # runs the compiled graph
 ```
