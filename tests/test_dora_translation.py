@@ -20,7 +20,9 @@ import numpy as np
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from retriever.core.flow import Flow
+from dataclasses import dataclass
+
+from retriever.core.flow import Flow, flow_io
 from retriever.core.types import Pipeline
 from retriever.integrations.dora.translation import (
     FlowInstanceSerializer,
@@ -29,23 +31,30 @@ from retriever.integrations.dora.translation import (
     DoraConfig
 )
 
+@flow_io
+@dataclass
+class ArrayOut:
+    """@flow_io wrapper around a numpy array for single-port flows."""
 
-class TestFlow(Flow[None, np.ndarray]):
+    output: np.ndarray
+
+
+class ExampleFlow(Flow[None, ArrayOut]):
     """Simple test flow for unit testing."""
     
     def __init__(self, multiplier=2):
         super().__init__()
         self.multiplier = multiplier
     
-    def run(self, _: None) -> np.ndarray:
-        return np.array([1, 2, 3]) * self.multiplier
+    def run(self, _: None) -> ArrayOut:
+        return ArrayOut(output=np.array([1, 2, 3]) * self.multiplier)
 
 
 class TestFlowInstanceSerializer(unittest.TestCase):
     """Test Flow instance serialization capabilities."""
     
     def setUp(self):
-        self.flow = TestFlow(multiplier=3)
+        self.flow = ExampleFlow(multiplier=3)
         self.serializer = FlowInstanceSerializer()
     
     def test_basic_serialization(self):
@@ -59,7 +68,7 @@ class TestFlowInstanceSerializer(unittest.TestCase):
             self.assertIn(field, result)
         
         # Check specific values
-        self.assertEqual(result["class_name"], "TestFlow")
+        self.assertEqual(result["class_name"], "ExampleFlow")
         self.assertIn("test_dora_translation", result["module_path"])
         self.assertIn("def run(self, _: None)", result["run_method_source"])
     
@@ -76,7 +85,7 @@ class TestFlowInstanceSerializer(unittest.TestCase):
         result = self.serializer.serialize_flow_instance(self.flow)
         
         class_source = result["class_source"]
-        self.assertIn("class TestFlow", class_source)
+        self.assertIn("class ExampleFlow", class_source)
         self.assertIn("def run(self", class_source)
         self.assertIn("np.array([1, 2, 3])", class_source)
 
@@ -85,7 +94,7 @@ class TestWorkingOperatorGenerator(unittest.TestCase):
     """Test operator code generation from Flow instances."""
     
     def setUp(self):
-        self.flow = TestFlow(multiplier=5)
+        self.flow = ExampleFlow(multiplier=5)
         self.generator = WorkingOperatorGenerator()
     
     def test_operator_generation(self):
@@ -97,9 +106,10 @@ class TestWorkingOperatorGenerator(unittest.TestCase):
             "#!/usr/bin/env python3",
             "class Operator:",
             "def __init__(self):",
-            "def run(self):",
             "self.flow.run(input_data)",
-            "if __name__ == \"__main__\":",
+            "def on_event(self, dora_event, send_output):",
+            "operator = Operator()",
+            "def on_event(dora_event, send_output):",
         ]
         
         for part in essential_parts:
@@ -115,7 +125,7 @@ class TestWorkingOperatorGenerator(unittest.TestCase):
         
         # Should avoid duplicate imports for base Flow class
         if "test_dora_translation" in self.flow.__module__:
-            self.assertIn("from tests.test_dora_translation import TestFlow", operator_code)
+            self.assertIn("from tests.test_dora_translation import ExampleFlow", operator_code)
     
     def test_attribute_assignment(self):
         """Test instance attribute assignment in operator."""
@@ -137,7 +147,7 @@ class TestPipelineTranslator(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.translator = PipelineTranslator()
-        self.flow = TestFlow(multiplier=7)
+        self.flow = ExampleFlow(multiplier=7)
         self.pipeline = Pipeline.from_flow(self.flow)
     
     def tearDown(self):
@@ -164,9 +174,9 @@ class TestPipelineTranslator(unittest.TestCase):
         # Check YAML structure
         yaml_checks = [
             "nodes:",
-            "id: testflow",
+            "id: example_flow",
             "operator:",
-            "python: testflow_op.py",
+            "python: example_flow_op.py",
             "inputs:",
             "tick: dora/timer/millis/",
             "outputs:",
@@ -189,15 +199,15 @@ class TestPipelineTranslator(unittest.TestCase):
         
         # Should be valid Python with proper structure
         self.assertIn("class Operator:", operator_content)
-        self.assertIn("def run(self):", operator_content)
-        self.assertIn("TestFlow", operator_content)
+        self.assertIn("def on_event(self, dora_event, send_output):", operator_content)
+        self.assertIn("ExampleFlow", operator_content)
     
     def test_flow_extraction(self):
         """Test flow extraction from pipeline."""
         flows = self.translator._extract_flows_from_pipeline(self.pipeline)
         
         self.assertEqual(len(flows), 1)
-        self.assertIsInstance(flows[0], TestFlow)
+        self.assertIsInstance(flows[0], ExampleFlow)
         self.assertEqual(flows[0].multiplier, 7)
 
 
@@ -213,7 +223,7 @@ class TestIntegrationFlow(unittest.TestCase):
     def test_end_to_end_translation(self):
         """Test complete end-to-end translation workflow."""
         # Create test pipeline
-        flow = TestFlow(multiplier=10)
+        flow = ExampleFlow(multiplier=10)
         pipeline = Pipeline.from_flow(flow)
         
         # Translate to Dora
