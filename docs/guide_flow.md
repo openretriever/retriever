@@ -8,7 +8,7 @@
 
 ---
 
-> Note (2025-12): The canonical runtime is now **FlowContext → validate() → execute_ir()**.
+> Note (2025-12): The canonical runtime is now **FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()**.
 > This document is being updated; see `docs/guide_runtime.md` for the up-to-date user guide.
 
 ## What This Guide Covers
@@ -689,11 +689,11 @@ class TaskPlanningSignature(dspy.Signature):
     world_state = dspy.InputField(desc="Current environment state")
     execution_plan = dspy.OutputField(desc="Sequence of subtasks with parameters")
 
-class OptimizedPlanningModule(Module[TaskRequest, ExecutionPlan]):
+class OptimizedPlanningModule(Module[TaskRequest, ExecutionGraph]):
     def __init__(self):
         self.planner = dspy.ChainOfThought(TaskPlanningSignature)
     
-    def __call__(self, request: TaskRequest) -> ExecutionPlan:
+    def __call__(self, request: TaskRequest) -> ExecutionGraph:
         return self.planner(task_request=request.description, world_state=request.context)
 
 # Compile with training examples
