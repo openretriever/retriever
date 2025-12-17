@@ -8,7 +8,7 @@
 
 ---
 
-> Note (2025-12): The canonical runtime is now **FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()**.
+> Note (2025-12): The canonical runtime is now **Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()**.
 > This document is being updated; see `docs/guide_runtime.md` for the up-to-date user guide.
 
 ## What This Guide Covers

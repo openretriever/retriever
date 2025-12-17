@@ -13,9 +13,7 @@ Retriever is a type-safe, composable runtime for building robotics dataflow pipe
 ```python
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, FlowContext, Rate, Latest, flow_io
-from retriever.core.ir import validate
-from retriever.core.rt import execute_ir
+from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
 
 
 @flow_io
@@ -40,20 +38,19 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 
 
-with FlowContext("quickstart") as ctx:
-    src = Source() @ Rate(hz=10)
-    add = AddOne() @ Rate(hz=10)
-    src.then(add, sync=Latest())
+pipe = Pipeline("quickstart")
+src = Source() @ Rate(hz=10)
+add = AddOne() @ Rate(hz=10)
+pipe.connect(src, add, sync=Latest())
 
-ir = validate(ctx)
-execute_ir(ir, backend="multiprocessing", duration=1.0)
+pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
 ## 📚 Documentation
 
 ### Getting Started
 - **[Install](install.md)** - Pixi / uv setup and troubleshooting
-- **[Runtime Guide (Canonical)](guide_runtime.md)** - FlowContext → IR → execute_ir, event/time model
+- **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
 - **[Flow Guide](guide_flow.md)** - Legacy guide (pre-refactor; needs update)
 - **[Development Guide](guide_dev.md)** - Dev workflow and architecture
 
@@ -93,14 +90,11 @@ execute_ir(ir, backend="multiprocessing", duration=1.0)
 ### Canonical Runtime Workflow
 ```python
 # Author pipelines
-with FlowContext("my_pipeline") as ctx:
-    ...
+pipe = Pipeline("my_pipeline")
+...
 
-# Validate to IR
-ir = validate(ctx)
-
-# Execute on a backend
-execute_ir(ir, backend="multiprocessing")
+# Run on a backend (validates IR internally)
+pipe.run(backend="multiprocessing")
 ```
 
 ### Multi-Backend Execution
@@ -112,13 +106,13 @@ execute_ir(ir, backend="multiprocessing")
 ```python
 # IR-first pipeline registry
 from retriever.core.pipeline_registry import register_pipeline, build_ir
-from retriever.core.flow import FlowContext
+from retriever.core.flow import Pipeline
 
 @register_pipeline("my_pipeline", overwrite=True)
 def build():
-    with FlowContext("my_pipeline") as ctx:
-        ...
-        return ctx
+    pipe = Pipeline("my_pipeline")
+    ...
+    return pipe
 
 ir = build_ir("my_pipeline")
 ```
