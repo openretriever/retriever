@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from retriever.core.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+
+
+@flow_io
+@dataclass
+class Value:
+    value: int
+
+
+class Counter(Flow[None, Value]):
+    def init(self) -> None:
+        self.count = 0
+
+    def run(self, _):  # type: ignore[override]
+        self.count += 1
+        return Value(value=self.count)
+
+
+class Passthrough(Flow[Value, Value]):
+    def run(self, input: Value) -> Value:
+        return Value(value=input.value)
+
+
+class Recorder(Flow[Value, None]):
+    def init(self) -> None:
+        self.seen = []
+
+    def run(self, input: Value) -> None:
+        self.seen.append(input.value)
+        return None
+
+
+def test_pipeline_step_propagates_values_in_process():
+    pipe = Pipeline("step_demo")
+
+    src = Counter() @ Rate(hz=10)
+    mid = Passthrough() @ Trigger("value")
+    sink = Recorder() @ Rate(hz=10)
+
+    pipe.connect(src, mid, sync=Latest())
+    pipe.connect(mid, sink, sync=Latest())
+
+    res1 = pipe.step(dt=0.1)
+    assert res1.executed  # at least one node ran
+    assert sink.flow.seen == [1]
+
+    res2 = pipe.step(dt=0.1)
+    assert sink.flow.seen == [1, 2]
+    assert res2.now > res1.now
+
+
+def test_pipeline_record_to_and_replay_helpers(tmp_path):
+    rec_path = tmp_path / "recording.pkl.gz"
+
+    # Record a short stream (in-process).
+    pipe1 = Pipeline("record_demo")
+    src1 = Counter() @ Rate(hz=10)
+    drain1 = Recorder() @ Trigger("value")
+    pipe1.connect(src1, drain1, sync=Latest())
+
+    try:
+        buffer = pipe1.record_to(src1, rec_path, steps=3, dt=0.1)
+    finally:
+        pipe1.close_stepper()
+
+    assert [out.value for _ts, out in buffer] == [1, 2, 3]
+
+    # Replay into a fresh pipeline and verify we see the same values.
+    pipe2 = Pipeline("replay_demo")
+    src2 = Counter() @ Rate(hz=10)  # placeholder (will be replaced)
+    sink2 = Recorder() @ Trigger("value")
+    pipe2.connect(src2, sink2, sync=Latest())
+
+    replay = pipe2.replay(src2, path=rec_path)
+    try:
+        for _ in range(10):
+            pipe2.step(dt=0.1)
+            if getattr(replay.flow, "done", False):
+                break
+    finally:
+        pipe2.close_stepper()
+
+    assert sink2.flow.seen == [1, 2, 3]
