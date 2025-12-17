@@ -44,6 +44,35 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
+### Async full run (non-blocking)
+
+```py
+engine = pipe.run(backend="multiprocessing", blocking=False)
+# ... do other work ...
+engine.stop()
+```
+
+### Single-step debugging (in-process)
+
+`Pipeline.step()` runs the authored pipeline in the current Python process and advances it by one step:
+
+```py
+res = pipe.step(dt=0.1)  # advances an internal logical clock by 0.1s
+print(res.executed)
+pipe.close_stepper()
+```
+
+More details: `docs/guide_debugging.md`.
+
+### Record + replay (stepper-first)
+
+For “record once, debug many times” workflows, use:
+
+```py
+pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
+pipe.replay(camera, path="logs/camera_recording.pkl.gz")
+```
+
 ## 2) Core concepts
 
 ### `@flow_io` types (ports)
@@ -117,6 +146,43 @@ but you can call it directly for debugging/inspection.
 `execute_ir(...)` accepts either an `IRStruct` or an `ExecutionGraph`.
 
 Note: `compile_execution(...)` remains as a compatibility alias for `build_execution(...)`.
+
+### Dora backend config: native node overrides (Tier A.1)
+
+The dora backend can optionally run selected nodes as **native dora nodes** (Rust binaries) rather than Python executors.
+This is controlled at execution time (no change to Flow authoring code) via `backend_config["native_overrides"]`:
+
+```py
+pipe.run(
+    backend="dora",
+    backend_config={
+        # Match by node.id, "module:Type", or Type (in that order).
+        "native_overrides": {
+            "CameraSource": "native:retriever-dora-camera",
+        }
+    },
+    duration=10.0,
+)
+```
+
+Design plan: `docs/temp_notes/2025-12-17_native_acceleration_plan.md`.
+
+### Backend config: buffer engine (Tier B.3)
+
+The runtime hot-path samples timestamped per-port buffers every step. Backends expose a
+`buffer_engine` switch so we can later swap in a Rust implementation without changing
+user pipelines:
+
+```py
+pipe.run(
+    backend="dora",
+    backend_config={"buffer_engine": "python"},  # default
+    duration=10.0,
+)
+```
+
+`"native"` is reserved for a future `retriever_native` extension.
+See `examples/00_refact/015_buffer_engine_demo.py` for a minimal runnable demo.
 
 ## 4) Event/time model (FRP vocabulary)
 
