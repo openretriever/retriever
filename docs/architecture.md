@@ -2,7 +2,7 @@
 
 This document describes the **refactored runtime** architecture:
 
-`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+`Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 If you are looking for the older “Flow.from_module / LocalExecutor / ExecutionEngine” material, see
 `docs/architecture_legacy.md`.
@@ -17,7 +17,8 @@ Code lives in `retriever/core/flow/`:
 
 - `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
 - `@flow_io` dataclasses: typed ports (each field is a port)
-- `FlowContext`: context manager that collects nodes + edges
+- `Pipeline`: explicit graph builder (no context manager)
+- `FlowContext`: context manager that collects nodes + edges (still supported)
 - `FlowHandle`: result of `flow @ clock`, used to connect nodes (`then`, `>>`)
 - Clocks: `Rate`, `Tick`, `Trigger`, `Hybrid`
 - Adapters: sampling policies for input queues (`Latest`, `Hold`, `Window`, `Events`)
@@ -26,7 +27,7 @@ Code lives in `retriever/core/flow/`:
 
 Code lives in `retriever/core/ir/`:
 
-- `validate(ctx: FlowContext) -> IRStruct`
+- `validate(ctx: FlowContext | Pipeline) -> IRStruct`
 - `build_execution(ir: IRStruct) -> ExecutionGraph` (optional, but recommended)
 
 `IRStruct` is the stable logical boundary. It contains:
@@ -122,7 +123,7 @@ To support “system packages” (and the future split into runtime vs golden sy
 `retriever/core/pipeline_registry.py` registers **pipeline factories** that return:
 
 - `IRStruct` (preferred), or
-- `FlowContext` (validated to IRStruct automatically)
+- `Pipeline` / `FlowContext` (validated to IRStruct automatically)
 
 ### 4.2 Plugin discovery (entry points)
 

@@ -31,7 +31,7 @@ pixi run demo-request-dora
 
 Retriever runtime is a **type-safe dataflow runtime** for robotics-like pipelines:
 
-1) Author a pipeline as a typed graph (`FlowContext`)
+1) Author a pipeline as a typed graph (`Pipeline` / `FlowContext`)
 2) Validate/compile to backend-agnostic IR (`validate() → IRStruct`)
 3) Build execution graph (partitioning + placement) (`build_execution() → ExecutionGraph`)
 4) Execute on a backend (`execute_ir()`):
@@ -53,7 +53,7 @@ Those belong in the future **Golden Retriever** system repo.
 ### 3.1 Flow graph
 
 - `Flow[I, O]` is a node with typed I/O (dataclasses decorated by `@flow_io`)
-- `FlowContext` builds a graph of node instances and edges
+- `Pipeline` (or `FlowContext`) builds a graph of node instances and edges
 
 See: `docs/guide_runtime.md`
 

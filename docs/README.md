@@ -4,7 +4,7 @@ These docs are being updated to match the **refactored runtime**.
 
 The canonical workflow is:
 
-`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+`Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 ## Start Here
 
