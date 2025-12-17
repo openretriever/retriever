@@ -46,22 +46,32 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
+### Debugging
+
+```python
+# Non-blocking full run
+engine = pipe.run(backend="multiprocessing", blocking=False)
+engine.stop()
+
+# Single-step in-process execution
+pipe.step(dt=0.1)
+pipe.close_stepper()
+```
+
 ## 📚 Documentation
 
 ### Getting Started
 - **[Install](install.md)** - Pixi / uv setup and troubleshooting
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
-- **[Flow Guide](guide_flow.md)** - Legacy guide (pre-refactor; needs update)
+- **[Debugging](guide_debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
+- **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
 - **[Development Guide](guide_dev.md)** - Dev workflow and architecture
 
 ### Reference
 - **[Architecture](architecture.md)** - Design philosophy and system overview
 - **[API](API.md)** - API reference
-
-### Development Guides  
-- **[guide_flow.md](guide_flow.md)** - Flow system detailed reference and patterns
-- **[guide_dev.md](guide_dev.md)** - Developer guide and contribution workflows
-- **[contributing.md](contributing.md)** - How to contribute to the project
+- **[Legacy Flow Guide](legacy/guide_flow_legacy.md)** - Pre-refactor notes (for reference)
+- **[Legacy API](legacy/API_legacy.md)** - Pre-refactor API reference
 
 ### Quick Navigation
 - **Getting Started**: [Install](install.md)
@@ -74,10 +84,10 @@ pipe.run(backend="multiprocessing", duration=1.0)
 
 ### ✅ Production Ready
 - **Type-Safe Composition**: Catch errors at development time, not runtime
-- **Multi-Backend Execution**: Sequential, parallel, and distributed backends
-- **Registry System**: PyTorch-style component discovery and substitution
-- **State Management**: Principled robot state handling with Eff monad
-- **Comprehensive Testing**: 50+ tests covering robotics use cases
+- **Multi-Backend Execution**: Local multiprocessing + dora-rs backend
+- **Registry + Plugins**: Entry-point based pipeline discovery (`retriever.plugins`)
+- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.run(...)`
+- **Record/Replay**: Stepper-first “rosbag-like” debug workflow
 
 ### 🎯 Framework Benefits
 - **"PyTorch for Robotics"**: Simple, composable abstractions
@@ -98,9 +108,9 @@ pipe.run(backend="multiprocessing")
 ```
 
 ### Multi-Backend Execution
-- **Development**: Sequential execution for debugging
-- **Testing**: Parallel execution for performance
-- **Production**: Distributed execution with dora-rs
+- **Development**: In-process stepping (`Pipeline.step`) for debugging
+- **Local execution**: Python multiprocessing backend
+- **Production-ish**: dora-rs backend (multi-process, coordinator + message passing)
 
 ### Registry System
 ```python

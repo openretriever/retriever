@@ -46,6 +46,7 @@ Code lives in `retriever/core/ir/`:
 Code lives in `retriever/core/rt/`:
 
 - `execute_ir(ir, backend=..., duration=..., blocking=...)`
+- in-process debugging: `Pipeline.step(...)` + record/replay helpers (implemented in `retriever/core/rt/stepper.py`)
 - backend registry: `retriever/core/rt/backend/factory.py`
 - backends:
   - `retriever/core/rt/backend/multiprocessing/*`
@@ -60,6 +61,10 @@ Backends are responsible for:
 
 Note: `execute_ir(...)` accepts either an `IRStruct` (logical graph) or an `ExecutionGraph`
 (physical plan). When given an execution graph, it is lowered to a backend-friendly IRStruct for execution.
+
+Backend boundary note:
+- Dora integration + Rust migration candidates: `docs/temp_notes/2025-12-17_dora_rust_boundary.md`
+- Native acceleration plan (Tier A/B): `docs/temp_notes/2025-12-17_native_acceleration_plan.md`
 
 ---
 

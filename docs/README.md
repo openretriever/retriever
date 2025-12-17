@@ -11,6 +11,7 @@ The canonical workflow is:
 - Handbook (overview): `handbook.md`
 - Install: `install.md`
 - Canonical runtime guide: `guide_runtime.md`
+- Debugging (`Pipeline.step`): `guide_debugging.md`
 - Execution compilation: `guide_execution.md`
 - Time/FRP model: `guide_time.md`
 
@@ -26,10 +27,15 @@ pixi run python -m pytest tests/core/test_pipeline_registry_rt.py tests/core/tes
 
 ## Legacy Docs (may be outdated)
 
-Some pages still reference the older `Flow.from_module`/`LocalExecutor` API and will be rewritten:
+The refactor is ongoing, but some older, pre-refactor docs are preserved for reference:
 
-- `guide_flow.md`
-- `API.md`
-- `architecture_legacy.md`
+- `docs/legacy/guide_flow_legacy.md`
+- `docs/legacy/API_legacy.md`
+- `docs/architecture_legacy.md`
 
-For now, treat `guide_runtime.md` as the source of truth.
+For runtime/core work, treat these pages as canonical:
+
+- `docs/guide_runtime.md`
+- `docs/guide_flow.md`
+- `docs/guide_debugging.md`
+- `docs/guide_time.md`
