@@ -32,6 +32,26 @@ platforms = ["osx-arm64", "linux-64"]
 python = "3.11.*"
 
 # =============================================================================
+# Optional Feature: Native Acceleration (Rust toolchain)
+# =============================================================================
+#
+# This is intentionally NOT enabled in the default environment.
+# Use: `pixi run -e native native-toolchain`
+#
+[feature.native.dependencies]
+rust = "*"
+maturin = "*"
+cmake = "*"
+pkg-config = "*"
+
+# -----------------------------------------------------------------------------
+# Environments
+# -----------------------------------------------------------------------------
+[environments]
+default = { features = [] }
+native = { features = ["native"] }
+
+# =============================================================================
 # PyPI Dependencies
 # =============================================================================
 # Note: These are installed via uv after conda deps are resolved
@@ -60,3 +80,6 @@ dora-rs-cli = ">=0.3.12"
 demo-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
 demo-detection-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
 demo-request-dora = "python -m examples.00_refact.010_request_response"
+
+# Native acceleration (Rust) helpers
+native-toolchain = "rustc --version && cargo --version && maturin --version"
