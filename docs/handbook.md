@@ -15,6 +15,7 @@ If you’re new: read this page top-to-bottom once, then use the linked guides a
 
 - Install / environment setup: `docs/install.md`
 - Canonical runtime workflow and examples: `docs/guide_runtime.md`
+- Execution compilation (logical vs physical graph): `docs/guide_execution.md`
 - Time / FRP vocabulary (EventBuffer, EventStream, Behavior, adapters): `docs/guide_time.md`
 
 Key demos (Pixi):
@@ -32,7 +33,8 @@ Retriever runtime is a **type-safe dataflow runtime** for robotics-like pipeline
 
 1) Author a pipeline as a typed graph (`FlowContext`)
 2) Validate/compile to backend-agnostic IR (`validate() → IRStruct`)
-3) Execute the IR on a backend (`execute_ir()`):
+3) Build execution graph (partitioning + placement) (`build_execution() → ExecutionGraph`)
+4) Execute on a backend (`execute_ir()`):
    - local multiprocessing
    - dora-rs
 
@@ -58,7 +60,8 @@ See: `docs/guide_runtime.md`
 ### 3.2 IR boundary
 
 - `validate(ctx)` produces `IRStruct`
-- Backends consume `IRStruct` (not `FlowContext`)
+- `build_execution(ir)` produces an `ExecutionGraph` (physical graph)
+- `execute_ir(...)` accepts either `IRStruct` or `ExecutionGraph`
 
 See: `docs/architecture.md`
 
@@ -123,4 +126,3 @@ pixi run demo-request-dora
 - Finish repo split into runtime vs golden/system
 - Migrate legacy FRP engine code and heavy deps into golden repo
 - Keep runtime install minimal and backends consistent
-

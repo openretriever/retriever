@@ -4,13 +4,14 @@ These docs are being updated to match the **refactored runtime**.
 
 The canonical workflow is:
 
-`FlowContext → validate() → IRStruct → execute_ir()`
+`FlowContext → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
 
 ## Start Here
 
 - Handbook (overview): `handbook.md`
 - Install: `install.md`
 - Canonical runtime guide: `guide_runtime.md`
+- Execution compilation: `guide_execution.md`
 - Time/FRP model: `guide_time.md`
 
 ## Quick Start
