@@ -26,9 +26,59 @@ class Pipeline(FlowContext):
     - run on a backend: `pipeline.run(...)`
     """
 
-    def __init__(self, name: str = "pipeline"):
+    def __init__(self, name: str = "pipeline", *, on_lag: Optional[str] = None):
         super().__init__(name=name)
         self._stepper = None
+        self._default_on_lag = on_lag
+
+    def set_on_lag(self, on_lag: Optional[str]) -> "Pipeline":
+        """
+        Set a pipeline-level default for Rate/Hybrid lag handling.
+
+        The default is applied at `build_ir()` time to any node whose clock is still
+        using the library default (`on_lag="warn"`).
+
+        Per-node overrides are still possible by explicitly setting `Rate(on_lag=...)`
+        or `Hybrid(on_lag=...)`.
+        """
+        self._default_on_lag = on_lag
+        return self
+
+    def _apply_clock_defaults(self) -> None:
+        """
+        Apply pipeline-level defaults to clocks, if configured.
+
+        This is intentionally late-bound (at build time) so you can configure a pipeline
+        after authoring and before running.
+        """
+        if self._default_on_lag is None:
+            return
+
+        from retriever.core.flow.clock import Rate, Hybrid
+        from retriever.core.error import FlowError, ErrCode
+
+        desired = Rate._normalize_on_lag(self._default_on_lag)
+        allowed = {"drop", "warn", "error", "catch_up"}
+        if desired not in allowed:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "Invalid pipeline on_lag policy",
+                on_lag=self._default_on_lag,
+                normalized=desired,
+                allowed=sorted(allowed),
+            )
+
+        default_policy = "warn"
+
+        for handle in self.get_handles():
+            clock = handle.config.clock
+            if isinstance(clock, (Rate, Hybrid)) and getattr(clock, "on_lag", default_policy) == default_policy:
+                clock.on_lag = desired
+
+    def validate(self):  # type: ignore[override]
+        """Validate the pipeline (applies pipeline-level defaults first)."""
+        self._apply_clock_defaults()
+        return super().validate()
 
     def connect(
         self,
