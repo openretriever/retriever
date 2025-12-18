@@ -2,18 +2,21 @@
 
 These docs are being updated to match the **refactored runtime**.
 
-The canonical workflow is:
+**Single canonical note:** `docs/handbook.md`
 
-`Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+If you only read one page, read `docs/handbook.md` top-to-bottom.
 
 ## Start Here
 
-- Handbook (overview): `handbook.md`
-- Install: `install.md`
-- Canonical runtime guide: `guide_runtime.md`
-- Debugging (`Pipeline.step`): `guide_debugging.md`
-- Execution compilation: `guide_execution.md`
-- Time/FRP model: `guide_time.md`
+- `docs/handbook.md` — install → author → run → debug → record/replay → `on_lag` → examples
+
+Optional deep dives (may be merged into the handbook over time):
+- `docs/install.md`
+- `docs/guide_runtime.md`
+- `docs/guide_flow.md`
+- `docs/guide_time.md`
+- `docs/guide_execution.md`
+- `docs/guide_debugging.md`
 
 ## Quick Start
 
@@ -33,9 +36,4 @@ The refactor is ongoing, but some older, pre-refactor docs are preserved for ref
 - `docs/legacy/API_legacy.md`
 - `docs/architecture_legacy.md`
 
-For runtime/core work, treat these pages as canonical:
-
-- `docs/guide_runtime.md`
-- `docs/guide_flow.md`
-- `docs/guide_debugging.md`
-- `docs/guide_time.md`
+For runtime/core work, prefer `docs/handbook.md`. The other guides are optional references and may lag behind.
