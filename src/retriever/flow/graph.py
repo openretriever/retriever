@@ -7,7 +7,7 @@ Port-level connections with explicit field names.
 from dataclasses import dataclass
 from typing import Dict, List, Type, Optional, Any
 
-from retriever.core.error import ErrCode, FlowError
+from retriever.error import ErrCode, FlowError
 
 import logging
 logger = logging.getLogger(__name__)

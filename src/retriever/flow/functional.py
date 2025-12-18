@@ -14,8 +14,8 @@ from __future__ import annotations
 from contextvars import ContextVar
 from typing import Any, Dict, Optional
 
-from retriever.core.flow.handle import FlowHandle
-from retriever.core.flow.pipeline import Pipeline
+from retriever.flow.handle import FlowHandle
+from retriever.flow.pipeline import Pipeline
 
 
 _default_pipeline: ContextVar[Optional[Pipeline]] = ContextVar(
@@ -77,7 +77,7 @@ def connect(
         pipeline.connect(src, dst, map=map, sync=sync, qsize=qsize)
         return dst
 
-    from retriever.core.flow.context import FlowContext
+    from retriever.flow.context import FlowContext
 
     if FlowContext.active() is not None:
         return src.then(dst, map=map, sync=sync, qsize=qsize)

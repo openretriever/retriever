@@ -22,14 +22,13 @@ from dataclasses import dataclass
 from collections import defaultdict
 import logging
 
-from retriever.core.flow.base import Flow as FlowBase
-
-from retriever.core.plugins import load_plugins
+from retriever.flow.base import Flow as FlowBase
+from retriever.utils import load_plugins
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from retriever.core.flow.base import Flow
+    from retriever.flow.base import Flow
 
 F = TypeVar('F', bound=FlowBase)
 
@@ -105,7 +104,7 @@ class FlowRegistry:
 
         if not issubclass(flow_class, FlowBase):
             raise TypeError(
-                f"register_flow('{name}') expects a retriever.core.flow.Flow subclass, "
+                f"register_flow('{name}') expects a retriever.flow.Flow subclass, "
                 f"got: {flow_class}"
             )
         
