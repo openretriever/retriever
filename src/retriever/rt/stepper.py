@@ -22,15 +22,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
-from retriever.core.error import FlowError, RTError, ErrCode
-from retriever.core.flow.adapter import Adapter, EventBuffer
-from retriever.core.flow.base import Flow
-from retriever.core.flow.clock import Clock, Hybrid, Rate, Trigger
-from retriever.core.flow.context import FlowContext
-from retriever.core.flow.handle import FlowHandle
-from retriever.core.ir.loader import IRLoader
-from retriever.core.ir.struct import IREdge, IRStruct
-from retriever.core.rt.signal import Signal
+from retriever.error import FlowError, RTError, ErrCode
+from retriever.flow.adapter import Adapter, EventBuffer
+from retriever.flow.base import Flow
+from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
+from retriever.flow.context import FlowContext
+from retriever.flow.handle import FlowHandle
+from retriever.ir.loader import IRLoader
+from retriever.ir.struct import IREdge, IRStruct
+from retriever.rt.signal import Signal
 
 T = TypeVar("T")
 

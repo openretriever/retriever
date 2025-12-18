@@ -9,8 +9,8 @@ from multiprocessing.connection import Connection
 from queue import Empty
 from typing import Any, Optional
 
-from retriever.core.flow.adapter import Adapter, EventBuffer
-from retriever.core.rt.buffer_engine import BufferEngineKind, create_buffer_engine
+from retriever.flow.adapter import Adapter, EventBuffer
+from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
 
 
 class MPChannel:

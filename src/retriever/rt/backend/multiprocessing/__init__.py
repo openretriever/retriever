@@ -4,9 +4,9 @@ Multiprocessing backend for retriever runtime.
 Implements execution engine using Python's multiprocessing module.
 """
 
-from retriever.core.rt.backend.factory import register_backend
-from retriever.core.rt.backend.interface import BackendFactory, ExecutionEngine
-from retriever.core.ir.struct import IRStruct
+from retriever.rt.backend.factory import register_backend
+from retriever.rt.backend.interface import BackendFactory, ExecutionEngine
+from retriever.ir.struct import IRStruct
 from typing import Dict, Any, Optional
 
 
@@ -34,7 +34,7 @@ class MPBackendFactory(BackendFactory):
         ir: IRStruct,
         config: Optional[Dict[str, Any]] = None,
     ) -> ExecutionEngine:
-        from retriever.core.rt.backend.multiprocessing.engine import MPEngine
+        from retriever.rt.backend.multiprocessing.engine import MPEngine
         return MPEngine(ir, config)
 
 

@@ -4,7 +4,7 @@ Dora backend for retriever runtime.
 Provides dora-rs based execution using Apache Arrow for zero-copy IPC.
 
 Usage:
-    from retriever.core.rt.executor import execute_ir
+    from retriever.rt.executor import execute_ir
 
     # Execute with dora backend
     execute_ir(ir, backend='dora', duration=10.0)
@@ -27,8 +27,8 @@ Installation:
 import logging
 from typing import Dict, Any, Optional
 
-from retriever.core.rt.backend.factory import BackendFactory, register_backend
-from retriever.core.ir.struct import IRStruct
+from retriever.rt.backend.factory import BackendFactory, register_backend
+from retriever.ir.struct import IRStruct
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ class DoraBackendFactory(BackendFactory):
             ImportError: If dora-rs or pyarrow not installed
         """
         # Import here to avoid requiring dora at module load time
-        from retriever.core.rt.backend.dora.engine import DoraEngine
+        from retriever.rt.backend.dora.engine import DoraEngine
 
         return DoraEngine(ir, config)
 

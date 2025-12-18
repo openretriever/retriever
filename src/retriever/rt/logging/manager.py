@@ -11,10 +11,10 @@ from logging.handlers import QueueListener
 from pathlib import Path
 from typing import Optional
 
-from retriever.core.rt.logging.config import LogConfig, SERVICE_NAME
-from retriever.core.rt.logging.handlers.console import create_console_handler
-from retriever.core.rt.logging.handlers.file import create_file_handler
-from retriever.core.rt.logging.handlers.otel import configure_otel, shutdown_otel
+from retriever.rt.logging.config import LogConfig, SERVICE_NAME
+from retriever.rt.logging.handlers.console import create_console_handler
+from retriever.rt.logging.handlers.file import create_file_handler
+from retriever.rt.logging.handlers.otel import configure_otel, shutdown_otel
 
 
 class LogManager:

@@ -8,8 +8,8 @@ from typing import Tuple, Dict, Any, List, Optional
 from typing import Protocol, runtime_checkable
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from retriever.core.ir.struct import IRStruct
-from retriever.core.flow.clock import Clock
+from retriever.ir.struct import IRStruct
+from retriever.flow.clock import Clock
 
 
 # ============================================================================

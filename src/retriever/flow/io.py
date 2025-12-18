@@ -9,7 +9,7 @@ from dataclasses import fields, MISSING
 from typing import get_args, get_origin
 from typing import Optional, Any, Union
 
-from retriever.core.error import FlowError, ErrCode
+from retriever.error import FlowError, ErrCode
 
 
 def _is_optional(field_type) -> bool:

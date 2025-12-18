@@ -8,12 +8,12 @@ import logging
 from typing import Dict, Any, Union, Optional
 from pathlib import Path
 
-from retriever.core.ir.execution import ExecutionGraph
-from retriever.core.ir.struct import IRStruct
-from retriever.core.rt.backend.factory import get_backend
-from retriever.core.rt.backend.interface import ExecutionEngine
-from retriever.core.rt.logging import LogConfig
-from retriever.core.rt.logging.manager import LogManager
+from retriever.ir.execution import ExecutionGraph
+from retriever.ir.struct import IRStruct
+from retriever.rt.backend.factory import get_backend
+from retriever.rt.backend.interface import ExecutionEngine
+from retriever.rt.logging import LogConfig
+from retriever.rt.logging.manager import LogManager
 
 logger = logging.getLogger('retriever')
 

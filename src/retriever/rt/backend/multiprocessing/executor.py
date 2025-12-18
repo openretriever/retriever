@@ -7,14 +7,14 @@ Wraps a Flow for execution in a separate process using multiprocessing.Process.
 import multiprocessing
 from contextlib import nullcontext
 from typing import Dict, List, Optional, Any
-from retriever.core.flow.base import Flow
-from retriever.core.flow.clock import Clock
-from retriever.core.flow.adapter import Adapter
-from retriever.core.rt.backend.interface import Executor, Subscriber, Publisher
-from retriever.core.rt.backend.multiprocessing.scheduler import MPScheduler
-from retriever.core.rt.signal import Signal
-from retriever.core.rt.logging.worker import configure_worker
-from retriever.core.rt.logging.handlers.otel import shutdown_otel
+from retriever.flow.base import Flow
+from retriever.flow.clock import Clock
+from retriever.flow.adapter import Adapter
+from retriever.rt.backend.interface import Executor, Subscriber, Publisher
+from retriever.rt.backend.multiprocessing.scheduler import MPScheduler
+from retriever.rt.signal import Signal
+from retriever.rt.logging.worker import configure_worker
+from retriever.rt.logging.handlers.otel import shutdown_otel
 
 import logging
 logger = logging.getLogger(__name__)

@@ -7,9 +7,9 @@ Sleep-based timing for Rate, connection.wait() for Trigger/Hybrid.
 import time
 from typing import Dict
 from multiprocessing.connection import wait as connection_wait
-from retriever.core.flow.clock import Clock, Rate, Trigger, Hybrid
-from retriever.core.rt.backend.interface import Scheduler, ScheduleResult, Subscriber
-from retriever.core.error import RTError, ErrCode
+from retriever.flow.clock import Clock, Rate, Trigger, Hybrid
+from retriever.rt.backend.interface import Scheduler, ScheduleResult, Subscriber
+from retriever.error import RTError, ErrCode
 
 import logging
 logger = logging.getLogger(__name__)

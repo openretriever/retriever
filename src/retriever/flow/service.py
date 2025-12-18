@@ -88,7 +88,7 @@ def handle_service(func: Callable) -> ServiceMethod:
 
     Signature: (self, request: Dataclass) -> Dataclass
     """
-    from retriever.core.error import FlowError, ErrCode
+    from retriever.error import FlowError, ErrCode
 
     sig = inspect.signature(func)
     params = list(sig.parameters.values())
@@ -147,7 +147,7 @@ def call_service(*service_methods: ServiceMethod) -> Callable[[Type[F]], Type[F]
 
     Enables IR to build direct routing instead of broadcast.
     """
-    from retriever.core.error import FlowError, ErrCode
+    from retriever.error import FlowError, ErrCode
 
     def decorator(flow_class: Type[F]) -> Type[F]:
         flow_class.__flow_service_callers__ = []

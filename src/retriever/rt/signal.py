@@ -16,11 +16,11 @@ import types
 from contextlib import nullcontext
 from typing import Dict, List, Tuple, Optional, Callable, Type, Any, Generator, TYPE_CHECKING
 
-from retriever.core.flow.adapter import Adapter, Latest
-from retriever.core.rt.frp import EventStream
+from retriever.flow.adapter import Adapter, Latest
+from retriever.rt.frp import EventStream
 
 if TYPE_CHECKING:
-    from retriever.core.rt.backend.interface import Subscriber, Publisher
+    from retriever.rt.backend.interface import Subscriber, Publisher
 
 import logging
 logger = logging.getLogger(__name__)

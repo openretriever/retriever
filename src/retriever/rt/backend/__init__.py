@@ -13,7 +13,7 @@ Architecture:
 - BackendFactory: Creates backend-specific engine instances
 """
 
-from retriever.core.rt.backend.interface import (
+from retriever.rt.backend.interface import (
     ExecutionEngine,
     Executor,
     Publisher,
@@ -22,7 +22,7 @@ from retriever.core.rt.backend.interface import (
     ScheduleResult,
     BackendFactory,
 )
-from retriever.core.rt.backend.factory import (
+from retriever.rt.backend.factory import (
     register_backend,
     get_backend,
     list_backends,

@@ -19,7 +19,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Deque, Generic, Literal, Optional, TypeVar
 
-from retriever.core.flow.adapter import Adapter, EventBuffer, Events, Hold, Latest, Window
+from retriever.flow.adapter import Adapter, EventBuffer, Events, Hold, Latest, Window
 
 T = TypeVar("T")
 

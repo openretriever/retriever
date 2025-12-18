@@ -7,7 +7,7 @@ A Flow is a signal function that transforms inputs to outputs.
 from abc import ABC, abstractmethod
 from typing import get_origin, get_args
 from typing import TypeVar, Generic, Optional, Type
-from retriever.core.error import FlowError, ErrCode
+from retriever.error import FlowError, ErrCode
 
 I = TypeVar('I')
 O = TypeVar('O')
@@ -42,7 +42,7 @@ class Flow(ABC, Generic[I, O]):
                         cls._output_type = None if output_type is type(None) else output_type
 
                         # Validate types are @flow_io decorated
-                        from retriever.core.flow.io import is_flow_io
+                        from retriever.flow.io import is_flow_io
 
                         if input_type and input_type is not type(None) and not is_flow_io(input_type):
                             raise FlowError(

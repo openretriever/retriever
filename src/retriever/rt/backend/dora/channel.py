@@ -7,11 +7,11 @@ DoraPublisher: Sends messages via dora with sender timestamps
 
 from typing import Any, Dict, Optional
 
-from retriever.core.flow.adapter import Adapter, EventBuffer
-from retriever.core.rt.buffer_engine import BufferEngineKind, create_buffer_engine
-from retriever.core.rt.backend.dora.serde import serialize_arrow
-from retriever.core.rt.backend.dora.serde import deserialize_arrow
-from retriever.core.error import backend_error, ErrCode
+from retriever.flow.adapter import Adapter, EventBuffer
+from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
+from retriever.rt.backend.dora.serde import serialize_arrow
+from retriever.rt.backend.dora.serde import deserialize_arrow
+from retriever.error import backend_error, ErrCode
 
 import logging
 logger = logging.getLogger(__name__)

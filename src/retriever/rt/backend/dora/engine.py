@@ -14,12 +14,12 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from retriever.core.ir.struct import IRStruct
-from retriever.core.ir.loader import IRLoader
-from retriever.core.rt.backend.interface import ExecutionEngine
-from retriever.core.rt.backend.dora.compiler import compile_and_validate, get_node_paths
-from retriever.core.rt.backend.dora.executor import DoraExecutor
-from retriever.core.rt.logging.manager import LogManager
+from retriever.ir.struct import IRStruct
+from retriever.ir.loader import IRLoader
+from retriever.rt.backend.interface import ExecutionEngine
+from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
+from retriever.rt.backend.dora.executor import DoraExecutor
+from retriever.rt.logging.manager import LogManager
 
 import logging
 logger = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ class DoraEngine(ExecutionEngine):
         clock = IRLoader.load_clock(node.config)
 
         # Get data port names (filter out service ports)
-        from retriever.core.flow.service import is_service_port
+        from retriever.flow.service import is_service_port
         input_ports = [p for p in node.inputs.keys() if not is_service_port(p)]
         output_ports = [p for p in node.outputs.keys() if not is_service_port(p)]
 

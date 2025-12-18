@@ -212,7 +212,7 @@ def deserialize_arrow(arrow_array: pa.Array, metadata: Dict[str, Any]) -> Any:
 
     # Unknown type - raise error
     else:
-        from retriever.core.error import rt_error, ErrCode
+        from retriever.error import rt_error, ErrCode
         raise rt_error(
             ErrCode.RT_SERDE_UNKNOWN_FORMAT,
             f"Unknown metadata type: {type_info}"

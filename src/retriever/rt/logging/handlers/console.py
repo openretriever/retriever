@@ -5,7 +5,7 @@ Colored console handler with colored format.
 import logging
 import sys
 
-from retriever.core.rt.logging.worker import STDOUT, STDERR
+from retriever.rt.logging.worker import STDOUT, STDERR
 
 
 class ColoredFormatter(logging.Formatter):

@@ -8,12 +8,12 @@ import time
 from typing import Dict, List, Any, Optional
 from multiprocessing import Queue
 
-from retriever.core.ir.struct import IRStruct, IRNode, IREdge
-from retriever.core.ir.loader import IRLoader
-from retriever.core.rt.backend.interface import ExecutionEngine
-from retriever.core.rt.backend.multiprocessing.channel import MPChannel
-from retriever.core.rt.backend.multiprocessing.executor import MPExecutor
-from retriever.core.rt.logging.manager import LogManager
+from retriever.ir.struct import IRStruct, IRNode, IREdge
+from retriever.ir.loader import IRLoader
+from retriever.rt.backend.interface import ExecutionEngine
+from retriever.rt.backend.multiprocessing.channel import MPChannel
+from retriever.rt.backend.multiprocessing.executor import MPExecutor
+from retriever.rt.logging.manager import LogManager
 
 import logging
 logger = logging.getLogger(__name__)

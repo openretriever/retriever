@@ -11,8 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional, Type
 
-from retriever.core.flow.context import FlowContext
-from retriever.core.flow.handle import FlowHandle
+from retriever.flow.context import FlowContext
+from retriever.flow.handle import FlowHandle
 
 
 class Pipeline(FlowContext):
@@ -54,8 +54,8 @@ class Pipeline(FlowContext):
         if self._default_on_lag is None:
             return
 
-        from retriever.core.flow.clock import Rate, Hybrid
-        from retriever.core.error import FlowError, ErrCode
+        from retriever.flow.clock import Rate, Hybrid
+        from retriever.error import FlowError, ErrCode
 
         desired = Rate._normalize_on_lag(self._default_on_lag)
         allowed = {"drop", "warn", "error", "catch_up"}
@@ -90,7 +90,7 @@ class Pipeline(FlowContext):
         qsize: int = 10,
     ) -> "Pipeline":
         """Connect two handles inside this pipeline."""
-        from retriever.core.flow.adapter import Latest
+        from retriever.flow.adapter import Latest
 
         if sync is None:
             sync = Latest()
@@ -165,7 +165,7 @@ class Pipeline(FlowContext):
 
     def build_execution(self, *, policy: Any = "aggressive", **kwargs: Any):
         """Build an ExecutionGraph from this pipeline's IRStruct."""
-        from retriever.core.ir import build_execution
+        from retriever.ir import build_execution
 
         ir = self.build_ir()
         return build_execution(ir, policy=policy, **kwargs)
@@ -182,9 +182,9 @@ class Pipeline(FlowContext):
             dt: Optional logical time delta (seconds) to advance an internal clock.
 
         Returns:
-            `StepResult` (see `retriever.core.rt.stepper.StepResult`)
+            `StepResult` (see `retriever.rt.stepper.StepResult`)
         """
-        from retriever.core.rt.stepper import PipelineStepper
+        from retriever.rt.stepper import PipelineStepper
 
         if self._stepper is None:
             self._stepper = PipelineStepper(self)
@@ -199,9 +199,9 @@ class Pipeline(FlowContext):
         """
         Create an in-process recorder bound to this pipeline and handle.
 
-        This is a thin convenience wrapper around `retriever.core.rt.stepper.EventStreamRecorder`.
+        This is a thin convenience wrapper around `retriever.rt.stepper.EventStreamRecorder`.
         """
-        from retriever.core.rt.stepper import EventStreamRecorder
+        from retriever.rt.stepper import EventStreamRecorder
 
         return EventStreamRecorder(self, handle, name=name)
 
@@ -245,7 +245,7 @@ class Pipeline(FlowContext):
 
         By default, the replay node reuses the replaced handle's clock and output type.
         """
-        from retriever.core.rt.stepper import load_event_buffer, replay_flow
+        from retriever.rt.stepper import load_event_buffer, replay_flow
 
         if (buffer is None) == (path is None):
             raise ValueError("Provide exactly one of `buffer=` or `path=`.")
@@ -301,7 +301,7 @@ class Pipeline(FlowContext):
             build: If True, run via ExecutionGraph (grouping/placement). If False, run raw IRStruct.
             **kwargs: Extra kwargs forwarded to build_execution.
         """
-        from retriever.core.rt.runtime import execute_ir
+        from retriever.rt.runtime import execute_ir
 
         if build:
             graph = self.build_execution(policy=policy, **kwargs)

@@ -12,18 +12,18 @@ import dora
 import multiprocessing
 from typing import Dict, List, Optional, Any, Generator
 
-from retriever.core.flow.base import Flow
-from retriever.core.flow.clock import Clock
-from retriever.core.rt.signal import Signal
-from retriever.core.flow.adapter import Adapter
-from retriever.core.flow.service import ServiceCall, parse_service_id
-from retriever.core.rt.backend.interface import Executor
-from retriever.core.rt.backend.dora.channel import DoraSubscriber, DoraPublisher
-from retriever.core.rt.backend.dora.scheduler import DoraScheduler
-from retriever.core.rt.backend.dora.serde import serialize_arrow, deserialize_arrow
-from retriever.core.error import FlowError, RTError, ErrCode
-from retriever.core.rt.logging.worker import configure_worker
-from retriever.core.rt.logging.handlers.otel import shutdown_otel
+from retriever.flow.base import Flow
+from retriever.flow.clock import Clock
+from retriever.rt.signal import Signal
+from retriever.flow.adapter import Adapter
+from retriever.flow.service import ServiceCall, parse_service_id
+from retriever.rt.backend.interface import Executor
+from retriever.rt.backend.dora.channel import DoraSubscriber, DoraPublisher
+from retriever.rt.backend.dora.scheduler import DoraScheduler
+from retriever.rt.backend.dora.serde import serialize_arrow, deserialize_arrow
+from retriever.error import FlowError, RTError, ErrCode
+from retriever.rt.logging.worker import configure_worker
+from retriever.rt.logging.handlers.otel import shutdown_otel
 
 import logging
 logger = logging.getLogger(__name__)

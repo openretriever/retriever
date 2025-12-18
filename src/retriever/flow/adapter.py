@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional, Any
 from typing import Type, List, Tuple, Dict, Literal
-from retriever.core.error import FlowError, ErrCode
+from retriever.error import FlowError, ErrCode
 
 T = TypeVar('T')
 EventBuffer = List[Tuple[float, T]]

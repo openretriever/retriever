@@ -19,8 +19,8 @@ Components:
 - loader: IR deserialization utilities
 """
 
-from retriever.core.rt.runtime import execute_ir
-from retriever.core.rt.frp import Behavior, EventStream
+from retriever.rt.runtime import execute_ir
+from retriever.rt.frp import Behavior, EventStream
 
 __all__ = [
     "execute_ir",

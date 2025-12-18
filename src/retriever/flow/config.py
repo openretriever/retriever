@@ -7,12 +7,12 @@ FlowConfig encapsulates execution metadata for a flow.
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, List
 
-from retriever.core.error import FlowError, ErrCode
+from retriever.error import FlowError, ErrCode
 
 if TYPE_CHECKING:
-    from retriever.core.flow.base import Flow
-    from retriever.core.flow.clock import Clock
-    from retriever.core.flow.handle import FlowHandle
+    from retriever.flow.base import Flow
+    from retriever.flow.clock import Clock
+    from retriever.flow.handle import FlowHandle
 
 
 @dataclass
@@ -59,7 +59,7 @@ class FlowConfig:
         Returns:
             Dict with clock converted to dict format
         """
-        from retriever.core.utils import as_tagged
+        from retriever.utils import as_tagged
         return {
             'clock': as_tagged(self.clock),
             'priority': self.priority,
@@ -77,5 +77,5 @@ class FlowConfig:
         Returns:
             FlowHandle with this configuration
         """
-        from retriever.core.flow.handle import FlowHandle
+        from retriever.flow.handle import FlowHandle
         return FlowHandle(flow=flow, config=self)

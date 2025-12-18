@@ -10,7 +10,7 @@ It registers *pipeline factories* (callables) that return either:
 
 This enables:
   - Discoverable pipelines (for a future `retriever` CLI)
-  - Plugin-based extensibility via entry points (see `retriever.core.plugins`)
+  - Plugin-based extensibility via entry points (see `retriever.plugins`)
 """
 
 from __future__ import annotations
@@ -18,9 +18,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple
 
-from retriever.core.flow.context import FlowContext
-from retriever.core.ir.struct import IRStruct
-from retriever.core.utils import load_plugins
+from retriever.flow.context import FlowContext
+from retriever.ir.struct import IRStruct
+from retriever.utils import load_plugins
 
 PipelineFactory = Callable[..., Union[IRStruct, FlowContext]]
 
@@ -193,7 +193,7 @@ def run_pipeline(
     **kwargs: Any,
 ):
     """Convenience helper: build IR then execute it."""
-    from retriever.core.rt.runtime import execute_ir
+    from retriever.rt.runtime import execute_ir
 
     ir = build_ir(name, **kwargs)
     return execute_ir(

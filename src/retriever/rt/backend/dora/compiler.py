@@ -11,8 +11,8 @@ Native acceleration support:
 import yaml
 from typing import Dict, List, Any, Union, Optional, Mapping
 from dataclasses import dataclass
-from retriever.core.ir.struct import IRStruct, IRNode
-from retriever.core.flow.clock import Rate, Trigger, Hybrid, Clock
+from retriever.ir.struct import IRStruct, IRNode
+from retriever.flow.clock import Rate, Trigger, Hybrid, Clock
 
 import logging
 logger = logging.getLogger(__name__)
@@ -242,7 +242,7 @@ def _compile_node(node: IRNode, ir: IRStruct, *, node_path_overrides: Optional[M
 
 def _extract_clock(config: Dict[str, Any]) -> Clock:
     """Extract Clock object from node config."""
-    from retriever.core.ir.loader import IRLoader
+    from retriever.ir.loader import IRLoader
 
     try:
         return IRLoader.load_clock(config)

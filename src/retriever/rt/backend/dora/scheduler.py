@@ -7,9 +7,9 @@ Non-blocking event-driven scheduling with external tick events.
 import time
 from typing import Dict, Any, Optional
 
-from retriever.core.flow.clock import Clock, Rate, Trigger, Hybrid
-from retriever.core.rt.backend.interface import Scheduler, ScheduleResult, Subscriber
-from retriever.core.error import RTError, ErrCode
+from retriever.flow.clock import Clock, Rate, Trigger, Hybrid
+from retriever.rt.backend.interface import Scheduler, ScheduleResult, Subscriber
+from retriever.error import RTError, ErrCode
 
 
 import logging

@@ -6,8 +6,8 @@ Provides registration mechanism for backend implementations.
 
 from typing import Dict, Type, List
 import importlib.util
-from retriever.core.rt.backend.interface import BackendFactory
-from retriever.core.error import backend_error, ErrCode
+from retriever.rt.backend.interface import BackendFactory
+from retriever.error import backend_error, ErrCode
 
 import logging
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ def get_backend(name: str) -> Type[BackendFactory]:
         if name == "dora":
             try:
                 if importlib.util.find_spec("dora") and importlib.util.find_spec("pyarrow"):
-                    import retriever.core.rt.backend.dora  # noqa: F401
+                    import retriever.rt.backend.dora  # noqa: F401
             except Exception:
                 # Swallow and fall through to the user-facing error
                 pass
@@ -133,7 +133,7 @@ def _register_builtin_backends():
     """
     try:
         # Import multiprocessing backend
-        import retriever.core.rt.backend.multiprocessing  # noqa: F401
+        import retriever.rt.backend.multiprocessing  # noqa: F401
         logger.debug("Multiprocessing backend imported")
     except ImportError as e:
         logger.warning(f"Could not import multiprocessing backend: {e}")
@@ -144,7 +144,7 @@ def _register_builtin_backends():
             raise ImportError("Missing dependencies: dora, pyarrow")
 
         # Import dora backend (may not be available)
-        import retriever.core.rt.backend.dora  # noqa: F401
+        import retriever.rt.backend.dora  # noqa: F401
         logger.debug("Dora backend imported")
     except ImportError as e:
         # Clean up partial registration if import failed after decorator ran

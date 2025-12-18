@@ -104,7 +104,7 @@ class FlowRegistry:
 
         if not issubclass(flow_class, FlowBase):
             raise TypeError(
-                f"register_flow('{name}') expects a retriever.core.flow.Flow subclass, "
+                f"register_flow('{name}') expects a retriever.flow.Flow subclass, "
                 f"got: {flow_class}"
             )
         

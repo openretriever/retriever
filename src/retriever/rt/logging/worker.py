@@ -13,9 +13,9 @@ from logging.handlers import QueueHandler
 from pathlib import Path
 import multiprocessing as mp
 
-from retriever.core.rt.logging.config import LogConfig, SERVICE_NAME
-from retriever.core.rt.logging.handlers.file import create_file_handler
-from retriever.core.rt.logging.handlers.otel import configure_otel
+from retriever.rt.logging.config import LogConfig, SERVICE_NAME
+from retriever.rt.logging.handlers.file import create_file_handler
+from retriever.rt.logging.handlers.otel import configure_otel
 
 # Custom log levels for stdout/stderr capture
 STDOUT = 25  # Between INFO (20) and WARNING (30)

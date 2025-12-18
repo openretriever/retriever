@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from retriever.core.ir.struct import IRStruct
+from retriever.ir.struct import IRStruct
 
 
 @dataclass
@@ -96,7 +96,7 @@ class ExecutionGraph:
         executor. We implement this by lowering grouped partitions into a single
         `FusedFlow` node (legacy naming).
         """
-        from retriever.core.ir.fusion import apply_fusion
+        from retriever.ir.fusion import apply_fusion
 
         fusion_groups = [p.node_ids for p in self.partitions if len(p.node_ids) >= 2]
         if not fusion_groups:

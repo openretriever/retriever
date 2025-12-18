@@ -7,8 +7,8 @@ Chains sub-flows with direct method calls and port mapping.
 
 import importlib
 from typing import Any, List, Dict, Tuple
-from retriever.core.flow.base import Flow
-from retriever.core.error import FlowError, ErrCode
+from retriever.flow.base import Flow
+from retriever.error import FlowError, ErrCode
 
 import logging
 logger = logging.getLogger(__name__)

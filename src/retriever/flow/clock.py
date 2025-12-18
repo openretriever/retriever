@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from retriever.core.flow.base import Flow
-    from retriever.core.flow.handle import FlowHandle
+    from retriever.flow.base import Flow
+    from retriever.flow.handle import FlowHandle
 
 
 class Clock(ABC):
@@ -30,8 +30,8 @@ class Clock(ABC):
         Called when: flow @ clock
         Returns: FlowHandle with FlowConfig containing this clock
         """
-        from retriever.core.flow.config import FlowConfig
-        from retriever.core.flow.handle import FlowHandle
+        from retriever.flow.config import FlowConfig
+        from retriever.flow.handle import FlowHandle
         return FlowHandle(flow=flow, config=FlowConfig(clock=self))
 
 
@@ -82,7 +82,7 @@ class Rate(Clock):
                 - "catch_up": execute every tick eventually (simulation-style)
                 - "error": raise if lagging by >= 1 tick (aliases: "panic", "raise", "strict")
         """
-        from retriever.core.error import FlowError, ErrCode
+        from retriever.error import FlowError, ErrCode
 
         if fields is not None and sample is not None:
             raise FlowError(
@@ -211,7 +211,7 @@ class Trigger(Clock):
             fields: Backward-compatible keyword form (list[str])
             on: Alias for `fields` (list[str] or str)
         """
-        from retriever.core.error import FlowError, ErrCode
+        from retriever.error import FlowError, ErrCode
 
         if on_fields and (fields is not None or on is not None):
             raise FlowError(
@@ -286,7 +286,7 @@ class Hybrid(Clock):
             trigger: Alias for `trigger_fields`
             sample: Alias for `rate_fields`
         """
-        from retriever.core.error import FlowError, ErrCode
+        from retriever.error import FlowError, ErrCode
 
         if trigger is not None:
             trigger_fields = trigger

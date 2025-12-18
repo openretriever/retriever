@@ -4,17 +4,17 @@ Flow module - Declarative dataflow computation framework.
 Provides base classes and utilities for building dataflow pipelines.
 """
 
-from retriever.core.flow.base import Flow
-from retriever.core.flow.clock import Clock, Rate, Trigger, Hybrid, Tick
-from retriever.core.flow.adapter import Adapter, Latest, Hold, Window, Events
-from retriever.core.flow.config import FlowConfig
-from retriever.core.flow.handle import FlowHandle
-from retriever.core.flow.context import FlowContext
-from retriever.core.flow.pipeline import Pipeline
-from retriever.core.flow.functional import connect, default_pipeline, reset_default_pipeline, clear_default_pipeline
-from retriever.core.flow.graph import FlowGraph, FlowNode, FlowEdge
-from retriever.core.flow.io import flow_io, is_flow_io
-from retriever.core.flow.service import handle_service, call_service
+from retriever.flow.base import Flow
+from retriever.flow.clock import Clock, Rate, Trigger, Hybrid, Tick
+from retriever.flow.adapter import Adapter, Latest, Hold, Window, Events
+from retriever.flow.config import FlowConfig
+from retriever.flow.handle import FlowHandle
+from retriever.flow.context import FlowContext
+from retriever.flow.pipeline import Pipeline
+from retriever.flow.functional import connect, default_pipeline, reset_default_pipeline, clear_default_pipeline
+from retriever.flow.graph import FlowGraph, FlowNode, FlowEdge
+from retriever.flow.io import flow_io, is_flow_io
+from retriever.flow.service import handle_service, call_service
 
 __all__ = [
     # Base
