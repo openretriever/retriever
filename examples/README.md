@@ -4,7 +4,7 @@ This repo is focused on the **Retriever runtime/core**.
 
 The **canonical, maintained** examples live in:
 
-- `examples/00_refact/` (matches `docs/handbook.md`; see `examples/00_refact/README.md` for the tutorial index)
+- `examples/tutorial/` (matches `docs/handbook.md`; see `examples/tutorial/README.md` for the tutorial index)
 
 ## Quick start (Pixi)
 
@@ -20,13 +20,10 @@ pixi run demo-request-dora
 
 ```bash
 # Pipeline ergonomics: explicit vs `with pipe:` vs `retriever.connect(...)`
-pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode context --exec step
+pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode context --exec step
 ```
 
-## About the other folders
+## About legacy/system examples
 
-The other folders under `examples/` are **older and/or system-level experiments** from before the runtime refactor
-(planning, robot I/O, large “system” demos, etc.).
-
-They are expected to move to the future **golden-retriever** (system) repo and may not run on the current runtime.
-Treat them as reference material until the split is complete.
+Legacy/system-level examples are kept under `examples/legacy/` for reference while we finish the runtime split.
+They may not run on the current runtime and are expected to move to the future **golden-retriever** (system) repo.

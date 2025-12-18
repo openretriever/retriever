@@ -13,10 +13,10 @@ If you only read one document, read this one.
 
 ## What’s New (2025-12-17)
 
-- Canonical examples live in `examples/00_refact/` (everything else under `examples/` is legacy/system-level).
-- New ergonomics demo: `examples/00_refact/017_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
+- Canonical examples live in `examples/tutorial/` (everything else under `examples/` is legacy/system-level).
+- New ergonomics demo: `examples/tutorial/017_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
 - `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
-- Service request/response (`ServiceCall`) demo is Dora-first: `examples/00_refact/010_request_response.py`.
+- Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/010_request_response.py`.
 
 Known caveat:
 - Backend execution reconstructs Flow instances from IR, so per-instance constructor args in examples won’t survive unless they’re represented in IR/config. Prefer self-healing defaults or explicit IR-level configuration.
@@ -219,9 +219,16 @@ Key semantics:
 
 Recommended examples:
 
-- Minimal debug + exception trace: `examples/00_refact/011_debug_stepper.py`
-- Perception debug (synthetic frames): `examples/00_refact/012_debug_perception_stepper.py`
-- Perception debug (real camera): `examples/00_refact/013_debug_perception_stepper_real_camera.py`
+- Minimal debug + exception trace: `examples/tutorial/011_debug_stepper.py`
+- Perception debug (synthetic frames): `examples/tutorial/012_debug_perception_stepper.py`
+- Perception debug (real camera): `examples/tutorial/013_debug_perception_stepper_real_camera.py`
+
+Topic-focused tutorials (legacy extractions):
+
+- Windowed vision stats: `examples/tutorial/02_vision_processing/01_detection_window_stats.py`
+- Closed-loop feedback intro: `examples/tutorial/06_feedback_loops/00_feedback_intro.py`
+- Event-driven replanning: `examples/tutorial/06_feedback_loops/01_event_driven_replan.py`
+- Execution monitoring: `examples/tutorial/06_feedback_loops/02_execution_monitoring.py`
 
 ---
 
@@ -248,7 +255,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 Notes:
 - `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
 - `reset_default_pipeline()` is recommended between experiments to avoid accidentally accumulating nodes/edges.
-- Canonical demo: `examples/00_refact/017_pipeline_ergonomics.py`
+- Canonical demo: `examples/tutorial/017_pipeline_ergonomics.py`
 
 ---
 
@@ -268,7 +275,7 @@ pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 
 Reference example (perception):
 
-- `examples/00_refact/014_record_replay_perception.py`
+- `examples/tutorial/014_record_replay_perception.py`
 
 Storage format:
 - gzip + pickle (debug artifact, not a long-term stable format)
@@ -317,8 +324,8 @@ pipe.set_on_lag("warn")
 Quick checks (Dora):
 
 ```bash
-pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
-pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
+pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
+pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
 ```
 
 Why this matters on Dora:
@@ -332,10 +339,10 @@ Why this matters on Dora:
 ### 9.1 Pipeline authoring ergonomics (017)
 
 ```bash
-pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode context --exec step
+pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode context --exec step
 ```
 
-Module: `examples/00_refact/017_pipeline_ergonomics.py`
+Module: `examples/tutorial/017_pipeline_ergonomics.py`
 
 ### 9.2 Dora perception demo (009)
 
@@ -343,7 +350,7 @@ Module: `examples/00_refact/017_pipeline_ergonomics.py`
 pixi run demo-dora
 ```
 
-Module: `examples/00_refact/009_dora_perception.py`
+Module: `examples/tutorial/009_dora_perception.py`
 
 ### 9.3 Request/response demo (010)
 
@@ -351,18 +358,18 @@ Module: `examples/00_refact/009_dora_perception.py`
 pixi run demo-request-dora
 ```
 
-Module: `examples/00_refact/010_request_response.py`
+Module: `examples/tutorial/010_request_response.py`
 
 ### 9.4 Closed-loop env + MPC demo (016)
 
 ```bash
-pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
+pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
 ```
 
 Optional (Pendulum, requires gymnasium/gym):
 
 ```bash
-pixi run python -m examples.00_refact.016_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
+pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
 ```
 
 ---

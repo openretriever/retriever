@@ -9,8 +9,8 @@ If you’re looking for the older “Flow.from_module / LocalExecutor / Eff mona
 
 Quick checks (Dora lag policy):
 
-- Warn + drop missed ticks: `pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
-- Panic (alias for `error`): `pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
+- Warn + drop missed ticks: `pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
+- Panic (alias for `error`): `pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
 
 ---
 
@@ -118,7 +118,7 @@ See: `docs/handbook.md` (Rate lag policy section).
 Quick demo (Dora, using the `panic` alias):
 
 ```bash
-pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
+pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
 ```
 
 Pipeline-wide default:
@@ -230,7 +230,7 @@ Retriever supports request/response “RPC edges” using generator-based flows 
 - `@handle_service` (service provider methods)
 - `@call_service(...)` (service client flow that `yield`s `ServiceCall`)
 
-Example: `examples/00_refact/010_request_response.py`.
+Example: `examples/tutorial/010_request_response.py`.
 
 Notes:
 - Service flows currently require a backend that supports the RPC wiring (the dora backend does).
@@ -252,7 +252,7 @@ Practical guidance:
 This yields a stable distributed closed-loop where the env tick uses the most recent action.
 
 Example:
-- `examples/00_refact/016_closed_loop_env.py`
+- `examples/tutorial/016_closed_loop_env.py`
   - `--env toy` (no extra deps)
   - `--env pendulum` (requires `gymnasium` or `gym`, MPC balancing loop)
 
