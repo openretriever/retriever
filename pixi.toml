@@ -84,10 +84,27 @@ dora-rs-cli = ">=0.3.12"
 # Tasks
 # =============================================================================
 [tasks]
-demo-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
-demo-detection-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
-demo-request-dora = "python -m examples.tutorial.010_request_response"
+# =============================================================================
+# Advanced Demos (Interactive)
+# =============================================================================
+# Interactive Vision: Real-time open-vocab detection with web UI
+# Run: pixi run demo-vision
+demo-vision = "python examples/advanced/interactive_detection/app.py"
+
+# VLA Web Command: Web interface for controlling robot flows
+# Run: pixi run demo-web
 demo-web = "python examples/advanced/web_command_interface/app.py"
+
+# =============================================================================
+# Tutorial Demos (Dora Backend)
+# =============================================================================
+# Perception Pipeline: Camera -> Color Detection -> Display
+# Run: pixi run demo-basics-dora
+demo-basics-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
+
+# Service Request/Response: Synchronous RPC between flows
+# Run: pixi run demo-request-dora
+demo-request-dora = "python -m examples.tutorial.010_request_response"
 
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
