@@ -57,7 +57,7 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-More details: `docs/guide_runtime.md`
+More details: `docs/handbook.md`
 
 ## Setup (overview)
 
@@ -95,6 +95,6 @@ Golden/system split prep:
 
 Docs live in `docs/` (served via MkDocs):
 
-- Runtime user guide: `docs/guide_runtime.md`
+- Runtime handbook (canonical): `docs/handbook.md`
 - Architecture: `docs/architecture.md`
 - Install: `docs/install.md`
