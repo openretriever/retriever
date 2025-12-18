@@ -21,7 +21,7 @@ import math
 from dataclasses import dataclass
 
 import retriever
-from retriever.core.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 
 
 # =============================================================================

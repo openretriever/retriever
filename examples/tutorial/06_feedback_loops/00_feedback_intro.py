@@ -20,7 +20,7 @@ import argparse
 import time
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
 
 
 @flow_io

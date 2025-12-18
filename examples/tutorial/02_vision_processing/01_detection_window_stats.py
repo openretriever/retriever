@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from retriever.core.flow import Flow, Pipeline, Rate, Trigger, Window, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, flow_io
 
 @flow_io
 @dataclass

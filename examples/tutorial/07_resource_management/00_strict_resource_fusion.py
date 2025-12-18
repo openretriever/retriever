@@ -17,7 +17,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, FlowConfig, Pipeline, Rate, flow_io
+from retriever.flow import Flow, FlowConfig, Pipeline, Rate, flow_io
 
 
 @flow_io
