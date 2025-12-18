@@ -76,6 +76,10 @@ def configure_otel(
 
 def shutdown_otel() -> None:
     """Shutdown OpenTelemetry and flush pending data."""
+    dsn = os.environ.get('UPTRACE_DSN')
+    if not dsn or not dsn.strip():
+        return
+
     try:
         from opentelemetry import trace
         provider = trace.get_tracer_provider()

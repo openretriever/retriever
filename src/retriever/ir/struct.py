@@ -44,6 +44,7 @@ class IRNode:
         id: Unique node identifier (e.g., "ClassName_12345")
         type: Flow class name
         module: Module path for import
+        init_config: JSON-serializable constructor config used to reconstruct the Flow on backends
         config: FlowConfig as dict (contains clock)
         inputs: Input port name → type string mapping
         outputs: Output port name → type string mapping
@@ -55,6 +56,7 @@ class IRNode:
     id: str
     type: str
     module: str
+    init_config: Dict[str, Any]
     config: Dict[str, Any]
     inputs: Dict[str, str]
     outputs: Dict[str, str]
@@ -197,6 +199,7 @@ class IRStruct:
                 id=n['id'],
                 type=n['type'],
                 module=n['module'],
+                init_config=n.get('init_config', {}),
                 config=n['config'],
                 inputs=n['inputs'],
                 outputs=n['outputs'],

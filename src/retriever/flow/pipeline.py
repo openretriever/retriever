@@ -191,6 +191,38 @@ class Pipeline(FlowContext):
 
         return self._stepper.step(now=now, dt=dt)
 
+    def reset(self) -> None:
+        """
+        Reset in-process execution state (debugging).
+
+        - If a stepper exists, calls `PipelineStepper.reset()` (clears buffers + calls `Flow.reset()`).
+        - If no stepper exists yet, calls `Flow.reset()` on all handles (best-effort).
+
+        This is intended to feel like a lightweight gym-style `env.reset()` for
+        debugging and record/replay workflows.
+        """
+        if self._stepper is not None:
+            self._stepper.reset()
+            return
+
+        for handle in self.get_handles():
+            try:
+                handle.flow.reset()
+            except Exception:
+                pass
+
+    def close_stepper(self) -> None:
+        """
+        Finalize all flows created for in-process stepping and drop the stepper.
+
+        Use this when your pipeline uses hardware resources (camera, sockets, etc.)
+        and you want to ensure `Flow.finalize()` is invoked.
+        """
+        if self._stepper is None:
+            return
+        self._stepper.close()
+        self._stepper = None
+
     # ==================================================================================
     # Stepper-first Record / Replay helpers
     # ==================================================================================

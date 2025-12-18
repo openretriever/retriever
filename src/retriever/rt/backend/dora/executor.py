@@ -174,7 +174,9 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 self._gen.close()
             self.flow.finalize()
             logger.info(f"[{self.node_id}] DoraExecutor terminated")
-            shutdown_otel()
+            # Flush OTel before exit only if it was enabled/configured for this worker.
+            if self.log_params and getattr(self.log_params.get("config"), "otel_enabled", False):
+                shutdown_otel()
 
     def _next_event(self) -> Optional[Dict[str, Any]]:
         """Get next event from dora node."""

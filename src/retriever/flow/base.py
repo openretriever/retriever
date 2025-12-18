@@ -81,6 +81,47 @@ class Flow(ABC, Generic[I, O]):
         """
         pass
 
+    def init_config(self) -> dict:
+        """
+        Return a JSON-serializable dict that can reconstruct this Flow.
+
+        Why this exists:
+        - In-process debugging (`Pipeline.step()`) runs the same Flow instances
+          you constructed in Python, so constructor args work naturally.
+        - Backend execution (multiprocessing/dora) reconstructs Flows from IR,
+          so we need a way to serialize constructor arguments.
+
+        Default behavior:
+        - Returns `{}` (assumes the Flow is default-constructible).
+
+        Override this if your Flow needs constructor args and you want it to run
+        on backends:
+
+            class MyFlow(Flow[In, Out]):
+                def __init__(self, gain: float = 0.5):
+                    self.gain = gain
+
+                def init_config(self) -> dict:
+                    return {"gain": self.gain}
+
+        If your Flow cannot be constructed with `__init__(**init_config)`,
+        also override `from_init_config(...)`.
+        """
+        return {}
+
+    @classmethod
+    def from_init_config(cls, config: dict) -> "Flow":
+        """
+        Construct a Flow instance from `init_config()`.
+
+        Default behavior:
+        - `cls()` if config is empty
+        - `cls(**config)` otherwise
+        """
+        if config:
+            return cls(**config)  # type: ignore[call-arg]
+        return cls()  # type: ignore[call-arg]
+
     def finalize(self) -> None:
         """
         Cleanup flow resources.

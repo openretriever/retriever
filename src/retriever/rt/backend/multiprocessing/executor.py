@@ -145,8 +145,9 @@ class MPExecutor(multiprocessing.Process, Executor):
             # Finalize flow
             self.flow.finalize()
             logger.info(f"[{self.node_id}] MPExecutor terminated")
-            # Flush OTel before exit
-            shutdown_otel()
+            # Flush OTel before exit only if it was enabled/configured for this worker.
+            if self.log_params and getattr(self.log_params.get("config"), "otel_enabled", False):
+                shutdown_otel()
 
     def stop(self):
         """Signal executor to stop gracefully."""

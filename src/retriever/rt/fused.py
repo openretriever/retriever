@@ -40,7 +40,11 @@ class FusedFlow(Flow):
             try:
                 module = importlib.import_module(node_data['module'])
                 flow_class = getattr(module, node_data['type'])
-                flow_instance = flow_class()
+                init_cfg = node_data.get("init_config", {}) or {}
+                if hasattr(flow_class, "from_init_config"):
+                    flow_instance = flow_class.from_init_config(init_cfg)  # type: ignore[attr-defined]
+                else:
+                    flow_instance = flow_class(**init_cfg) if init_cfg else flow_class()
 
                 self.sub_flows.append(flow_instance)
                 self.node_ids.append(node_data['id'])
