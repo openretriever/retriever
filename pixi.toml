@@ -61,7 +61,13 @@ native = { features = ["native"] }
 # - `dora`: dora backend support
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
 # - `web`: deps for web-based command interfaces (FastAPI)
-retriever = { path = ".", editable = true, extras = ["dora", "demo", "web"] }
+# - `vision`: deps for real-time vision (PyTorch, Transformers)
+retriever = { path = ".", editable = true, extras = [
+    "dora",
+    "demo",
+    "web",
+    "vision",
+] }
 
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
 pygments = "*"
