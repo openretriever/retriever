@@ -1393,7 +1393,7 @@ packages:
 - pypi: ./
   name: retriever
   version: 0.0.0
-  sha256: 7ef5933756e05f69e8f354623be7fcca092a96b5b2f1f9b7d42329914cb681cd
+  sha256: 548c2e2ed6a85a5d5b168f9b68108b48dabad9c9223de7f6aab7b72942ada2dd
   requires_dist:
   - numpy<2.0.0 ; extra == 'demo'
   - opencv-python==4.8.0.74 ; extra == 'demo'
