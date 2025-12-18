@@ -60,7 +60,8 @@ native = { features = ["native"] }
 # Keep the default environment lightweight, but include:
 # - `dora`: dora backend support
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
-retriever = { path = ".", editable = true, extras = ["dora", "demo"] }
+# - `web`: deps for web-based command interfaces (FastAPI)
+retriever = { path = ".", editable = true, extras = ["dora", "demo", "web"] }
 
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
 pygments = "*"
@@ -77,9 +78,10 @@ dora-rs-cli = ">=0.3.12"
 # Tasks
 # =============================================================================
 [tasks]
-demo-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
-demo-detection-dora = "python -m examples.00_refact.009_dora_perception --backend dora"
-demo-request-dora = "python -m examples.00_refact.010_request_response"
+demo-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
+demo-detection-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
+demo-request-dora = "python -m examples.tutorial.010_request_response"
+demo-web = "python examples/advanced/web_command_interface/app.py"
 
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
