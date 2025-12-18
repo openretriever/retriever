@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple
 
 from retriever.core.flow.context import FlowContext
 from retriever.core.ir.struct import IRStruct
-from retriever.core.plugins import load_plugins
+from retriever.core.utils import load_plugins
 
 PipelineFactory = Callable[..., Union[IRStruct, FlowContext]]
 

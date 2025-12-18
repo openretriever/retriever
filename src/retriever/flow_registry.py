@@ -22,14 +22,13 @@ from dataclasses import dataclass
 from collections import defaultdict
 import logging
 
-from retriever.core.flow.base import Flow as FlowBase
-
-from retriever.core.plugins import load_plugins
+from retriever.flow.base import Flow as FlowBase
+from retriever.utils import load_plugins
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from retriever.core.flow.base import Flow
+    from retriever.flow.base import Flow
 
 F = TypeVar('F', bound=FlowBase)
 
