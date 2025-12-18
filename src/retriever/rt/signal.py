@@ -211,10 +211,15 @@ class Signal:
                         publisher.put_one(value, timestamp, block=False)
                         # logger.debug(f"Published {field_name}={value}")
                     except Exception as e:
-                        # Log actual error
-                        logger.error(
-                            f"Failed to publish {field_name}: {e}",
-                            exc_info=True
-                        )
+                        # HACK: queue.Full is common in MP during startup/heavy load.
+                        # Don't spam stack traces for it.
+                        if "Full" in str(e) or e.__class__.__name__ == "Full":
+                            logger.warning(f"Dropped frame on {field_name}: queue full")
+                        else:
+                            # Log actual error
+                            logger.error(
+                                f"Failed to publish {field_name}: {e}",
+                                exc_info=True
+                            )
 
         return self
