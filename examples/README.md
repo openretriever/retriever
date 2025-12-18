@@ -4,7 +4,7 @@ This repo is focused on the **Retriever runtime/core**.
 
 The **canonical, maintained** examples live in:
 
-- `examples/00_refact/` (matches `docs/handbook.md`)
+- `examples/00_refact/` (matches `docs/handbook.md`; see `examples/00_refact/README.md` for the tutorial index)
 
 ## Quick start (Pixi)
 
