@@ -7,6 +7,11 @@ This guide describes the **refactored** Flow authoring surface used by the runti
 If you’re looking for the older “Flow.from_module / LocalExecutor / Eff monad” material, it lives in:
 - `docs/legacy/guide_flow_legacy.md`
 
+Quick checks (Dora lag policy):
+
+- Warn + drop missed ticks: `pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
+- Panic (alias for `error`): `pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
+
 ---
 
 ## 1) Define typed ports with `@flow_io`
@@ -95,6 +100,30 @@ Clocks control both scheduling and input sampling:
   - `sample=[]`: sample no inputs (tick-only)
 - `Trigger(...)` runs on arrivals of specified fields
 - `Hybrid(...)` combines both (see `retriever/core/flow/clock.py`)
+
+### Lag handling (`Rate.on_lag=...`)
+
+If a node cannot keep up with its configured `Rate(hz=...)` (e.g. a large model is too slow),
+Retriever needs an explicit policy for “missed ticks”.
+
+`Rate(..., on_lag=...)` (and `Hybrid(..., on_lag=...)` for its periodic path) supports:
+
+- `on_lag="warn"` (default): skip missed ticks + emit throttled warnings (keeps latency bounded, but visible)
+- `on_lag="drop"`: same as warn, but without warnings (quiet best-effort)
+- `on_lag="error"`: raise if lagging by ≥ 1 tick (aliases: `"panic"`, `"raise"`, `"strict"`)
+- `on_lag="catch_up"`: execute every tick eventually (simulation-style; latency can grow)
+
+See: `docs/handbook.md` (Rate lag policy section).
+
+Quick demo (Dora, using the `panic` alias):
+
+```bash
+pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
+```
+
+Pipeline-wide default:
+
+- `Pipeline("name", on_lag="error")` or `pipe.set_on_lag("error")` applies a default to any node still using the library default (`on_lag="warn"`).
 
 See also: `docs/guide_time.md`.
 
@@ -207,3 +236,30 @@ Notes:
 - Service flows currently require a backend that supports the RPC wiring (the dora backend does).
 - `Pipeline.step(...)` is a debug tool and currently does **not** support generator-based flows.
 
+---
+
+## 7) Closed loops (cycles)
+
+Retriever allows **feedback edges** (cycles). Cycles are represented as SCC groups in `IRStruct.topology.groups`.
+
+Practical guidance:
+
+- Avoid a “Trigger-only” cycle (`Trigger(...)` on every node): it may deadlock with no initial event.
+- Prefer a **clocked plant/env** and an **event-driven controller**:
+  - env: `Rate(hz=...)` (steps periodically, samples latest action)
+  - controller: `Trigger("obs")` (runs when a new observation arrives)
+
+This yields a stable distributed closed-loop where the env tick uses the most recent action.
+
+Example:
+- `examples/00_refact/016_closed_loop_env.py`
+  - `--env toy` (no extra deps)
+  - `--env pendulum` (requires `gymnasium` or `gym`, MPC balancing loop)
+
+Gym-style env wrapper notes:
+- A Gym env is typically stateful and imperative; in Retriever you wrap it in a `Flow`:
+  - `init()` creates the env
+  - `run(Action)` performs `env.step(action)` and returns `Observation`
+  - the flow can internally decide when to `reset()` (e.g. on `done=True`)
+- The closed-loop becomes a normal pipeline cycle (env↔controller), which can run on
+  multiprocessing or Dora without changing user code.
