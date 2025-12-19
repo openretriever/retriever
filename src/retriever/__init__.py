@@ -8,3 +8,17 @@ Core modules:
 """
 
 __version__ = "0.0.0"
+
+from retriever.flow.pipeline import (
+    Pipeline,
+    connect,
+    default_pipeline,
+    reset_default_pipeline,
+)
+
+__all__ = [
+    "Pipeline",
+    "connect",
+    "default_pipeline",
+    "reset_default_pipeline",
+]
