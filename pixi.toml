@@ -62,6 +62,7 @@ native = { features = ["native"] }
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
 # - `web`: deps for web-based command interfaces (FastAPI)
 # - `vision`: deps for real-time vision (PyTorch, Transformers)
+uvicorn = { extras = ["standard"], version = "*" }
 retriever = { path = ".", editable = true, extras = [
     "dora",
     "demo",
