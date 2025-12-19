@@ -9,7 +9,7 @@ Unlike `Pipeline.run(backend=...)`, this does *not* spawn child processes.
 Why synthetic frames?
   - Deterministic + no hardware dependency (works on CI and laptops without a camera).
   - If you want the same workflow with a real camera, use:
-    `examples/00_refact/013_debug_perception_stepper_real_camera.py`
+    `examples/tutorial/013_debug_perception_stepper_real_camera.py`
 
 Run:
   pixi run python -m examples.tutorial.012_debug_perception_stepper

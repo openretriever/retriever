@@ -1,10 +1,10 @@
-# 00_refact (Canonical Runtime Examples)
+# tutorial (Canonical Runtime Examples)
 
 This folder contains the **canonical, maintained** examples for the **refactored Retriever runtime**.
 
 If you only want a working demo, start here. These examples match `docs/handbook.md`.
 
-Note: `00_refact` is not a valid Python identifier, so examples that import code from this folder use `importlib`.
+Note: `tutorial` is not a valid Python identifier, so examples that import code from this folder use `importlib`.
 Running modules via `python -m ...` works fine.
 
 ## Quick Start
