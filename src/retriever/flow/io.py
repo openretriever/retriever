@@ -85,8 +85,22 @@ def flow_io(cls):
     cls.__annotations__ = new_annotations
 
     # Create a custom __init__ that applies field defaults or None
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Initialize with all fields using their defaults or None."""
+        # Mix positional args into kwargs
+        field_names = list(self.__dataclass_fields__.keys())
+        
+        if len(args) > len(field_names):
+            raise TypeError(
+                f"__init__() takes {len(field_names)} positional arguments but {len(args)} were given"
+            )
+            
+        for i, val in enumerate(args):
+            name = field_names[i]
+            if name in kwargs:
+                raise TypeError(f"__init__() got multiple values for argument '{name}'")
+            kwargs[name] = val
+
         for field_name, field_obj in self.__dataclass_fields__.items():
             if field_name in kwargs:
                 # User provided value

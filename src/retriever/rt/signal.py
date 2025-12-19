@@ -198,7 +198,37 @@ class Signal:
             # Sink flow - no output
             return self
 
+        # Default to execution time
         timestamp = self.now if self.now is not None else time.time()
+
+        # If data has explicit timestamp, propagate it (Critical for synchronization)
+        # Check standard 'timestamp' field first
+        found_ts = False
+        if hasattr(self.instance, "timestamp") and self.instance.timestamp is not None:
+            try:
+                timestamp = float(self.instance.timestamp)
+                found_ts = True
+            except (ValueError, TypeError):
+                pass
+        
+        if not found_ts:
+            # Check for 'ts_val' (fallback/rename)
+            if hasattr(self.instance, "ts_val") and self.instance.ts_val is not None:
+                 try:
+                    timestamp = float(self.instance.ts_val)
+                    found_ts = True
+                 except (ValueError, TypeError):
+                    pass
+
+        if not found_ts and hasattr(self.instance, "_has_signal"):
+             # For FlowIO wrapped objects, try _get_signal but handle errors
+             try:
+                 if self.instance._has_signal("timestamp"):
+                     val = self.instance._get_signal("timestamp")
+                     if val is not None:
+                         timestamp = float(val)
+             except Exception:
+                 pass
 
         # Publish each output field to all its publishers
         for field_name, publisher_list in output_publishers.items():
