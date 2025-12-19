@@ -87,6 +87,7 @@ EventStream whose `events()` returns the current `EventBuffer`.
 - A `Behavior[T]` is a “continuous-time” sampler derived from an EventStream + Adapter.
 
 These live in `retriever/rt/frp.py`.
+High-level user combinators (switch, until_event) live in `retriever/flow/frp.py`.
 
 ### 2.3 `Signal` (internal step helper)
 

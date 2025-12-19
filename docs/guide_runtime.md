@@ -208,6 +208,8 @@ This is what `Subscriber.get_all()` returns and what Adapters sample.
 `Behavior[T]` is a continuous-time sampler: `t -> value`. In this runtime it is usually derived from an
 `EventStream` via an Adapter.
 
+High-level combinators (`switch_behavior`, `until_event`) are available in `retriever.flow.frp`.
+
 ### Adapters (sampling policy)
 
 Adapters decide how to interpret an `EventBuffer` at time `now`:

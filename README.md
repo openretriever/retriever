@@ -98,3 +98,5 @@ Docs live in `docs/` (served via MkDocs):
 - Runtime handbook (canonical): `docs/handbook.md`
 - Architecture: `docs/architecture.md`
 - Install: `docs/install.md`
+- Advanced Examples: `examples/advanced/`
+

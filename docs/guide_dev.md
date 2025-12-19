@@ -137,17 +137,22 @@ Retriever follows a **type-safe, composable architecture** inspired by PyTorch's
 ### Three-Layer Hierarchy
 
 ```python
-# Layer 1: Module[I, O] - Atomic functions
-def detect_objects(image: RGBImage) -> List[Detection]:
-    return yolo_model.predict(image)
+# Layer 1: Module[I, O] - Atomic functions (Protocol)
+class DetectObjects(Module[RGBImage, List[Detection]]):
+    def __call__(self, image: RGBImage) -> List[Detection]:
+        return yolo_model.predict(image)
 
-# Layer 2: Flow[X, Y] - Composable steps
-detection_flow = Flow.from_module(detect_objects)
+# Layer 2: Flow[X, Y] - Runtime Node
+class DetectionFlow(Flow[RGBImage, List[Detection]]):
+    def run(self, image: RGBImage) -> List[Detection]:
+        # Implementation
+        return detections
 
 # Layer 3: Pipeline - Complete workflows
-manipulation_pipeline = (
-    camera_flow >> detection_flow >> planning_flow >> execution_flow
-)
+pipe = Pipeline("manipulation")
+with pipe:
+    cam >> detection >> planning >> execution
+
 ```
 
 ### Framework Components
@@ -207,7 +212,8 @@ manipulation_pipeline = (
 **Type Annotations Required**:
 ```python
 from typing import List, Dict, Optional, Protocol
-from retriever.types import Module, Flow, Eff
+from retriever.types.core import Module
+from retriever.flow import Flow
 
 class MyComponent(Module[InputType, OutputType]):
     def __call__(self, input_data: InputType) -> OutputType:
@@ -251,28 +257,22 @@ def process_sensor_data(data: SensorData) -> ProcessedData:
 ## Core Framework Components
 
 ### Flow System
-
-The heart of Retriever's composability:
-
-```python
-from retriever.flow import Flow
-from retriever.executor import LocalExecutor
+from retriever.flow import Flow, Pipeline
 
 # Create reusable components
-def my_perception_module(image: RGBImage) -> List[Detection]:
-    # Implementation
-    return detections
-
-# Lift into Flow system
-perception_flow = Flow.from_module(my_perception_module)
+class PerceptionFlow(Flow[RGBImage, List[Detection]]):
+    def run(self, image: RGBImage) -> List[Detection]:
+        # Implementation
+        return detections
 
 # Compose with other flows
-pipeline = perception_flow >> planning_flow >> execution_flow
+pipe = Pipeline("system")
+with pipe:
+    perception >> planning >> execution
 
 # Execute
-executor = LocalExecutor()
-result = executor.execute_sync(pipeline, input_data)
-```
+pipe.run(backend="multiprocessing")
+
 
 ### Stateful Operations with Eff
 
@@ -444,6 +444,8 @@ jobs:
 
 1. **Follow Module Protocol**:
    ```python
+   from retriever.types.core import Module
+
    class NewComponent(Module[InputType, OutputType]):
        def __call__(self, input_data: InputType) -> OutputType:
            # Implementation
@@ -488,16 +490,13 @@ jobs:
 
 ### Adding Execution Backends
 
-1. **Implement Executor Interface**:
+1. **Implement Executor Function**:
    ```python
-   class NewExecutor:
-       def execute_sync(self, flow: Flow[I, O], input_data: I) -> O:
-           # Implementation
-           pass
-       
-       async def execute_async(self, flow: Flow[I, O], input_data: I) -> O:
-           # Implementation  
-           pass
+   def execute_my_backend(ir: IRStruct, **kwargs):
+       # Compile IR to backend-specific graph
+       graph = compile_to_my_backend(ir)
+       # Execute
+       graph.run()
    ```
 
 2. **Add Performance Benchmarks**:

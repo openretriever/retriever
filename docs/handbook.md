@@ -49,7 +49,7 @@ Pixi vs uv (how they fit together):
 
 ---
 
-## 1) Mental model (what you’re building)
+## 1) Mental model (what user is building)
 
 Retriever runtime is a **typed dataflow runtime**:
 
@@ -229,6 +229,9 @@ Topic-focused tutorials (legacy extractions):
 - Closed-loop feedback intro: `examples/tutorial/06_feedback_loops/00_feedback_intro.py`
 - Event-driven replanning: `examples/tutorial/06_feedback_loops/01_event_driven_replan.py`
 - Execution monitoring: `examples/tutorial/06_feedback_loops/02_execution_monitoring.py`
+
+Advanced examples:
+- VLM Planning (Symbolic + LLM): `examples/advanced/vlm_planning.py`
 
 ---
 
