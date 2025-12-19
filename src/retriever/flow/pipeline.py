@@ -14,6 +14,8 @@ from typing import Any, Dict, Optional, Type
 from retriever.flow.context import FlowContext
 from retriever.flow.handle import FlowHandle
 
+from contextvars import ContextVar
+
 
 class Pipeline(FlowContext):
     """
@@ -302,11 +304,6 @@ class Pipeline(FlowContext):
         if self._stepper is not None:
             self._stepper.reset()
 
-    def close_stepper(self) -> None:
-        """Finalize flows used by the in-process stepper and drop stepper state."""
-        if self._stepper is not None:
-            self._stepper.close()
-            self._stepper = None
 
     def run(
         self,
@@ -357,4 +354,71 @@ class Pipeline(FlowContext):
         )
 
 
-__all__ = ["Pipeline"]
+
+# ==================================================================================
+# Default Pipeline Ergonomics (Global / Thread-local)
+# ==================================================================================
+
+_default_pipeline_var: ContextVar[Optional[Pipeline]] = ContextVar("default_pipeline", default=None)
+
+
+def reset_default_pipeline() -> Pipeline:
+    """
+    Reset and return a fresh default pipeline.
+    
+    Useful for interactive sessions (notebooks) to clear state.
+    """
+    pipe = Pipeline("default")
+    _default_pipeline_var.set(pipe)
+    return pipe
+
+
+def default_pipeline() -> Pipeline:
+    """
+    Get the current default pipeline (creating one if needed).
+    """
+    pipe = _default_pipeline_var.get()
+    if pipe is None:
+        pipe = Pipeline("default")
+        _default_pipeline_var.set(pipe)
+    return pipe
+
+
+def connect(
+    src: FlowHandle,
+    dst: FlowHandle,
+    *,
+    map: Optional[Dict[str, str]] = None,
+    sync: Optional[Any] = None,
+    qsize: int = 10,
+) -> Pipeline | FlowContext:
+    """
+    Connect two flows in the active context (or default pipeline).
+    
+    1. If a FlowContext is active (via `with Pipeline():` or `with FlowContext():`), use it.
+    2. Otherwise, use `retriever.default_pipeline()`.
+    """
+    # Check for active context
+    ctx = FlowContext.active()
+    
+    if ctx is None:
+        # Fallback to default pipeline
+        ctx = default_pipeline()
+
+    # Reuse Pipeline.connect logic if available (handles defaults)
+    if isinstance(ctx, Pipeline):
+        return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
+    
+    # Fallback for raw FlowContext (manual defaults)
+    from retriever.flow.adapter import Latest
+    if sync is None:
+        sync = Latest()
+    
+    ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
+    src.pipeline = ctx if isinstance(ctx, Pipeline) else None
+    dst.pipeline = ctx if isinstance(ctx, Pipeline) else None
+    return ctx
+
+
+__all__ = ["Pipeline", "reset_default_pipeline", "default_pipeline", "connect"]
+
