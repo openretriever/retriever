@@ -12,7 +12,7 @@ Why synthetic frames?
     `examples/00_refact/013_debug_perception_stepper_real_camera.py`
 
 Run:
-  pixi run python -m examples.00_refact.012_debug_perception_stepper
+  pixi run python -m examples.tutorial.012_debug_perception_stepper
 """
 
 from __future__ import annotations
@@ -23,9 +23,9 @@ import numpy as np
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest
 
 # Reuse the real detector implementation from the working dora demo.
-# Note: the `examples/00_refact/*` path is not a valid Python identifier, so we
+# Note: the `examples/tutorial/*` path is not a valid Python identifier, so we
 # import it via importlib (string-based import), not `from ... import ...`.
-_perception = importlib.import_module("examples.00_refact.009_dora_perception")
+_perception = importlib.import_module("examples.tutorial.009_dora_perception")
 CameraData = _perception.CameraData
 DetectionResults = _perception.DetectionResults
 Image = _perception.Image

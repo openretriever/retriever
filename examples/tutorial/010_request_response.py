@@ -7,7 +7,7 @@ synchronous request/response communication between flows.
 Run:
   pixi run demo-request-dora
   # or:
-  pixi run python -m examples.00_refact.010_request_response --backend dora --duration 5
+  pixi run python -m examples.tutorial.010_request_response --backend dora --duration 5
 """
 
 from __future__ import annotations

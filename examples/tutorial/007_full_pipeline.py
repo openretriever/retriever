@@ -10,7 +10,7 @@ Demonstrates all key features in one complete pipeline:
 • Runtime execution via `Pipeline.run(...)`
 
 Run:
-  pixi run python -m examples.00_refact.007_full_pipeline --backend multiprocessing --duration 4
+  pixi run python -m examples.tutorial.007_full_pipeline --backend multiprocessing --duration 4
 """
 
 from __future__ import annotations

@@ -6,11 +6,11 @@ This is a stepper-first workflow:
   - replay later (still in-process) so breakpoints inside `Flow.run()` work
 
 Run:
-  pixi run python -m examples.00_refact.014_record_replay_perception record --help
-  pixi run python -m examples.00_refact.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+  pixi run python -m examples.tutorial.014_record_replay_perception record --help
+  pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
 
-  pixi run python -m examples.00_refact.014_record_replay_perception replay --help
-  pixi run python -m examples.00_refact.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+  pixi run python -m examples.tutorial.014_record_replay_perception replay --help
+  pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest
 
-_perception = importlib.import_module("examples.00_refact.009_dora_perception")
+_perception = importlib.import_module("examples.tutorial.009_dora_perception")
 CameraSource = _perception.CameraSource
 CameraData = _perception.CameraData
 ColorDetector = _perception.ColorDetector

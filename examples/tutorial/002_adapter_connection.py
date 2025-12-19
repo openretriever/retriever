@@ -8,7 +8,7 @@ Preferred authoring surface:
   - Wire with `a >> b` or `a.then(b, sync=Latest())`
 
 Run:
-  pixi run python -m examples.00_refact.002_adapter_connection
+  pixi run python -m examples.tutorial.002_adapter_connection
 """
 
 from dataclasses import dataclass

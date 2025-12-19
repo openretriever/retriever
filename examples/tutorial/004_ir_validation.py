@@ -5,7 +5,7 @@ Validates a Pipeline/FlowContext and produces typed IR (Intermediate Representat
 Shows IR structure via JSON and explains validation checks.
 
 Run:
-  pixi run python -m examples.00_refact.004_ir_validation
+  pixi run python -m examples.tutorial.004_ir_validation
 """
 
 from dataclasses import dataclass

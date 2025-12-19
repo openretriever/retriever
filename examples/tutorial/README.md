@@ -22,7 +22,7 @@ pixi run demo-request-dora
 Everything in this folder is runnable via:
 
 ```bash
-pixi run python -m examples.00_refact.<module_name>
+pixi run python -m examples.tutorial.<module_name>
 ```
 
 ### Flow + clocks + adapters → IR
@@ -60,23 +60,23 @@ pixi run python -m examples.00_refact.<module_name>
 
 ```bash
 # Pipeline ergonomics: explicit vs `with pipe:` vs `retriever.connect(...)`
-pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode context --exec step
+pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode context --exec step
 
 # Debugging: stepper + breakpoints inside Flow.run()
-pixi run python -m examples.00_refact.011_debug_stepper --fail-at 3
+pixi run python -m examples.tutorial.011_debug_stepper --fail-at 3
 
 # Debug perception with stepper (synthetic frames, deterministic)
-pixi run python -m examples.00_refact.012_debug_perception_stepper
+pixi run python -m examples.tutorial.012_debug_perception_stepper
 
 # Debug perception with stepper (real camera; optional window)
-pixi run python -m examples.00_refact.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
+pixi run python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
 
 # Record once from camera, replay later (no hardware)
-pixi run python -m examples.00_refact.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
-pixi run python -m examples.00_refact.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
 
 # Closed-loop env/controller pipeline (multiprocess or dora)
-pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
+pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
 ```
 
 ## Other files in this folder

@@ -4,7 +4,7 @@
 A Flow transforms inputs to outputs like a function.
 
 Run:
-  pixi run python -m examples.00_refact.000_basic_flow
+  pixi run python -m examples.tutorial.000_basic_flow
 """
 
 from dataclasses import dataclass

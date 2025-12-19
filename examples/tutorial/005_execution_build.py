@@ -7,7 +7,7 @@ an executable IR by grouping/fusing nodes.
 Demonstrates 'conservative' and 'aggressive' builtin policies.
 
 Run:
-  pixi run python -m examples.00_refact.005_execution_build
+  pixi run python -m examples.tutorial.005_execution_build
 """
 
 from dataclasses import dataclass

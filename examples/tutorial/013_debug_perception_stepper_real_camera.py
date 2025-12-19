@@ -14,7 +14,7 @@ Notes:
     uses `--sleep` if provided, otherwise wall-clock time.
 
 Run:
-  pixi run python -m examples.00_refact.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
+  pixi run python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    perception = importlib.import_module("examples.00_refact.009_dora_perception")
+    perception = importlib.import_module("examples.tutorial.009_dora_perception")
 
     CameraSource = perception.CameraSource
     ColorDetector = perception.ColorDetector

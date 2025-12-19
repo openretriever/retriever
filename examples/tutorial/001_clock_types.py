@@ -5,7 +5,7 @@ Clocks control when flows execute.
 Bind clocks to flows using @ operator.
 
 Run:
-  pixi run python -m examples.00_refact.001_clock_types
+  pixi run python -m examples.tutorial.001_clock_types
 """
 
 from dataclasses import dataclass

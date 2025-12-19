@@ -10,7 +10,7 @@ Why this exists:
 How to use:
   1) Set a breakpoint inside `DebugFlow.run()` (or enable "break on exception").
   2) Run this file under the VS Code debugger (F5), or:
-     pixi run python -m examples.00_refact.011_debug_stepper --fail-at 3
+     pixi run python -m examples.tutorial.011_debug_stepper --fail-at 3
 """
 
 from __future__ import annotations

@@ -8,7 +8,7 @@ This example shows:
   - ExecutionGraph execution (`build=True`) -> grouping/co-location via `build_execution`
 
 Run:
-  pixi run python -m examples.00_refact.006_rt_execution --backend multiprocessing --duration 4
+  pixi run python -m examples.tutorial.006_rt_execution --backend multiprocessing --duration 4
 """
 
 from __future__ import annotations

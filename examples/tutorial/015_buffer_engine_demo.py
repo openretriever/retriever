@@ -7,10 +7,10 @@ This does NOT change the user authoring surface: it only selects a buffering +
 sampling implementation inside runtime backends via `backend_config`.
 
 Run (multiprocessing backend):
-  pixi run python -m examples.00_refact.015_buffer_engine_demo
+  pixi run python -m examples.tutorial.015_buffer_engine_demo
 
 Run (dora backend):
-  pixi run python -m examples.00_refact.015_buffer_engine_demo --backend dora
+  pixi run python -m examples.tutorial.015_buffer_engine_demo --backend dora
 """
 
 from __future__ import annotations

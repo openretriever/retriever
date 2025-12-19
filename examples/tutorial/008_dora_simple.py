@@ -4,7 +4,7 @@ Dora Backend - Execute pipeline with dora-rs backend
 Demonstrates using the dora backend for zero-copy IPC execution.
 
 Run:
-  pixi run python -m examples.00_refact.008_dora_simple --backend dora --duration 3
+  pixi run python -m examples.tutorial.008_dora_simple --backend dora --duration 3
 """
 
 from __future__ import annotations

@@ -9,7 +9,7 @@ Demonstrates perception pipeline with real camera input:
 Run:
   pixi run demo-dora
   # or:
-  pixi run python -m examples.00_refact.009_dora_perception --backend dora --duration 10
+  pixi run python -m examples.tutorial.009_dora_perception --backend dora --duration 10
 """
 
 from __future__ import annotations

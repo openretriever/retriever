@@ -8,7 +8,7 @@ The FlowGraph represents the dataflow structure and is used for IR validation.
 Demonstrates cycle detection and SCC topological grouping.
 
 Run:
-  pixi run python -m examples.00_refact.003_context_graph
+  pixi run python -m examples.tutorial.003_context_graph
 """
 
 from dataclasses import dataclass

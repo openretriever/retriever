@@ -11,9 +11,9 @@ Modes:
   3) functional:    `retriever.connect(a, b)` (thread-local default pipeline)
 
 Run:
-  pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode context --exec step
-  pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode functional --exec step
-  pixi run python -m examples.00_refact.017_pipeline_ergonomics --mode explicit --exec mp --duration 2
+  pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode context --exec step
+  pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode functional --exec step
+  pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode explicit --exec mp --duration 2
 """
 
 from __future__ import annotations

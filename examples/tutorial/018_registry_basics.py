@@ -11,7 +11,7 @@ Why this matters:
   - You can swap implementations by registering a different class under the same name.
 
 Run:
-  pixi run python -m examples.00_refact.018_registry_basics
+  pixi run python -m examples.tutorial.018_registry_basics
 """
 
 from __future__ import annotations

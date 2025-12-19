@@ -18,18 +18,18 @@ Rate lag handling:
   See: `docs/handbook.md` (Rate lag policy section).
 
 Toy env (no extra deps):
-  pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
+  pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
 
 Pendulum (requires `gymnasium` or `gym`):
-  pixi run python -m examples.00_refact.016_closed_loop_env --env pendulum --backend multiprocessing --hz 20 --duration 5
-  pixi run python -m examples.00_refact.016_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
+  pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backend multiprocessing --hz 20 --duration 5
+  pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
 
 Rate lag demo (Dora, intentionally force lag):
-  pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
-  pixi run python -m examples.00_refact.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
+  pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
+  pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
 
   # (Pendulum variant, requires gymnasium/gym)
-  pixi run python -m examples.00_refact.016_closed_loop_env --env pendulum --backend dora --hz 50 --duration 5 --on-lag warn
+  pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backend dora --hz 50 --duration 5 --on-lag warn
 """
 
 from __future__ import annotations
