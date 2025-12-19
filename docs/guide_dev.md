@@ -152,7 +152,7 @@ manipulation_pipeline = (
 
 ### Framework Components
 
-- **`retriever/core/`**: Flow system, execution engines, type system
+- **`retriever/`**: Flow system, execution engines, type system
 - **`retriever/perception/`**: Object detection, tracking, grounding
 - **`retriever/planning/`**: Task planning, VLM integration, DSPy optimization  
 - **`retriever/robots/`**: Platform integrations (Spot, UR5, simulation)
@@ -207,7 +207,7 @@ manipulation_pipeline = (
 **Type Annotations Required**:
 ```python
 from typing import List, Dict, Optional, Protocol
-from retriever.core.types import Module, Flow, Eff
+from retriever.types import Module, Flow, Eff
 
 class MyComponent(Module[InputType, OutputType]):
     def __call__(self, input_data: InputType) -> OutputType:
@@ -255,8 +255,8 @@ def process_sensor_data(data: SensorData) -> ProcessedData:
 The heart of Retriever's composability:
 
 ```python
-from retriever.core.flow import Flow
-from retriever.core.executor import LocalExecutor
+from retriever.flow import Flow
+from retriever.executor import LocalExecutor
 
 # Create reusable components
 def my_perception_module(image: RGBImage) -> List[Detection]:
@@ -279,7 +279,7 @@ result = executor.execute_sync(pipeline, input_data)
 For robot operations that modify state:
 
 ```python
-from retriever.core.types import Eff
+from retriever.types import Eff
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -636,11 +636,11 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Component-specific logging
-logger = logging.getLogger("retriever.core.flow")
+logger = logging.getLogger("retriever.flow")
 logger.setLevel(logging.DEBUG)
 
 # Enable flow execution tracing
-from retriever.core.debug import enable_flow_tracing
+from retriever.debug import enable_flow_tracing
 enable_flow_tracing()
 ```
 

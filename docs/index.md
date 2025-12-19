@@ -13,7 +13,7 @@ Retriever is a type-safe, composable runtime for building robotics dataflow pipe
 ```python
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
 
 
 @flow_io
@@ -115,8 +115,8 @@ pipe.run(backend="multiprocessing")
 ### Registry System
 ```python
 # IR-first pipeline registry
-from retriever.core.pipeline_registry import register_pipeline, build_ir
-from retriever.core.flow import Pipeline
+from retriever.pipeline_registry import register_pipeline, build_ir
+from retriever.flow import Pipeline
 
 @register_pipeline("my_pipeline", overwrite=True)
 def build():

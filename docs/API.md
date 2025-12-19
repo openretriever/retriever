@@ -16,12 +16,12 @@ Legacy API reference (pre-refactor): `docs/legacy/API_legacy.md`.
 
 ---
 
-## 1) Public authoring surface (`retriever.core.flow`)
+## 1) Public authoring surface (`retriever.flow`)
 
 Import path:
 
 ```py
-from retriever.core.flow import (
+from retriever.flow import (
     Flow, Pipeline, FlowContext, FlowHandle,
     flow_io, is_flow_io,
     Rate, Tick, Trigger, Hybrid,
@@ -43,12 +43,12 @@ Guide: `docs/guide_flow.md`.
 
 ---
 
-## 2) IR boundary (`retriever.core.ir`)
+## 2) IR boundary (`retriever.ir`)
 
 Import path:
 
 ```py
-from retriever.core.ir import (
+from retriever.ir import (
     validate,
     IRStruct,
     build_execution, compile_execution,
@@ -65,19 +65,19 @@ Guide: `docs/guide_execution.md`.
 
 ---
 
-## 3) Runtime execution (`retriever.core.rt`)
+## 3) Runtime execution (`retriever.rt`)
 
 Import path:
 
 ```py
-from retriever.core.rt import execute_ir
+from retriever.rt import execute_ir
 ```
 
 - `execute_ir(ir_or_graph, backend=..., duration=..., blocking=...)`: runs an `IRStruct` or an `ExecutionGraph` on a backend.
 
 Backends:
-- `multiprocessing`: `retriever/core/rt/backend/multiprocessing/*`
-- `dora`: `retriever/core/rt/backend/dora/*`
+- `multiprocessing`: `retriever/rt/backend/multiprocessing/*`
+- `dora`: `retriever/rt/backend/dora/*`
 
 Architecture: `docs/architecture.md`.
 
@@ -92,18 +92,18 @@ Preferred entry points:
 - record/replay: `Pipeline.record_to(...)` / `Pipeline.replay(...)`
 
 Implementation lives in:
-- `retriever/core/rt/stepper.py`
+- `retriever/rt/stepper.py`
 
 Guide: `docs/guide_debugging.md`.
 
 ---
 
-## 5) Pipelines registry + plugins (`retriever.core.pipeline_registry`)
+## 5) Pipelines registry + plugins (`retriever.pipeline_registry`)
 
 Import path:
 
 ```py
-from retriever.core.pipeline_registry import (
+from retriever.pipeline_registry import (
     register_pipeline,
     list_pipelines,
     build_ir,

@@ -46,9 +46,9 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 ## 2) Canonical API
 
 ```py
-from retriever.core.flow import Pipeline
-from retriever.core.ir import validate, build_execution
-from retriever.core.rt import execute_ir
+from retriever.flow import Pipeline
+from retriever.ir import validate, build_execution
+from retriever.rt import execute_ir
 
 pipe = Pipeline("demo")
 ...

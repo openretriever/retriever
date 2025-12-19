@@ -11,7 +11,7 @@ It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 ```py
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
 
 
 @flow_io
@@ -221,7 +221,7 @@ Adapters decide how to interpret an `EventBuffer` at time `now`:
 
 ### Register a pipeline factory
 
-Use `retriever.core.pipeline_registry.register_pipeline` to register a pipeline builder that returns:
+Use `retriever.pipeline_registry.register_pipeline` to register a pipeline builder that returns:
 
 - an `IRStruct`, or
 - a `Pipeline` / `FlowContext` (it will be validated automatically)
@@ -233,7 +233,7 @@ living in the runtime repo.
 
 ## 6) Notes
 
-- This guide uses `retriever.core.flow.Pipeline`. The top-level `retriever.Pipeline` is legacy/FRP-engine code
+- This guide uses `retriever.flow.Pipeline`. The top-level `retriever.Pipeline` is legacy/FRP-engine code
   and is not part of the refactored runtime surface.
-- `retriever.core.rt.signal.Signal` is an internal per-step helper used by executors (sample → transform → publish).
+- `retriever.rt.signal.Signal` is an internal per-step helper used by executors (sample → transform → publish).
   It is not an `EventStream`.

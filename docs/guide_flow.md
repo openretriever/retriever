@@ -20,7 +20,7 @@ Flows communicate using dataclasses decorated with `@flow_io`. Each field become
 
 ```py
 from dataclasses import dataclass
-from retriever.core.flow import flow_io
+from retriever.flow import flow_io
 
 
 @flow_io
@@ -50,7 +50,7 @@ A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
 
 ```py
 from dataclasses import dataclass
-from retriever.core.flow import Flow, flow_io
+from retriever.flow import Flow, flow_io
 
 
 @flow_io
@@ -85,7 +85,7 @@ Ergonomics:
 Attach a clock to a flow instance to create a runnable node handle:
 
 ```py
-from retriever.core.flow import Rate, Trigger, Tick
+from retriever.flow import Rate, Trigger, Tick
 
 src = Source() @ Rate(hz=10)           # periodic, samples all inputs (default)
 tick_only = Source() @ Tick(hz=10)     # periodic, samples no inputs
@@ -99,7 +99,7 @@ Clocks control both scheduling and input sampling:
   - default: sample all inputs (`sample="all"` / `"*"` / `...`)
   - `sample=[]`: sample no inputs (tick-only)
 - `Trigger(...)` runs on arrivals of specified fields
-- `Hybrid(...)` combines both (see `retriever/core/flow/clock.py`)
+- `Hybrid(...)` combines both (see `retriever/flow/clock.py`)
 
 ### Lag handling (`Rate.on_lag=...`)
 
@@ -136,7 +136,7 @@ See also: `docs/guide_time.md`.
 `Pipeline` is the preferred authoring surface when you don’t want a global context manager.
 
 ```py
-from retriever.core.flow import Pipeline, Rate, Latest
+from retriever.flow import Pipeline, Rate, Latest
 
 pipe = Pipeline("demo")
 src = Source() @ Rate(hz=10)
@@ -150,8 +150,8 @@ pipe.connect(src, add, sync=Latest())  # default adapter is Latest()
 `FlowContext` collects connections made via `then(...)` / `>>` inside a `with` block.
 
 ```py
-from retriever.core.flow import FlowContext, Rate
-from retriever.core.rt import execute_ir
+from retriever.flow import FlowContext, Rate
+from retriever.rt import execute_ir
 
 with FlowContext("demo") as ctx:
     src = Source() @ Rate(hz=10)
@@ -192,7 +192,7 @@ Adapters define how a downstream samples its input **buffer**:
 - `Window(duration=..., agg=..., buffer_size=...)`
 - `Events(duration=..., include_timestamps=..., buffer_size=...)`
 
-Adapters live in `retriever/core/flow/adapter.py`. The underlying buffer type is:
+Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
 `EventBuffer[T] = list[(timestamp: float, value: T)]`
 

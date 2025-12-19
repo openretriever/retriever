@@ -61,8 +61,8 @@ The in-process stepper:
 
 Implementation lives in:
 
-- `retriever/core/rt/stepper.py`
-- `retriever/core/flow/pipeline.py` (`Pipeline.step/reset_stepper/close_stepper`)
+- `retriever/rt/stepper.py`
+- `retriever/flow/pipeline.py` (`Pipeline.step/reset_stepper/close_stepper`)
 
 ### Flow lifecycle in the stepper
 
@@ -204,7 +204,7 @@ The stepper is useful for “record once, debug many times” workflows:
 Library helpers (stepper-first):
 
 - High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
-- Low-level: `retriever.core.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
+- Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
 
 Perception example:
 - `examples/tutorial/014_record_replay_perception.py`:

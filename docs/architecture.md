@@ -13,7 +13,7 @@ If you are looking for the older “Flow.from_module / LocalExecutor / Execution
 
 ### 1.1 Authoring (declarative graph)
 
-Code lives in `retriever/core/flow/`:
+Code lives in `retriever/flow/`:
 
 - `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
 - `@flow_io` dataclasses: typed ports (each field is a port)
@@ -25,7 +25,7 @@ Code lives in `retriever/core/flow/`:
 
 ### 1.2 Validation (IR boundary)
 
-Code lives in `retriever/core/ir/`:
+Code lives in `retriever/ir/`:
 
 - `validate(ctx: FlowContext | Pipeline) -> IRStruct`
 - `build_execution(ir: IRStruct) -> ExecutionGraph` (optional, but recommended)
@@ -43,14 +43,14 @@ Code lives in `retriever/core/ir/`:
 
 ### 1.3 Execution (runtime + backends)
 
-Code lives in `retriever/core/rt/`:
+Code lives in `retriever/rt/`:
 
 - `execute_ir(ir, backend=..., duration=..., blocking=...)`
-- in-process debugging: `Pipeline.step(...)` + record/replay helpers (implemented in `retriever/core/rt/stepper.py`)
-- backend registry: `retriever/core/rt/backend/factory.py`
+- in-process debugging: `Pipeline.step(...)` + record/replay helpers (implemented in `retriever/rt/stepper.py`)
+- backend registry: `retriever/rt/backend/factory.py`
 - backends:
-  - `retriever/core/rt/backend/multiprocessing/*`
-  - `retriever/core/rt/backend/dora/*`
+  - `retriever/rt/backend/multiprocessing/*`
+  - `retriever/rt/backend/dora/*`
 
 Backends are responsible for:
 
@@ -86,11 +86,11 @@ EventStream whose `events()` returns the current `EventBuffer`.
 - `EventStream.sample(adapter, now=...)` applies an Adapter to the current EventBuffer.
 - A `Behavior[T]` is a “continuous-time” sampler derived from an EventStream + Adapter.
 
-These live in `retriever/core/rt/frp.py`.
+These live in `retriever/rt/frp.py`.
 
 ### 2.3 `Signal` (internal step helper)
 
-`retriever/core/rt/signal.py` defines `Signal`, which is **not** an EventStream.
+`retriever/rt/signal.py` defines `Signal`, which is **not** an EventStream.
 
 It is the executor’s per-step helper:
 
@@ -125,14 +125,14 @@ To support “system packages” (and the future split into runtime vs golden sy
 
 ### 4.1 Pipeline registry (IR-first)
 
-`retriever/core/pipeline_registry.py` registers **pipeline factories** that return:
+`retriever/pipeline_registry.py` registers **pipeline factories** that return:
 
 - `IRStruct` (preferred), or
 - `Pipeline` / `FlowContext` (validated to IRStruct automatically)
 
 ### 4.2 Plugin discovery (entry points)
 
-`retriever/core/plugins.py` supports loading entry points so external packages can register pipelines/components.
+`retriever/plugins.py` supports loading entry points so external packages can register pipelines/components.
 
 Entry point group:
 

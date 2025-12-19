@@ -82,7 +82,7 @@ Flows communicate using dataclasses decorated with `@flow_io`. Each field become
 
 ```py
 from dataclasses import dataclass
-from retriever.core.flow import flow_io
+from retriever.flow import flow_io
 
 
 @flow_io
@@ -103,7 +103,7 @@ Notes:
 ### 2.2 Implement a `Flow[I, O]`
 
 ```py
-from retriever.core.flow import Flow
+from retriever.flow import Flow
 
 
 class Source(Flow[None, SrcOut]):
@@ -127,7 +127,7 @@ Lifecycle hooks:
 ### 3.1 Attach clocks: `flow @ clock`
 
 ```py
-from retriever.core.flow import Rate, Tick, Trigger
+from retriever.flow import Rate, Tick, Trigger
 
 src = Source() @ Rate(hz=10)        # periodic; samples inputs (default: all)
 tick_only = Source() @ Tick(hz=10)  # periodic; samples no inputs
@@ -143,7 +143,7 @@ Clock cheat-sheet:
 ### 3.2 Connect nodes with a `Pipeline` (recommended)
 
 ```py
-from retriever.core.flow import Pipeline, Latest
+from retriever.flow import Pipeline, Latest
 
 pipe = Pipeline("demo")
 src = Source() @ Rate(hz=10)
@@ -239,7 +239,7 @@ Retriever maintains a thread-local **default pipeline**:
 
 ```py
 import retriever
-from retriever.core.flow import Rate
+from retriever.flow import Rate
 
 retriever.reset_default_pipeline()
 
@@ -378,9 +378,9 @@ pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backen
 
 Runtime/core “source of truth”:
 
-- `retriever/core/flow/*` — typed graph authoring
-- `retriever/core/ir/*` — validation + IR structs
-- `retriever/core/rt/*` — execution, backends, stepper/debugging helpers
+- `retriever/flow/*` — typed graph authoring
+- `retriever/ir/*` — validation + IR structs
+- `retriever/rt/*` — execution, backends, stepper/debugging helpers
 
 System/legacy folders still present (to move to golden repo):
 
@@ -395,13 +395,13 @@ Golden split templates in this repo:
 
 ## 11) Where to look in code
 
-- Pipeline authoring: `retriever/core/flow/pipeline.py`
-- Clocks: `retriever/core/flow/clock.py`
-- Adapters: `retriever/core/flow/adapter.py`
-- Validator: `retriever/core/ir/validator.py`
-- MP backend: `retriever/core/rt/backend/multiprocessing/*`
-- Dora backend: `retriever/core/rt/backend/dora/*`
-- Stepper/debugger: `retriever/core/rt/stepper.py`
+- Pipeline authoring: `retriever/flow/pipeline.py`
+- Clocks: `retriever/flow/clock.py`
+- Adapters: `retriever/flow/adapter.py`
+- Validator: `retriever/ir/validator.py`
+- MP backend: `retriever/rt/backend/multiprocessing/*`
+- Dora backend: `retriever/rt/backend/dora/*`
+- Stepper/debugger: `retriever/rt/stepper.py`
 
 ---
 
