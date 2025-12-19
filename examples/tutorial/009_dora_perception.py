@@ -238,7 +238,7 @@ def build_perception_pipeline() -> Pipeline:
 
     # Preferred authoring: `with pipe: a >> b` (no separate FlowContext).
     with pipe:
-        camera = CameraSource(use_real_camera=True) @ Rate(hz=20)
+        camera = CameraSource(use_real_camera=True) @ Rate(hz=30)
         detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
         display = DisplayFlow(show_window=True) @ Rate(hz=20)
 

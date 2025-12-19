@@ -399,6 +399,7 @@ def build_pipeline(*, hz: float, env: str, on_lag: str = "warn") -> Pipeline:
     elif env == "pendulum":
         env_node = PendulumEnv() @ Rate(hz=hz, on_lag=on_lag)
         ctrl_node = PendulumMPCController() @ Trigger("transition")
+        # ctrl_node = PendulumMPCController() @ Rate(hz=5, on_lag=on_lag, )
     else:
         raise ValueError(f"Unknown env: {env!r}")
 
