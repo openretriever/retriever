@@ -153,6 +153,20 @@ class Flow(ABC, Generic[I, O]):
         """PyTorch-style alias for `step(...)`."""
         return self.step(input)
 
+    def __rshift__(self, other):
+        """
+        Support flow composition: A >> B
+        """
+        from retriever.flow.pipeline import Pipeline
+        return Pipeline.from_flow(self) >> other
+    
+    def __and__(self, other):
+        """
+        Support parallel composition: A & B
+        """
+        from retriever.flow.pipeline import Pipeline
+        return Pipeline.from_flow(self) & other
+
     @abstractmethod
     def run(self, input: I) -> O:
         """

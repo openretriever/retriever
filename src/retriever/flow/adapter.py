@@ -283,3 +283,34 @@ class Events(Adapter[T]):
         if self.include_timestamps:
             return events
         return [value for _, value in events]
+
+
+@register_adapter("exact")
+@dataclass
+class Exact(Adapter[T]):
+    """
+    Samples value with the exact matching timestamp.
+    
+    Requires `now` to be provided (usually by Synchronized clock).
+    """
+    buffer_size: int = 10
+    tolerance: float = 1e-6
+    
+    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None) -> T:
+        if now is None:
+            # Fallback to latest if no time requested
+            _, value = buffer[-1]
+            return value
+            
+        # Find match within tolerance
+        # Search backwards as we likely want recent stuff? 
+        # Or if we sync old frames, maybe irrelevant.
+        for ts, value in reversed(buffer):
+            if abs(ts - now) <= self.tolerance:
+                return value
+                
+        raise FlowError(
+            ErrCode.FLOW_ADAPTER_INVALID,
+            f"No value found for timestamp {now} (tol={self.tolerance})",
+            buffer_range=(buffer[0][0], buffer[-1][0]) if buffer else "empty"
+        )
