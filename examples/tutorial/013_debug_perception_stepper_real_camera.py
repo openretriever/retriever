@@ -14,7 +14,8 @@ Notes:
     uses `--sleep` if provided, otherwise wall-clock time.
 
 Run:
-  pixi run python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
+  pixi run demo-stepper-camera
+  (or: pixi run python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05)
 """
 
 from __future__ import annotations

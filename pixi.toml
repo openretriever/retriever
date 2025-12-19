@@ -107,5 +107,9 @@ demo-basics-dora = "python -m examples.tutorial.009_dora_perception --backend do
 # Run: pixi run demo-request-dora
 demo-request-dora = "python -m examples.tutorial.010_request_response"
 
+# Stepper Debug (Real Camera): Step-by-step debugging of a real-world perception flow
+# Run: pixi run demo-stepper-camera
+demo-stepper-camera = "python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
+
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
