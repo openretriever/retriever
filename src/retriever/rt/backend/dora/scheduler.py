@@ -133,6 +133,10 @@ class DoraScheduler(Scheduler):
         if isinstance(self.clock, Rate):
             return self._check_rate()
         elif isinstance(self.clock, Trigger):
+            # Synchronized is a subclass of Trigger but needs special logic
+            from retriever.flow.clock import Synchronized
+            if isinstance(self.clock, Synchronized):
+                return self._check_synchronized(inputs)
             return self._check_trigger(inputs)
         elif isinstance(self.clock, Hybrid):
             return self._check_hybrid(inputs)
@@ -162,6 +166,44 @@ class DoraScheduler(Scheduler):
                     fields_to_sample=[field],
                     now=time.time(),
                 )
+        return ScheduleResult(should_execute=False)
+        
+    def _check_synchronized(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
+        """Check if ALL trigger fields have a matching timestamp."""
+        # 1. Collect all timestamps for each required field
+        candidates = None
+        
+        for field in self.clock.fields:
+            if field not in inputs:
+                return ScheduleResult(should_execute=False)
+                
+            buffer = inputs[field].get_all()
+            if not buffer:
+                return ScheduleResult(should_execute=False)
+                
+            # Extract timestamps
+            timestamps = {ts for ts, _ in buffer}
+            
+            if candidates is None:
+                candidates = timestamps
+            else:
+                candidates &= timestamps
+                
+        if not candidates:
+            return ScheduleResult(should_execute=False)
+            
+        # Found common timestamps!
+        sorted_ts = sorted(list(candidates))
+        
+        for ts in sorted_ts:
+            if self._last_tick_ts is None or ts > self._last_tick_ts:
+                self._last_tick_ts = ts
+                return ScheduleResult(
+                    should_execute=True,
+                    fields_to_sample=self.clock.fields,
+                    now=ts
+                )
+        
         return ScheduleResult(should_execute=False)
 
     def _check_hybrid(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:

@@ -11,6 +11,7 @@ import importlib
 from typing import Any, Dict, Tuple
 
 import pyarrow as pa
+import pyarrow as pa
 import numpy as np
 
 import logging
@@ -119,6 +120,16 @@ def serialize_arrow(value: Any) -> Tuple[pa.Array, Dict[str, Any]]:
                 "_dtype": str(arr.dtype),
             }
 
+    # Handle PyArrow Array (Pass-through for Zero Copy)
+    elif isinstance(value, pa.Array):
+        return value, {"_type": "arrow_array"}
+
+    # Handle PyArrow Buffer (Wrap in Array)
+    elif isinstance(value, pa.Buffer):
+        # We must wrap buffer in an array to send via dora
+        # We treat it as a binary array of length 1 containing this buffer
+        return pa.array([value], type=pa.binary()), {"_type": "arrow_buffer"}
+
     # Fallback: pickle for complex types
     logger.debug(f"Using pickle for type: {type(value)}")
     pickled = pickle.dumps(value)
@@ -204,6 +215,15 @@ def deserialize_arrow(arrow_array: pa.Array, metadata: Dict[str, Any]) -> Any:
                 pass
 
         return data
+
+    # Handle pass-through Arrow Array
+    elif type_info == "arrow_array":
+        return arrow_array
+
+    # Handle pass-through Arrow Buffer
+    elif type_info == "arrow_buffer":
+        # Extract the single buffer from the binary array
+        return arrow_array[0].as_buffer()
 
     # Handle pickled objects
     elif type_info == "pickle":
