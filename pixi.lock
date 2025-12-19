@@ -2048,7 +2048,7 @@ packages:
 - pypi: ./
   name: retriever
   version: 0.0.0
-  sha256: 59468041f6417b6334986f770f8de34c8555f0af34f534ea5c5c291fcc33ef6e
+  sha256: 8f4ab67ea39a1ffd7ca5a2b99f3e8831e94bebfcabf86c13782241eab67aaf14
   requires_dist:
   - numpy<2.0.0 ; extra == 'demo'
   - opencv-python==4.8.0.74 ; extra == 'demo'
@@ -2071,7 +2071,7 @@ packages:
   - opentelemetry-api ; extra == 'otel'
   - opentelemetry-sdk ; extra == 'otel'
   - fastapi ; extra == 'web'
-  - uvicorn ; extra == 'web'
+  - uvicorn[standard] ; extra == 'web'
   - pydantic ; extra == 'web'
   - jinja2 ; extra == 'web'
   - torch>=2.0.0 ; extra == 'vision'
