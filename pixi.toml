@@ -113,3 +113,7 @@ demo-stepper-camera = "python -m examples.tutorial.013_debug_perception_stepper_
 
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
+
+# OpenPI VLA Demo
+# Run: pixi run demo-vla
+demo-vla = "python examples/advanced/vla_inference_optim/app.py"
