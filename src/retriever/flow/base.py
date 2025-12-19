@@ -181,3 +181,33 @@ class Flow(ABC, Generic[I, O]):
                 return output
         """
         pass
+
+    def __getstate__(self):
+        """
+        Custom pickling to exclude common unpicklable components.
+        
+        This allows Flows to store threading.Lock, queue.Queue, etc. 
+        as long as they are initialized in init() rather than __init__().
+        """
+        state = self.__dict__.copy()
+        unpicklable_types = (
+            'threading.Lock', 'threading.RLock', 'threading.Thread', 
+            'queue.Queue', 'SimpleQueue', 'JoinableQueue',
+            'dora.Node', 'FastAPI'
+        )
+        
+        to_remove = []
+        for k, v in state.items():
+            t_str = str(type(v))
+            if any(p in t_str for p in unpicklable_types):
+                to_remove.append(k)
+        
+        for k in to_remove:
+            state.pop(k)
+            
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Runtime objects must be re-initialized in init()
+        pass

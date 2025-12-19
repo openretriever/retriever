@@ -27,7 +27,7 @@ Minimal example:
 
 ```py
 from dataclasses import dataclass
-from retriever.core.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
 @flow_io
 @dataclass
 class SrcOut:
