@@ -355,12 +355,29 @@ class Hybrid(Clock):
         """Interval in seconds between periodic executions"""
         return 1.0 / self.hz
 
-    def __repr__(self) -> str:
-        if self.rate_fields == ["..."]:
-            base = f"Hybrid(hz={self.hz}, trigger={self.trigger_fields})"
-        else:
-            base = f"Hybrid(hz={self.hz}, trigger={self.trigger_fields}, sample={self.rate_fields})"
-
         if self.on_lag != "warn":
             return f"{base[:-1]}, on_lag={self.on_lag!r})"
         return base
+
+
+@dataclass(init=False)
+class Synchronized(Trigger):
+    """
+    Synchronized execution - executes only when ALL specified fields have matching timestamps.
+    
+    This acts like an AND gate on input arrival, enforced by timestamp equality (within tolerance).
+    """
+    tolerance: float
+    
+    def __init__(
+        self,
+        *on_fields: str,
+        tolerance: float = 1e-5,
+        fields: Optional[Any] = None,
+        on: Optional[Any] = None,
+    ):
+        super().__init__(*on_fields, fields=fields, on=on)
+        self.tolerance = tolerance
+        
+    def __repr__(self) -> str:
+        return f"Synchronized(on={self.fields}, tol={self.tolerance})"

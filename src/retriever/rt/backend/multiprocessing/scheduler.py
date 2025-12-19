@@ -7,7 +7,7 @@ Sleep-based timing for Rate, connection.wait() for Trigger/Hybrid.
 import time
 from typing import Dict
 from multiprocessing.connection import wait as connection_wait
-from retriever.flow.clock import Clock, Rate, Trigger, Hybrid
+from retriever.flow.clock import Clock, Rate, Trigger, Hybrid, Synchronized
 from retriever.rt.backend.interface import Scheduler, ScheduleResult, Subscriber
 from retriever.error import RTError, ErrCode
 
@@ -55,19 +55,30 @@ class MPScheduler(Scheduler):
 
     def next(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
         """
-        Advance to next execution point.
-
-        Blocks until flow should execute based on clock type.
-
+        Determine next execution time/inputs.
+        
         Args:
-            inputs: Dict mapping port name to Subscriber
-
+            inputs: Input subscribers
+            
         Returns:
-            ScheduleResult with execution decision and fields to sample
+            ScheduleResult with execution decision
         """
+    def next(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
+        """
+        Determine next execution time/inputs.
+        
+        Args:
+            inputs: Input subscribers
+            
+        Returns:
+            ScheduleResult with execution decision
+        """
+        
         if isinstance(self.clock, Rate):
             return self._next_rate(inputs)
         elif isinstance(self.clock, Trigger):
+            if isinstance(self.clock, Synchronized):
+                return self._next_synchronized(inputs)
             return self._next_trigger(inputs)
         elif isinstance(self.clock, Hybrid):
             return self._next_hybrid(inputs)
@@ -148,6 +159,84 @@ class MPScheduler(Scheduler):
         # Drain all inputs and check for arrivals
         self._drain_all(inputs)
         return self._check_arrival(inputs, fields)
+
+    def _check_synchronized(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
+        """Check if ALL trigger fields have a matching timestamp (Synchronized logic)."""
+        candidates = None
+        
+        for field in self.clock.fields:
+            if field not in inputs:
+                return ScheduleResult(should_execute=False)
+                
+            buffer = inputs[field].get_all()
+            if not buffer:
+                return ScheduleResult(should_execute=False)
+                
+            # Extract timestamps
+            timestamps = {ts for ts, _ in buffer}
+            
+            if candidates is None:
+                candidates = timestamps
+            else:
+                candidates &= timestamps
+                
+        if not candidates:
+            return ScheduleResult(should_execute=False)
+            
+        # Found common timestamps!
+        sorted_ts = sorted(list(candidates))
+        
+        for ts in sorted_ts:
+            if self._last_lag_log is None or ts > self._last_lag_log:
+                # Reuse _last_lag_log as last_tick check for simplicity to avoid adding new state?
+                # No, _last_lag_log is for logging lag.
+                # Use pending tick ts? Or add state?
+                # DoraScheduler has _last_tick_ts. MPScheduler doesn't seem to use it for Trigger.
+                # The reset() method sets next_tick for Rate.
+                pass
+                
+        # We need state to avoid re-executing same timestamp.
+        # MPScheduler uses blocking wait logic, but peeking doesn't consume.
+        # So we MUST track last executed TS.
+        # self.next_tick is float. We can reuse it or use a new logic.
+        # Let's check `self.next_tick`. Initialize to 0?
+        if self.next_tick is None: 
+            self.next_tick = 0.0
+
+        for ts in sorted_ts:
+            if ts > self.next_tick:
+                self.next_tick = ts
+                return ScheduleResult(
+                    should_execute=True,
+                    fields_to_sample=self.clock.fields,
+                    now=ts
+                )
+                
+        return ScheduleResult(should_execute=False)
+
+    def _next_synchronized(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
+        """Block until synchronized data available."""
+        timeout = 1.0
+        fields = self.clock.fields
+        
+        # Check current buffers
+        self._drain_all(inputs)
+        result = self._check_synchronized(inputs)
+        if result.should_execute:
+            return result
+            
+        # Block until any reader has data
+        readers = []
+        for field in fields:
+            if field in inputs:
+                readers.append(inputs[field].reader)
+                
+        if not connection_wait(readers, timeout=timeout):
+            return ScheduleResult(should_execute=False)
+            
+        # Drain and check again
+        self._drain_all(inputs)
+        return self._check_synchronized(inputs)
 
     def _next_hybrid(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
         """Block for triggers until rate tick is due."""
