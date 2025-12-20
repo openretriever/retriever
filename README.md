@@ -19,42 +19,37 @@ System-level pipelines, integrations (robots/sim), and heavy model stacks will l
 
 ---
 
+
 ## Canonical Runtime Workflow
 
-`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
+**Unified API (Recommended)**: `retriever.connect(...)` → `retriever.run(...)` (Implicitly handles validation/IR).
+
+**Low-Level API**: `Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
 
 Minimal example:
 
+
 ```py
-from dataclasses import dataclass
-from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
-@flow_io
-@dataclass
-class SrcOut:
-    value: int
+import retriever
+from retriever.lib import Wrapper, from_torch
 
+# 1. Define Logic (e.g. standard functions/classes)
+def source():
+    return 1
 
-@flow_io
-@dataclass
-class AddOut:
-    value: int
+class AddOne:
+    def __call__(self, value):
+        return value + 1
 
+# 2. Wrap as Flows
+src = Wrapper(source) @ retriever.Rate(10)
+add = Wrapper(AddOne()) @ retriever.Rate(10)
 
-class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
-        return SrcOut(value=1)
+# 3. Connect (Implicit Default Pipeline)
+retriever.connect(src, add)
 
-
-class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
-        return AddOut(value=input.value + 1)
-
-pipe = Pipeline("demo")
-src = Source() @ Rate(hz=10)
-add = AddOne() @ Rate(hz=10)
-pipe.connect(src, add, sync=Latest())
-
-pipe.run(backend="multiprocessing", duration=1.0)
+# 4. Run
+retriever.run(backend="multiprocessing", duration=1.0)
 ```
 
 More details: `docs/handbook.md`
