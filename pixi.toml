@@ -80,6 +80,9 @@ typing-extensions = "*"
 # rejects the generated YAML, see docs/install.md for upgrade/build-from-source steps.
 dora-rs = ">=0.3.12"
 dora-rs-cli = ">=0.3.12"
+mkdocs-material = ">=9.7.1, <10"
+mkdocs-git-revision-date-localized-plugin = ">=1.5.0, <2"
+mkdocs-minify-plugin = ">=0.8.0, <0.9"
 
 # =============================================================================
 # Tasks
