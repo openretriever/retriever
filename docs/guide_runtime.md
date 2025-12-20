@@ -62,7 +62,7 @@ print(res.executed)
 pipe.close_stepper()
 ```
 
-More details: `docs/guide_debugging.md`.
+More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
