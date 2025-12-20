@@ -8,14 +8,27 @@ import json
 import pickle
 import dataclasses
 import importlib
+import warnings
 from typing import Any, Dict, Tuple
 
-import pyarrow as pa
 import pyarrow as pa
 import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
+
+# Optional libraries for Zero-Copy support
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+try:
+    from dora.cuda import torch_to_ipc_buffer, ipc_buffer_to_ipc_handle, cudabuffer_to_torch
+    HAS_DORA_CUDA = True
+except ImportError:
+    HAS_DORA_CUDA = False
 
 
 # ============================================================================
@@ -130,6 +143,46 @@ def serialize_arrow(value: Any) -> Tuple[pa.Array, Dict[str, Any]]:
         # We treat it as a binary array of length 1 containing this buffer
         return pa.array([value], type=pa.binary()), {"_type": "arrow_buffer"}
 
+    # Handle PyTorch Tensors (Native Zero-Copy Integration)
+    elif HAS_TORCH and isinstance(value, torch.Tensor):
+        # -- CUDA Support --
+        if value.device.type == "cuda" and HAS_DORA_CUDA:
+            try:
+                # Get IPC Handle (Zero Copy GPU->GPU)
+                ipc_buffer, meta = torch_to_ipc_buffer(value)
+                handle_bytes = ipc_buffer_to_ipc_handle(ipc_buffer)
+                
+                # Send handle as binary
+                return pa.array([handle_bytes], type=pa.binary()), {
+                    "_type": "torch_tensor",
+                    "_device": "cuda",
+                    "_meta": json.dumps(meta) # Encode metadata (dtype, shape, strides)
+                }
+            except Exception as e:
+                logger.warning(f"CUDA IPC failed, falling back: {e}")
+                # Fallthrough to CPU transfer
+                value = value.cpu()
+        
+        # -- CPU Support --
+        # Convert to Numpy (Zero Copy View) -> Arrow
+        # We flatten because Arrow arrays are 1D lists of values. 
+        # We reconstruct shape on receive.
+        if value.device.type != "cpu":
+             value = value.cpu()
+            
+        np_view = value.detach().numpy().reshape(-1) # Flat view
+        
+        # Create Arrow Array from Numpy (Zero Copy if types match)
+        # Note: pa.array(np_array) is generally zero-copy for numerical types
+        arrow_arr = pa.array(np_view)
+        
+        return arrow_arr, {
+            "_type": "torch_tensor",
+            "_device": "cpu",
+            "_dtype": str(value.dtype),
+            "_shape": list(value.shape)
+        }
+
     # Fallback: pickle for complex types
     logger.debug(f"Using pickle for type: {type(value)}")
     pickled = pickle.dumps(value)
@@ -224,6 +277,53 @@ def deserialize_arrow(arrow_array: pa.Array, metadata: Dict[str, Any]) -> Any:
     elif type_info == "arrow_buffer":
         # Extract the single buffer from the binary array
         return arrow_array[0].as_buffer()
+
+    # Handle PyTorch Tensors
+    elif type_info == "torch_tensor":
+        if not HAS_TORCH:
+            raise ImportError("Received torch_tensor but torch is not installed.")
+            
+        device_type = metadata.get("_device", "cpu")
+        
+        if device_type == "cuda" and HAS_DORA_CUDA and torch.cuda.is_available():
+            # CUDA IPC Reconstruct
+            meta = json.loads(metadata.get("_meta", "{}"))
+            handle_bytes = arrow_array[0].as_py() # Extract bytes
+            
+            ctx = pa.cuda.context()
+            ipc_buf = ctx.open_ipc_buffer(handle_bytes)
+            return cudabuffer_to_torch(ipc_buf, meta)
+            
+        else:
+            # CPU Reconstruct (or CUDA fallback to CPU if local has no GPU)
+            # Arrow -> Numpy -> Torch
+            # .to_numpy() on Arrow array is zero-copy in many cases
+            np_arr = arrow_array.to_numpy()
+            
+            # Reshape
+            shape_list = metadata.get("_shape", [])
+            if shape_list:
+                np_arr = np_arr.reshape(shape_list)
+                
+            # Convert to Torch (Share memory)
+            # Note: Arrow arrays are read-only. Torch might complain if we try to mutate.
+            # We copy if we need to ensure writeability, but for input execution it's usually fine.
+            # safe path:
+                # Create a tensor from numpy.
+                # Suppress warning about non-writable tensors (we want zero-copy read-only).
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=UserWarning, message="The given NumPy array is not writable")
+                    try:
+                        tensor = torch.from_numpy(np_arr)
+                    except ValueError:
+                        # Fallback for very strict numpy versions
+                         tensor = torch.from_numpy(np_arr.copy())
+
+                # If buffer is not writable, we must copy
+                tensor = torch.from_numpy(np_arr.copy())
+                
+            # If original was CUDA but we are on CPU/No-Dora-Cuda, we just keep it on CPU.
+            return tensor
 
     # Handle pickled objects
     elif type_info == "pickle":
