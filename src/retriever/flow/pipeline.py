@@ -74,7 +74,10 @@ class Pipeline(FlowContext):
 
         for handle in self.get_handles():
             clock = handle.config.clock
-            if isinstance(clock, (Rate, Hybrid)) and getattr(clock, "on_lag", default_policy) == default_policy:
+            if (
+                isinstance(clock, (Rate, Hybrid))
+                and getattr(clock, "on_lag", default_policy) == default_policy
+            ):
                 clock.on_lag = desired
 
     def validate(self):  # type: ignore[override]
@@ -97,7 +100,9 @@ class Pipeline(FlowContext):
         if sync is None:
             sync = Latest()
 
-        self.register_connection(src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
+        self.register_connection(
+            src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
+        )
         src.pipeline = self
         dst.pipeline = self
         self._stepper = None
@@ -248,17 +253,66 @@ class Pipeline(FlowContext):
         dt: Optional[float] = None,
         sleep_s: float = 0.0,
         name: str = "stream",
+        rerun: bool | str = False,
+        rerun_open: bool = True,
     ):
         """
         Record `steps` iterations via `Pipeline.step()` and save to `path`.
 
+        Args:
+            handle: FlowHandle to record output from
+            path: Output path for replay data (.pkl.gz)
+            steps: Number of step iterations
+            dt: Logical dt per step (seconds)
+            sleep_s: Sleep seconds between steps
+            name: Name for the recorded stream
+            rerun: Enable Rerun visualization. True uses "{path}.rrd", or pass path string.
+            rerun_open: Open Rerun viewer when done (default True)
+
         Notes:
-        - This does not call `close_stepper()`; keep a `try/finally` in user code for hardware resources.
+        - This does not call `close_stepper()`; keep a `try/finally` in user code.
         - Storage format is gzip+pickle (debug artifact).
+        - With rerun=True, also saves a .rrd file for visual debugging.
         """
+        import time as _time
+
+        # Setup Rerun if enabled
+        rrd_path = None
+        manager = None
+        if rerun:
+            from retriever.lib.rerun import RerunConfig, RerunManager
+
+            if isinstance(rerun, str):
+                rrd_path = rerun
+            else:
+                rrd_path = str(path).replace(".pkl.gz", "") + ".rrd"
+
+            config = RerunConfig(
+                mode="record",
+                recording_path=rrd_path,
+                auto_open_on_exit=rerun_open,
+            )
+            manager = RerunManager(config, app_id=self._ctx._name)
+            manager.init()
+
+        # Run steps and record
         rec = self.record(handle, name=name)
-        rec.run(steps=steps, dt=dt, sleep_s=sleep_s)
+        for i in range(steps):
+            result = self.step(dt=dt)
+
+            # Log to Rerun if enabled
+            if manager:
+                manager.log_step_result(result, i)
+
+            if sleep_s > 0:
+                _time.sleep(sleep_s)
+
         rec.save(path)
+
+        # Cleanup Rerun
+        if manager:
+            manager.cleanup()
+
         return rec.buffer
 
     def replay(
@@ -293,7 +347,9 @@ class Pipeline(FlowContext):
         if output_type is None:
             output_type = handle.flow.output_type
             if output_type is None:
-                raise TypeError("Handle output type is not available; add Flow type parameters [I, O].")
+                raise TypeError(
+                    "Handle output type is not available; add Flow type parameters [I, O]."
+                )
 
         replay = replay_flow(buffer, output_type=output_type) @ clock  # type: ignore[arg-type]
         self.replace(handle, replay)
@@ -303,7 +359,6 @@ class Pipeline(FlowContext):
         """Reset in-process stepper state (buffers + Flow.reset)."""
         if self._stepper is not None:
             self._stepper.reset()
-
 
     def run(
         self,
@@ -354,18 +409,19 @@ class Pipeline(FlowContext):
         )
 
 
-
 # ==================================================================================
 # Default Pipeline Ergonomics (Global / Thread-local)
 # ==================================================================================
 
-_default_pipeline_var: ContextVar[Optional[Pipeline]] = ContextVar("default_pipeline", default=None)
+_default_pipeline_var: ContextVar[Optional[Pipeline]] = ContextVar(
+    "default_pipeline", default=None
+)
 
 
 def reset_default_pipeline() -> Pipeline:
     """
     Reset and return a fresh default pipeline.
-    
+
     Useful for interactive sessions (notebooks) to clear state.
     """
     pipe = Pipeline("default")
@@ -394,13 +450,13 @@ def connect(
 ) -> Pipeline | FlowContext:
     """
     Connect two flows in the active context (or default pipeline).
-    
+
     1. If a FlowContext is active (via `with Pipeline():` or `with FlowContext():`), use it.
     2. Otherwise, use `retriever.default_pipeline()`.
     """
     # Check for active context
     ctx = FlowContext.active()
-    
+
     if ctx is None:
         # Fallback to default pipeline
         ctx = default_pipeline()
@@ -408,17 +464,17 @@ def connect(
     # Reuse Pipeline.connect logic if available (handles defaults)
     if isinstance(ctx, Pipeline):
         return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
-    
+
     # Fallback for raw FlowContext (manual defaults)
     from retriever.flow.adapter import Latest
+
     if sync is None:
         sync = Latest()
-    
+
     ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
     src.pipeline = ctx if isinstance(ctx, Pipeline) else None
     dst.pipeline = ctx if isinstance(ctx, Pipeline) else None
     return ctx
-
 
 
 def run(
@@ -434,7 +490,7 @@ def run(
 ):
     """
     Run the default pipeline.
-    
+
     Equivalent to:
         retriever.default_pipeline().run(...)
     """
@@ -446,15 +502,14 @@ def run(
         backend_config=backend_config,
         policy=policy,
         build=build,
-        **kwargs
+        **kwargs,
     )
-
 
 
 def step(*, now: Optional[float] = None, dt: Optional[float] = None):
     """
     Execute one discrete debugging step on the default pipeline.
-    
+
     Equivalent to:
         retriever.default_pipeline().step(...)
     """
@@ -464,7 +519,7 @@ def step(*, now: Optional[float] = None, dt: Optional[float] = None):
 def reset() -> None:
     """
     Reset execution state of the default pipeline (buffers, flows).
-    
+
     Equivalent to:
         retriever.default_pipeline().reset()
     """
@@ -472,12 +527,11 @@ def reset() -> None:
 
 
 __all__ = [
-    "Pipeline", 
-    "reset_default_pipeline", 
-    "default_pipeline", 
-    "connect", 
-    "run", 
-    "step", 
-    "reset"
+    "Pipeline",
+    "reset_default_pipeline",
+    "default_pipeline",
+    "connect",
+    "run",
+    "step",
+    "reset",
 ]
-

@@ -30,7 +30,6 @@ platforms = ["osx-arm64", "linux-64"]
 # =============================================================================
 [dependencies]
 python = "3.11.*"
-numpy = "<2.0.0"
 scipy = "*"
 
 # =============================================================================
@@ -70,7 +69,7 @@ retriever = { path = ".", editable = true, extras = [
     "web",
     "vision",
 ] }
-rerun-sdk = "==0.16.1"
+rerun-sdk = "*" # Latest version with full platform support
 
 uvicorn = { extras = ["standard"], version = "*" }
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
