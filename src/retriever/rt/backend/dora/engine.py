@@ -139,6 +139,17 @@ class DoraEngine(ExecutionEngine):
             adapter = IRLoader.load_adapter(edge.adapter)
             adapters[port_name] = adapter
 
+        # Filter input_ports to only those that are connected (have adapters)
+        # This prevents KeyError in Executor if a port is declared but unconnected.
+        connected_ports = [p for p in input_ports if p in adapters]
+        
+        # Warn about unconnected ports
+        for p in input_ports:
+            if p not in adapters:
+                logger.warning(f"Node '{node.id}' has unconnected input port: '{p}'. It will not receive data.")
+        
+        input_ports = connected_ports
+
         # Create executor with logging params
         log_params = None
         if LogManager.is_initialized():
