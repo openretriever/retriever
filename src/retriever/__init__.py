@@ -14,6 +14,9 @@ from retriever.flow.pipeline import (
     connect,
     default_pipeline,
     reset_default_pipeline,
+    run,
+    step,
+    reset,
 )
 
 __all__ = [
@@ -21,4 +24,5 @@ __all__ = [
     "connect",
     "default_pipeline",
     "reset_default_pipeline",
+    "run",
 ]

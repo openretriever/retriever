@@ -420,5 +420,64 @@ def connect(
     return ctx
 
 
-__all__ = ["Pipeline", "reset_default_pipeline", "default_pipeline", "connect"]
+
+def run(
+    *,
+    backend: str = "multiprocessing",
+    duration: Optional[float] = None,
+    blocking: bool = True,
+    log_config: Optional[Any] = None,
+    backend_config: Optional[Dict[str, Any]] = None,
+    policy: Any = "aggressive",
+    build: bool = False,
+    **kwargs: Any,
+):
+    """
+    Run the default pipeline.
+    
+    Equivalent to:
+        retriever.default_pipeline().run(...)
+    """
+    return default_pipeline().run(
+        backend=backend,
+        duration=duration,
+        blocking=blocking,
+        log_config=log_config,
+        backend_config=backend_config,
+        policy=policy,
+        build=build,
+        **kwargs
+    )
+
+
+
+def step(*, now: Optional[float] = None, dt: Optional[float] = None):
+    """
+    Execute one discrete debugging step on the default pipeline.
+    
+    Equivalent to:
+        retriever.default_pipeline().step(...)
+    """
+    return default_pipeline().step(now=now, dt=dt)
+
+
+def reset() -> None:
+    """
+    Reset execution state of the default pipeline (buffers, flows).
+    
+    Equivalent to:
+        retriever.default_pipeline().reset()
+    """
+    return default_pipeline().reset()
+
+
+__all__ = [
+    "Pipeline", 
+    "reset_default_pipeline", 
+    "default_pipeline", 
+    "connect", 
+    "run", 
+    "step", 
+    "reset"
+]
 
