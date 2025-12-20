@@ -30,6 +30,8 @@ platforms = ["osx-arm64", "linux-64"]
 # =============================================================================
 [dependencies]
 python = "3.11.*"
+numpy = "<2.0.0"
+scipy = "*"
 
 # =============================================================================
 # Optional Feature: Native Acceleration (Rust toolchain)
@@ -62,14 +64,15 @@ native = { features = ["native"] }
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
 # - `web`: deps for web-based command interfaces (FastAPI)
 # - `vision`: deps for real-time vision (PyTorch, Transformers)
-uvicorn = { extras = ["standard"], version = "*" }
 retriever = { path = ".", editable = true, extras = [
     "dora",
     "demo",
     "web",
     "vision",
 ] }
+rerun-sdk = "==0.16.1"
 
+uvicorn = { extras = ["standard"], version = "*" }
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
 pygments = "*"
 typing-extensions = "*"
@@ -110,6 +113,10 @@ demo-request-dora = "python -m examples.tutorial.010_request_response"
 # Stepper Debug (Real Camera): Step-by-step debugging of a real-world perception flow
 # Run: pixi run demo-stepper-camera
 demo-stepper-camera = "python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
+
+# Rerun Visualization: Real-time Camera + Detection + Segmentation
+# Run: pixi run demo-webcam-rerun
+demo-webcam-rerun = "python examples/advanced/webcam_rerun/app.py"
 
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
