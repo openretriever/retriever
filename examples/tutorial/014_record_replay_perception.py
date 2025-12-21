@@ -1,16 +1,16 @@
 """
-Record + replay a perception camera stream (in-process stepper) for VS Code debugging.
+Record + replay a perception camera stream (in-process stepper) for debugging.
 
 This is a stepper-first workflow:
-  - record once from hardware (real camera)
+  - record once from hardware (real camera) to MCAP
   - replay later (still in-process) so breakpoints inside `Flow.run()` work
+  - optionally stream to Rerun for live visualization
 
 Run:
-  pixi run python -m examples.tutorial.014_record_replay_perception record --help
-  pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+  pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception.mcap --steps 10
+  pixi run python -m examples.tutorial.014_record_replay_perception record --stream  # with live Rerun
 
-  pixi run python -m examples.tutorial.014_record_replay_perception replay --help
-  pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+  pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception.mcap --steps 10
 """
 
 from __future__ import annotations
@@ -62,14 +62,15 @@ def parse_args() -> argparse.Namespace:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     record = sub.add_parser("record", help="Record a short stream from the real camera")
-    record.add_argument("--out", type=Path, default=Path("logs/perception_recording.pkl.gz"), help="Output recording path")
+    record.add_argument("--out", type=Path, default=Path("logs/perception.mcap"), help="Output recording path (.mcap)")
+    record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
     record.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
     record.add_argument("--sleep", type=float, default=0.0, help="Sleep seconds between steps (optional)")
 
     replay = sub.add_parser("replay", help="Replay a recorded stream (no hardware needed)")
     replay.add_argument(
-        "--recording", type=Path, default=Path("logs/perception_recording.pkl.gz"), help="Input recording path"
+        "--recording", type=Path, default=Path("logs/perception.mcap"), help="Input recording path (.mcap)"
     )
     replay.add_argument("--steps", type=int, default=10, help="Max number of step iterations")
     replay.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
@@ -82,13 +83,14 @@ def parse_args() -> argparse.Namespace:
 def cmd_record(args: argparse.Namespace) -> None:
     pipe, camera = build_record_pipeline()
     try:
-        buffer = pipe.record_to(
+        buffer = pipe.record(
             camera,
             args.out,
             steps=args.steps,
             dt=args.dt,
             sleep_s=args.sleep,
             name="camera",
+            visualize=args.stream,
         )
     finally:
         pipe.close_stepper()

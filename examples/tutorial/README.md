@@ -71,9 +71,9 @@ pixi run python -m examples.tutorial.012_debug_perception_stepper
 # Debug perception with stepper (real camera; optional window)
 pixi run python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05
 
-# Record once from camera, replay later (no hardware)
-pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception_recording.pkl.gz --steps 10 --dt 0.05
-pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception_recording.pkl.gz --steps 10 --dt 0.05
+# Record once from camera to MCAP, replay later (no hardware)
+pixi run python -m examples.tutorial.014_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.014_record_replay_perception replay --recording logs/perception.mcap --steps 10
 
 # Closed-loop env/controller pipeline (multiprocess or dora)
 pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
