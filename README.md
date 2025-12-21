@@ -26,31 +26,46 @@ System-level pipelines, integrations (robots/sim), and heavy model stacks will l
 
 **Low-Level API**: `Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
 
-Minimal example:
-
+Minimal example (Typed Flows + Unified DSL):
 
 ```py
+from dataclasses import dataclass
+from retriever.flow import Flow, flow_io
 import retriever
-from retriever.lib import Wrapper, from_torch
 
-# 1. Define Logic (e.g. standard functions/classes)
-def source():
-    return 1
+@flow_io
+@dataclass
+class SrcOut:
+    value: int
 
-class AddOne:
-    def __call__(self, value):
-        return value + 1
+@flow_io
+@dataclass
+class AddOut:
+    value: int
 
-# 2. Wrap as Flows
-src = Wrapper(source) @ retriever.Rate(10)
-add = Wrapper(AddOne()) @ retriever.Rate(10)
+class Source(Flow[None, SrcOut]):
+    def run(self, _):  # type: ignore[override]
+        return SrcOut(value=1)
 
-# 3. Connect (Implicit Default Pipeline)
+class AddOne(Flow[SrcOut, AddOut]):
+    def run(self, input: SrcOut) -> AddOut:
+        return AddOut(value=input.value + 1)
+
+# 1. Instantiate & Clock
+src = Source() @ retriever.Rate(hz=10)
+add = AddOne() @ retriever.Rate(hz=10)
+
+# 2. Connect (Unified DSL)
 retriever.connect(src, add)
 
-# 4. Run
+# 3. Debug (Sync, In-Process)
+retriever.step(dt=0.1)
+
+# 4. Run (Async)
 retriever.run(backend="multiprocessing", duration=1.0)
 ```
+
+**Note**: For standard libraries (PyTorch, Gym), you can use the `retriever.lib.Wrapper` factory (see handbook).
 
 More details: `docs/handbook.md`
 
