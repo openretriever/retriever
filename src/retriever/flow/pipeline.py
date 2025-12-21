@@ -234,17 +234,18 @@ class Pipeline(FlowContext):
     # Stepper-first Record / Replay helpers
     # ==================================================================================
 
-    def record(self, handle: FlowHandle, *, name: str = "stream"):
+    def _create_recorder(self, handle: FlowHandle, *, name: str = "stream"):
         """
         Create an in-process recorder bound to this pipeline and handle.
 
         This is a thin convenience wrapper around `retriever.rt.stepper.EventStreamRecorder`.
+        Internal method - use `record()` for the main recording API.
         """
         from retriever.rt.stepper import EventStreamRecorder
 
         return EventStreamRecorder(self, handle, name=name)
 
-    def record_to(
+    def record(
         self,
         handle: FlowHandle,
         path: str | Path,
@@ -253,67 +254,104 @@ class Pipeline(FlowContext):
         dt: Optional[float] = None,
         sleep_s: float = 0.0,
         name: str = "stream",
-        rerun: bool | str = False,
-        rerun_open: bool = True,
+        visualize: bool = False,
     ):
         """
         Record `steps` iterations via `Pipeline.step()` and save to `path`.
 
+        The format is auto-detected from the file extension:
+        - `.mcap`: MCAP format (viewable in Rerun via `pipe.view()`)
+        - `.pkl.gz`: Pickle format (legacy, code replay only)
+
         Args:
             handle: FlowHandle to record output from
-            path: Output path for replay data (.pkl.gz)
+            path: Output path (.mcap recommended, .pkl.gz for legacy)
             steps: Number of step iterations
             dt: Logical dt per step (seconds)
             sleep_s: Sleep seconds between steps
             name: Name for the recorded stream
-            rerun: Enable Rerun visualization. True uses "{path}.rrd", or pass path string.
-            rerun_open: Open Rerun viewer when done (default True)
+            visualize: Stream to Rerun live viewer during recording (default False)
 
-        Notes:
-        - This does not call `close_stepper()`; keep a `try/finally` in user code.
-        - Storage format is gzip+pickle (debug artifact).
-        - With rerun=True, also saves a .rrd file for visual debugging.
+        Example:
+            # Record to MCAP
+            pipe.record(camera, "session.mcap", steps=50, dt=0.1)
+
+            # With live Rerun visualization
+            pipe.record(camera, "session.mcap", steps=50, visualize=True)
+
+            # View recording later
+            pipe.view("session.mcap")
         """
         import time as _time
 
-        # Setup Rerun if enabled
-        rrd_path = None
-        manager = None
-        if rerun:
+        path = Path(path)
+        use_mcap = path.suffix.lower() == ".mcap"
+
+        # Setup MCAP writer if using MCAP format
+        mcap_writer = None
+        if use_mcap:
+            from retriever.lib.mcap import MCAPWriter
+
+            mcap_writer = MCAPWriter(path)
+            mcap_writer.__enter__()
+
+        # Setup Rerun streaming if enabled
+        rerun_manager = None
+        if visualize:
             from retriever.lib.rerun import RerunConfig, RerunManager
 
-            if isinstance(rerun, str):
-                rrd_path = rerun
-            else:
-                rrd_path = str(path).replace(".pkl.gz", "") + ".rrd"
-
-            config = RerunConfig(
-                mode="record",
-                recording_path=rrd_path,
-                auto_open_on_exit=rerun_open,
-            )
-            manager = RerunManager(config, app_id=self._ctx._name)
-            manager.init()
+            config = RerunConfig(mode="spawn")
+            rerun_manager = RerunManager(config, app_id=self._name)
+            rerun_manager.init()
 
         # Run steps and record
-        rec = self.record(handle, name=name)
+        rec = self._create_recorder(handle, name=name) if not use_mcap else None
         for i in range(steps):
             result = self.step(dt=dt)
 
-            # Log to Rerun if enabled
-            if manager:
-                manager.log_step_result(result, i)
+            # Write to MCAP
+            if mcap_writer:
+                mcap_writer.write_step(result, i)
+
+            # Stream to Rerun if enabled
+            if rerun_manager:
+                rerun_manager.log_step_result(result, i)
 
             if sleep_s > 0:
                 _time.sleep(sleep_s)
 
-        rec.save(path)
+        # Finalize
+        if mcap_writer:
+            mcap_writer.__exit__(None, None, None)
+            print(f"[MCAP] Recording saved to: {path}")
 
-        # Cleanup Rerun
-        if manager:
-            manager.cleanup()
+        if rec:
+            rec.save(path)
 
-        return rec.buffer
+        if rerun_manager:
+            rerun_manager.cleanup()
+
+        return None if use_mcap else rec.buffer
+
+    # Alias for backwards compatibility
+    def record_to(self, *args, stream_rerun: bool = False, **kwargs):
+        """Alias for record(). Use record() instead."""
+        return self.record(*args, visualize=stream_rerun, **kwargs)
+
+    def view(self, path: str | Path) -> None:
+        """
+        Open an MCAP recording in Rerun viewer.
+
+        Args:
+            path: Path to .mcap file
+
+        Example:
+            pipe.record(camera, "session.mcap", steps=50)
+            pipe.view("session.mcap")  # Opens Rerun viewer
+        """
+        from retriever.lib.mcap import view_in_rerun
+
+        view_in_rerun(path)
 
     def replay(
         self,
@@ -329,8 +367,9 @@ class Pipeline(FlowContext):
 
         Provide exactly one of:
         - `buffer`: an `EventBuffer[T] = list[(ts, value)]`
-        - `path`: path to a buffer saved via `record_to(...)` / `save_event_buffer(...)`
+        - `path`: path to a recording (.mcap or .pkl.gz)
 
+        The format is auto-detected from the file extension.
         By default, the replay node reuses the replaced handle's clock and output type.
         """
         from retriever.rt.stepper import load_event_buffer, replay_flow
@@ -339,7 +378,24 @@ class Pipeline(FlowContext):
             raise ValueError("Provide exactly one of `buffer=` or `path=`.")
 
         if buffer is None:
-            buffer = load_event_buffer(path)  # type: ignore[arg-type]
+            path = Path(path)  # type: ignore[arg-type]
+            if path.suffix.lower() == ".mcap":
+                # Load from MCAP format
+                from retriever.lib.mcap import MCAPReader
+
+                with MCAPReader(path) as reader:
+                    steps = reader.read_all()
+                # Convert MCAP steps to event buffer format
+                # Get the flow name from handle
+                flow_name = type(handle.flow).__name__
+                buffer = []
+                for step in steps:
+                    ts = step.get("now", 0.0)
+                    output = step.get("outputs", {}).get(flow_name)
+                    if output is not None:
+                        buffer.append((ts, output))
+            else:
+                buffer = load_event_buffer(path)
 
         if clock is None:
             clock = handle.config.clock
@@ -526,6 +582,30 @@ def reset() -> None:
     return default_pipeline().reset()
 
 
+def view(path: str | Path) -> None:
+    """
+    Open an MCAP recording in Rerun viewer.
+
+    This is a convenience function that opens the Rerun viewer
+    and loads the recorded data from an MCAP file.
+
+    Args:
+        path: Path to .mcap file
+
+    Example:
+        import retriever
+
+        # Record a session
+        pipe.record(camera, "session.mcap", steps=50)
+
+        # View it later
+        retriever.view("session.mcap")
+    """
+    from retriever.lib.mcap import view_in_rerun
+
+    view_in_rerun(path)
+
+
 __all__ = [
     "Pipeline",
     "reset_default_pipeline",
@@ -534,4 +614,6 @@ __all__ = [
     "run",
     "step",
     "reset",
+    "view",
 ]
+

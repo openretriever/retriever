@@ -17,6 +17,7 @@ from retriever.flow.pipeline import (
     run,
     step,
     reset,
+    view,
 )
 
 __all__ = [
@@ -25,4 +26,8 @@ __all__ = [
     "default_pipeline",
     "reset_default_pipeline",
     "run",
+    "step",
+    "reset",
+    "view",
 ]
+
