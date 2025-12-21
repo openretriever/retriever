@@ -22,8 +22,8 @@
 [workspace]
 # Using prefix.dev mirror for faster downloads
 channels = ["https://prefix.dev/conda-forge"]
-# Supported platforms: macOS ARM and Linux x64
-platforms = ["osx-arm64", "linux-64"]
+# Supported platforms: macOS ARM, Linux x64, and Windows x64
+platforms = ["osx-arm64", "linux-64", "win-64"]
 
 # =============================================================================
 # Base Dependencies (installed via conda-forge)
@@ -68,8 +68,10 @@ retriever = { path = ".", editable = true, extras = [
     "demo",
     "web",
     "vision",
+    "recording",
 ] }
-rerun-sdk = "*" # Latest version with full platform support
+rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
+mcap = "*" # MCAP recording support
 
 uvicorn = { extras = ["standard"], version = "*" }
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
