@@ -117,6 +117,10 @@ dora-rs-cli = ">=0.3.12"
 # Run: pixi run demo-skill-switching
 demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
 
+# Mujoco Manipulation (Robot Simulation + Rerun)
+# Run: pixi run demo-mujoco
+demo-mujoco = { cmd = "python examples/advanced/mujoco_manipulation/app.py", env = { PYTHONPATH = "." } }
+
 # Binding acceleration (Rust/C++) helpers
 binding-toolchain = "rustc --version && cargo --version && maturin --version"
 
