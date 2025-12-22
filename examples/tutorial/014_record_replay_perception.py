@@ -83,8 +83,8 @@ def parse_args() -> argparse.Namespace:
 def cmd_record(args: argparse.Namespace) -> None:
     pipe, camera = build_record_pipeline()
     try:
-        buffer = pipe.record(
-            camera,
+        # Record the entire session (all streams) to MCAP
+        pipe.record(
             args.out,
             steps=args.steps,
             dt=args.dt,
@@ -94,7 +94,7 @@ def cmd_record(args: argparse.Namespace) -> None:
         )
     finally:
         pipe.close_stepper()
-    print(f"[Recording] wrote {len(buffer)} steps to {args.out}")
+    print(f"[Recording] saved {args.steps} steps to {args.out}")
 
 
 def _resolve_recording_path(path: Path) -> Path:
