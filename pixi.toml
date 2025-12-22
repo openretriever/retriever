@@ -52,6 +52,11 @@ jaxlib = "*"
 flax = "*"
 optax = "*"
 
+[feature.llm.pypi-dependencies]
+openai = "*"
+google-generativeai = "*"
+pillow = "*"
+
 # -----------------------------------------------------------------------------
 # Environments
 # -----------------------------------------------------------------------------
@@ -60,6 +65,7 @@ default = { features = [] }
 native = { features = ["native"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
+llm = { features = ["llm"] }
 
 # =============================================================================
 # PyPI Dependencies
@@ -117,6 +123,15 @@ demo-jax-inference = "python examples/advanced/jax_cuda_async/inference.py"
 # JAX Async Training Demo
 # Run: pixi run -e jax demo-jax-train
 demo-jax-train = "python examples/advanced/jax_cuda_async/train.py"
+
+[feature.llm.tasks]
+# VLM GridWorld Navigation
+# Run: pixi run -e llm demo-vlm-gridworld
+demo-vlm-gridworld = "python -m examples.advanced.vlm_gridworld.app --backend dora"
+
+# LLM Streaming RL (20 Questions)
+# Run: pixi run -e llm demo-llm-streaming
+demo-llm-streaming = "python -m examples.advanced.llm_streaming_rl.app --backend dora"
 
 # =============================================================================
 # OPTIONAL FEATURE: PyTorch (Vision + VLA)
