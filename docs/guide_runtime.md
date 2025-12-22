@@ -1,3 +1,7 @@
+---
+title: "Refactored Runtime Guide (Canonical)"
+---
+
 # Refactored Runtime Guide (Canonical)
 
 This guide documents the **canonical** Retriever runtime workflow:

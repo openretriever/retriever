@@ -45,7 +45,24 @@ class Wrapper:
             from retriever.lib.gym import from_gym
             return from_gym(obj)
             
+        # 3. Check for HF Pipeline/Model (best effort)
+        is_hf = False
+        try:
+             # Duck typing/checking class name as fallback if import fails
+             name = type(obj).__name__
+             module = type(obj).__module__
+             if "transformers" in module and ("Pipeline" in name or "Model" in name):
+                 is_hf = True
+        except Exception:
+             pass
+             
+        if is_hf:
+            from retriever.lib.hf import from_hf
+            return from_hf(obj, **kwargs)
+
+            
         raise ValueError(
             f"Wrapper could not identify type of {type(obj)}. "
-            f"Supported: nn.Module, gym.Env, Callable[[], gym.Env]."
+            f"Wrapper could not identify type of {type(obj)}. "
+            f"Supported: nn.Module, gym.Env, Callable[[], gym.Env], HF Pipeline/Model."
         )

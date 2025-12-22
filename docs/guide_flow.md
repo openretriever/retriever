@@ -1,3 +1,7 @@
+---
+title: "Flow Authoring Guide (Runtime/Core)"
+---
+
 # Flow Authoring Guide (Runtime/Core)
 
 This guide describes the **refactored** Flow authoring surface used by the runtime/core:
@@ -75,8 +79,22 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 ```
 
-Ergonomics:
+
 - `Flow.step(...)` and `Flow.forward(...)` are aliases for `run(...)`. This keeps the word “run” available for backend execution (`Pipeline.run`).
+
+## 2.1) Wrapper Factory (Torch/Gym)
+
+For standard libraries, use `retriever.lib.Wrapper` instead of writing custom classes:
+
+```python
+from retriever.lib import Wrapper, from_torch, from_gym
+
+# PyTorch Module
+model = Wrapper(MyModule())
+
+# Gym Environment (pass instance or factory)
+env = Wrapper(lambda: gym.make("CartPole-v1"))
+```
 
 ---
 

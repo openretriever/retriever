@@ -1,3 +1,7 @@
+---
+title: "Retriever Runtime Handbook (Canonical)"
+---
+
 # Retriever Runtime Handbook (Canonical)
 
 This is the **single canonical note** for using the **refactored Retriever runtime/core**.

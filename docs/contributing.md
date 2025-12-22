@@ -1,3 +1,7 @@
+---
+title: "Contributing"
+---
+
 # Contributing
 
 This repo is early-stage and moves fast. Keep PRs small, include tests when it makes sense, and update docs when behavior/setup changes.

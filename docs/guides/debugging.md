@@ -1,3 +1,7 @@
+---
+title: "Debugging Pipelines: `Pipeline.run()` vs `Pipeline.step()`"
+---
+
 # Debugging Pipelines: `Pipeline.run()` vs `Pipeline.step()`
 
 Retriever intentionally exposes **two** execution surfaces:

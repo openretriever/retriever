@@ -1,3 +1,7 @@
+---
+title: "🐕 Retriever Framework"
+---
+
 # 🐕 Retriever Framework
 
 **Type-safe, composable framework for production robotics**

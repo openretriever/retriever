@@ -1,3 +1,7 @@
+---
+title: "Retriever Runtime Architecture (Canonical)"
+---
+
 # Retriever Runtime Architecture (Canonical)
 
 This document describes the **refactored runtime** architecture:

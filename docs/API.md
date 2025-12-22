@@ -1,3 +1,9 @@
+---
+title: "Runtime/Core API (Refactored)"
+---
+
+# Runtime/Core API (Refactored)
+
 <!--
 NOTE: This file was historically a large “complete API reference” for an older codebase.
 The refactored runtime has a smaller public surface, so this page is now a curated map
@@ -37,9 +43,29 @@ Key concepts:
 - `Pipeline`: explicit graph builder (recommended)
 - `FlowContext`: context manager graph builder (still supported)
 - adapters (`Latest/Hold/Window/Events`): sampling policy for per-port buffers
+
 - clocks (`Rate/Tick/Trigger/Hybrid`): scheduling + field sampling
 
 Guide: `docs/guide_flow.md`.
+
+---
+
+## 2) Unified High-Level API (Recommended)
+
+Import path:
+```python
+import retriever  # Global namespace
+from retriever.lib import Wrapper, from_torch, from_gym
+```
+
+- **Pipeline Construction**:
+    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `FlowHandle`s. Implicitly creates/uses a default pipeline.
+    - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
+
+- **Execution**:
+    - `retriever.run(backend="dora", duration=10)`: Executes the default pipeline.
+    - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
+    - `retriever.reset()`: Resets the default pipeline state.
 
 ---
 

@@ -1,3 +1,7 @@
+---
+title: "Tutorials"
+---
+
 # Tutorials
 
 This page lists the available tutorials and examples included in the repository.

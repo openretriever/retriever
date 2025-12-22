@@ -1,3 +1,7 @@
+---
+title: "Zero-Copy PyTorch Transfer Guide"
+---
+
 # Zero-Copy PyTorch Transfer Guide
 
 This guide explains how `retriever` achieves ultra-high performance zero-copy tensor transfer between PyTorch processes.

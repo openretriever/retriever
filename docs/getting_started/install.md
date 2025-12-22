@@ -1,3 +1,7 @@
+---
+title: "Installation Guide"
+---
+
 # Installation Guide
 
 Environment definitions (Pixi tasks/environments) live in `pixi.toml`. Pixi is the recommended path; the conda+uv section below is an alternative if you prefer a pure Python workflow.

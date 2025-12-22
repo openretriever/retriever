@@ -253,7 +253,7 @@ def build_perception_pipeline() -> Pipeline:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Perception demo (camera -> detection -> display)")
     p.add_argument("--backend", default="dora", choices=["dora", "multiprocessing"])
-    p.add_argument("--duration", type=float, default=10.0)
+    p.add_argument("--duration", type=float, default=20.0)
     return p.parse_args()
 
 

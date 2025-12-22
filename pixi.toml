@@ -102,6 +102,10 @@ dora-rs-cli = ">=0.3.12"
 [tasks]
 
 
+# Skill Switching Demo
+# Run: pixi run demo-skill-switching
+demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
+
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
 

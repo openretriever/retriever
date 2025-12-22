@@ -1,3 +1,7 @@
+---
+title: "Retriever Documentation"
+---
+
 # Retriever Documentation
 
 These docs are being updated to match the **refactored runtime**.

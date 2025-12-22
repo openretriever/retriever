@@ -1,3 +1,7 @@
+---
+title: "Retriever Framework Developer Guide"
+---
+
 # Retriever Framework Developer Guide
 
 **Comprehensive guide for contributing to and developing with Retriever**
