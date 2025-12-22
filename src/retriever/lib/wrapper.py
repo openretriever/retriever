@@ -60,9 +60,21 @@ class Wrapper:
             from retriever.lib.hf import from_hf
             return from_hf(obj, **kwargs)
 
+        # 4. Check for JAX/Flax
+        is_jax = False
+        try:
+             module_path = type(obj).__module__
+             if "flax" in module_path or "jax" in module_path:
+                 is_jax = True
+        except Exception:
+             pass
+             
+        if is_jax:
+            from retriever.lib.jax import from_jax
+            return from_jax(obj, **kwargs)
             
         raise ValueError(
             f"Wrapper could not identify type of {type(obj)}. "
-            f"Wrapper could not identify type of {type(obj)}. "
-            f"Supported: nn.Module, gym.Env, Callable[[], gym.Env], HF Pipeline/Model."
+            f"Supported: nn.Module, gym.Env, Callable[[], gym.Env], HF Pipeline/Model, Flax Module."
         )
+
