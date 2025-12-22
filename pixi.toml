@@ -31,6 +31,7 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 [dependencies]
 python = "3.11.*"
 scipy = "*"
+mujoco = "*"
 
 # =============================================================================
 # Optional Feature: Native Acceleration (Rust toolchain)
@@ -45,12 +46,20 @@ maturin = "*"
 cmake = "*"
 pkg-config = "*"
 
+[feature.jax.pypi-dependencies]
+jax = "*"
+jaxlib = "*"
+flax = "*"
+optax = "*"
+
 # -----------------------------------------------------------------------------
 # Environments
 # -----------------------------------------------------------------------------
 [environments]
 default = { features = [] }
 native = { features = ["native"] }
+jax = { features = ["jax"] }
+torch = { features = ["torch"] }
 
 # =============================================================================
 # PyPI Dependencies
@@ -67,7 +76,9 @@ retriever = { path = ".", editable = true, extras = [
     "dora",
     "demo",
     "web",
-    "vision",
+    "dora",
+    "demo",
+    "web",
     "recording",
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
@@ -89,39 +100,86 @@ dora-rs-cli = ">=0.3.12"
 # Tasks
 # =============================================================================
 [tasks]
-# =============================================================================
-# Advanced Demos (Interactive)
-# =============================================================================
-# Interactive Vision: Real-time open-vocab detection with web UI
-# Run: pixi run demo-vision
-demo-vision = "python examples/advanced/interactive_detection/app.py"
 
-# VLA Web Command: Web interface for controlling robot flows
-# Run: pixi run demo-web
-demo-web = "python examples/advanced/web_command_interface/app.py"
-
-# =============================================================================
-# Tutorial Demos (Dora Backend)
-# =============================================================================
-# Perception Pipeline: Camera -> Color Detection -> Display
-# Run: pixi run demo-basics-dora
-demo-basics-dora = "python -m examples.tutorial.009_dora_perception --backend dora"
-
-# Service Request/Response: Synchronous RPC between flows
-# Run: pixi run demo-request-dora
-demo-request-dora = "python -m examples.tutorial.010_request_response"
-
-# Stepper Debug (Real Camera): Step-by-step debugging of a real-world perception flow
-# Run: pixi run demo-stepper-camera
-demo-stepper-camera = "python -m examples.tutorial.013_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
-
-# Rerun Visualization: Real-time Camera + Detection + Segmentation
-# Run: pixi run demo-webcam-rerun
-demo-webcam-rerun = "python examples/advanced/webcam_rerun/app.py"
 
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
 
+# Skill Switching Demo
+# Run: pixi run demo-skill-switching
+demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
+
+[feature.jax.tasks]
+# JAX Async Inference Demo
+# Run: pixi run -e jax demo-jax-inference
+demo-jax-inference = "python examples/advanced/jax_cuda_async/inference.py"
+
+# JAX Async Training Demo
+# Run: pixi run -e jax demo-jax-train
+demo-jax-train = "python examples/advanced/jax_cuda_async/train.py"
+
+# =============================================================================
+# OPTIONAL FEATURE: PyTorch (Vision + VLA)
+# =============================================================================
+[feature.torch.pypi-dependencies]
+torch = ">=2.0.0"
+torchvision = "*"
+transformers = "*"
+pillow = "*"
+openpi = "*"
+timm = "*"
+
+[feature.torch.tasks]
+# Interactive Vision
+# Run: pixi run -e torch demo-vision
+demo-vision = "python examples/advanced/interactive_detection/app.py"
+
+# VLA Web Command
+# Run: pixi run -e torch demo-web
+demo-web = "python examples/advanced/web_command_interface/app.py" # Uses vision flows? Check imports.
+
 # OpenPI VLA Demo
-# Run: pixi run demo-vla
+# Run: pixi run -e torch demo-vla
 demo-vla = "python examples/advanced/vla_inference_optim/app.py"
+
+# Rerun Visualization (OwlViT + SAM)
+# Run: pixi run -e torch demo-webcam-rerun
+demo-webcam-rerun = "python examples/advanced/webcam_rerun/app.py"
+
+# PyTorch Async Example
+# Run: pixi run -e torch demo-pytorch-async
+demo-pytorch-async = { cmd = "python examples/advanced/pytorch_cuda_async/app.py", env = { KMP_DUPLICATE_LIB_OK = "TRUE" } }
+
+# Hierarchical VLA Demo (Robotics)
+# Run: pixi run -e torch demo-hierarchical-vla
+demo-hierarchical-vla = { cmd = "python examples/advanced/hierarchical_vla/app.py", env = { KMP_DUPLICATE_LIB_OK = "TRUE", PYTHONPATH = "." } }
+
+# =============================================================================
+# Native Controller Examples (Rust/C++)
+# =============================================================================
+# Requires: pixi run -e native <task>
+#
+# Native Python controller demo
+# Run: pixi run -e native native-controller-python
+native-controller-python = "python examples/advanced/native_controller/app.py --backend python"
+
+# Build and run Rust controller
+# Run: pixi run -e native native-controller-rust
+native-build-rust = { cmd = "cargo build --release", cwd = "examples/advanced/native_controller" }
+native-controller-rust = { cmd = "python examples/advanced/native_controller/app.py --backend rust", depends-on = [
+    "native-build-rust",
+] }
+
+# Build and run C++ controller  
+# Run: pixi run -e native native-controller-cpp
+native-build-cpp = { cmd = "mkdir -p build && cd build && cmake .. && cmake --build .", cwd = "examples/advanced/native_controller" }
+native-controller-cpp = { cmd = "python examples/advanced/native_controller/app.py --backend cpp", depends-on = [
+    "native-build-cpp",
+] }
+
+# Run benchmark comparing all backends
+# Run: pixi run -e native native-benchmark
+native-benchmark = { cmd = "python examples/advanced/native_controller/benchmark.py", depends-on = [
+    "native-build-rust",
+    "native-build-cpp",
+] }
