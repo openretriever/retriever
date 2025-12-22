@@ -26,6 +26,8 @@ class BenchmarkResult:
     duration: float
     memory_peak_mb: float
     memory_avg_mb: float
+    throughput: float = 0.0
+    success_rate: float = 1.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -38,6 +40,15 @@ class BenchmarkSuite:
     def add_result(self, result: BenchmarkResult) -> None:
         self.results.append(result)
 
+    def get_speedup(self, baseline_name: str, comparison_name: str) -> Optional[float]:
+        """Calculate speedup between two benchmarks (baseline / comparison)."""
+        baseline = next((r for r in self.results if r.name == baseline_name), None)
+        comparison = next((r for r in self.results if r.name == comparison_name), None)
+        
+        if baseline and comparison and comparison.duration > 0:
+            return baseline.duration / comparison.duration
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "timestamp": self.timestamp,
@@ -48,6 +59,8 @@ class BenchmarkSuite:
                     "duration": r.duration,
                     "memory_peak_mb": r.memory_peak_mb,
                     "memory_avg_mb": r.memory_avg_mb,
+                    "throughput": r.throughput,
+                    "success_rate": r.success_rate,
                     "metadata": r.metadata
                 }
                 for r in self.results
@@ -86,16 +99,27 @@ class PerformanceBenchmarker:
         print(f"\nBenchmarking Pipeline: {name}")
         print("-" * 40)
 
+        results_map = {}
+
         for backend in backends:
             print(f"Testing backend: {backend}...")
             
             try:
-                result = self._run_benchmark(ir, name, backend, duration)
+                result = self._run_benchmark(ir, f"{name}_{backend}", backend, duration)
                 self.suite.add_result(result)
+                results_map[backend] = result
                 print(f"  Duration: {result.duration:.2f}s")
+                print(f"  Throughput: {result.throughput:.2f} ops/sec")
                 print(f"  Memory Peak: {result.memory_peak_mb:.1f} MB")
             except Exception as e:
                 print(f"  FAILED: {e}")
+
+        # specific check: if we have both multiprocessing and dora, print speedup
+        if "multiprocessing" in results_map and "dora" in results_map:
+            mp_res = results_map["multiprocessing"]
+            dora_res = results_map["dora"]
+            speedup = mp_res.duration / dora_res.duration if dora_res.duration > 0 else 0
+            print(f"\nSpeedup (MP vs Dora): {speedup:.2f}x")
 
         if self.output_file:
             self._save_results()
@@ -111,6 +135,7 @@ class PerformanceBenchmarker:
             start_time = time.time()
             
             # Execute pipeline
+            # Note: execute_ir returns the engine/scheduler used
             engine = execute_ir(
                 ir,
                 backend=backend,
@@ -124,6 +149,12 @@ class PerformanceBenchmarker:
         # Calculate metrics
         peak_mb = max(mem_tracker.measurements) if mem_tracker.measurements else 0.0
         avg_mb = statistics.mean(mem_tracker.measurements) if mem_tracker.measurements else 0.0
+        
+        # Estimate throughput (ops/sec) - this is approximate as we don't count exact "ops" inside execute_ir yet
+        # For now, we use a placeholder or derived metric if available from engine
+        throughput = 0.0 
+        if hasattr(engine, 'scheduler') and hasattr(engine.scheduler, 'iteration_count'):
+             throughput = engine.scheduler.iteration_count / actual_duration
 
         return BenchmarkResult(
             name=name,
@@ -131,6 +162,8 @@ class PerformanceBenchmarker:
             duration=actual_duration,
             memory_peak_mb=peak_mb,
             memory_avg_mb=avg_mb,
+            throughput=throughput,
+            success_rate=1.0, # Assumed 1.0 if no exception raised
             metadata={"requested_duration": duration}
         )
 
@@ -147,14 +180,17 @@ class PerformanceBenchmarker:
                 import threading
                 def monitor():
                     while not self._stop:
-                        mem = self.process.memory_info().rss / 1024 / 1024
-                        # Add child processes
-                        for child in self.process.children(recursive=True):
-                            try:
-                                mem += child.memory_info().rss / 1024 / 1024
-                            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                                pass
-                        self.measurements.append(mem)
+                        try:
+                            mem = self.process.memory_info().rss / 1024 / 1024
+                            # Add child processes
+                            for child in self.process.children(recursive=True):
+                                try:
+                                    mem += child.memory_info().rss / 1024 / 1024
+                                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                    pass
+                            self.measurements.append(mem)
+                        except Exception:
+                            pass
                         time.sleep(0.1)
 
                 self.thread = threading.Thread(target=monitor)
