@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Callable, List, Optional, Sequence, Set, Tuple, Dict, Union
+from typing import Any, Callable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -88,7 +88,7 @@ class Variable(_TypedEntity):
 @dataclass
 class State:
     """A mapping from objects to their state feature vectors."""
-    data: Dict[Object, NDArray]
+    data: dict[Object, NDArray]
 
     def __getitem__(self, key: Object) -> NDArray:
         return self.data[key]
@@ -164,4 +164,4 @@ class GroundAtom(_Atom):
         return [o for o in self.entities if isinstance(o, Object)]
 
     def holds(self, state: State) -> bool:
-        return self.predicate.holds(state, self.objects)
+        return self.predicate.holds(state, self.objects) 
