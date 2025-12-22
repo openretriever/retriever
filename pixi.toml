@@ -109,10 +109,6 @@ demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main
 # Native acceleration (Rust) helpers
 native-toolchain = "rustc --version && cargo --version && maturin --version"
 
-# Skill Switching Demo
-# Run: pixi run demo-skill-switching
-demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
-
 [feature.jax.tasks]
 # JAX Async Inference Demo
 # Run: pixi run -e jax demo-jax-inference
