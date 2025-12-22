@@ -30,19 +30,21 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 # =============================================================================
 [dependencies]
 python = "3.11.*"
+pip = "*"
 scipy = "*"
 mujoco = "*"
 
 # =============================================================================
-# Optional Feature: Native Acceleration (Rust toolchain)
+# Optional Feature: Rust Toolchain
 # =============================================================================
-#
-# This is intentionally NOT enabled in the default environment.
-# Use: `pixi run -e native native-toolchain`
-#
-[feature.native.dependencies]
+[feature.rust.dependencies]
 rust = "*"
 maturin = "*"
+
+# =============================================================================
+# Optional Feature: C++ Toolchain
+# =============================================================================
+[feature.cpp.dependencies]
 cmake = "*"
 pkg-config = "*"
 
@@ -56,13 +58,16 @@ optax = "*"
 openai = "*"
 google-generativeai = "*"
 pillow = "*"
+pyarrow = ">=14.0.0"
 
 # -----------------------------------------------------------------------------
 # Environments
 # -----------------------------------------------------------------------------
 [environments]
 default = { features = [] }
-native = { features = ["native"] }
+rust = { features = ["rust"] }
+cpp = { features = ["cpp"] }
+bindings = { features = ["rust", "cpp"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
 llm = { features = ["llm"] }
@@ -112,8 +117,12 @@ dora-rs-cli = ">=0.3.12"
 # Run: pixi run demo-skill-switching
 demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
 
-# Native acceleration (Rust) helpers
-native-toolchain = "rustc --version && cargo --version && maturin --version"
+# Binding acceleration (Rust/C++) helpers
+binding-toolchain = "rustc --version && cargo --version && maturin --version"
+
+# Python controller baseline (for binding comparison)
+# Run: pixi run binding-controller-python
+binding-controller-python = "python examples/advanced/native_controller/app.py --backend python"
 
 [feature.jax.tasks]
 # JAX Async Inference Demo
@@ -127,11 +136,11 @@ demo-jax-train = "python examples/advanced/jax_cuda_async/train.py"
 [feature.llm.tasks]
 # VLM GridWorld Navigation
 # Run: pixi run -e llm demo-vlm-gridworld
-demo-vlm-gridworld = "python -m examples.advanced.vlm_gridworld.app --backend dora"
+demo-vlm-gridworld = { cmd = "python -m examples.advanced.vlm_gridworld.app --backend dora", env = { PYTHONNOUSERSITE = "1" } }
 
 # LLM Streaming RL (20 Questions)
 # Run: pixi run -e llm demo-llm-streaming
-demo-llm-streaming = "python -m examples.advanced.llm_streaming_rl.app --backend dora"
+demo-llm-streaming = { cmd = "python -m examples.advanced.llm_streaming_rl.app --backend dora", env = { PYTHONNOUSERSITE = "1" } }
 
 # =============================================================================
 # OPTIONAL FEATURE: PyTorch (Vision + VLA)
@@ -170,31 +179,30 @@ demo-pytorch-async = { cmd = "python examples/advanced/pytorch_cuda_async/app.py
 demo-hierarchical-vla = { cmd = "python examples/advanced/hierarchical_vla/app.py", env = { KMP_DUPLICATE_LIB_OK = "TRUE", PYTHONPATH = "." } }
 
 # =============================================================================
-# Native Controller Examples (Rust/C++)
+# Rust Binding Examples
 # =============================================================================
-# Requires: pixi run -e native <task>
-#
-# Native Python controller demo
-# Run: pixi run -e native native-controller-python
-native-controller-python = "python examples/advanced/native_controller/app.py --backend python"
-
+[feature.rust.tasks]
 # Build and run Rust controller
-# Run: pixi run -e native native-controller-rust
-native-build-rust = { cmd = "cargo build --release", cwd = "examples/advanced/native_controller" }
-native-controller-rust = { cmd = "python examples/advanced/native_controller/app.py --backend rust", depends-on = [
-    "native-build-rust",
+# Run: pixi run -e rust binding-controller-rust
+binding-build-rust = { cmd = "cargo build --release", cwd = "examples/advanced/native_controller" }
+binding-controller-rust = { cmd = "python examples/advanced/native_controller/app.py --backend rust", depends-on = [
+    "binding-build-rust",
 ] }
 
+# Run benchmark comparing all backends (requires bindings env -> rust + cpp)
+# Run: pixi run -e bindings binding-benchmark
+binding-benchmark = { cmd = "python examples/advanced/native_controller/benchmark.py", depends-on = [
+    "binding-build-rust",
+    "binding-build-cpp",
+] }
+
+# =============================================================================
+# C++ Binding Examples
+# =============================================================================
+[feature.cpp.tasks]
 # Build and run C++ controller  
-# Run: pixi run -e native native-controller-cpp
-native-build-cpp = { cmd = "mkdir -p build && cd build && cmake .. && cmake --build .", cwd = "examples/advanced/native_controller" }
-native-controller-cpp = { cmd = "python examples/advanced/native_controller/app.py --backend cpp", depends-on = [
-    "native-build-cpp",
-] }
-
-# Run benchmark comparing all backends
-# Run: pixi run -e native native-benchmark
-native-benchmark = { cmd = "python examples/advanced/native_controller/benchmark.py", depends-on = [
-    "native-build-rust",
-    "native-build-cpp",
+# Run: pixi run -e cpp binding-controller-cpp
+binding-build-cpp = { cmd = "mkdir -p build && cd build && cmake .. && cmake --build .", cwd = "examples/advanced/native_controller" }
+binding-controller-cpp = { cmd = "python examples/advanced/native_controller/app.py --backend cpp", depends-on = [
+    "binding-build-cpp",
 ] }
