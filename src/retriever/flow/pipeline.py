@@ -9,7 +9,7 @@ context manager. It reuses the same underlying graph/IR machinery as
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from retriever.flow.context import FlowContext
 from retriever.flow.handle import FlowHandle
@@ -247,8 +247,8 @@ class Pipeline(FlowContext):
 
     def record(
         self,
-        handle: FlowHandle,
-        path: str | Path,
+        arg1: FlowHandle | str | Path,
+        arg2: Optional[str | Path] = None,
         *,
         steps: int,
         dt: Optional[float] = None,
@@ -260,32 +260,48 @@ class Pipeline(FlowContext):
         Record `steps` iterations via `Pipeline.step()` and save to `path`.
 
         The format is auto-detected from the file extension:
-        - `.mcap`: MCAP format (viewable in Rerun via `pipe.view()`)
-        - `.pkl.gz`: Pickle format (legacy, code replay only)
+        - `.mcap`: Records ALL pipeline outputs (session recording). Handle is ignored.
+        - `.pkl.gz`: Records ONLY the specified handle (stream recording).
+
+        Usage:
+            # Record entire session to MCAP (recommended)
+            pipe.record("session.mcap", steps=50)
+
+            # Legacy: Record specific stream to pickle
+            pipe.record(camera, "stream.pkl.gz", steps=50)
 
         Args:
-            handle: FlowHandle to record output from
-            path: Output path (.mcap recommended, .pkl.gz for legacy)
+            arg1: Output Path (for session) OR FlowHandle (for single stream)
+            arg2: Output Path (if arg1 is handle)
             steps: Number of step iterations
             dt: Logical dt per step (seconds)
             sleep_s: Sleep seconds between steps
             name: Name for the recorded stream
             visualize: Stream to Rerun live viewer during recording (default False)
-
-        Example:
-            # Record to MCAP
-            pipe.record(camera, "session.mcap", steps=50, dt=0.1)
-
-            # With live Rerun visualization
-            pipe.record(camera, "session.mcap", steps=50, visualize=True)
-
-            # View recording later
-            pipe.view("session.mcap")
         """
         import time as _time
+        from retriever.flow.handle import FlowHandle
+
+        # Parse arguments to support both signatures
+        handle: Optional[FlowHandle] = None
+        path: Path
+
+        if isinstance(arg1, FlowHandle):
+            # pipe.record(handle, path, ...)
+            handle = arg1
+            if arg2 is None:
+                raise ValueError("When passing a handle, you must also provide a path.")
+            path = Path(arg2)
+        else:
+            # pipe.record(path, ...)
+            path = Path(arg1)  # type: ignore
+            handle = None
 
         path = Path(path)
         use_mcap = path.suffix.lower() == ".mcap"
+
+        if not use_mcap and handle is None:
+            raise ValueError("Legacy recording (.pkl.gz) requires a specific FlowHandle argument.")
 
         # Setup MCAP writer if using MCAP format
         mcap_writer = None
@@ -305,6 +321,7 @@ class Pipeline(FlowContext):
             rerun_manager.init()
 
         # Run steps and record
+        # For legacy pickle recording, we need the recorder wrapper around the specific handle
         rec = self._create_recorder(handle, name=name) if not use_mcap else None
         for i in range(steps):
             result = self.step(dt=dt)
@@ -383,17 +400,10 @@ class Pipeline(FlowContext):
                 # Load from MCAP format
                 from retriever.lib.mcap import MCAPReader
 
+                # Use systematic node_id lookup
+                node_id = self.get_node_id(handle)
                 with MCAPReader(path) as reader:
-                    steps = reader.read_all()
-                # Convert MCAP steps to event buffer format
-                # Get the flow name from handle
-                flow_name = type(handle.flow).__name__
-                buffer = []
-                for step in steps:
-                    ts = step.get("now", 0.0)
-                    output = step.get("outputs", {}).get(flow_name)
-                    if output is not None:
-                        buffer.append((ts, output))
+                    buffer = reader.read_node_stream(node_id)
             else:
                 buffer = load_event_buffer(path)
 
@@ -410,6 +420,22 @@ class Pipeline(FlowContext):
         replay = replay_flow(buffer, output_type=output_type) @ clock  # type: ignore[arg-type]
         self.replace(handle, replay)
         return replay
+
+    def replay_from(self, path: str | Path, inputs: List[FlowHandle]) -> None:
+        """
+        Systematic Replay: Configure multiple inputs to replay from a recording.
+
+        This is a convenience wrapper that calls `replay()` for each handle in `inputs`.
+
+        Args:
+            path: Path to the recording (.mcap)
+            inputs: List of source handles to replace with recorded data
+
+        Example:
+            pipe.replay_from("session.mcap", inputs=[camera, lidar])
+        """
+        for handle in inputs:
+            self.replay(handle, path=path)
 
     def reset_stepper(self) -> None:
         """Reset in-process stepper state (buffers + Flow.reset)."""

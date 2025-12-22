@@ -27,9 +27,9 @@ from __future__ import annotations
 
 import json
 import pickle
-from dataclasses import asdict, is_dataclass
+from dataclasses import is_dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -221,8 +221,6 @@ class MCAPWriter:
             result: StepResult from Pipeline.step()
             step_idx: Step index for sequencing
         """
-        import base64
-
         # Get timestamp from result
         timestamp_ns = int((result.now or 0) * 1e9)
 
@@ -447,6 +445,27 @@ class MCAPReader:
     def read_all(self) -> List[Dict[str, Any]]:
         """Read all step results into a list."""
         return list(self)
+
+    def read_node_stream(self, node_id: str) -> List[Tuple[float, Any]]:
+        """
+        Read time-series stream for a specific node.
+
+        Args:
+            node_id: Node ID to read (e.g. "camera")
+
+        Returns:
+            List of (timestamp, value) tuples
+        """
+        topic = f"/retriever/flows/{node_id}/output"
+        buffer: List[Tuple[float, Any]] = []
+
+        # Filter by topic
+        for schema, channel, message in self._reader.iter_messages(topics=[topic]):
+            val = _deserialize_value(message.data, schema.name)
+            ts = message.log_time / 1e9
+            buffer.append((ts, val))
+
+        return buffer
 
 
 # =============================================================================

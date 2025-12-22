@@ -9,6 +9,8 @@ Core modules:
 
 __version__ = "0.0.0"
 
+from retriever.flow import Flow, Rate, Clock
+from retriever.flow.adapter import Latest
 from retriever.flow.pipeline import (
     Pipeline,
     connect,
@@ -21,6 +23,10 @@ from retriever.flow.pipeline import (
 )
 
 __all__ = [
+    "Flow",
+    "Rate",
+    "Clock",
+    "Latest",
     "Pipeline",
     "connect",
     "default_pipeline",
