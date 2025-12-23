@@ -9,8 +9,9 @@ from typing import get_origin, get_args
 from typing import TypeVar, Generic, Optional, Type
 from retriever.error import FlowError, ErrCode
 
-I = TypeVar('I')
-O = TypeVar('O')
+I = TypeVar("I")
+O = TypeVar("O")
+T = TypeVar("T")
 
 
 class Flow(ABC, Generic[I, O]):
@@ -23,44 +24,57 @@ class Flow(ABC, Generic[I, O]):
 
     _input_type: Optional[Type] = None
     _output_type: Optional[Type] = None
+    _main_thread: bool = False  # If True, run in main thread (for GUI flows)
 
     def __init_subclass__(cls, **kwargs):
         """Extract type parameters from Flow[I, O] at class definition time."""
         super().__init_subclass__(**kwargs)
 
-        if hasattr(cls, '__orig_bases__'):
-            for base in cls.__orig_bases__:
-                if get_origin(base) is Flow:
-                    args = get_args(base)
-                    if len(args) >= 2:
-                        # Only use concrete types
-                        input_type = args[0] if not isinstance(args[0], TypeVar) else None
-                        output_type = args[1] if not isinstance(args[1], TypeVar) else None
+        if not hasattr(cls, "__orig_bases__"):
+            return
 
-                        # Normalize type(None) to None
-                        cls._input_type = None if input_type is type(None) else input_type
-                        cls._output_type = None if output_type is type(None) else output_type
+        for base in cls.__orig_bases__:
+            if get_origin(base) is not Flow:
+                continue
 
-                        # Validate types are @flow_io decorated
-                        from retriever.flow.io import is_flow_io
+            args = get_args(base)
+            if len(args) < 2:
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_MISSING,
+                    f"Flow '{cls.__name__}' type parameters [I, O] missing",
+                )
 
-                        if input_type and input_type is not type(None) and not is_flow_io(input_type):
-                            raise FlowError(
-                                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                                f"Flow input type must use @flow_io decorator, got {input_type}",
-                            )
+            # Only use concrete types
+            input_type = args[0] if not isinstance(args[0], TypeVar) else None
+            output_type = args[1] if not isinstance(args[1], TypeVar) else None
 
-                        if output_type and output_type is not type(None) and not is_flow_io(output_type):
-                            raise FlowError(
-                                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                                f"Flow output type must use @flow_io decorator, got {output_type}",
-                            )
-                    else:
-                        raise FlowError(
-                            ErrCode.FLOW_TYPE_MISSING,
-                            f"Flow '{cls.__name__}' type parameters [I, O] missing"
-                        )
-                    break
+            # Normalize type(None) to None
+            cls._input_type = None if input_type is type(None) else input_type
+            cls._output_type = None if output_type is type(None) else output_type
+
+            # Validate types are @flow_io decorated
+            from retriever.flow.io import is_flow_io
+
+            if (
+                input_type
+                and input_type is not type(None)
+                and not is_flow_io(input_type)
+            ):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                    f"Flow input type must use @flow_io decorator, got {input_type}",
+                )
+
+            if (
+                output_type
+                and output_type is not type(None)
+                and not is_flow_io(output_type)
+            ):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                    f"Flow output type must use @flow_io decorator, got {output_type}",
+                )
+            break
 
     @property
     def input_type(self) -> Type[I]:
@@ -153,18 +167,33 @@ class Flow(ABC, Generic[I, O]):
         """PyTorch-style alias for `step(...)`."""
         return self.step(input)
 
+    def __call__(self, input: I) -> O:
+        """
+        Direct signal function execution: `output = flow(input)`.
+
+        This enables using Flow instances as callable signal functions:
+            detector = Detector(threshold=50.0)
+            result = detector(sensor_input)  # Calls run() directly
+
+        Note: This is for direct execution without clock/pipeline wiring.
+        For pipeline wiring, use `flow @ Rate(...)` to create a FlowHandle.
+        """
+        return self.run(input)
+
     def __rshift__(self, other):
         """
         Support flow composition: A >> B
         """
         from retriever.flow.pipeline import Pipeline
+
         return Pipeline.from_flow(self) >> other
-    
+
     def __and__(self, other):
         """
         Support parallel composition: A & B
         """
         from retriever.flow.pipeline import Pipeline
+
         return Pipeline.from_flow(self) & other
 
     @abstractmethod
@@ -199,29 +228,47 @@ class Flow(ABC, Generic[I, O]):
     def __getstate__(self):
         """
         Custom pickling to exclude common unpicklable components.
-        
-        This allows Flows to store threading.Lock, queue.Queue, etc. 
+
+        This allows Flows to store threading.Lock, queue.Queue, etc.
         as long as they are initialized in init() rather than __init__().
         """
         state = self.__dict__.copy()
         unpicklable_types = (
-            'threading.Lock', 'threading.RLock', 'threading.Thread', 
-            'queue.Queue', 'SimpleQueue', 'JoinableQueue',
-            'dora.Node', 'FastAPI'
+            "threading.Lock",
+            "threading.RLock",
+            "threading.Thread",
+            "queue.Queue",
+            "SimpleQueue",
+            "JoinableQueue",
+            "dora.Node",
+            "FastAPI",
         )
-        
+
         to_remove = []
         for k, v in state.items():
             t_str = str(type(v))
             if any(p in t_str for p in unpicklable_types):
                 to_remove.append(k)
-        
+
         for k in to_remove:
             state.pop(k)
-            
+
         return state
 
     def __setstate__(self, state):
         self.__dict__.update(state)
         # Runtime objects must be re-initialized in init()
         pass
+
+
+def gui_flow(cls: T) -> T:
+    """
+    Mark a flow to run in main thread (for GUI frameworks).
+
+    Example:
+        @gui_flow
+        class MujocoViewerFlow(Flow[State, None]):
+            ...
+    """
+    cls._main_thread = True
+    return cls
