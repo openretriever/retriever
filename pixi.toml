@@ -106,7 +106,7 @@ typing-extensions = "*"
 # rejects the generated YAML, see docs/install.md for upgrade/build-from-source steps.
 dora-rs = ">=0.3.12"
 dora-rs-cli = ">=0.3.12"
-pyzmq = ">=27.1.0, <28"
+
 
 # =============================================================================
 # Tasks
