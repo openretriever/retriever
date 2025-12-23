@@ -37,32 +37,34 @@ class MPScheduler(Scheduler):
 
     def _drain_all(self, inputs: Dict[str, Subscriber]) -> None:
         """Drain all input channels."""
-        for channel in inputs.values():
-            channel.drain()
+        for val in inputs.values():
+            if isinstance(val, list):
+                for channel in val:
+                    channel.drain()
+            else:
+                val.drain()
 
     def _check_arrival(
         self, inputs: Dict[str, Subscriber], fields: list
     ) -> ScheduleResult:
         """Check new_arrival on fields, return result if found."""
         for field in fields:
-            if field in inputs and inputs[field].new_arrival():
-                return ScheduleResult(
-                    should_execute=True,
-                    fields_to_sample=[field],
-                    now=time.time(),
-                )
+            if field in inputs:
+                val = inputs[field]
+                has_arrival = False
+                if isinstance(val, list):
+                    has_arrival = any(sub.new_arrival() for sub in val)
+                else:
+                    has_arrival = val.new_arrival()
+                
+                if has_arrival:
+                    return ScheduleResult(
+                        should_execute=True,
+                        fields_to_sample=[field],
+                        now=time.time(),
+                    )
         return ScheduleResult(should_execute=False)
 
-    def next(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
-        """
-        Determine next execution time/inputs.
-        
-        Args:
-            inputs: Input subscribers
-            
-        Returns:
-            ScheduleResult with execution decision
-        """
     def next(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
         """
         Determine next execution time/inputs.
@@ -152,7 +154,13 @@ class MPScheduler(Scheduler):
         readers = []
         for field in fields:
             if field in inputs:
-                readers.append(inputs[field].reader)
+                val = inputs[field]
+                if isinstance(val, list):
+                    for sub in val:
+                        readers.append(sub.reader)
+                else:
+                    readers.append(val.reader)
+        
         if not connection_wait(readers, timeout=timeout):
             return ScheduleResult(should_execute=False)
 

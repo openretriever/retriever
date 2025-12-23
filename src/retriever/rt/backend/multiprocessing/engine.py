@@ -92,7 +92,28 @@ class MPEngine(ExecutionEngine):
             for edge in self.ir.edges:
                 if edge.destination.node == node.id:
                     port_name = edge.destination.port
-                    inputs[port_name] = self.channels[edge.id]
+                    
+                    # Check if port is List[T]
+                    is_list_port = False
+                    if flow.input_type:
+                         from dataclasses import fields
+                         from typing import get_origin, List, Sequence
+                         for f in fields(flow.input_type):
+                             if f.name == port_name:
+                                 origin = get_origin(f.type)
+                                 if origin in (list, List, Sequence):
+                                     is_list_port = True
+                                 break
+
+                    if is_list_port:
+                        if port_name not in inputs:
+                            inputs[port_name] = []
+                        # Ensure it's a list (in case mixed logic, though validator prevents it)
+                        if not isinstance(inputs[port_name], list):
+                             inputs[port_name] = [inputs[port_name]]
+                        inputs[port_name].append(self.channels[edge.id])
+                    else:
+                        inputs[port_name] = self.channels[edge.id]
 
                     # Load adapter for this input
                     adapter = IRLoader.load_adapter(edge.adapter)

@@ -22,6 +22,7 @@ from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.logging.manager import LogManager
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,6 +56,8 @@ class DoraEngine(ExecutionEngine):
         self.ir = ir
         self.config = config or {}
         self.executors: List[DoraExecutor] = []
+        self.main_thread_runners: List = []  # For @gui_flow nodes
+        self._main_thread_nodes: List = []  # Node IDs that are main-thread
         self._running = False
         self._temp_dir: Optional[Path] = None
         self._yaml_path: Optional[Path] = None
@@ -76,7 +79,7 @@ class DoraEngine(ExecutionEngine):
         #     )
 
         # Create temp directory for YAML
-        yaml_dir = self.config.get('yaml_dir')
+        yaml_dir = self.config.get("yaml_dir")
         if yaml_dir:
             self._temp_dir = Path(yaml_dir)
             self._temp_dir.mkdir(parents=True, exist_ok=True)
@@ -92,7 +95,9 @@ class DoraEngine(ExecutionEngine):
 
         # Compile IR to YAML (with optional per-node path overrides)
         try:
-            yaml_content = compile_and_validate(self.ir, node_path_overrides=node_path_overrides)
+            yaml_content = compile_and_validate(
+                self.ir, node_path_overrides=node_path_overrides
+            )
             logger.debug(f"Generated YAML:\n{yaml_content}")
         except Exception as e:
             logger.error(f"YAML compilation failed: {e}")
@@ -104,18 +109,32 @@ class DoraEngine(ExecutionEngine):
         logger.info(f"Generated YAML: {self._yaml_path}")
 
         # Record node paths so we can decide which nodes are Python vs native.
-        self._node_paths = get_node_paths(self.ir, node_path_overrides=node_path_overrides)
+        self._node_paths = get_node_paths(
+            self.ir, node_path_overrides=node_path_overrides
+        )
 
         # Create Python executors only for "dynamic" nodes.
+        # Partition into main-thread (run inline) and worker (spawn subprocess).
         for node in self.ir.nodes:
             path = self._node_paths.get(node.id, "dynamic")
             if path != "dynamic":
-                logger.info(f"Skipping Python executor for native node: {node.id} (path={path})")
+                logger.info(
+                    f"Skipping Python executor for native node: {node.id} (path={path})"
+                )
                 continue
             executor = self._create_executor(node)
-            self.executors.append(executor)
 
-        logger.info(f"Runtime built: {len(self.executors)} executors")
+            # Check if flow is marked as main-thread (@gui_flow)
+            if getattr(executor.flow, "_main_thread", False):
+                self.main_thread_runners.append(executor)
+                self._main_thread_nodes.append(node.id)
+                logger.info(f"Main-thread flow detected: {node.id}")
+            else:
+                self.executors.append(executor)
+
+        logger.info(
+            f"Runtime built: {len(self.executors)} worker executors, {len(self.main_thread_runners)} main-thread executors"
+        )
 
     def _create_executor(self, node) -> DoraExecutor:
         """Create DoraExecutor for each node."""
@@ -127,6 +146,7 @@ class DoraEngine(ExecutionEngine):
 
         # Get data port names (filter out service ports)
         from retriever.flow.service import is_service_port
+
         input_ports = [p for p in node.inputs.keys() if not is_service_port(p)]
         output_ports = [p for p in node.outputs.keys() if not is_service_port(p)]
 
@@ -142,12 +162,14 @@ class DoraEngine(ExecutionEngine):
         # Filter input_ports to only those that are connected (have adapters)
         # This prevents KeyError in Executor if a port is declared but unconnected.
         connected_ports = [p for p in input_ports if p in adapters]
-        
+
         # Warn about unconnected ports
         for p in input_ports:
             if p not in adapters:
-                logger.warning(f"Node '{node.id}' has unconnected input port: '{p}'. It will not receive data.")
-        
+                logger.warning(
+                    f"Node '{node.id}' has unconnected input port: '{p}'. It will not receive data."
+                )
+
         input_ports = connected_ports
 
         # Create executor with logging params
@@ -155,9 +177,9 @@ class DoraEngine(ExecutionEngine):
         if LogManager.is_initialized():
             log_manager = LogManager()
             log_params = {
-                'queue': log_manager.get_queue(),
-                'config': log_manager.get_config(),
-                'log_dir': log_manager.get_log_dir(),
+                "queue": log_manager.get_queue(),
+                "config": log_manager.get_config(),
+                "log_dir": log_manager.get_log_dir(),
             }
 
         executor = DoraExecutor(
@@ -182,7 +204,7 @@ class DoraEngine(ExecutionEngine):
 
         logger.info("Starting dora runtime")
 
-        timeout = self.config.get('dora_timeout', 10)
+        timeout = self.config.get("dora_timeout", 10)
 
         # Start dora runtime
         self._start_dora_runtime(timeout)
@@ -191,16 +213,28 @@ class DoraEngine(ExecutionEngine):
         self._start_dataflow(timeout)
 
         # Give dora time to initialize nodes
-        init_delay = self.config.get('init_delay', 1.0)
+        init_delay = self.config.get("init_delay", 1.0)
         logger.debug(f"Waiting {init_delay}s for dora initialization")
         time.sleep(init_delay)
 
-        # Start all executors
+        # Start all worker executors (as subprocesses)
         for executor in self.executors:
             executor.start()
             logger.info(f"Started executor: {executor.name} (PID: {executor.pid})")
 
         self._running = True
+
+        # Run main-thread executors inline (blocking)
+        # This keeps them in the main process for GUI frameworks
+        if self.main_thread_runners:
+            logger.info(
+                f"Running {len(self.main_thread_runners)} main-thread executor(s) inline"
+            )
+            for runner in self.main_thread_runners:
+                # Run in main thread (blocking) - uses dora.Node for communication
+                print(f"[MAIN] Starting @gui_flow: {runner.name}")
+                logger.info(f"Starting main-thread executor: {runner.name}")
+                runner.run()  # This blocks until executor stops
 
     def _start_dora_runtime(self, timeout: float) -> None:
         """Start dora runtime with 'dora up'."""
@@ -208,10 +242,7 @@ class DoraEngine(ExecutionEngine):
 
         try:
             result = subprocess.run(
-                ["dora", "up"],
-                capture_output=True,
-                text=True,
-                timeout=timeout
+                ["dora", "up"], capture_output=True, text=True, timeout=timeout
             )
 
             if result.returncode == 0:
@@ -303,25 +334,25 @@ class DoraEngine(ExecutionEngine):
             self._stop_dataflow()
 
         # Destroy dora runtime (optional, disabled by default)
-        if self.config.get('dora_destroy', False):
+        if self.config.get("dora_destroy", False):
             self._destroy_dora_runtime()
 
         # Cleanup temp files
-        if not self.config.get('keep_yaml', False):
+        if not self.config.get("keep_yaml", False):
             self._cleanup_temp_files()
 
     def _stop_dataflow(self) -> None:
         """Stop dora dataflow with 'dora stop --name <dataflow>'."""
         logger.debug(f"Stopping dataflow: {self.ir.metadata.name}")
 
-        timeout = self.config.get('dora_timeout', 10)
+        timeout = self.config.get("dora_timeout", 10)
 
         try:
             result = subprocess.run(
                 ["dora", "stop", "--name", self.ir.metadata.name],
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
 
             if result.returncode == 0:
@@ -340,14 +371,11 @@ class DoraEngine(ExecutionEngine):
         """Destroy dora runtime with 'dora destroy'."""
         logger.debug("Destroying dora runtime")
 
-        timeout = self.config.get('dora_timeout', 10)
+        timeout = self.config.get("dora_timeout", 10)
 
         try:
             result = subprocess.run(
-                ["dora", "destroy"],
-                capture_output=True,
-                text=True,
-                timeout=timeout
+                ["dora", "destroy"], capture_output=True, text=True, timeout=timeout
             )
 
             if result.returncode == 0:
@@ -367,6 +395,7 @@ class DoraEngine(ExecutionEngine):
 
             try:
                 import shutil
+
                 shutil.rmtree(self._temp_dir, ignore_errors=True)
                 logger.debug("Temp files cleaned up")
             except Exception as e:
