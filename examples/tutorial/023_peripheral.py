@@ -88,6 +88,10 @@ def main() -> None:
         duration=args.duration,
         backend_config={"buffer_engine": args.buffer_engine},
     )
+    # Flush terminal input buffer to prevent typed chars from leaking
+    import sys
+    import termios
+    termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
 
 if __name__ == "__main__":
