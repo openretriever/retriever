@@ -445,13 +445,14 @@ class Pipeline(FlowContext):
     def run(
         self,
         *,
-        backend: str = "multiprocessing",
+        backend: str = "dora",
         duration: Optional[float] = None,
         blocking: bool = True,
         log_config: Optional[Any] = None,
         backend_config: Optional[Dict[str, Any]] = None,
         policy: Any = "aggressive",
         build: bool = False,
+        visualize: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -465,9 +466,15 @@ class Pipeline(FlowContext):
             backend_config: Backend-specific configuration.
             policy: Execution build policy (passed to build_execution).
             build: If True, run via ExecutionGraph (grouping/placement). If False, run raw IRStruct.
+            visualize: Visualization backend. Pass "rerun" to enable Rerun streaming.
             **kwargs: Extra kwargs forwarded to build_execution.
         """
         from retriever.rt.runtime import execute_ir
+
+        # Enable visualization if requested
+        if visualize == "rerun" or visualize is True:
+            import retriever.lib.rerun
+            retriever.lib.rerun.enable_rerun_logging(self)
 
         if build:
             graph = self.build_execution(policy=policy, **kwargs)
@@ -561,7 +568,7 @@ def connect(
 
 def run(
     *,
-    backend: str = "multiprocessing",
+    backend: str = "dora",
     duration: Optional[float] = None,
     blocking: bool = True,
     log_config: Optional[Any] = None,
