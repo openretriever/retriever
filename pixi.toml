@@ -106,12 +106,22 @@ typing-extensions = "*"
 # rejects the generated YAML, see docs/install.md for upgrade/build-from-source steps.
 dora-rs = ">=0.3.12"
 dora-rs-cli = ">=0.3.12"
+pyzmq = ">=27.1.0, <28"
 
 # =============================================================================
 # Tasks
 # =============================================================================
 [tasks]
 
+
+
+# Functional Wiring Examples (FRP-style)
+# Run: pixi run demo-wiring-comparison
+demo-wiring-comparison = { cmd = "python examples/advanced/wiring_comparison.py", env = { PYTHONPATH = "src" } }
+demo-chaining = { cmd = "python examples/advanced/functional_wiring/chaining.py", env = { PYTHONPATH = "src" } }
+demo-fanout = { cmd = "python examples/advanced/functional_wiring/fanout.py", env = { PYTHONPATH = "src" } }
+demo-sync-policies = { cmd = "python examples/advanced/functional_wiring/sync_policies.py", env = { PYTHONPATH = "src" } }
+demo-combinators = { cmd = "python examples/advanced/functional_wiring/combinators.py", env = { PYTHONPATH = "src" } }
 
 # Skill Switching Demo
 # Run: pixi run demo-skill-switching
@@ -120,6 +130,13 @@ demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main
 # Mujoco Manipulation (Robot Simulation + Rerun)
 # Run: pixi run demo-mujoco
 demo-mujoco = { cmd = "python examples/advanced/mujoco_manipulation/app.py", env = { PYTHONPATH = "." } }
+
+# TWIST2 Port (Humanoid Simulation)
+# Run with native MuJoCo viewer (requires mjpython on macOS):
+# pixi run -e torch demo-twist2
+demo-twist2 = { cmd = "mjpython examples/advanced/twist2_simulation/app.py", env = { PYTHONPATH = "." } }
+# Run with Rerun only (no native viewer, works with regular python):
+demo-twist2-rerun = { cmd = "python examples/advanced/twist2_simulation/app.py --no-viewer", env = { PYTHONPATH = "." } }
 
 # Binding acceleration (Rust/C++) helpers
 binding-toolchain = "rustc --version && cargo --version && maturin --version"
@@ -156,6 +173,7 @@ transformers = "*"
 pillow = "*"
 openpi = "*"
 timm = "*"
+onnxruntime = "*"
 
 [feature.torch.tasks]
 # Interactive Vision

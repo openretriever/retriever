@@ -111,3 +111,12 @@ Docs live in `docs/` (served via MkDocs):
 - Advanced Examples: `examples/advanced/`
   - **Skill Switching**: Dynamic behavior switching pattern (`examples/advanced/skill_switching/`)
   - **Native Controller**: Rust/C++ native extension bindings (`examples/advanced/native_controller/`)
+  - **TWIST2 Simulation**: MuJoCo humanoid robot at 1000Hz physics + 50Hz policy (`examples/advanced/twist2_simulation/`)
+
+## Roadmap
+
+Recent features:
+- **Main Thread Flow** (`@gui_flow`): Run flows in main thread for native GUI support (MuJoCo viewers, Qt, etc.)
+  - See: `examples/advanced/twist2_simulation/` for usage example
+
+

@@ -144,7 +144,15 @@ def _log_with_archetype(rr, path: str, value: Any, archetype: str) -> None:
     if archetype == "Image":
         rr.log(path, rr.Image(value))
     elif archetype == "Scalar":
-        rr.log(path, rr.Scalar(value))
+        from rerun.archetypes import Scalars
+        rr.log(path, Scalars(value))
+    elif archetype == "TimeSeries":
+        # Log list of values as individual scalar time-series
+        import numpy as np
+        from rerun.archetypes import Scalars
+        if isinstance(value, (list, tuple, np.ndarray)):
+            for i, val in enumerate(value):
+                rr.log(f"{path}/{i}", Scalars(val))
     elif archetype == "Text":
         rr.log(path, rr.TextLog(str(value)))
     elif archetype == "Tensor":
@@ -177,7 +185,8 @@ def _log_auto_detect(rr, path: str, value: Any) -> None:
         pass
 
     if isinstance(value, (int, float)):
-        rr.log(path, rr.Scalar(value))
+        from rerun.archetypes import Scalars
+        rr.log(path, Scalars(value))
     elif isinstance(value, str):
         rr.log(path, rr.TextLog(value))
     elif isinstance(value, (list, tuple)):
