@@ -30,51 +30,63 @@ class Flow(ABC, Generic[I, O]):
         """Extract type parameters from Flow[I, O] at class definition time."""
         super().__init_subclass__(**kwargs)
 
-        if not hasattr(cls, "__orig_bases__"):
+        # Skip validation for abstract intermediate classes
+        if ABC in cls.__bases__:
             return
 
+        # Find Flow[I, O] in bases
+        flow_base = cls._find_flow_base()
+        if flow_base is None:
+            raise FlowError(
+                ErrCode.FLOW_TYPE_MISSING,
+                f"Flow '{cls.__name__}' must specify type parameters: "
+                f"class {cls.__name__}(Flow[InputType, OutputType])",
+            )
+
+        args = get_args(flow_base)
+        if len(args) < 2:
+            raise FlowError(
+                ErrCode.FLOW_TYPE_MISSING,
+                f"Flow '{cls.__name__}' type parameters [I, O] missing",
+            )
+
+        # Extract types (None if TypeVar)
+        input_type = args[0] if not isinstance(args[0], TypeVar) else None
+        output_type = args[1] if not isinstance(args[1], TypeVar) else None
+
+        # Normalize type(None) to None
+        cls._input_type = None if input_type is type(None) else input_type
+        cls._output_type = None if output_type is type(None) else output_type
+
+        # Validate @flow_io decoration
+        cls._validate_flow_io_types(input_type, output_type)
+
+    @classmethod
+    def _find_flow_base(cls):
+        """Find Flow[I, O] in __orig_bases__, or None if not found."""
+        if not hasattr(cls, "__orig_bases__"):
+            return None
         for base in cls.__orig_bases__:
-            if get_origin(base) is not Flow:
-                continue
+            if get_origin(base) is Flow:
+                return base
+        return None
 
-            args = get_args(base)
-            if len(args) < 2:
-                raise FlowError(
-                    ErrCode.FLOW_TYPE_MISSING,
-                    f"Flow '{cls.__name__}' type parameters [I, O] missing",
-                )
+    @classmethod
+    def _validate_flow_io_types(cls, input_type, output_type):
+        """Validate that input/output types use @flow_io decorator."""
+        from retriever.flow.io import is_flow_io
 
-            # Only use concrete types
-            input_type = args[0] if not isinstance(args[0], TypeVar) else None
-            output_type = args[1] if not isinstance(args[1], TypeVar) else None
+        if input_type and input_type is not type(None) and not is_flow_io(input_type):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                f"Flow input type must use @flow_io decorator, got {input_type}",
+            )
 
-            # Normalize type(None) to None
-            cls._input_type = None if input_type is type(None) else input_type
-            cls._output_type = None if output_type is type(None) else output_type
-
-            # Validate types are @flow_io decorated
-            from retriever.flow.io import is_flow_io
-
-            if (
-                input_type
-                and input_type is not type(None)
-                and not is_flow_io(input_type)
-            ):
-                raise FlowError(
-                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                    f"Flow input type must use @flow_io decorator, got {input_type}",
-                )
-
-            if (
-                output_type
-                and output_type is not type(None)
-                and not is_flow_io(output_type)
-            ):
-                raise FlowError(
-                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                    f"Flow output type must use @flow_io decorator, got {output_type}",
-                )
-            break
+        if output_type and output_type is not type(None) and not is_flow_io(output_type):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                f"Flow output type must use @flow_io decorator, got {output_type}",
+            )
 
     @property
     def input_type(self) -> Type[I]:
@@ -154,14 +166,43 @@ class Flow(ABC, Generic[I, O]):
         """
         return None
 
+    @abstractmethod
     def step(self, input: I) -> O:
         """
-        Single-step execution alias.
+        Execute one step of flow computation.
 
-        This is an ergonomic alias for `run(...)` so user code can reserve the
-        word "run" for backend execution (Pipeline/engine).
+        This is the primary method to override in Flow subclasses.
+        Called each time the flow's clock fires.
+
+        Args:
+            input: Input value of type I (@flow_io dataclass)
+
+        Returns:
+            Output value of type O (@flow_io dataclass)
+
+        Example:
+            def step(self, input: ProcessInput) -> ProcessOutput:
+                output = ProcessOutput()
+
+                match input._signals:
+                    case []:
+                        self.tick += 1
+                    case ['command']:
+                        output.response = self.execute(input.command)
+                    case ['image', 'lidar', 'imu']:
+                        output.fusion = self.fuse(input.image, input.lidar, input.imu)
+
+                return output
         """
-        return self.run(input)
+        pass
+
+    def run(self, input: I) -> O:
+        """
+        Alias for step().
+
+        Provided for compatibility. Prefer overriding step() in new code.
+        """
+        return self.step(input)
 
     def forward(self, input: I) -> O:
         """PyTorch-style alias for `step(...)`."""
@@ -173,12 +214,12 @@ class Flow(ABC, Generic[I, O]):
 
         This enables using Flow instances as callable signal functions:
             detector = Detector(threshold=50.0)
-            result = detector(sensor_input)  # Calls run() directly
+            result = detector(sensor_input)  # Calls step() directly
 
         Note: This is for direct execution without clock/pipeline wiring.
         For pipeline wiring, use `flow @ Rate(...)` to create a FlowHandle.
         """
-        return self.run(input)
+        return self.step(input)
 
     def __rshift__(self, other):
         """
@@ -195,35 +236,6 @@ class Flow(ABC, Generic[I, O]):
         from retriever.flow.pipeline import Pipeline
 
         return Pipeline.from_flow(self) & other
-
-    @abstractmethod
-    def run(self, input: I) -> O:
-        """
-        Execute flow computation.
-
-        Called each time the flow's clock fires.
-
-        Args:
-            input: Input value of type I (@flow_io dataclass)
-
-        Returns:
-            Output value of type O (@flow_io dataclass)
-
-        Example:
-            def run(self, input: ProcessInput) -> ProcessOutput:
-                output = ProcessOutput()
-
-                match input._signals:
-                    case []:
-                        self.tick += 1
-                    case ['command']:
-                        output.response = self.execute(input.command)
-                    case ['image', 'lidar', 'imu']:
-                        output.fusion = self.fuse(input.image, input.lidar, input.imu)
-
-                return output
-        """
-        pass
 
     def __getstate__(self):
         """
