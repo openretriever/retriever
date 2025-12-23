@@ -34,6 +34,7 @@ pip = "*"
 
 mujoco = "*"
 
+
 # =============================================================================
 # Optional Feature: Rust Toolchain
 # =============================================================================
@@ -60,6 +61,22 @@ google-generativeai = "*"
 pillow = "*"
 pyarrow = ">=14.0.0"
 
+[feature.ravens.dependencies]
+pybullet = "*"
+scipy = "*"
+imageio = "*"
+
+[feature.ravens.pypi-dependencies]
+gymnasium = "*"
+kornia = "*"
+opencv-python = "*"
+matplotlib = "*"
+meshcat = "*"
+omegaconf = "*"
+transforms3d = "*"
+torch = "*"
+google-genai = "*"
+
 # -----------------------------------------------------------------------------
 # Environments
 # -----------------------------------------------------------------------------
@@ -71,12 +88,14 @@ bindings = { features = ["rust", "cpp"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
 llm = { features = ["llm"] }
+ravens = { features = ["ravens"] }
 
 # =============================================================================
 # PyPI Dependencies
 # =============================================================================
 # Note: These are installed via uv after conda deps are resolved
 [pypi-dependencies]
+
 # Install retriever package from local pyproject.toml.
 # Keep the default environment lightweight, but include:
 # - `dora`: dora backend support
@@ -94,6 +113,8 @@ retriever = { path = ".", editable = true, extras = [
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
 mcap = "*" # MCAP recording support
+
+
 
 uvicorn = { extras = ["standard"], version = "*" }
 # Test/runtime tooling (kept small; avoids pulling full `.[dev]` by default)
