@@ -106,9 +106,6 @@ retriever = { path = ".", editable = true, extras = [
     "dora",
     "demo",
     "web",
-    "dora",
-    "demo",
-    "web",
     "recording",
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
