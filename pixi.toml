@@ -90,6 +90,7 @@ jax = { features = ["jax"] }
 torch = { features = ["torch"] }
 llm = { features = ["llm"] }
 ravens = { features = ["ravens"] }
+twist2 = { features = ["twist2"] }
 
 # =============================================================================
 # PyPI Dependencies
@@ -111,7 +112,6 @@ retriever = { path = ".", editable = true, extras = [
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
 mcap = "*" # MCAP recording support
-onnxruntime = "*" # Required for Twist2 policy inference
 
 
 
@@ -151,12 +151,7 @@ demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main
 # Run: pixi run demo-mujoco
 demo-mujoco = { cmd = "python examples/advanced/mujoco_manipulation/app.py", env = { PYTHONPATH = "." } }
 
-# TWIST2 Port (Humanoid Simulation)
-# Run with native MuJoCo viewer (requires mjpython on macOS):
-# pixi run -e torch demo-twist2
-demo-twist2 = { cmd = "mjpython examples/advanced/twist2_simulation/app.py", env = { PYTHONPATH = "." } }
-# Run with Rerun only (no native viewer, works with regular python):
-demo-twist2-rerun = { cmd = "python examples/advanced/twist2_simulation/app.py --no-viewer", env = { PYTHONPATH = "." } }
+
 
 # Binding acceleration (Rust/C++) helpers
 binding-toolchain = "rustc --version && cargo --version && maturin --version"
@@ -248,3 +243,16 @@ binding-build-cpp = { cmd = "mkdir -p build && cd build && cmake .. && cmake --b
 binding-controller-cpp = { cmd = "python examples/advanced/native_controller/app.py --backend cpp", depends-on = [
     "binding-build-cpp",
 ] }
+
+# =============================================================================
+# Twist2 Simulation Feature
+# =============================================================================
+[feature.twist2.pypi-dependencies]
+onnxruntime = "*"
+
+[feature.twist2.tasks]
+# Run with native MuJoCo viewer (requires mjpython on macOS):
+# pixi run -e twist2 demo-twist2
+demo-twist2 = { cmd = "mjpython examples/advanced/twist2_simulation/app.py", env = { PYTHONPATH = "." } }
+# Run with Rerun only:
+demo-twist2-rerun = { cmd = "python examples/advanced/twist2_simulation/app.py --no-viewer", env = { PYTHONPATH = "." } }
