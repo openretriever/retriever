@@ -33,6 +33,7 @@ python = "3.11.*"
 pip = "*"
 
 mujoco = "*"
+mcp = ">=1.25.0,<2"
 
 
 # =============================================================================
@@ -110,6 +111,7 @@ retriever = { path = ".", editable = true, extras = [
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
 mcap = "*" # MCAP recording support
+onnxruntime = "*" # Required for Twist2 policy inference
 
 
 
@@ -191,7 +193,7 @@ transformers = "*"
 pillow = "*"
 openpi = "*"
 timm = "*"
-onnxruntime = "*"
+
 
 [feature.torch.tasks]
 # Interactive Vision
