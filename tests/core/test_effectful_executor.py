@@ -20,9 +20,9 @@ from typing import Dict, List, Tuple
 
 import pytest
 
-from retriever.core.flow import Flow, Arrow  # Flow is new, Arrow for backward compatibility
-from retriever.core.executor import LocalExecutor
-from retriever.core.types import Eff, pure
+from retriever.flow import Flow, Arrow  # Flow is new, Arrow for backward compatibility
+from retriever.executor import LocalExecutor
+from retriever.types import Eff, pure
 
 
 # ========================= Robotics State Examples =========================

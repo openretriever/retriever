@@ -2,10 +2,10 @@ import time
 
 import pytest
 
-from retriever.core.error import RTError, ErrCode
-from retriever.core.flow.clock import Rate
-from retriever.core.rt.backend.dora.scheduler import DoraScheduler
-from retriever.core.rt.backend.multiprocessing.scheduler import MPScheduler
+from retriever.error import RTError, ErrCode
+from retriever.flow.clock import Rate
+from retriever.rt.backend.dora.scheduler import DoraScheduler
+from retriever.rt.backend.multiprocessing.scheduler import MPScheduler
 
 
 def test_mp_scheduler_drop_skips_missed_ticks() -> None:

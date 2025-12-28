@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from retriever.core.flow import flow_io
-from retriever.core.flow.adapter import Events, Hold, Latest, Window
-from retriever.core.rt.buffer_engine import PythonBufferEngine
-from retriever.core.rt.signal import Signal
+from retriever.flow import flow_io
+from retriever.flow.adapter import Events, Hold, Latest, Window
+from retriever.rt.buffer_engine import PythonBufferEngine
+from retriever.rt.signal import Signal
 
 
 def test_python_buffer_engine_samples_builtin_adapters_without_list_materialization():

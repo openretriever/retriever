@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, FlowContext, Rate, flow_io, Latest
-from retriever.core.ir import validate
-from retriever.core.pipeline_registry import build_ir, register_pipeline
+from retriever.flow import Flow, FlowContext, Rate, flow_io, Latest
+from retriever.ir import validate
+from retriever.pipeline_registry import build_ir, register_pipeline
 
 
 @flow_io

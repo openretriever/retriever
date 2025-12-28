@@ -16,8 +16,8 @@ import pytest
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from retriever.core.flow import Flow, Arrow  # Flow is new, Arrow for backward compatibility
-from retriever.core.executor import LocalExecutor
+from retriever.flow import Flow, Arrow  # Flow is new, Arrow for backward compatibility
+from retriever.executor import LocalExecutor
 
 
 # ========================= Mock Robotics Functions =========================

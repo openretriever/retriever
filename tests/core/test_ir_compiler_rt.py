@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from retriever.core.flow import Flow, FlowContext, Rate, Trigger, flow_io, Latest
-from retriever.core.ir import IRStruct, build_execution, compile_execution, optimize_ir, validate
+from retriever.flow import Flow, FlowContext, Rate, Trigger, flow_io, Latest
+from retriever.ir import IRStruct, build_execution, compile_execution, optimize_ir, validate
 
 
 @flow_io
@@ -38,8 +38,8 @@ class Sink(Flow[ProcOut, None]):
 def _build_linear_chain_ir(name: str) -> IRStruct:
     with FlowContext(name) as ctx:
         src = Source() @ Rate(hz=10)
-        proc = Proc() @ Trigger(fields=["value"])
-        sink = Sink() @ Trigger(fields=["value"])
+        proc = Proc() @ Trigger("value")
+        sink = Sink() @ Trigger("value")
 
         src.then(proc, map={"value": "value"}, sync=Latest())
         proc.then(sink, map={"value": "value"}, sync=Latest())

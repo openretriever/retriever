@@ -126,7 +126,7 @@ class TestBackwardCompatibility:
     
     def test_arrow_alias(self):
         """Test that Arrow still works as alias."""
-        from retriever.core.flow import Arrow
+        from retriever.flow import Arrow
         
         def double(x): return x * 2
         

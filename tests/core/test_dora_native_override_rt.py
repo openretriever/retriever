@@ -6,7 +6,7 @@ yaml = pytest.importorskip("yaml")  # PyYAML (optional; required for dora compil
 
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, Pipeline, Rate, flow_io, Latest
+from retriever.flow import Flow, Pipeline, Rate, flow_io, Latest
 
 
 @flow_io
@@ -34,7 +34,7 @@ def _build_ir():
 
 
 def test_dora_compiler_respects_native_overrides_by_type():
-    from retriever.core.rt.backend.dora.compiler import compile_and_validate
+    from retriever.rt.backend.dora.compiler import compile_and_validate
 
     ir = _build_ir()
     assert len(ir.nodes) == 2
@@ -51,7 +51,7 @@ def test_dora_compiler_respects_native_overrides_by_type():
 
 
 def test_dora_compiler_override_priority_node_id_wins():
-    from retriever.core.rt.backend.dora.compiler import compile_and_validate
+    from retriever.rt.backend.dora.compiler import compile_and_validate
 
     ir = _build_ir()
     node0 = ir.nodes[0]
@@ -72,7 +72,7 @@ def test_dora_engine_skips_python_executor_for_native_node():
     dora = pytest.importorskip("dora")  # noqa: F401
     pyarrow = pytest.importorskip("pyarrow")  # noqa: F401
 
-    from retriever.core.rt.backend.dora.engine import DoraEngine
+    from retriever.rt.backend.dora.engine import DoraEngine
 
     ir = _build_ir()
     native_path = "native:dummy-binary"

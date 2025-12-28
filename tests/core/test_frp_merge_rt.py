@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from retriever.core.flow import Flow, FlowContext, Rate, Trigger, flow_io, Latest
-from retriever.core.flow.adapter import Events, Window
-from retriever.core.ir import validate
-from retriever.core.rt.signal import Signal
+from retriever.flow import Flow, FlowContext, Rate, Trigger, flow_io, Latest
+from retriever.flow.adapter import Events, Window
+from retriever.ir import validate
+from retriever.rt.signal import Signal
 
 
 def test_window_adapter_respects_now():
@@ -70,7 +70,7 @@ def test_flowhandle_rshift_is_then_alias():
 
     with FlowContext("test_flowhandle_rshift_is_then_alias") as ctx:
         a = A() @ Rate(hz=10)
-        b = B() @ Trigger(fields=["value"])
+        b = B() @ Trigger("value")
         a >> b
 
         ir = validate(ctx)

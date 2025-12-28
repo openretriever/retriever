@@ -5,9 +5,9 @@ This file tests the executor functionality with Flow graphs,
 including both pure computations and stateful operations.
 """
 
-from retriever.core.flow import Flow, Arrow
-from retriever.core.executor import LocalExecutor
-from retriever.core.types import Eff, pure
+from retriever.flow import Flow, Arrow
+from retriever.executor import LocalExecutor
+from retriever.types import Eff, pure
 
 
 def test_executor_pure():

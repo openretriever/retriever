@@ -7,8 +7,8 @@ pa = pytest.importorskip("pyarrow")
 
 from dataclasses import dataclass
 
-from retriever.core.flow import flow_io
-from retriever.core.rt.backend.dora.serde import deserialize_arrow, serialize_arrow
+from retriever.flow import flow_io
+from retriever.rt.backend.dora.serde import deserialize_arrow, serialize_arrow
 
 
 def test_serde_ndarray_roundtrip_bytes_format():
