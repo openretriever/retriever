@@ -6,7 +6,7 @@ A Flow is a signal function that transforms inputs to outputs.
 
 from abc import ABC, abstractmethod
 from typing import get_origin, get_args
-from typing import TypeVar, Generic, Optional, Type
+from typing import ClassVar, Tuple, TypeVar, Generic, Optional, Type
 from retriever.error import FlowError, ErrCode
 
 I = TypeVar("I")
@@ -25,6 +25,10 @@ class Flow(ABC, Generic[I, O]):
     _input_type: Optional[Type] = None
     _output_type: Optional[Type] = None
     _main_thread: bool = False  # If True, run in main thread (for GUI flows)
+
+    # Rate configuration (optional, used by DefaultRate/AdaptiveRate clocks)
+    # Set this to a FlowRateConfig instance to configure rate behavior
+    rate_config: ClassVar[Optional['FlowRateConfig']] = None
 
     def __init_subclass__(cls, **kwargs):
         """Extract type parameters from Flow[I, O] at class definition time."""
@@ -165,8 +169,6 @@ class Flow(ABC, Generic[I, O]):
         Today, most flows are stateless and can ignore this hook.
         """
         return None
-
-    @abstractmethod
     def step(self, input: I) -> O:
         """
         Execute one step of flow computation.
@@ -194,13 +196,40 @@ class Flow(ABC, Generic[I, O]):
 
                 return output
         """
-        pass
+        # Check if subclass overrides run() but not step() - backwards compat
+        if self._uses_deprecated_run():
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} overrides run() instead of step(). "
+                "Override step() instead; run() is deprecated.",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            return self.run(input)  # type: ignore[misc]
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement step()"
+        )
+
+    def _uses_deprecated_run(self) -> bool:
+        """Check if subclass overrides run() but not step()."""
+        # Get the class that defines each method
+        step_cls = None
+        run_cls = None
+        for cls in type(self).__mro__:
+            if 'step' in cls.__dict__ and step_cls is None:
+                step_cls = cls
+            if 'run' in cls.__dict__ and run_cls is None:
+                run_cls = cls
+            if step_cls and run_cls:
+                break
+        # Deprecated if run is overridden by subclass but step is not
+        return run_cls is not Flow and step_cls is Flow
 
     def run(self, input: I) -> O:
         """
         Alias for step().
 
-        Provided for compatibility. Prefer overriding step() in new code.
+        Deprecated: Override step() in subclasses instead.
         """
         return self.step(input)
 
