@@ -302,7 +302,7 @@ class PipelineStepper:
     @staticmethod
     def _should_execute(clock: Clock, inputs: Dict[str, InMemoryChannel]) -> tuple[bool, List[str]]:
         if isinstance(clock, Rate):
-            return True, list(clock.fields)
+            return True, ["..."]
 
         if isinstance(clock, Trigger):
             for field in clock.fields:
@@ -316,7 +316,7 @@ class PipelineStepper:
                 ch = inputs.get(field)
                 if ch is not None and ch.new_arrival():
                     return True, [field]
-            return True, list(clock.rate_fields)
+            return True, ["..."]
 
         raise FlowError(
             ErrCode.FLOW_CLOCK_INVALID,

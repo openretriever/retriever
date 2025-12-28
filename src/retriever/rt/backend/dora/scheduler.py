@@ -152,7 +152,7 @@ class DoraScheduler(Scheduler):
             self._last_tick_ts = now
             return ScheduleResult(
                 should_execute=True,
-                fields_to_sample=self.clock.fields,
+                fields_to_sample=["..."],
                 now=now,
             )
         return ScheduleResult(should_execute=False)
@@ -216,7 +216,7 @@ class DoraScheduler(Scheduler):
             self._last_tick_ts = now
             return ScheduleResult(
                 should_execute=True,
-                fields_to_sample=self.clock.rate_fields,
+                fields_to_sample=["..."],
                 now=now,
             )
 

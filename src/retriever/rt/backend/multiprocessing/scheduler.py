@@ -136,7 +136,7 @@ class MPScheduler(Scheduler):
 
         return ScheduleResult(
             should_execute=True,
-            fields_to_sample=self.clock.fields,
+            fields_to_sample=["..."],
             now=time.time(),
         )
 
@@ -289,7 +289,7 @@ class MPScheduler(Scheduler):
             self.next_tick += self.clock.interval
             return ScheduleResult(
                 should_execute=True,
-                fields_to_sample=self.clock.rate_fields,
+                fields_to_sample=["..."],
                 now=time.time(),
             )
 
@@ -316,6 +316,6 @@ class MPScheduler(Scheduler):
         self.next_tick += self.clock.interval
         return ScheduleResult(
             should_execute=True,
-            fields_to_sample=self.clock.rate_fields,
+            fields_to_sample=["..."],
             now=time.time()
         )

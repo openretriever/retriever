@@ -337,6 +337,13 @@ class Pipeline(FlowContext):
             if sleep_s > 0:
                 _time.sleep(sleep_s)
 
+            if rec:
+                node_id = self.get_node_id(handle)
+                out = result.outputs.get(node_id)
+                if out is None:
+                    out = rec.output_type()
+                rec.buffer.append((result.now, out))
+
         # Finalize
         if mcap_writer:
             mcap_writer.__exit__(None, None, None)
