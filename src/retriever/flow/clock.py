@@ -8,7 +8,7 @@ Clocks define when a flow executes:
 """
 
 from abc import ABC
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
@@ -39,43 +39,26 @@ class Clock(ABC):
 class Rate(Clock):
     """
     Periodic clock - executes at fixed frequency.
-
+    
     Attributes:
         hz: Frequency in Hertz (executions per second)
-        fields: Input fields to sample at each tick.
-            - Default: ["..."] (sample all inputs)
-            - []: sample no inputs (tick-only)
-            - ["field_a", "field_b"]: sample specific fields
-
-    Ergonomics:
-        Prefer `sample=` over `fields=` when specifying which inputs to sample.
-        `fields=` remains supported for backwards compatibility.
-
+        
     Lag policy:
         `on_lag` defines what happens if execution cannot keep up with `hz`.
         See `docs/handbook.md` (Rate lag policy section).
     """
     hz: float
-    fields: List[str] = field(default_factory=lambda: ["..."])
     on_lag: str = "warn"
 
     def __init__(
         self,
         hz: float,
-        fields: Optional[Any] = None,
         *,
-        sample: Optional[Any] = None,
         on_lag: str = "warn",
     ):
         """
         Args:
             hz: Frequency in Hertz
-            fields: Backward-compatible alias for `sample`
-            sample: Which input fields to sample
-                - None / "all" / "*" / ...: sample all inputs
-                - []: sample no inputs (tick-only)
-                - "field": sample one field
-                - ["field_a", ...]: sample specific fields
             on_lag: What to do if the flow can't keep up with the target rate:
                 - "warn" (default): skip missed ticks + warn (best-effort / realtime)
                 - "drop": skip missed ticks (quiet)
@@ -84,19 +67,7 @@ class Rate(Clock):
         """
         from retriever.error import FlowError, ErrCode
 
-        if fields is not None and sample is not None:
-            raise FlowError(
-                ErrCode.FLOW_CLOCK_INVALID,
-                "Provide only one of `sample` or `fields`",
-                sample=sample,
-                fields=fields,
-            )
-
-        selector = sample if sample is not None else fields
-        normalized = self._normalize_sample(selector)
-
         self.hz = hz
-        self.fields = normalized
         self.on_lag = self._normalize_on_lag(on_lag)
 
         if self.hz <= 0:
@@ -125,7 +96,7 @@ class Rate(Clock):
           - warn
           - error
           - catch_up
-
+        
         Aliases (accepted):
           - panic/raise/strict -> error
           - catchup/catch-up -> catch_up
@@ -140,33 +111,13 @@ class Rate(Clock):
             return "catch_up"
         return p
 
-    @staticmethod
-    def _normalize_sample(selector: Optional[Any]) -> List[str]:
-        if selector is None or selector is ...:
-            return ["..."]
-
-        if selector == "*" or selector == "all" or selector == "...":
-            return ["..."]
-
-        if isinstance(selector, str):
-            return [selector]
-
-        if isinstance(selector, (list, tuple, set)):
-            return [str(x) for x in selector]
-
-        raise TypeError(f"Unsupported sample selector: {selector!r}")
-
     @property
     def interval(self) -> float:
         """Interval in seconds between executions"""
         return 1.0 / self.hz
 
     def __repr__(self) -> str:
-        if self.fields == ["..."]:
-            base = f"Rate(hz={self.hz})"
-        else:
-            base = f"Rate(hz={self.hz}, sample={self.fields})"
-
+        base = f"Rate(hz={self.hz})"
         if self.on_lag != "warn":
             return f"{base[:-1]}, on_lag={self.on_lag!r})"
         return base
@@ -202,48 +153,31 @@ class Trigger(Clock):
     def __init__(
         self,
         *on_fields: str,
-        fields: Optional[Any] = None,
-        on: Optional[Any] = None,
     ):
         """
         Args:
-            *on_fields: Positional field names (ergonomic form)
-            fields: Backward-compatible keyword form (list[str])
-            on: Alias for `fields` (list[str] or str)
+            *on_fields: Positional field names
         """
         from retriever.error import FlowError, ErrCode
 
-        if on_fields and (fields is not None or on is not None):
-            raise FlowError(
+        selector = list(on_fields)
+
+        if not selector:
+            # Maybe allow empty if we default to "any input"? 
+            # For now, let's keep it strict or error, as Trigger() with nothing is ambiguous.
+            # Assuming "all inputs" logic belongs to connections, Trigger usually means SPECIFIC events.
+            pass
+
+        if not selector:
+             raise FlowError(
                 ErrCode.FLOW_CLOCK_INVALID,
-                "Provide trigger fields either positionally OR via `on=`/`fields=`",
-                on_fields=list(on_fields),
-                fields=fields,
-                on=on,
+                "Trigger requires at least one field name (e.g. Trigger('lidar'))",
             )
-
-        selector = list(on_fields) if on_fields else (on if on is not None else fields)
-
-        if selector is None:
-            normalized: List[str] = []
-        elif isinstance(selector, str):
-            normalized = [selector]
-        elif isinstance(selector, (list, tuple, set)):
-            normalized = [str(x) for x in selector]
-        else:
-            raise TypeError(f"Unsupported trigger selector: {selector!r}")
-
-        self.fields = normalized
-
-        if not self.fields:
-            raise FlowError(
-                ErrCode.FLOW_CLOCK_INVALID,
-                "Trigger fields cannot be empty",
-                fields=self.fields
-            )
+            
+        self.fields = [str(x) for x in selector]
 
     def __repr__(self) -> str:
-        return f"Trigger(on={self.fields})"
+        return f"Trigger({', '.join(repr(f) for f in self.fields)})"
 
 
 @dataclass(init=False)
@@ -256,75 +190,46 @@ class Hybrid(Clock):
     Attributes:
         hz: Frequency in Hertz for periodic execution
         trigger_fields: List of input fields that trigger immediate execution
-        rate_fields: Fields to sample on periodic ticks.
-            - Default: ["..."] (sample all inputs)
-            - []: sample no inputs on rate ticks
-            - ["field_a", ...]: sample specific fields on rate ticks
-
-        on_lag: What to do if periodic ticks can't keep up (same semantics as `Rate.on_lag`).
+        
+    Note:
+        `rate_fields` removed. Hybrid rate ticks now sample *all* connected inputs (implicit `...`)
+        consistent with the new `Rate` logic.
     """
     hz: float
     trigger_fields: List[str]
-    rate_fields: List[str] = field(default_factory=lambda: ["..."])
     on_lag: str = "warn"
 
     def __init__(
         self,
         hz: float,
-        trigger_fields: Any = None,
-        rate_fields: Optional[Any] = None,
+        # We can accept trigger fields either as *args or explicit list?
+        # Let's keep it simple: required `trigger` kwarg for clarity in hybrid.
         *,
-        trigger: Optional[Any] = None,
-        sample: Optional[Any] = None,
+        trigger: Optional[List[str]] = None,
         on_lag: str = "warn",
     ):
         """
         Args:
             hz: Frequency in Hertz for periodic execution
-            trigger_fields: Backward-compatible positional/keyword trigger fields
-            rate_fields: Backward-compatible rate sampling selector (list[str] or ...)
-            trigger: Alias for `trigger_fields`
-            sample: Alias for `rate_fields`
+            trigger: List of fields that trigger immediate execution
+            on_lag: Lag policy
         """
         from retriever.error import FlowError, ErrCode
-
-        if trigger is not None:
-            trigger_fields = trigger
-
-        if rate_fields is not None and sample is not None:
-            raise FlowError(
-                ErrCode.FLOW_CLOCK_INVALID,
-                "Provide only one of `sample` or `rate_fields`",
-                sample=sample,
-                rate_fields=rate_fields,
-            )
-
-        rate_selector = sample if sample is not None else rate_fields
-        if rate_selector is None:
-            rate_normalized = ["..."]
-        elif rate_selector is ...:
-            rate_normalized = ["..."]
-        elif rate_selector == "*" or rate_selector == "all" or rate_selector == "...":
-            rate_normalized = ["..."]
-        elif isinstance(rate_selector, str):
-            rate_normalized = [rate_selector]
-        elif isinstance(rate_selector, (list, tuple, set)):
-            rate_normalized = [str(x) for x in rate_selector]
-        else:
-            raise TypeError(f"Unsupported rate_fields selector: {rate_selector!r}")
-
-        if trigger_fields is None:
-            trigger_normalized: List[str] = []
-        elif isinstance(trigger_fields, str):
-            trigger_normalized = [trigger_fields]
-        elif isinstance(trigger_fields, (list, tuple, set)):
-            trigger_normalized = [str(x) for x in trigger_fields]
-        else:
-            raise TypeError(f"Unsupported trigger_fields selector: {trigger_fields!r}")
-
+        
         self.hz = hz
-        self.trigger_fields = trigger_normalized
-        self.rate_fields = rate_normalized
+        
+        if trigger is None or not trigger:
+             raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "Hybrid clock requires explicit `trigger` fields (e.g. Hybrid(hz=10, trigger=['lidar']))",
+            )
+            
+        # Normalize trigger
+        if isinstance(trigger, str):
+            self.trigger_fields = [trigger]
+        else:
+            self.trigger_fields = [str(x) for x in trigger]
+            
         self.on_lag = Rate._normalize_on_lag(on_lag)
 
         if self.hz <= 0:
@@ -332,13 +237,6 @@ class Hybrid(Clock):
                 ErrCode.FLOW_CLOCK_INVALID,
                 "Hybrid hz must be positive",
                 hz=self.hz
-            )
-
-        if not self.trigger_fields:
-            raise FlowError(
-                ErrCode.FLOW_CLOCK_INVALID,
-                "Hybrid trigger_fields cannot be empty",
-                trigger_fields=self.trigger_fields
             )
 
         allowed = {"drop", "catch_up", "warn", "error"}
@@ -355,6 +253,8 @@ class Hybrid(Clock):
         """Interval in seconds between periodic executions"""
         return 1.0 / self.hz
 
+    def __repr__(self) -> str:
+        base = f"Hybrid(hz={self.hz}, trigger={self.trigger_fields})"
         if self.on_lag != "warn":
             return f"{base[:-1]}, on_lag={self.on_lag!r})"
         return base
@@ -381,3 +281,138 @@ class Synchronized(Trigger):
         
     def __repr__(self) -> str:
         return f"Synchronized(on={self.fields}, tol={self.tolerance})"
+
+
+class DefaultRate(Clock):
+    """
+    Uses the Flow's rate_config.default_rate.
+    
+    Raises FlowError at wiring time if:
+    - Flow has no rate_config or rate_config.default_rate is not set
+    
+    Example:
+        class CameraFlow(Flow[None, Image]):
+            rate_config = FlowRateConfig(
+                default_rate=30.0,
+                rate_range=(10.0, 60.0),
+            )
+            
+        camera = CameraFlow() @ DefaultRate()  # Uses 30 Hz
+    """
+    
+    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+        """
+        Called when: flow @ DefaultRate()
+        
+        Reads default_rate from Flow.rate_config and creates a Rate clock.
+        """
+        from retriever.error import FlowError, ErrCode
+        from retriever.flow.config import FlowConfig
+        from retriever.flow.handle import FlowHandle
+        
+        flow_cls = type(flow)
+        rate_config = getattr(flow_cls, 'rate_config', None)
+        
+        if rate_config is None or rate_config.default_rate is None:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                f"{flow_cls.__name__} has no rate_config.default_rate defined. "
+                f"Either set `rate_config = FlowRateConfig(default_rate=...)` or use Rate(hz=...)",
+            )
+        
+        default_hz = rate_config.default_rate
+        
+        # Create a standard Rate clock with the default hz
+        rate_clock = Rate(hz=default_hz)
+        return FlowHandle(flow=flow, config=FlowConfig(clock=rate_clock))
+
+    def __repr__(self) -> str:
+        return "DefaultRate()"
+
+
+@dataclass(init=False)
+class AdaptiveRate(Clock):
+    """
+    Adjusts execution rate based on step() duration.
+    
+    If step() takes longer than target period, slows down (respecting min_hz).
+    If step() completes faster, speeds up (respecting max_hz).
+    
+    Range is validated at wiring time against Flow.rate_config.rate_range if:
+    - rate_config.enforce_range is True, or
+    - AdaptiveRate range exceeds rate_config.rate_range
+    
+    Example:
+        camera = CameraFlow() @ AdaptiveRate(target=30, min=10, max=60)
+    """
+    target_hz: float
+    min_hz: float
+    max_hz: float
+    
+    def __init__(self, target: float, min: float, max: float):
+        """
+        Args:
+            target: Target frequency in Hz (starting point)
+            min: Minimum frequency in Hz (floor when slowing down)
+            max: Maximum frequency in Hz (ceiling when speeding up)
+        """
+        from retriever.error import FlowError, ErrCode
+        
+        if min <= 0 or max <= 0 or target <= 0:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "AdaptiveRate hz values must be positive",
+                target=target, min=min, max=max,
+            )
+        
+        if not (min <= target <= max):
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                f"AdaptiveRate target ({target}) must be between min ({min}) and max ({max})",
+            )
+        
+        self.target_hz = target
+        self.min_hz = min
+        self.max_hz = max
+    
+    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+        """
+        Called when: flow @ AdaptiveRate(...)
+        
+        Validates against Flow.rate_config.rate_range if enforce_range=True.
+        """
+        from retriever.error import FlowError, ErrCode
+        from retriever.flow.config import FlowConfig
+        from retriever.flow.handle import FlowHandle
+        
+        flow_cls = type(flow)
+        rate_config = getattr(flow_cls, 'rate_config', None)
+        
+        if rate_config is not None:
+            # Check enforce_default - if True, only DefaultRate allowed
+            if rate_config.enforce_default:
+                raise FlowError(
+                    ErrCode.FLOW_CLOCK_INVALID,
+                    f"{flow_cls.__name__} has enforce_default=True. "
+                    f"Use DefaultRate() instead of AdaptiveRate().",
+                )
+            
+            # Check enforce_range - adaptive rate must fit within range
+            if rate_config.enforce_range and rate_config.rate_range is not None:
+                flow_min, flow_max = rate_config.rate_range
+                if self.min_hz < flow_min or self.max_hz > flow_max:
+                    raise FlowError(
+                        ErrCode.FLOW_CLOCK_INVALID,
+                        f"AdaptiveRate range [{self.min_hz}, {self.max_hz}] exceeds "
+                        f"{flow_cls.__name__}.rate_config.rate_range ({flow_min}, {flow_max})",
+                    )
+        
+        return FlowHandle(flow=flow, config=FlowConfig(clock=self))
+    
+    @property
+    def interval(self) -> float:
+        """Current target interval (starting point before adaptation)."""
+        return 1.0 / self.target_hz
+
+    def __repr__(self) -> str:
+        return f"AdaptiveRate(target={self.target_hz}, min={self.min_hz}, max={self.max_hz})"

@@ -33,10 +33,9 @@ if __name__ == "__main__":
     flow_with_rate = flow @ rate_clock
     print(f"  Bound clock: {flow_with_rate.config.clock}")
 
-    print("\n  Sampling control (optional):")
-    print("    Rate(hz=10)           -> sample all inputs (default)")
-    print("    Tick(hz=10)           -> sample no inputs")
-    print("    Rate(hz=10, sample=['value']) -> sample a subset")
+    print("\n  Sampling Note:")
+    print("    Rate(hz=10)           -> samples ALL connected inputs by default")
+    print("    Tick(hz=10)           -> separate class for input-less ticking")
 
     print("\n" + "=" * 60)
     print("Trigger Clock - event-driven execution on input arrival")

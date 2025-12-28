@@ -5,7 +5,7 @@ FlowConfig encapsulates execution metadata for a flow.
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, List, Dict, Any
+from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
 from enum import Enum
 
 from retriever.error import FlowError, ErrCode
@@ -14,6 +14,81 @@ if TYPE_CHECKING:
     from retriever.flow.base import Flow
     from retriever.flow.clock import Clock
     from retriever.flow.handle import FlowHandle
+
+
+@dataclass
+class FlowRateConfig:
+    """
+    Rate configuration for a Flow class.
+    
+    This dataclass defines rate metadata that clocks (DefaultRate, AdaptiveRate)
+    can read at wiring time for validation and defaults.
+    
+    Attributes:
+        default_rate: Default execution frequency in Hz
+        rate_range: Valid range (min_hz, max_hz) for execution rate
+        enforce_default: If True, only DefaultRate() is allowed (no explicit Rate())
+        enforce_range: If True, any Rate must be within rate_range
+    
+    Example:
+        class CameraFlow(Flow[In, Out]):
+            rate_config = FlowRateConfig(
+                default_rate=30.0,
+                rate_range=(10.0, 60.0),
+                enforce_range=True,
+            )
+    """
+    default_rate: Optional[float] = None
+    rate_range: Optional[Tuple[float, float]] = None
+    enforce_default: bool = False  # If True, must use DefaultRate()
+    enforce_range: bool = False    # If True, must stay within rate_range
+    
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.default_rate is not None and self.default_rate <= 0:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "default_rate must be positive",
+                default_rate=self.default_rate,
+            )
+        
+        if self.rate_range is not None:
+            min_hz, max_hz = self.rate_range
+            if min_hz <= 0 or max_hz <= 0:
+                raise FlowError(
+                    ErrCode.FLOW_CLOCK_INVALID,
+                    "rate_range values must be positive",
+                    rate_range=self.rate_range,
+                )
+            if min_hz > max_hz:
+                raise FlowError(
+                    ErrCode.FLOW_CLOCK_INVALID,
+                    "rate_range min must be <= max",
+                    rate_range=self.rate_range,
+                )
+            
+            # Validate default_rate is within range if both specified
+            if self.default_rate is not None:
+                if not (min_hz <= self.default_rate <= max_hz):
+                    raise FlowError(
+                        ErrCode.FLOW_CLOCK_INVALID,
+                        f"default_rate ({self.default_rate}) must be within "
+                        f"rate_range ({min_hz}, {max_hz})",
+                    )
+        
+        # enforce_default requires default_rate
+        if self.enforce_default and self.default_rate is None:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "enforce_default=True requires default_rate to be set",
+            )
+        
+        # enforce_range requires rate_range
+        if self.enforce_range and self.rate_range is None:
+            raise FlowError(
+                ErrCode.FLOW_CLOCK_INVALID,
+                "enforce_range=True requires rate_range to be set",
+            )
 
 
 class ResourceType(Enum):
@@ -81,50 +156,16 @@ class FlowConfig:
 
     Attributes:
         clock: Execution clock (Rate, Trigger, or Hybrid)
-        priority: Optional execution priority (deprecated, use resources.priority)
-        cpu_affinity: Optional CPU cores binding (deprecated, use resources)
-        memory_size: Optional memory limit in MB (deprecated, use resources.memory in GB)
         resources: Comprehensive resource specification
     """
 
     clock: 'Clock'
-    priority: Optional[int] = None
-    cpu_affinity: Optional[List[int]] = None
-    memory_size: Optional[float] = None
     resources: Optional[ResourceSpec] = None
 
     def __post_init__(self):
         """Validate configuration parameters."""
-        # Initialize resources if not present but legacy fields are used
         if self.resources is None:
-            # Default fallback if no resources specified
-            self.resources = ResourceSpec()
-            
-            # Map legacy fields to new ResourceSpec if provided
-            if self.priority is not None:
-                self.resources.priority = self.priority
-            
-            if self.memory_size is not None:
-                # Legacy memory_size is MB, ResourceSpec is GB
-                self.resources.memory = self.memory_size / 1024.0
-
-        # Validate cpu_affinity values
-        if self.cpu_affinity is not None:
-            for core in self.cpu_affinity:
-                if core < 0:
-                    raise FlowError(
-                        ErrCode.FLOW_CONFIG_INVALID,
-                        f"cpu_affinity must contain non-negative integers",
-                        cpu_affinity=self.cpu_affinity
-                    )
-
-        # Validate memory_size
-        if self.memory_size is not None and self.memory_size < 0:
-            raise FlowError(
-                ErrCode.FLOW_CONFIG_INVALID,
-                "memory_size must be non-negative",
-                memory_size=self.memory_size
-            )
+             self.resources = ResourceSpec()
 
     def to_dict(self):
         """
@@ -136,9 +177,6 @@ class FlowConfig:
         from retriever.utils import as_tagged
         return {
             'clock': as_tagged(self.clock),
-            'priority': self.priority,
-            'cpu_affinity': self.cpu_affinity,
-            'memory_size': self.memory_size,
             'resources': self.resources.to_dict() if self.resources else None
         }
 
