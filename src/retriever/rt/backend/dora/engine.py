@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Optional
 
 from retriever.ir.loader import IRLoader
 from retriever.ir.struct import IRStruct
+from retriever.ir.loader import IRLoader
+from retriever.ir.fanin import is_fan_in_port, get_logical_port
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.backend.interface import ExecutionEngine
@@ -155,30 +157,42 @@ class DoraEngine(ExecutionEngine):
         # Get data port names (filter out service ports)
         from retriever.flow.service import is_service_port
 
-        input_ports = [p for p in node.inputs.keys() if not is_service_port(p)]
         output_ports = [p for p in node.outputs.keys() if not is_service_port(p)]
 
-        # Load adapters for each data port input
+        # Load adapters and build fan-in mapping
+        # For fan-in ports (_fanin/source/logical), we:
+        # - Map actual_port -> logical_port for event routing
+        # - Use logical_port for subscriber creation and adapter lookup
         adapters = {}
+        fan_in_map = {}  # actual_port -> logical_port
+        logical_ports = set()
+
         for edge in self.ir.get_incoming_edges(node.id):
-            port_name = edge.destination.port
-            if is_service_port(port_name):
+            actual_port = edge.destination.port
+            if is_service_port(actual_port):
                 continue
-            adapter = IRLoader.load_adapter(edge.adapter)
-            adapters[port_name] = adapter
 
-        # Filter input_ports to only those that are connected (have adapters)
-        # This prevents KeyError in Executor if a port is declared but unconnected.
-        connected_ports = [p for p in input_ports if p in adapters]
+            logical_port = get_logical_port(actual_port)
 
-        # Warn about unconnected ports
-        for p in input_ports:
+            if is_fan_in_port(actual_port):
+                # Fan-in port: map actual -> logical for event routing
+                fan_in_map[actual_port] = logical_port
+
+            logical_ports.add(logical_port)
+            # Only load adapter once per logical port (all fan-in edges have same adapter)
+            if logical_port not in adapters:
+                adapter = IRLoader.load_adapter(edge.adapter)
+                adapters[logical_port] = adapter
+
+        input_ports = list(logical_ports)
+
+        # Warn about unconnected ports from node.inputs
+        declared_ports = [p for p in node.inputs.keys() if not is_service_port(p) and not is_fan_in_port(p)]
+        for p in declared_ports:
             if p not in adapters:
                 logger.warning(
                     f"Node '{node.id}' has unconnected input port: '{p}'. It will not receive data."
                 )
-
-        input_ports = connected_ports
 
         # Create executor with logging params
         log_params = None
@@ -197,6 +211,7 @@ class DoraEngine(ExecutionEngine):
             input_ports=input_ports,
             output_ports=output_ports,
             adapters=adapters,
+            fan_in_map=fan_in_map,
             buffer_engine=self.config.get("buffer_engine", "python"),
             log_params=log_params,
         )
