@@ -9,18 +9,18 @@ from numpy.typing import NDArray
 
 
 @dataclass(frozen=True, order=True)
-class Type:
+class ObjectType:
     """Struct defining a type."""
     name: str
     feature_names: Sequence[str] = field(default_factory=list, repr=False)
-    parent: Optional[Type] = field(default=None, repr=False)
+    parent: Optional[ObjectType] = field(default=None, repr=False)
 
     @property
     def dim(self) -> int:
         return len(self.feature_names)
 
-    def get_ancestors(self) -> Set[Type]:
-        curr_type: Optional[Type] = self
+    def get_ancestors(self) -> Set[ObjectType]:
+        curr_type: Optional[ObjectType] = self
         ancestors_set = set()
         while curr_type is not None:
             ancestors_set.add(curr_type)
@@ -40,7 +40,7 @@ class Type:
 class _TypedEntity:
     """An entity with a type, like an Object or a Variable."""
     name: str
-    type: Type
+    type: ObjectType
 
     @cached_property
     def _str(self) -> str:
@@ -56,8 +56,8 @@ class _TypedEntity:
     def __repr__(self) -> str:
         return self._str
 
-    def is_instance(self, t: Type) -> bool:
-        cur_type: Optional[Type] = self.type
+    def is_instance(self, t: ObjectType) -> bool:
+        cur_type: Optional[ObjectType] = self.type
         while cur_type is not None:
             if cur_type == t:
                 return True
@@ -98,7 +98,7 @@ class State:
 class Predicate:
     """A classifier over states."""
     name: str
-    types: Sequence[Type]
+    types: Sequence[ObjectType]
     _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)
 
     def __call__(self, entities: Sequence[_TypedEntity]) -> _Atom:

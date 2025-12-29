@@ -90,12 +90,12 @@ class TestSymbolicTypes:
     """Tests for PDDL-style symbolic types."""
 
     def test_type_creation(self):
-        """Test Type creation and hierarchy."""
-        from retriever.types.symbolic import Type
+        """Test ObjectType creation and hierarchy."""
+        from retriever.types.symbolic import ObjectType
         
-        thing = Type("thing")
-        container = Type("container", parent=thing)
-        cup = Type("cup", parent=container)
+        thing = ObjectType("thing")
+        container = ObjectType("container", parent=thing)
+        cup = ObjectType("cup", parent=container)
         
         assert thing.name == "thing"
         assert container.parent == thing
