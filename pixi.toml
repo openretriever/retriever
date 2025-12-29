@@ -144,6 +144,10 @@ demo-fanout = { cmd = "python examples/advanced/functional_wiring/fanout.py", en
 demo-sync-policies = { cmd = "python examples/advanced/functional_wiring/sync_policies.py", env = { PYTHONPATH = "src" } }
 demo-combinators = { cmd = "python examples/advanced/functional_wiring/combinators.py", env = { PYTHONPATH = "src" } }
 
+# Closed Loop Planning PoC
+# Run: pixi run demo-closed-loop-planning
+demo-closed-loop-planning = { cmd = "python -m examples.experimental.closed_loop_planning.main", env = { PYTHONPATH = "." } }
+
 # Skill Switching Demo
 # Run: pixi run demo-skill-switching
 demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
@@ -189,6 +193,7 @@ transformers = "*"
 pillow = "*"
 openpi = "*"
 timm = "*"
+scipy = "*"
 
 
 [feature.torch.tasks]
