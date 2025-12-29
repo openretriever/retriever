@@ -8,20 +8,19 @@ Orchestrates dora dataflow lifecycle:
 4. Manage shutdown
 """
 
-import time
-import tempfile
+import logging
 import subprocess
+import tempfile
+import time
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
-from retriever.ir.struct import IRStruct
 from retriever.ir.loader import IRLoader
-from retriever.rt.backend.interface import ExecutionEngine
+from retriever.ir.struct import IRStruct
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
+from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.logging.manager import LogManager
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -93,11 +92,20 @@ class DoraEngine(ExecutionEngine):
         if "native_overrides" in self.config:
             node_path_overrides = self.config.get("native_overrides")
 
+        # Resolve deployment overrides (Tier A.2)
+        deployment_overrides = None
+        if "deployment_overrides" in self.config:
+            deployment_overrides = self.config.get("deployment_overrides")
+
+
         # Compile IR to YAML (with optional per-node path overrides)
         try:
             yaml_content = compile_and_validate(
-                self.ir, node_path_overrides=node_path_overrides
+                self.ir, 
+                node_path_overrides=node_path_overrides,
+                deployment_overrides=deployment_overrides
             )
+
             logger.debug(f"Generated YAML:\n{yaml_content}")
         except Exception as e:
             logger.error(f"YAML compilation failed: {e}")

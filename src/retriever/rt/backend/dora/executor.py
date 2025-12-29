@@ -158,6 +158,16 @@ class DoraExecutor(multiprocessing.Process, Executor):
                     self._check_service_timeout()
                     continue
 
+                if event["type"] == "ERROR":
+                    # Ignore timeout errors from dora
+                    error_msg = event.get("error", "")
+                    if "timed out" in error_msg:
+                        continue
+
+                    import sys
+                    print(f"[{self.flow.name}] DoraExecutor error: {event}", file=sys.stderr)
+                    break
+                
                 self._dispatch_event(event)
 
         except KeyboardInterrupt:
@@ -180,7 +190,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
     def _next_event(self) -> Optional[Dict[str, Any]]:
         """Get next event from dora node."""
-        return self.node.next(timeout=0.1)
+        return self.node.next(timeout=1.0)
 
     def _dispatch_event(self, event: Dict[str, Any]) -> None:
         """Route event to appropriate handler."""
@@ -196,6 +206,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
             return
 
         input_name = event.get('id', event.get('name'))
+        
         if input_name is None:
             logger.warning(f"[{self.node_id}] Event missing 'id'/'name': {event.keys()}")
             return

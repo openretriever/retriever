@@ -8,13 +8,14 @@ Native acceleration support:
   as native dora nodes (Rust binaries) instead of Python "dynamic" nodes.
 """
 
-import yaml
-from typing import Dict, List, Any, Union, Optional, Mapping
-from dataclasses import dataclass
-from retriever.ir.struct import IRStruct, IRNode
-from retriever.flow.clock import Rate, Trigger, Hybrid, Clock
-
 import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Mapping, Optional, Union
+
+import yaml
+from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
+from retriever.ir.struct import IRNode, IRStruct
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,10 +56,12 @@ class DoraNode:
     source: str
     inputs: Dict[str, DoraInput]
     outputs: List[str]
+    deploy: Optional[Dict[str, str]] = None
+
 
     def to_yaml_dict(self) -> Dict[str, Any]:
         """Convert to YAML-compatible dict."""
-        return {
+        d = {
             'id': self.id,
             'path': self.source,
             'inputs': {
@@ -67,6 +70,9 @@ class DoraNode:
             },
             'outputs': self.outputs
         }
+        if self.deploy:
+            d['_unstable_deploy'] = self.deploy
+        return d
 
 
 @dataclass
@@ -175,7 +181,12 @@ def get_node_paths(
     return {node.id: resolve_node_path(node, node_path_overrides) for node in ir.nodes}
 
 
-def _compile_graph(ir: IRStruct, *, node_path_overrides: Optional[Mapping[str, Any]]) -> DoraGraph:
+def _compile_graph(
+    ir: IRStruct, 
+    *, 
+    node_path_overrides: Optional[Mapping[str, Any]],
+    deployment_overrides: Optional[Mapping[str, str]] = None
+) -> DoraGraph:
     """
     Compile IRStruct to DoraGraph.
 
@@ -187,15 +198,27 @@ def _compile_graph(ir: IRStruct, *, node_path_overrides: Optional[Mapping[str, A
     """
     dora_nodes = []
     for node in ir.nodes:
-        dora_node = _compile_node(node, ir, node_path_overrides=node_path_overrides)
+        dora_node = _compile_node(
+            node, 
+            ir, 
+            node_path_overrides=node_path_overrides,
+            deployment_overrides=deployment_overrides
+        )
         dora_nodes.append(dora_node)
 
     return DoraGraph(nodes=dora_nodes)
 
 
-def _compile_node(node: IRNode, ir: IRStruct, *, node_path_overrides: Optional[Mapping[str, Any]]) -> DoraNode:
+def _compile_node(
+    node: IRNode, 
+    ir: IRStruct, 
+    *, 
+    node_path_overrides: Optional[Mapping[str, Any]] = None,
+    deployment_overrides: Optional[Mapping[str, str]] = None
+) -> DoraNode:
     """
     Compile IRNode to DoraNode.
+
 
     Args:
         node: IR node to compile
@@ -223,13 +246,36 @@ def _compile_node(node: IRNode, ir: IRStruct, *, node_path_overrides: Optional[M
     # Get outputs
     outputs = list(node.outputs.keys())
 
+
     path = resolve_node_path(node, node_path_overrides)
+
+    # Resolve deployment
+    # Priority:
+    # 1. Runtime override (deployment_overrides)
+    # 2. Compile-time affinity (ResourceSpec.host_affinity)
+    
+    deploy = None
+    
+    # Check overrides first
+    if deployment_overrides and node.id in deployment_overrides:
+        deploy = {'machine': deployment_overrides[node.id]}
+    # Check affinity second
+    elif node.config.get('resources'):
+
+        # ResourceSpec is dict in IRNode.config
+        resources = node.config['resources']
+        # Check host_affinity
+        affinity = resources.get('host_affinity')
+        if affinity and isinstance(affinity, list) and len(affinity) > 0:
+            # Map first affinity host to machine
+            deploy = {'machine': affinity[0]}
 
     dora_node = DoraNode(
         id=node.id,
         source=path,
         inputs=inputs,
-        outputs=outputs
+        outputs=outputs,
+        deploy=deploy
     )
 
     logger.debug(
@@ -325,7 +371,13 @@ def _validate_yaml(yaml_str: str) -> bool:
         return False
 
 
-def compile_and_validate(ir: IRStruct, *, node_path_overrides: Optional[Mapping[str, Any]] = None) -> str:
+def compile_and_validate(
+    ir: IRStruct, 
+    *, 
+    node_path_overrides: Optional[Mapping[str, Any]] = None,
+    deployment_overrides: Optional[Mapping[str, str]] = None
+) -> str:
+
     """
     Compile IR to YAML and validate it.
 
@@ -339,7 +391,12 @@ def compile_and_validate(ir: IRStruct, *, node_path_overrides: Optional[Mapping[
         ValueError: If YAML compilation or validation fails
     """
     # Compile IR to DoraGraph with optional node path overrides
-    dora_graph = _compile_graph(ir, node_path_overrides=node_path_overrides)
+    dora_graph = _compile_graph(
+        ir, 
+        node_path_overrides=node_path_overrides, 
+        deployment_overrides=deployment_overrides
+    )
+
 
     # Convert to YAML
     yaml_str = yaml.dump(
