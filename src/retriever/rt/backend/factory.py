@@ -139,6 +139,13 @@ def _register_builtin_backends():
         logger.warning(f"Could not import multiprocessing backend: {e}")
 
     try:
+        # Import in-process backend
+        import retriever.rt.backend.in_process  # noqa: F401
+        logger.debug("In-process backend imported")
+    except ImportError as e:
+        logger.warning(f"Could not import in-process backend: {e}")
+
+    try:
         # Skip if optional dependencies are missing to avoid partial registration
         if importlib.util.find_spec("dora") is None or importlib.util.find_spec("pyarrow") is None:
             raise ImportError("Missing dependencies: dora, pyarrow")
