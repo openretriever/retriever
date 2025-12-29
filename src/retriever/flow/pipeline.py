@@ -8,13 +8,15 @@ context manager. It reuses the same underlying graph/IR machinery as
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 from retriever.flow.context import FlowContext
 from retriever.flow.handle import FlowHandle
 
-from contextvars import ContextVar
+
+
 
 
 class Pipeline(FlowContext):
@@ -452,40 +454,110 @@ class Pipeline(FlowContext):
     def run(
         self,
         *,
-        backend: str = "dora",
+        backend: Optional[str] = None,
         duration: Optional[float] = None,
         blocking: bool = True,
         log_config: Optional[Any] = None,
         backend_config: Optional[Dict[str, Any]] = None,
         policy: Any = "aggressive",
+        deploy: Optional[Dict[Any, str]] = None,
         build: bool = False,
+
         visualize: Optional[str] = None,
+        record: Optional[Union[str, Any]] = None, # RecordConfig
         **kwargs: Any,
     ):
         """
         Execute this pipeline on a runtime backend.
 
         Args:
-            backend: Backend name ('multiprocessing' or 'dora')
-            duration: Optional duration in seconds (None = run indefinitely)
-            blocking: If True, wait for completion/duration. If False, return immediately.
-            log_config: Optional LogConfig for runtime logging.
-            backend_config: Backend-specific configuration.
-            policy: Execution build policy (passed to build_execution).
-            build: If True, run via ExecutionGraph (grouping/placement). If False, run raw IRStruct.
-            visualize: Visualization backend. Pass "rerun" to enable Rerun streaming.
-            **kwargs: Extra kwargs forwarded to build_execution.
+            backend: Backend name ("multiprocessing", "dora", "in-process").
+                     Defaults to "multiprocessing" usually, unless recording.
+            duration: Optional duration in seconds (None = run indefinitely).
+            blocking: If True, wait for completion.
+            log_config: Optional LogConfig.
+            visualize: "rerun" for live streaming.
+            record: Path (str) or RecordConfig to enable recording. 
+                    Forces backend="in-process" currently.
+            visualize: "rerun" for live streaming.
+            record: Path (str) or RecordConfig to enable recording. 
+                    Forces backend="in-process" currently.
+            deploy: Dict mapping FlowHandle or node_id (str) to machine name.
+            **kwargs: Extra arguments.
         """
+
         from retriever.rt.runtime import execute_ir
+        from retriever.config import RecordConfig, get_global_config
+
+        # Resolve global config defaults
+        glob = get_global_config()
+        if backend is None:
+            backend = glob.get("backend", "multiprocessing")
+
+        # Resolve recording config
+        # hierarchy: arg > global
+        record_cfg = None
+        if record is not None:
+             if isinstance(record, str):
+                 record_cfg = RecordConfig(path=record)
+             else:
+                 record_cfg = record
+        elif glob.get("record"):
+             # Global default
+             record_cfg = glob["record"]
+
+        # Handling "in-process" enforcement for recording
+        if record_cfg:
+            if backend != "in-process" and backend != "dora": 
+                # Currently only in-process supports unified recording via this API
+                import logging
+                logging.getLogger("retriever").info(
+                    f"Recording enabled ({record_cfg.path}); switching backend to 'in-process'."
+                )
+                backend = "in-process"
+
+        # Prepare backend config
+        backend_config = backend_config or {}
+        
+        # Handle deployment overrides
+        if deploy:
+            overrides = {}
+            for target, machine in deploy.items():
+                if hasattr(target, 'flow'): # Is FlowHandle
+                    # We need the node ID. The handle doesn't strictly know its ID 
+                    # until pipeline validation, but we can look it up if registered.
+                    node_id = self.get_node_id(target)
+                    overrides[node_id] = machine
+                elif isinstance(target, str):
+                    overrides[target] = machine
+                else:
+                    raise ValueError(f"Invalid deploy target: {target} (expected FlowHandle or str ID)")
+            
+            backend_config["deployment_overrides"] = overrides
+
+
+
+        # Inject live pipeline instance for in-process backend optimization
+        if backend == "in-process":
+             backend_config["pipeline_instance"] = self
+             # Pass record config explicitly if we possess it (engine will assume it)
+             if record_cfg:
+                 backend_config["record"] = record_cfg
 
         # Enable visualization if requested
         if visualize == "rerun" or visualize is True:
             import retriever.lib.rerun
             retriever.lib.rerun.enable_rerun_logging(self)
 
+        ir = self.build_ir() if not build else None
+        # Note: 'build=True' path in original code calls build_execution.
+        # But for in-process, we mostly use IR or live instance.
+        # Standard execute_ir handles 'ir' being ExecutionGraph if passed.
+
+        
         if build:
-            graph = self.build_execution(policy=policy, **kwargs)
-            return execute_ir(
+             graph = self.build_execution(policy=policy, **kwargs)
+             return execute_ir(
                 graph,
                 backend=backend,
                 duration=duration,
@@ -494,7 +566,6 @@ class Pipeline(FlowContext):
                 backend_config=backend_config,
             )
 
-        ir = self.build_ir()
         return execute_ir(
             ir,
             backend=backend,
@@ -581,7 +652,10 @@ def run(
     log_config: Optional[Any] = None,
     backend_config: Optional[Dict[str, Any]] = None,
     policy: Any = "aggressive",
+    deploy: Optional[Dict[Any, str]] = None,
     build: bool = False,
+
+
     **kwargs: Any,
 ):
     """
@@ -597,9 +671,11 @@ def run(
         log_config=log_config,
         backend_config=backend_config,
         policy=policy,
+        deploy=deploy,
         build=build,
         **kwargs,
     )
+
 
 
 def step(*, now: Optional[float] = None, dt: Optional[float] = None):
