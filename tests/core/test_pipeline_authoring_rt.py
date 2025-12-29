@@ -108,10 +108,12 @@ def test_pipeline_context_wiring_sets_pipeline_and_persists_after_context():
     assert len(ir.edges) == 2
 
 
+
 def test_retriever_connect_uses_default_pipeline_by_default():
     import retriever
+    from retriever.flow.pipeline import reset_default_pipeline
 
-    retriever.reset_default_pipeline()
+    reset_default_pipeline()
 
     src = Source() @ Rate(hz=10)
     add = AddOne() @ Rate(hz=10)
@@ -129,8 +131,9 @@ def test_retriever_connect_uses_default_pipeline_by_default():
 
 def test_retriever_connect_respects_active_pipeline_context():
     import retriever
+    from retriever.flow.pipeline import reset_default_pipeline
 
-    retriever.reset_default_pipeline()
+    reset_default_pipeline()
     default = retriever.default_pipeline()
 
     pipe = Pipeline("demo")
@@ -147,8 +150,9 @@ def test_retriever_connect_respects_active_pipeline_context():
 
 def test_reset_default_pipeline_clears_accumulated_graph():
     import retriever
+    from retriever.flow.pipeline import reset_default_pipeline
 
-    retriever.reset_default_pipeline()
+    reset_default_pipeline()
     old = retriever.default_pipeline()
 
     src = Source() @ Rate(hz=10)
@@ -158,7 +162,7 @@ def test_reset_default_pipeline_clears_accumulated_graph():
     assert len(old.get_handles()) == 2
     assert len(old.get_connections()) == 1
 
-    new = retriever.reset_default_pipeline()
+    new = reset_default_pipeline()
     assert new is not old
     assert len(new.get_handles()) == 0
     assert len(new.get_connections()) == 0
