@@ -22,6 +22,25 @@ from retriever.flow.pipeline import (
     view,
 )
 
+
+from typing import Optional, Union
+from retriever.config import RecordConfig, set_global_config
+
+def init(
+    name: Optional[str] = None,
+    record: Optional[Union[str, RecordConfig]] = None,
+    backend: Optional[str] = None,
+) -> None:
+    """
+    Initialize the global retriever environment.
+    
+    Args:
+        name: Session name (useful for logging/recording)
+        record: Recording path (str) or configuration (RecordConfig)
+        backend: Default backend for run() (e.g. "multiprocessing", "in-process")
+    """
+    set_global_config(name=name, record=record, backend=backend)
+
 __all__ = [
     "Flow",
     "Rate",
@@ -30,10 +49,11 @@ __all__ = [
     "Pipeline",
     "connect",
     "default_pipeline",
-    "reset_default_pipeline",
     "run",
     "step",
     "reset",
     "view",
+    "init",
+    "RecordConfig",
 ]
 
