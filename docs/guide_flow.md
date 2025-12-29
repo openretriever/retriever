@@ -225,6 +225,9 @@ See: `docs/guide_time.md`.
 ```py
 pipe.run(backend="multiprocessing", duration=1.0)
 pipe.run(backend="dora", duration=10.0)
+
+# Record to file (uses in-process backend)
+pipe.run(duration=5.0, record="session.mcap")
 ```
 
 ### In-process single-step debugging

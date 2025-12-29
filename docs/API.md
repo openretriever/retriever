@@ -63,7 +63,7 @@ from retriever.lib import Wrapper, from_torch, from_gym
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
 
 - **Execution**:
-    - `retriever.run(backend="dora", duration=10)`: Executes the default pipeline.
+    - `retriever.run(backend="dora", duration=10, record="log.mcap")`: Executes pipeline (records if record= set).
     - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
     - `retriever.reset()`: Resets the default pipeline state.
 
@@ -102,8 +102,9 @@ from retriever.rt import execute_ir
 - `execute_ir(ir_or_graph, backend=..., duration=..., blocking=...)`: runs an `IRStruct` or an `ExecutionGraph` on a backend.
 
 Backends:
-- `multiprocessing`: `retriever/rt/backend/multiprocessing/*`
-- `dora`: `retriever/rt/backend/dora/*`
+- `multiprocessing`: (default)
+- `dora`: High-performance, zero-copy (Rust)
+- `in-process`: Debugging/recording (determinstic)
 
 Architecture: `docs/architecture.md`.
 
@@ -115,7 +116,8 @@ Preferred entry points:
 
 - `Pipeline.step(now=..., dt=...)` — one in-process debug step
 - `Pipeline.reset_stepper()` / `Pipeline.close_stepper()`
-- record/replay: `Pipeline.record_to(...)` / `Pipeline.replay(...)`
+- unified recording: `pipe.run(record="file.mcap")` (preferred)
+- record/replay: `Pipeline.record_to(...)` / `Pipeline.replay(...)` (legacy)
 
 Implementation lives in:
 - `retriever/rt/stepper.py`

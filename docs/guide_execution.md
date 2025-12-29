@@ -83,6 +83,25 @@ Notes:
 - If you pass an `IRStruct` directly, you’re implicitly choosing “one executor per flow node”.
 - `compile_execution(...)` remains as a compatibility alias for `build_execution(...)`.
 
+### 2.3 Unified Recording & Replay
+
+To record execution to an MCAP file, simply pass `record="..."`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
+
+```python
+pipe.run(
+    duration=5.0,
+    record="session.mcap",
+    visualize="rerun"  # Optional: stream to Rerun live
+)
+```
+
+To replay:
+```python
+# Inject recorded data into a flow source
+pipe.replay(camera, path="session.mcap")
+pipe.run(backend="in-process")
+```
+
 ---
 
 ## 3) Policies (grouping / co-location)
@@ -149,13 +168,60 @@ This split (logical IR vs physical execution graph) is the foundation for:
 
 See also: `docs/temp_notes/2025-12-16_outline_design_alignment.md`.
 
-## 6) Native Node Performance
+## 6) Distributed Execution (Multi-Machine)
+
+Retriever supports distributing pipelines across multiple computers using the **Dora** backend. This is useful for splitting lighter controller logic (low latency) from heavy compute (GPU).
+
+### 6.1 `deploy(machine: str)`
+
+You can map specific flows to machines using the `.deploy()` method:
+
+```python
+# Robot Interface on Local Controller
+robot_io = RobotInterface() @ Rate(50)
+robot_io.deploy("machine_a")
+
+# Heavy Model on Remote GPU Server
+vla_model = VLAFlow() @ Trigger("image")
+vla_model.deploy("machine_b")
+```
+
+```
+
+### 6.2 Runtime Deployment Overrides (Preferred)
+
+Decouple your code from physical infrastructure by specifying deployment at runtime:
+
+```python
+pipe.run(
+    backend="dora",
+    deploy={
+        robot_io: "machine_alpha",
+        vla_model: "machine_beta"
+    }
+)
+```
+
+### 6.3 Backend Configuration
+
+For this to work, you must use the **Dora** backend and have a running Dora Coordinator.
+
+1. **Configure Dora**: Define `machine_a` and `machine_b` in your `coordinator.yaml`.
+2. **Start Daemons**: Run `dora daemon --machine-id machine_a` on respective hosts.
+3. **Run Pipeline**: `pipe.run(backend="dora")`.
+
+Retriever compiles the Python deployment tags into Dora's node constraints (`_unstable_deploy`).
+
+---
+
+## 7) Native Node Performance
 
 Retriever supports native backends (Rust/C++) via `native_overrides`. When benchmarking:
 
-1.  **Serialization Overhead**: Small messages (e.g., 6 floats) may be dominated by Arrow serialization/deserialization costs. Python can sometimes be faster for trivial inputs due to zero overhead in passing data across boundaries (when using `multiprocessing` backend in simple modes) or simply because the serialization cost outweighs the compute cost.
-2.  **Throughput vs Compute**: Native nodes shine when:
-    - Compute load is high (e.g., heavy math, computer vision).
-    - Throughput requirements exceed Python's GIL limitations (e.g., >1000 Hz).
-3.  **Rate Limiting**: Ensure your pipeline `Rate` does not artificially cap performance. A `Rate(hz=50)` will limit all backends to 50 Hz, masking any performance differences.
+1. **Serialization Overhead**: Small messages (e.g., 6 floats) may be dominated by Arrow serialization/deserialization costs. Python can sometimes be faster for trivial inputs due to zero overhead in passing data across boundaries (when using `multiprocessing` backend in simple modes) or simply because the serialization cost outweighs the compute cost.
+2. **Throughput vs Compute**: Native nodes shine when:
+   - Compute load is high (e.g., heavy math, computer vision).
+   - Throughput requirements exceed Python's GIL limitations (e.g., >1000 Hz).
+3. **Rate Limiting**: Ensure your pipeline `Rate` does not artificially cap performance. A `Rate(hz=50)` will limit all backends to 50 Hz, masking any performance differences.
+
 

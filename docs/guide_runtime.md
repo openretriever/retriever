@@ -46,6 +46,8 @@ add = AddOne() @ Rate(hz=10)
 pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
+# Or record to MCAP (uses in-process backend):
+# pipe.run(duration=1.0, record="log.mcap")
 ```
 
 ### Async full run (non-blocking)
@@ -70,7 +72,9 @@ More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
-For “record once, debug many times” workflows, use:
+For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")`.
+
+For granular control (e.g. recording specific flows during manual stepping), use:
 
 ```py
 pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
@@ -146,6 +150,7 @@ but you can call it directly for debugging/inspection.
 
 - `multiprocessing`: local Python multiprocessing backend
 - `dora`: dora-rs backend (requires compatible dora CLI + deps)
+- `in-process`: single-process wrapper for debugging/recording
 
 `execute_ir(...)` accepts either an `IRStruct` or an `ExecutionGraph`.
 

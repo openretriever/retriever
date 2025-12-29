@@ -248,7 +248,10 @@ Retriever maintains a thread-local **default pipeline**:
 import retriever
 from retriever.flow import Rate
 
-retriever.reset_default_pipeline()
+# Start a fresh pipeline
+# (For scripts, we recommend 'with Pipeline():' instead of global state)
+from retriever.flow.pipeline import reset_default_pipeline
+reset_default_pipeline()
 
 a = Source() @ Rate(hz=10)
 b = AddOne() @ Rate(hz=10)
@@ -261,31 +264,36 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 
 Notes:
 - `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
-- `reset_default_pipeline()` is recommended between experiments to avoid accidentally accumulating nodes/edges.
 - Canonical demo: `examples/tutorial/017_pipeline_ergonomics.py`
 
 ---
 
-## 6) Record + replay (rosbag-like, stepper-first)
+## 6) Unified Execution & Recording
 
-The core idea:
+Retriever supports a unified API to run and debug pipelines.
 
-- record once from hardware
-- replay later in-process so breakpoints work without spinning up a backend
-
-High-level APIs:
+### 6.1 Recording execution
+You can record any execution to an MCAP file (or Rerun log) by passing `record=...`.
+This automatically switches to the **in-process** backend to ensure deterministic recording.
 
 ```py
-pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
-pipe.replay(camera, path="logs/camera_recording.pkl.gz")
+pipe.run(
+    duration=5.0,
+    record="session.mcap",
+    visualize="rerun"  # Optional: stream to viewer live
+)
 ```
 
-Reference example (perception):
+This generates `session.mcap` containing all flow I/O.
 
-- `examples/tutorial/014_record_replay_perception.py`
+### 6.2 Replay
+To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 
-Storage format:
-- gzip + pickle (debug artifact, not a long-term stable format)
+```py
+# Inject recorded data into 'camera' flow
+pipe.replay(camera, path="session.mcap")
+pipe.run(backend="in-process")
+```
 
 ---
 
