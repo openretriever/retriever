@@ -294,16 +294,16 @@ HTML_TEMPLATE = """
                             'line-gradient-stop-positions': '0 100',
                             'target-arrow-color': '#ef4444',
                             'target-arrow-shape': 'triangle',
-                            'curve-style': 'unbundled-bezier',
-                            'control-point-distances': [40, -40],
-                            'control-point-weights': [0.25, 0.75],
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'font-size': '10px',
+                            'font-size': '9px',
                             'color': '#64748b',
                             'text-rotation': 'autorotate',
+                            'text-margin-y': -10,
                             'text-background-opacity': 1,
                             'text-background-color': '#ffffff',
-                            'text-background-padding': '3px',
+                            'text-background-padding': '2px',
                             'text-border-width': 1,
                             'text-border-color': '#e2e8f0',
                             'text-border-style': 'solid',
@@ -322,12 +322,12 @@ HTML_TEMPLATE = """
                 layout: {
                     name: 'dagre',
                     rankDir: 'LR',
-                    spacingFactor: 1.5,
+                    spacingFactor: 1.2,
                     animate: false,
-                    nodeSep: 80,
-                    rankSep: 150,
-                    edgeSep: 40,
-                    ranker: 'tight-tree'
+                    nodeSep: 60,
+                    rankSep: 180,
+                    edgeSep: 80,
+                    ranker: 'network-simplex'
                 }
             });
 
