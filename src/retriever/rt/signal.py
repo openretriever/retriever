@@ -14,15 +14,25 @@ Uses Publisher/Subscriber protocols for backend abstraction.
 import time
 import types
 from contextlib import nullcontext
-from typing import Dict, List, Tuple, Optional, Callable, Type, Any, Generator, TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Type,
+)
 
 from retriever.flow.adapter import Adapter, Latest
 from retriever.rt.frp import EventStream
 
 if TYPE_CHECKING:
-    from retriever.rt.backend.interface import Subscriber, Publisher
+    from retriever.rt.backend.interface import Publisher, Subscriber
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 _DEFAULT_LATEST = Latest()
@@ -46,7 +56,7 @@ class Signal:
 
     def __init__(
         self,
-        subscribers: Dict[str, 'Subscriber'] = None,
+        subscribers: Dict[str, "Subscriber"] = None,
         fields_filter: List[str] = None,
         instance: Any = None,
         now: Optional[float] = None,
@@ -81,7 +91,7 @@ class Signal:
         adapters: Dict[str, Adapter],
         *,
         now: Optional[float] = None,
-    ) -> 'Signal':
+    ) -> "Signal":
         """
         Sample from subscribers using adapters to create input instance.
 
@@ -105,13 +115,17 @@ class Signal:
         # Create input instance
         self.instance = input_type()
 
-        # Determine which fields to sample
+        # Determine which fields triggered execution (for _signals metadata)
         if not self.fields_filter:
-            fields_to_sample = []
+            triggered_fields = []
         elif self.fields_filter == ["..."]:
-            fields_to_sample = self.subscribers.keys()
+            triggered_fields = list(self.subscribers.keys())
         else:
-            fields_to_sample = self.fields_filter
+            triggered_fields = self.fields_filter
+
+        # ALWAYS sample ALL subscriber fields (not just triggers)
+        # This ensures Latest() adapters populate their values even when another field triggers
+        fields_to_sample = list(self.subscribers.keys())
 
         # Sample each field
         effective_now = self.now if now is None else now
@@ -127,16 +141,16 @@ class Signal:
                 adapter = adapters.get(field_name)
                 if adapter is None:
                     adapter = _DEFAULT_LATEST
-                
+
                 value = []
                 for sub in subscriber:
                     if sub.empty():
-                        continue 
-                    
+                        continue
+
                     if hasattr(sub, "sample"):
-                         v = sub.sample(adapter, now=effective_now)
+                        v = sub.sample(adapter, now=effective_now)
                     else:
-                         v = adapter.sample(sub.get_all(), now=effective_now)
+                        v = adapter.sample(sub.get_all(), now=effective_now)
                     value.append(v)
             else:
                 # Single subscriber
@@ -159,7 +173,7 @@ class Signal:
 
         return self
 
-    def transform(self, fn: Callable) -> 'Signal':
+    def transform(self, fn: Callable) -> "Signal":
         """
         Transform signal by applying function.
 
@@ -176,8 +190,9 @@ class Signal:
             tracer_cm = nullcontext()
             try:
                 from opentelemetry import trace  # type: ignore
-                tracer = trace.get_tracer('retriever.runtime')
-                tracer_cm = tracer.start_as_current_span('transform')
+
+                tracer = trace.get_tracer("retriever.runtime")
+                tracer_cm = tracer.start_as_current_span("transform")
             except Exception:
                 tracer_cm = nullcontext()
 
@@ -185,7 +200,7 @@ class Signal:
                 self.instance = fn(self.instance)
         return self
 
-    def fold(self, on: Callable[[Generator], None]) -> 'Signal':
+    def fold(self, on: Callable[[Generator], None]) -> "Signal":
         """
         Fold over generator: if instance is Generator, call handler and clear.
 
@@ -200,7 +215,7 @@ class Signal:
             self.instance = None
         return self
 
-    def publish(self, output_publishers: Dict[str, List['Publisher']]) -> 'Signal':
+    def publish(self, output_publishers: Dict[str, List["Publisher"]]) -> "Signal":
         """
         Publish output signals to publishers.
 
@@ -230,25 +245,25 @@ class Signal:
                 found_ts = True
             except (ValueError, TypeError):
                 pass
-        
+
         if not found_ts:
             # Check for 'ts_val' (fallback/rename)
             if hasattr(self.instance, "ts_val") and self.instance.ts_val is not None:
-                 try:
+                try:
                     timestamp = float(self.instance.ts_val)
                     found_ts = True
-                 except (ValueError, TypeError):
+                except (ValueError, TypeError):
                     pass
 
         if not found_ts and hasattr(self.instance, "_has_signal"):
-             # For FlowIO wrapped objects, try _get_signal but handle errors
-             try:
-                 if self.instance._has_signal("timestamp"):
-                     val = self.instance._get_signal("timestamp")
-                     if val is not None:
-                         timestamp = float(val)
-             except Exception:
-                 pass
+            # For FlowIO wrapped objects, try _get_signal but handle errors
+            try:
+                if self.instance._has_signal("timestamp"):
+                    val = self.instance._get_signal("timestamp")
+                    if val is not None:
+                        timestamp = float(val)
+            except Exception:
+                pass
 
         # Publish each output field to all its publishers
         for field_name, publisher_list in output_publishers.items():
@@ -268,8 +283,7 @@ class Signal:
                         else:
                             # Log actual error
                             logger.error(
-                                f"Failed to publish {field_name}: {e}",
-                                exc_info=True
+                                f"Failed to publish {field_name}: {e}", exc_info=True
                             )
 
         return self

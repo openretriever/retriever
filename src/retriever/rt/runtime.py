@@ -83,6 +83,36 @@ def execute_ir(
 
     logger.info(f"Executing pipeline: {ir_struct.metadata.name} (backend={backend})")
 
+    # Handle Rerun
+    rerun_process = None
+    if backend_config and backend_config.get("rerun_config"):
+        import rerun as rr
+        import os
+
+        # Use defaults if config is just True
+        rr_config = backend_config["rerun_config"]
+        if isinstance(rr_config, bool):
+            rr_config = {"spawn": True}
+
+        # Start Rerun
+        rr.init(ir_struct.metadata.name, spawn=rr_config.get("spawn", True))
+        
+        # In a real shared setup, we might want to start the Rerun server separately
+        # or assume it's running via `rerun` config.
+        # For now, we assume the user might have provided a connect addr or we use default.
+        connect_addr = rr_config.get("connect_addr", "127.0.0.1:9876")
+        
+        # Inject into env_overrides
+        if "env_overrides" not in backend_config:
+            backend_config["env_overrides"] = {}
+        
+        backend_config["env_overrides"]["RERUN_CONNECT_ADDR"] = connect_addr
+        backend_config["env_overrides"]["RERUN_APP_ID"] = ir_struct.metadata.name
+        
+        # Also set in current process for main thread logic
+        os.environ["RERUN_CONNECT_ADDR"] = connect_addr
+        logger.info(f"Rerun enabled: {connect_addr}")
+
     # Get backend factory
     factory_class = get_backend(backend)
     factory = factory_class()
@@ -114,5 +144,6 @@ def execute_ir(
         logger.info("Stopping pipeline")
         engine.stop()
         log_manager.shutdown()
+        # Rerun shuts down automatically with process usually
 
     return engine
