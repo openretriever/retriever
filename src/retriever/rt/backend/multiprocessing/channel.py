@@ -7,7 +7,7 @@ Wraps multiprocessing.Queue and maintains temporal buffer for history.
 from multiprocessing import Queue
 from multiprocessing.connection import Connection
 from queue import Empty
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from retriever.flow.adapter import Adapter, EventBuffer
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
@@ -48,12 +48,22 @@ class MPChannel:
     @property
     def reader(self) -> Optional[Connection]:
         """
-        Reader connection for use with connection.wait().
+        Primary reader connection for use with connection.wait().
 
         Returns:
             Connection object for select/poll, or None if unavailable
         """
         return getattr(self.queue, '_reader', None)
+
+    @property
+    def readers(self) -> List[Optional[Connection]]:
+        """
+        All reader connections for fan-in support.
+
+        Returns:
+            List of Connection objects for all queues
+        """
+        return [getattr(q, '_reader', None) for q in self._queues]
 
     def drain(self) -> None:
         """Pull all messages from ALL Queues into temporal buffer."""

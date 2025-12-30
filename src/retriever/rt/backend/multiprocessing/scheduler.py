@@ -139,11 +139,11 @@ class MPScheduler(Scheduler):
         if result.should_execute:
             return result
 
-        # Block until any reader has data or timeout
+        # Block until any reader has data or timeout (use readers for fan-in)
         readers = []
         for field in fields:
             if field in inputs:
-                readers.append(inputs[field].reader)
+                readers.extend(inputs[field].readers)
         
         if not connection_wait(readers, timeout=timeout):
             return ScheduleResult(should_execute=False)
@@ -217,15 +217,15 @@ class MPScheduler(Scheduler):
         if result.should_execute:
             return result
             
-        # Block until any reader has data
+        # Block until any reader has data (use readers for fan-in)
         readers = []
         for field in fields:
             if field in inputs:
-                readers.append(inputs[field].reader)
-                
+                readers.extend(inputs[field].readers)
+
         if not connection_wait(readers, timeout=timeout):
             return ScheduleResult(should_execute=False)
-            
+
         # Drain and check again
         self._drain_all(inputs)
         return self._check_synchronized(inputs)
@@ -282,11 +282,11 @@ class MPScheduler(Scheduler):
         if result.should_execute:
             return result
 
-        # Block until trigger or rate tick
+        # Block until trigger or rate tick (use readers for fan-in)
         readers = []
         for field in trigger_fields:
             if field in inputs:
-                readers.append(inputs[field].reader)
+                readers.extend(inputs[field].readers)
         time_until_tick = self.next_tick - time.time()
         connection_wait(readers, timeout=max(0, time_until_tick))
 
