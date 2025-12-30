@@ -18,7 +18,7 @@ class MPChannel:
     Queue-based channel with temporal buffer.
 
     Two-tier architecture:
-    - IPC Queue: Cross-process transport
+    - IPC Queue(s): Cross-process transport (supports multiple for fan-in)
     - temporal Buffer: Per-consumer history
 
     Implements Publisher/Subscriber protocols.
@@ -32,9 +32,18 @@ class MPChannel:
             queue: multiprocessing.Queue for IPC
             buffer_size: temporal buffer capacity
         """
-        self.queue = queue
+        self._queues = [queue]
         self._engine = create_buffer_engine(buffer_engine, buffer_size=buffer_size)
         self.arrival_flag = False
+
+    @property
+    def queue(self) -> Queue:
+        """Primary queue for put_one() (output side)."""
+        return self._queues[0]
+
+    def add_queue(self, queue: Queue) -> None:
+        """Add another queue for fan-in input."""
+        self._queues.append(queue)
 
     @property
     def reader(self) -> Optional[Connection]:
@@ -47,15 +56,16 @@ class MPChannel:
         return getattr(self.queue, '_reader', None)
 
     def drain(self) -> None:
-        """Pull all messages from Queue into temporal buffer."""
-        while True:
-            try:
-                item = self.queue.get_nowait()
-                ts, value = item
-                self._engine.push(ts, value)
-                self.arrival_flag = True
-            except Empty:
-                break
+        """Pull all messages from ALL Queues into temporal buffer."""
+        for queue in self._queues:
+            while True:
+                try:
+                    item = queue.get_nowait()
+                    ts, value = item
+                    self._engine.push(ts, value)
+                    self.arrival_flag = True
+                except Empty:
+                    break
 
     def new_arrival(self) -> bool:
         """Check if new data arrived."""

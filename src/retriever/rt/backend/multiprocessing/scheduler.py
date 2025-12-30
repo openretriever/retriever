@@ -37,12 +37,8 @@ class MPScheduler(Scheduler):
 
     def _drain_all(self, inputs: Dict[str, Subscriber]) -> None:
         """Drain all input channels."""
-        for val in inputs.values():
-            if isinstance(val, list):
-                for channel in val:
-                    channel.drain()
-            else:
-                val.drain()
+        for channel in inputs.values():
+            channel.drain()
 
     def _check_arrival(
         self, inputs: Dict[str, Subscriber], fields: list
@@ -50,14 +46,7 @@ class MPScheduler(Scheduler):
         """Check new_arrival on fields, return result if found."""
         for field in fields:
             if field in inputs:
-                val = inputs[field]
-                has_arrival = False
-                if isinstance(val, list):
-                    has_arrival = any(sub.new_arrival() for sub in val)
-                else:
-                    has_arrival = val.new_arrival()
-                
-                if has_arrival:
+                if inputs[field].new_arrival():
                     return ScheduleResult(
                         should_execute=True,
                         fields_to_sample=[field],
@@ -154,12 +143,7 @@ class MPScheduler(Scheduler):
         readers = []
         for field in fields:
             if field in inputs:
-                val = inputs[field]
-                if isinstance(val, list):
-                    for sub in val:
-                        readers.append(sub.reader)
-                else:
-                    readers.append(val.reader)
+                readers.append(inputs[field].reader)
         
         if not connection_wait(readers, timeout=timeout):
             return ScheduleResult(should_execute=False)
