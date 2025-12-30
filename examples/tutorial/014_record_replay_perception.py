@@ -76,6 +76,7 @@ def parse_args() -> argparse.Namespace:
     replay.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
     replay.add_argument("--sleep", type=float, default=0.0, help="Sleep seconds between steps (optional)")
     replay.add_argument("--show-window", action="store_true", help="Enable OpenCV window")
+    replay.add_argument("--stream", action="store_true", help="Stream to Rerun live while replaying")
 
     return p.parse_args()
 
@@ -116,20 +117,14 @@ def _resolve_recording_path(path: Path) -> Path:
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
 
-    pipe, camera = build_replay_pipeline(show_window=bool(args.show_window))
-
-    # Swap the camera node to a replay source (no custom ReplayFlow needed).
-    replay = pipe.replay(camera, path=recording)
-
-    try:
-        for _ in range(args.steps):
-            pipe.step(dt=args.dt)
-            if getattr(replay.flow, "done", False):
-                break
-            if args.sleep > 0:
-                time.sleep(args.sleep)
-    finally:
-        pipe.close_stepper()
+    # Run with in-process backend (uses stepper internally)
+    # visualize=True (or "rerun") auto-enables Rerun logging
+    pipe.run(
+        backend="in-process",
+        visualize=args.stream,
+        duration=args.steps * args.dt,
+        blocking=True
+    )
 
 
 def main() -> None:

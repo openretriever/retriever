@@ -30,7 +30,7 @@ from retriever.flow import Pipeline, Rate, Trigger, Latest
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Debug perception with Pipeline.step() using a real camera.")
     p.add_argument("--show-window", action="store_true", help="Enable OpenCV window")
-    p.add_argument("--steps", type=int, default=10, help="Number of step iterations")
+    p.add_argument("--steps", type=int, default=100, help="Number of step iterations")
     p.add_argument("--sleep", type=float, default=0.05, help="Sleep seconds between steps")
     p.add_argument("--dt", type=float, default=None, help="Logical dt for timestamps (optional)")
     return p.parse_args()

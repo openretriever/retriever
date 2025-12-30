@@ -22,9 +22,10 @@ class KeyboardInputFlow(Flow[None, KeyboardText]):
         self._running: bool = False
         self._buffer: list = []
         self._result: Optional[str] = None
-        self._lock = threading.Lock()
+        self._lock = None  # Created in init() - can't pickle locks
 
     def init(self):
+        self._lock = threading.Lock()  # Create after process spawn
         self._running = True
         self.keyboard_thread = threading.Thread(
             target=self._listener,
