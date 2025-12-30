@@ -46,7 +46,7 @@ class _TypedEntity:
     def _str(self) -> str:
         return f"{self.name}:{self.type.name}"
 
-    @cached_property
+    @property
     def _hash(self) -> int:
         return hash(str(self))
 
@@ -93,6 +93,9 @@ class State:
     def __getitem__(self, key: Object) -> NDArray:
         return self.data[key]
 
+    def __contains__(self, key: Object) -> bool:
+        return key in self.data
+
 
 @dataclass(frozen=True, order=False, repr=False)
 class Predicate:
@@ -122,7 +125,7 @@ class Predicate:
         return self.name
 
 
-@dataclass(frozen=True, repr=False, eq=False)
+@dataclass(frozen=True, repr=False)
 class _Atom:
     """A predicate applied to entities."""
     predicate: Predicate
@@ -148,17 +151,32 @@ class _Atom:
         return hash(str(self))
 
 
-@dataclass(frozen=True, repr=False, eq=False)
+@dataclass(frozen=True, repr=False)
 class LiftedAtom(_Atom):
     """An atom applied to variables."""
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     @property
     def variables(self) -> Sequence[Variable]:
         return [v for v in self.entities if isinstance(v, Variable)]
 
+    def ground(self, mapping: dict[Variable, Object]) -> GroundAtom:
+        ground_entities = [mapping.get(v, v) if isinstance(v, Variable) else v 
+                          for v in self.entities]
+        # Ensure all are Objects
+        if not all(isinstance(e, Object) for e in ground_entities):
+             # This might happen if mapping is incomplete
+             raise ValueError(f"Incomplete grounding for atom {self}")
+        return GroundAtom(self.predicate, ground_entities)
 
-@dataclass(frozen=True, repr=False, eq=False)
+
+@dataclass(frozen=True, repr=False)
 class GroundAtom(_Atom):
     """An atom applied to objects."""
+    def __hash__(self) -> int:
+        return super().__hash__()
+
     @property
     def objects(self) -> Sequence[Object]:
         return [o for o in self.entities if isinstance(o, Object)]
