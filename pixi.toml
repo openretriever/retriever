@@ -78,6 +78,11 @@ transforms3d = "*"
 torch = "*"
 google-genai = "*"
 
+[feature.spot.pypi-dependencies]
+bosdyn-client = "*"
+bosdyn-mission = "*"
+bosdyn-api = "*"
+
 # -----------------------------------------------------------------------------
 # Environments
 # -----------------------------------------------------------------------------
@@ -91,6 +96,7 @@ torch = { features = ["torch"] }
 llm = { features = ["llm"] }
 ravens = { features = ["ravens"] }
 twist2 = { features = ["twist2"] }
+spot = { features = ["spot"] }
 
 # =============================================================================
 # PyPI Dependencies
@@ -112,7 +118,7 @@ retriever = { path = ".", editable = true, extras = [
 ] }
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
 mcap = "*" # MCAP recording support
-
+google-genai = "*" # VLM Support
 
 
 uvicorn = { extras = ["standard"], version = "*" }
@@ -147,6 +153,13 @@ demo-combinators = { cmd = "python examples/advanced/functional_wiring/combinato
 # Closed Loop Planning PoC
 # Run: pixi run demo-closed-loop-planning
 demo-closed-loop-planning = { cmd = "python -m examples.experimental.closed_loop_planning.main", env = { PYTHONPATH = "." } }
+viz-closed-loop = { cmd = "python examples/experimental/visualization/visualize_pipeline.py", env = { PYTHONPATH = "." } }
+
+# New Pipelines
+demo-rise-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.rise_pipeline", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-complete-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.complete", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-simple-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.simple", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-spot-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.spot_pipeline", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
 
 # Skill Switching Demo
 # Run: pixi run demo-skill-switching
