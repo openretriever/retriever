@@ -191,18 +191,92 @@ HTML_TEMPLATE = """
         });
 
         // Edges
+        # Edges
+        # Track edge counts between node pairs to calculate offsets for unbundled-bezier
+        pair_counts = {}
+
         irData.edges.forEach(edge => {
              const source = edge.source.node;
              const target = edge.destination.node;
              const label = `${edge.source.port} → ${edge.destination.port}`;
              
+             
+             # Group by sorted pair to handle parallel edges in either direction
+             # Using sorted IDs ensures A->B and B->A share the same "lane set"
+             sorted_ids = sorted([source, target])
+             const pairKey = sorted_ids.join('_');
+             
+             # Determine direction relative to sort order
+             # If source is first in sort, we are "Forward". If source is second, "Backward".
+             const isForward = (source === sorted_ids[0]);
+             
+             if (!pair_counts[pairKey]) { pair_counts[pairKey] = 0; }
+             const count = pair_counts[pairKey];
+             pair_counts[pairKey] += 1;
+             
+             # Calculate Curvature Offset (C-Curve Arch)
+             # To avoid overlap between A->B and B->A, we need them to arc into DIFFERENT spaces.
+             # Strategy:
+             # Lane 0: Dist 20.
+             # Lane 1: Dist -20.
+             # Lane 2: Dist 40. ...
+             
+             const laneIndex = Math.floor(count / 2);
+             const laneSide = (count % 2 === 0) ? 1 : -1;
+             const magnitude = 25 + (laneIndex * 25);
+             let dist = magnitude * laneSide; // e.g., 25, -25, 50, -50
+             
+             # CORRECTION FOR DIRECTION:
+             # If we are "Backward" (B->A), 'Right' is opposite to 'Right' of "Forward".
+             # We want the computed spatial lane (e.g. "East" side of the connection).
+             # Forward edge with +25 curves Right (East).
+             # Backward edge with +25 curves Right (West). -> COLLISION.
+             # Backward edge with -25 curves Left (East). -> MATCH (Collision with Forward +25?).
+             # 
+             # Wait.
+             # If Forward +25 = East.
+             # If Backward -25 = East.
+             # We want them to NOT collide.
+             # So if Lane 0 is assigned to Forward, it uses +25 (East).
+             # If Lane 1 is assigned to Backward, it uses -25 (East). -> Collision!
+             #
+             # We need to allocate lanes spatially.
+             # Space 1: East (+25 Forward, -25 Backward).
+             # Space 2: West (-25 Forward, +25 Backward).
+             #
+             # Algorithm:
+             # 1. Assign unique integer slot to edge: 0, 1, 2...
+             # 2. Map slot to Spatial Side: Even=East, Odd=West.
+             # 3. Calculate value based on Direction + Spatial Side.
+             
+             # Slot is just 'count'.
+             # Side: 0->East, 1->West, 2->Far East...
+             const side = (count % 2 === 0) ? 1 : -1; // 1=East, -1=West
+             const absDist = 25 + (Math.floor(count/2) * 20);
+             
+             # If Forward (A->B): Right is East (+). Left is West (-).
+             # If Backward (B->A): Right is West (+). Left is East (-).
+             
+             # If Side 1 (East) and Forward: Use +dist.
+             # If Side 1 (East) and Backward: Use -dist.
+             # If Side -1 (West) and Forward: Use -dist.
+             # If Side -1 (West) and Backward: Use +dist.
+             
+             # Logic: dist = absDist * side * (isForward ? 1 : -1);
+             dist = absDist * side * (isForward ? 1 : -1);
+                      
              elements.push({
                  data: {
                      source: source,
                      target: target,
                      label: label,
                      id: edge.id,
-                     qsize: edge.qsize
+                     qsize: edge.qsize,
+                     curveDist: dist + " " + dist // format as "20 20" for symmetric arch? or just "20"?
+                     // Cytoscape 'unbundled-bezier' control-point-distances property:
+                     // "A series of values that specify the distance of the control points..."
+                     // If 1 value is given, it's 1 control point at midpoint.
+                     // "20" -> Single arch.
                  }
              });
         });
@@ -295,9 +369,11 @@ HTML_TEMPLATE = """
                             'target-arrow-color': '#ef4444',
                             'target-arrow-shape': 'triangle',
                             'target-arrow-shape': 'triangle',
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-shape': 'triangle',
                             'curve-style': 'unbundled-bezier',
-                            'control-point-distances': [25, -25],
-                            'control-point-weights': [0.25, 0.75],
+                            'control-point-distances': 'data(curveDist)',
+                            'control-point-weights': '0.5', 
                             'label': 'data(label)',
                             'font-size': '9px',
                             'color': '#64748b',
