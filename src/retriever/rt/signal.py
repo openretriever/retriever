@@ -121,38 +121,18 @@ class Signal:
 
             subscriber = self.subscribers[field_name]
 
-            # Check if we have multiple subscribers (Fan-in)
-            if isinstance(subscriber, list):
-                # Canonical List Fusion
-                adapter = adapters.get(field_name)
-                if adapter is None:
-                    adapter = _DEFAULT_LATEST
-                
-                value = []
-                for sub in subscriber:
-                    if sub.empty():
-                        continue 
-                    
-                    if hasattr(sub, "sample"):
-                         v = sub.sample(adapter, now=effective_now)
-                    else:
-                         v = adapter.sample(sub.get_all(), now=effective_now)
-                    value.append(v)
+            if subscriber.empty():
+                continue
+
+            adapter = adapters.get(field_name)
+            if adapter is None:
+                adapter = _DEFAULT_LATEST
+
+            # Tier B.3 fast-path: Subscribers may implement `sample(adapter, now=...)`
+            if hasattr(subscriber, "sample"):
+                value = subscriber.sample(adapter, now=effective_now)
             else:
-                # Single subscriber
-                if subscriber.empty():
-                    continue
-
-                adapter = adapters.get(field_name)
-                if adapter is None:
-                    adapter = _DEFAULT_LATEST
-
-                # Tier B.3 fast-path: Subscribers may implement `sample(adapter, now=...)`
-                # to avoid materializing full Python lists per step.
-                if hasattr(subscriber, "sample"):
-                    value = subscriber.sample(adapter, now=effective_now)  # type: ignore[attr-defined]
-                else:
-                    value = adapter.sample(subscriber.get_all(), now=effective_now)
+                value = adapter.sample(subscriber.get_all(), now=effective_now)
 
             # Set signal on input instance (FlowIO treats None as "no signal")
             self.instance._set_signal(field_name, value)

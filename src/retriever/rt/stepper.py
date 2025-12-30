@@ -160,57 +160,23 @@ class PipelineStepper:
             self._outputs[node.id] = {}
             self._adapters[node.id] = {}
 
-        # Build per-node input subscribers + adapter map (1 edge per destination port)
+        # Build per-node input subscribers + adapter map
+        # Note: IR validator renames fan-in ports to unique names (_fanin/source/port)
         for edge in self._ir.edges:
             if not self._is_runtime_edge(edge):
                 continue
             dst = edge.destination.node
             port = edge.destination.port
 
-            # Check if destination port is a List[T]
-            from typing import get_origin, List, Sequence
-            
-            # Runtime introspection via FlowHandle
-            handle = self._flows[dst]
-            flow_input_type = handle.flow.input_type
-            is_list_port = False
-            
-            if flow_input_type:
-                 # Check fields
-                 from dataclasses import fields
-                 for f in fields(flow_input_type):
-                     if f.name == port:
-                         origin = get_origin(f.type)
-                         if origin in (list, List, Sequence):
-                             is_list_port = True
-                         break
-            
             if port in self._inputs[dst]:
-                if not is_list_port:
-                    raise FlowError(
-                        ErrCode.FLOW_CONNECTION_INVALID,
-                        "Multiple incoming edges to the same input port are not supported (unless port is List[T])",
-                        node=dst,
-                        port=port,
-                    )
-                # It is a list port, append to existing entry
-                # We need to change storage to support list of channels?
-                # Signal expects Dict[str, Subscriber]. Subscriber is protocol.
-                # We can make a MultiChannelSubscriber for lists?
-                # Or just store List[Channel] in self._inputs and handle it in Signal?
-                
-                existing = self._inputs[dst][port]
-                if isinstance(existing, list):
-                    existing.append(self._channels[edge.id])
-                else:
-                    self._inputs[dst][port] = [existing, self._channels[edge.id]]
-            else:
-                # First connection
-                if is_list_port:
-                     self._inputs[dst][port] = [self._channels[edge.id]]
-                else:
-                     self._inputs[dst][port] = self._channels[edge.id]
+                raise FlowError(
+                    ErrCode.FLOW_CONNECTION_INVALID,
+                    "Multiple incoming edges to the same input port are not supported",
+                    node=dst,
+                    port=port,
+                )
 
+            self._inputs[dst][port] = self._channels[edge.id]
             self._adapters[dst][port] = IRLoader.load_adapter(edge.adapter)
 
         # Build per-node output publishers (support broadcasting)
