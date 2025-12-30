@@ -120,6 +120,9 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
         logger.info(f"[{self.node_id}] Starting DoraExecutor")
 
+        # Initialize Rerun if configured (automatic connection)
+        self._init_rerun()
+
         try:
             # Initialize flow
             self.flow.init()
@@ -363,3 +366,21 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
     # join() method inherited from multiprocessing.Process
     # is_alive() method inherited from multiprocessing.Process
+
+    def _init_rerun(self) -> None:
+        """Initialize Rerun if environment variable is set."""
+        import os
+        connect_addr = os.environ.get("RERUN_CONNECT_ADDR")
+        app_id = os.environ.get("RERUN_APP_ID", "retriever_worker")
+        
+        if connect_addr:
+            try:
+                import rerun as rr
+                rr.init(app_id)
+                rr.connect(connect_addr)
+                logger.info(f"[{self.node_id}] Connected to shared Rerun at {connect_addr} (App: {app_id})")
+            except ImportError:
+                logger.warning(f"[{self.node_id}] Rerun invalid: module 'rerun' not found")
+            except Exception as e:
+                logger.warning(f"[{self.node_id}] Failed to connect to Rerun at {connect_addr}: {e}")
+

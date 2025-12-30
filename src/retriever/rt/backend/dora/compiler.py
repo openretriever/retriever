@@ -51,12 +51,14 @@ class DoraNode:
         source: Source type (always 'dynamic' for Python processes)
         inputs: Dict mapping input port names to DoraInput
         outputs: List of output port names
+        env: Optional dictionary of environment variables
     """
     id: str
     source: str
     inputs: Dict[str, DoraInput]
     outputs: List[str]
     deploy: Optional[Dict[str, str]] = None
+    env: Optional[Dict[str, str]] = None
 
 
     def to_yaml_dict(self) -> Dict[str, Any]:
@@ -72,6 +74,8 @@ class DoraNode:
         }
         if self.deploy:
             d['_unstable_deploy'] = self.deploy
+        if self.env:
+            d['env'] = self.env
         return d
 
 
@@ -182,10 +186,11 @@ def get_node_paths(
 
 
 def _compile_graph(
-    ir: IRStruct, 
-    *, 
+    ir: IRStruct,
+    *,
     node_path_overrides: Optional[Mapping[str, Any]],
-    deployment_overrides: Optional[Mapping[str, str]] = None
+    deployment_overrides: Optional[Mapping[str, str]] = None,
+    env_overrides: Optional[Mapping[str, str]] = None
 ) -> DoraGraph:
     """
     Compile IRStruct to DoraGraph.
@@ -199,10 +204,11 @@ def _compile_graph(
     dora_nodes = []
     for node in ir.nodes:
         dora_node = _compile_node(
-            node, 
-            ir, 
+            node,
+            ir,
             node_path_overrides=node_path_overrides,
-            deployment_overrides=deployment_overrides
+            deployment_overrides=deployment_overrides,
+            env_overrides=env_overrides
         )
         dora_nodes.append(dora_node)
 
@@ -210,11 +216,12 @@ def _compile_graph(
 
 
 def _compile_node(
-    node: IRNode, 
-    ir: IRStruct, 
-    *, 
+    node: IRNode,
+    ir: IRStruct,
+    *,
     node_path_overrides: Optional[Mapping[str, Any]] = None,
-    deployment_overrides: Optional[Mapping[str, str]] = None
+    deployment_overrides: Optional[Mapping[str, str]] = None,
+    env_overrides: Optional[Mapping[str, str]] = None
 ) -> DoraNode:
     """
     Compile IRNode to DoraNode.
@@ -275,7 +282,8 @@ def _compile_node(
         source=path,
         inputs=inputs,
         outputs=outputs,
-        deploy=deploy
+        deploy=deploy,
+        env=dict(env_overrides) if env_overrides else None
     )
 
     logger.debug(
@@ -372,10 +380,11 @@ def _validate_yaml(yaml_str: str) -> bool:
 
 
 def compile_and_validate(
-    ir: IRStruct, 
-    *, 
+    ir: IRStruct,
+    *,
     node_path_overrides: Optional[Mapping[str, Any]] = None,
-    deployment_overrides: Optional[Mapping[str, str]] = None
+    deployment_overrides: Optional[Mapping[str, str]] = None,
+    env_overrides: Optional[Mapping[str, str]] = None
 ) -> str:
 
     """
@@ -392,9 +401,10 @@ def compile_and_validate(
     """
     # Compile IR to DoraGraph with optional node path overrides
     dora_graph = _compile_graph(
-        ir, 
-        node_path_overrides=node_path_overrides, 
-        deployment_overrides=deployment_overrides
+        ir,
+        node_path_overrides=node_path_overrides,
+        deployment_overrides=deployment_overrides,
+        env_overrides=env_overrides
     )
 
 

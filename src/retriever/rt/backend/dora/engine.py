@@ -97,13 +97,18 @@ class DoraEngine(ExecutionEngine):
         if "deployment_overrides" in self.config:
             deployment_overrides = self.config.get("deployment_overrides")
 
+        # Resolve env overrides (Tier A.3)
+        env_overrides = None
+        if "env_overrides" in self.config:
+            env_overrides = self.config.get("env_overrides")
 
         # Compile IR to YAML (with optional per-node path overrides)
         try:
             yaml_content = compile_and_validate(
                 self.ir, 
                 node_path_overrides=node_path_overrides,
-                deployment_overrides=deployment_overrides
+                deployment_overrides=deployment_overrides,
+                env_overrides=env_overrides
             )
 
             logger.debug(f"Generated YAML:\n{yaml_content}")
