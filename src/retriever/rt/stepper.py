@@ -28,6 +28,7 @@ from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.context import FlowContext
 from retriever.flow.handle import FlowHandle
+from retriever.ir.fanin import is_fan_in_port, get_logical_port
 from retriever.ir.loader import IRLoader
 from retriever.ir.struct import IREdge, IRStruct
 from retriever.rt.signal import Signal
@@ -101,8 +102,7 @@ class PipelineStepper:
         self._initialized = False
         self._now: Optional[float] = None
 
-        self._build_channels()
-        self._build_node_io()
+        self._build_io()
 
     @property
     def ir(self) -> IRStruct:
@@ -146,14 +146,7 @@ class PipelineStepper:
             handle.flow.init()
         self._initialized = True
 
-    def _build_channels(self) -> None:
-        for edge in self._ir.edges:
-            if not self._is_runtime_edge(edge):
-                continue
-            adapter = IRLoader.load_adapter(edge.adapter)
-            self._channels[edge.id] = InMemoryChannel(buffer_size=adapter.buffer_size)
-
-    def _build_node_io(self) -> None:
+    def _build_io(self) -> None:
         # Initialize empty maps for all nodes
         for node in self._ir.nodes:
             self._inputs[node.id] = {}
@@ -161,23 +154,30 @@ class PipelineStepper:
             self._adapters[node.id] = {}
 
         # Build per-node input subscribers + adapter map
-        # Note: IR validator renames fan-in ports to unique names (_fanin/source/port)
+        # Fan-in edges share one channel per logical port
         for edge in self._ir.edges:
             if not self._is_runtime_edge(edge):
                 continue
             dst = edge.destination.node
-            port = edge.destination.port
+            actual_port = edge.destination.port
+            logical_port = get_logical_port(actual_port)
 
-            if port in self._inputs[dst]:
-                raise FlowError(
-                    ErrCode.FLOW_CONNECTION_INVALID,
-                    "Multiple incoming edges to the same input port are not supported",
-                    node=dst,
-                    port=port,
-                )
-
-            self._inputs[dst][port] = self._channels[edge.id]
-            self._adapters[dst][port] = IRLoader.load_adapter(edge.adapter)
+            if is_fan_in_port(actual_port):
+                # Fan-in: share one channel for all edges to same logical port
+                if logical_port not in self._inputs[dst]:
+                    adapter = IRLoader.load_adapter(edge.adapter)
+                    channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+                    self._inputs[dst][logical_port] = channel
+                    self._adapters[dst][logical_port] = adapter
+                # Reuse existing channel for this edge
+                self._channels[edge.id] = self._inputs[dst][logical_port]
+            else:
+                # Normal: one channel per edge
+                adapter = IRLoader.load_adapter(edge.adapter)
+                channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+                self._channels[edge.id] = channel
+                self._inputs[dst][logical_port] = channel
+                self._adapters[dst][logical_port] = adapter
 
         # Build per-node output publishers (support broadcasting)
         for edge in self._ir.edges:
