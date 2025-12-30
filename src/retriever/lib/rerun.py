@@ -297,7 +297,10 @@ class RerunManager:
         rr = _ensure_rerun()
 
         if time_seconds is not None:
-            rr.set_time_seconds("retriever_time", time_seconds)
+            if hasattr(rr, "set_time_seconds"):
+                rr.set_time_seconds("retriever_time", time_seconds)
+            else:
+                rr.set_time("retriever_time", timestamp=time_seconds)
 
         # Use protocol if available
         if isinstance(value, RerunLoggable):
@@ -364,9 +367,16 @@ class RerunManager:
         rr = _ensure_rerun()
 
         # Set time for this step
-        rr.set_time_sequence("step", step_idx)
+        if hasattr(rr, "set_time_sequence"):
+            rr.set_time_sequence("step", step_idx)
+        else:
+            rr.set_time("step", sequence=step_idx)
+
         if hasattr(result, "now") and result.now is not None:
-            rr.set_time_seconds("retriever_time", result.now)
+            if hasattr(rr, "set_time_seconds"):
+                rr.set_time_seconds("retriever_time", result.now)
+            else:
+                rr.set_time("retriever_time", timestamp=result.now)
 
         # Log executed flows
         if hasattr(result, "executed") and result.executed:
@@ -390,9 +400,16 @@ class RerunManager:
             return
 
         rr = _ensure_rerun()
-        rr.set_time_seconds("retriever_time", time_seconds)
+        if hasattr(rr, "set_time_seconds"):
+            rr.set_time_seconds("retriever_time", time_seconds)
+        else:
+            rr.set_time("retriever_time", timestamp=time_seconds) # Rerun 0.28+
+
         if step is not None:
-            rr.set_time_sequence("step", step)
+            if hasattr(rr, "set_time_sequence"):
+                rr.set_time_sequence("step", step)
+            else:
+                rr.set_time("step", sequence=step)
 
     def cleanup(self, open_recording: bool = True) -> None:
         """
@@ -554,7 +571,10 @@ def jump_to_step(step: int) -> None:
     Note: This requires Rerun viewer to be connected.
     """
     rr = _ensure_rerun()
-    rr.set_time_sequence("step", step)
+    if hasattr(rr, "set_time_sequence"):
+        rr.set_time_sequence("step", step)
+    else:
+        rr.set_time("step", sequence=step)
     # TODO: Rerun doesn't have direct "jump to time" API yet
     # This sets the time for next log, which implicitly moves the timeline
 
@@ -564,4 +584,7 @@ def jump_to_time(time_seconds: float) -> None:
     Jump Rerun viewer to a specific timestamp.
     """
     rr = _ensure_rerun()
-    rr.set_time_seconds("retriever_time", time_seconds)
+    if hasattr(rr, "set_time_seconds"):
+        rr.set_time_seconds("retriever_time", time_seconds)
+    else:
+        rr.set_time("retriever_time", timestamp=time_seconds)
