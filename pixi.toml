@@ -164,6 +164,7 @@ demo-spot-pipeline = { cmd = "python -m examples.experimental.closed_loop_planni
 # Skill Switching Demo
 # Run: pixi run demo-skill-switching
 demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
+demo-skill-switching-fanin = { cmd = "python -m examples.advanced.skill_switching.main --fan-in", env = { PYTHONPATH = "src" } }
 
 # Mujoco Manipulation (Robot Simulation + Rerun)
 # Run: pixi run demo-mujoco
