@@ -149,7 +149,21 @@ See also: `docs/guide_time.md`.
 
 ## 4) Connect nodes (edges)
 
-### Option A (recommended): explicit `Pipeline`
+### Fan-in (Many-to-One)
+
+You can connect multiple outputs to the same input port ("fan-in"). They share a single underlying buffer.
+
+```python
+# A, B, and C all feed into monitor's 'data' port
+a.then(monitor, sync=Latest())
+b.then(monitor, sync=Latest())
+c.then(monitor, sync=Latest())
+```
+
+- With `Latest()`: The monitor runs whenever *any* of the sources emits a value (interleaved execution).
+- With `Window(agg="mean")`: The monitor runs on the aggregated buffer of all inputs.
+
+### explicit `Pipeline` (recommended)
 
 `Pipeline` is the preferred authoring surface when you don’t want a global context manager.
 

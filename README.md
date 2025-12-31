@@ -109,7 +109,7 @@ Docs live in `docs/` (served via MkDocs):
 - Architecture: `docs/architecture.md`
 - Install: `docs/install.md`
 - Advanced Examples: `examples/advanced/`
-  - **Skill Switching**: Dynamic behavior switching pattern (`examples/advanced/skill_switching/`)
+  - **Skill Switching**: Dynamic behavior switching pattern with **Fan-in** support (`examples/advanced/skill_switching/`)
   - **Native Controller**: Rust/C++ native extension bindings (`examples/advanced/native_controller/`)
   - **TWIST2 Simulation**: MuJoCo humanoid robot at 1000Hz physics + 50Hz policy (`examples/advanced/twist2_simulation/`)
 
