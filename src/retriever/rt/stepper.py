@@ -28,6 +28,7 @@ from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.context import FlowContext
 from retriever.flow.handle import FlowHandle
+from retriever.ir.fanin import is_fan_in_port, get_logical_port
 from retriever.ir.loader import IRLoader
 from retriever.ir.struct import IREdge, IRStruct
 from retriever.rt.signal import Signal
@@ -101,8 +102,7 @@ class PipelineStepper:
         self._initialized = False
         self._now: Optional[float] = None
 
-        self._build_channels()
-        self._build_node_io()
+        self._build_io()
 
     @property
     def ir(self) -> IRStruct:
@@ -146,72 +146,38 @@ class PipelineStepper:
             handle.flow.init()
         self._initialized = True
 
-    def _build_channels(self) -> None:
-        for edge in self._ir.edges:
-            if not self._is_runtime_edge(edge):
-                continue
-            adapter = IRLoader.load_adapter(edge.adapter)
-            self._channels[edge.id] = InMemoryChannel(buffer_size=adapter.buffer_size)
-
-    def _build_node_io(self) -> None:
+    def _build_io(self) -> None:
         # Initialize empty maps for all nodes
         for node in self._ir.nodes:
             self._inputs[node.id] = {}
             self._outputs[node.id] = {}
             self._adapters[node.id] = {}
 
-        # Build per-node input subscribers + adapter map (1 edge per destination port)
+        # Build per-node input subscribers + adapter map
+        # Fan-in edges share one channel per logical port
         for edge in self._ir.edges:
             if not self._is_runtime_edge(edge):
                 continue
             dst = edge.destination.node
-            port = edge.destination.port
+            actual_port = edge.destination.port
+            logical_port = get_logical_port(actual_port)
 
-            # Check if destination port is a List[T]
-            from typing import get_origin, List, Sequence
-            
-            # Runtime introspection via FlowHandle
-            handle = self._flows[dst]
-            flow_input_type = handle.flow.input_type
-            is_list_port = False
-            
-            if flow_input_type:
-                 # Check fields
-                 from dataclasses import fields
-                 for f in fields(flow_input_type):
-                     if f.name == port:
-                         origin = get_origin(f.type)
-                         if origin in (list, List, Sequence):
-                             is_list_port = True
-                         break
-            
-            if port in self._inputs[dst]:
-                if not is_list_port:
-                    raise FlowError(
-                        ErrCode.FLOW_CONNECTION_INVALID,
-                        "Multiple incoming edges to the same input port are not supported (unless port is List[T])",
-                        node=dst,
-                        port=port,
-                    )
-                # It is a list port, append to existing entry
-                # We need to change storage to support list of channels?
-                # Signal expects Dict[str, Subscriber]. Subscriber is protocol.
-                # We can make a MultiChannelSubscriber for lists?
-                # Or just store List[Channel] in self._inputs and handle it in Signal?
-                
-                existing = self._inputs[dst][port]
-                if isinstance(existing, list):
-                    existing.append(self._channels[edge.id])
-                else:
-                    self._inputs[dst][port] = [existing, self._channels[edge.id]]
+            if is_fan_in_port(actual_port):
+                # Fan-in: share one channel for all edges to same logical port
+                if logical_port not in self._inputs[dst]:
+                    adapter = IRLoader.load_adapter(edge.adapter)
+                    channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+                    self._inputs[dst][logical_port] = channel
+                    self._adapters[dst][logical_port] = adapter
+                # Reuse existing channel for this edge
+                self._channels[edge.id] = self._inputs[dst][logical_port]
             else:
-                # First connection
-                if is_list_port:
-                     self._inputs[dst][port] = [self._channels[edge.id]]
-                else:
-                     self._inputs[dst][port] = self._channels[edge.id]
-
-            self._adapters[dst][port] = IRLoader.load_adapter(edge.adapter)
+                # Normal: one channel per edge
+                adapter = IRLoader.load_adapter(edge.adapter)
+                channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+                self._channels[edge.id] = channel
+                self._inputs[dst][logical_port] = channel
+                self._adapters[dst][logical_port] = adapter
 
         # Build per-node output publishers (support broadcasting)
         for edge in self._ir.edges:

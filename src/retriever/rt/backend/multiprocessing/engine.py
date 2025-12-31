@@ -10,6 +10,7 @@ from multiprocessing import Queue
 
 from retriever.ir.struct import IRStruct, IRNode, IREdge
 from retriever.ir.loader import IRLoader
+from retriever.ir.fanin import is_fan_in_port, get_logical_port
 from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.backend.multiprocessing.channel import MPChannel
 from retriever.rt.backend.multiprocessing.executor import MPExecutor
@@ -91,33 +92,22 @@ class MPEngine(ExecutionEngine):
 
             for edge in self.ir.edges:
                 if edge.destination.node == node.id:
-                    port_name = edge.destination.port
-                    
-                    # Check if port is List[T]
-                    is_list_port = False
-                    if flow.input_type:
-                         from dataclasses import fields
-                         from typing import get_origin, List, Sequence
-                         for f in fields(flow.input_type):
-                             if f.name == port_name:
-                                 origin = get_origin(f.type)
-                                 if origin in (list, List, Sequence):
-                                     is_list_port = True
-                                 break
+                    actual_port = edge.destination.port
+                    logical_port = get_logical_port(actual_port)
 
-                    if is_list_port:
-                        if port_name not in inputs:
-                            inputs[port_name] = []
-                        # Ensure it's a list (in case mixed logic, though validator prevents it)
-                        if not isinstance(inputs[port_name], list):
-                             inputs[port_name] = [inputs[port_name]]
-                        inputs[port_name].append(self.channels[edge.id])
+                    if is_fan_in_port(actual_port):
+                        # Fan-in: one channel with multiple queues
+                        if logical_port in inputs:
+                            inputs[logical_port].add_queue(self.channels[edge.id].queue)
+                        else:
+                            inputs[logical_port] = self.channels[edge.id]
                     else:
-                        inputs[port_name] = self.channels[edge.id]
+                        inputs[logical_port] = self.channels[edge.id]
 
-                    # Load adapter for this input
-                    adapter = IRLoader.load_adapter(edge.adapter)
-                    adapters[port_name] = adapter
+                    # Load adapter once per logical port (fan-in edges have same adapter)
+                    if logical_port not in adapters:
+                        adapter = IRLoader.load_adapter(edge.adapter)
+                        adapters[logical_port] = adapter
 
             # Build output channels mapping
             outputs = {}

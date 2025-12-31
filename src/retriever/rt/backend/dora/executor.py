@@ -48,6 +48,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         input_ports: List[str],
         output_ports: List[str],
         adapters: Dict[str, Adapter],
+        fan_in_map: Dict[str, str] = None,
         buffer_engine: str = "python",
         log_params: Optional[Dict[str, Any]] = None,
     ):
@@ -58,9 +59,10 @@ class DoraExecutor(multiprocessing.Process, Executor):
             node_id: Unique node identifier
             flow: Flow instance to execute
             clock: Clock for scheduling
-            input_ports: List of input port names
+            input_ports: List of logical input port names
             output_ports: List of output port names
-            adapters: Dict mapping input port names to Adapters
+            adapters: Dict mapping logical port names to Adapters
+            fan_in_map: Dict mapping actual fan-in port names to logical port names
             log_params: Logging params (queue, config, log_dir)
         """
         super().__init__(name=node_id)
@@ -70,6 +72,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         self.input_ports = input_ports
         self.output_ports = output_ports
         self.adapters = adapters
+        self.fan_in_map = fan_in_map or {}
         self.buffer_engine = buffer_engine
         self.log_params = log_params
         self._stop_flag = multiprocessing.Event()
@@ -227,9 +230,23 @@ class DoraExecutor(multiprocessing.Process, Executor):
         # Route tick events to scheduler
         if input_name == 'tick':
             self.scheduler.push_tick_event(event)
+            target_port = None
+
+        # Route fan-in inputs to logical port subscriber
+        elif input_name in self.fan_in_map:
+            target_port = self.fan_in_map[input_name]
+            try:
+                self.inputs[target_port].add_event(event)
+            except Exception as e:
+                logger.error(
+                    f"[{self.node_id}] Failed to add fan-in event to '{target_port}': {e}",
+                    exc_info=True
+                )
+                return
 
         # Route regular inputs to subscribers
         elif input_name in self.inputs:
+            target_port = input_name
             try:
                 self.inputs[input_name].add_event(event)
             except Exception as e:
