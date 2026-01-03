@@ -156,10 +156,11 @@ demo-closed-loop-planning = { cmd = "python -m examples.experimental.closed_loop
 viz-closed-loop = { cmd = "python examples/experimental/visualization/visualize_pipeline.py", env = { PYTHONPATH = "." } }
 
 # New Pipelines
-demo-rise-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.rise_pipeline", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-complete-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.complete", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-simple-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.simple", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-spot-pipeline = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.spot_pipeline", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+# New Pipelines
+demo-rise-sim = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_rise_sim", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-spot-real = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_spot_real", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-simple-grid = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_simple_grid", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
+demo-manipulation = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_manipulation", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
 
 # Skill Switching Demo
 # Run: pixi run demo-skill-switching
