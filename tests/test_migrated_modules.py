@@ -293,36 +293,36 @@ class TestFRPUtilities:
 
     def test_constant_behavior(self):
         """Test constant_behavior creates a constant value behavior."""
-        from retriever.flow.coordination import constant_behavior
+        from retriever.flow.frp import Behavior
         
-        behavior = constant_behavior(42)
+        behavior = Behavior.constant(42)
         
-        assert behavior.at_time(0.0) == 42
-        assert behavior.at_time(100.0) == 42
+        assert behavior.at(0.0) == 42
+        assert behavior.at(100.0) == 42
 
     def test_time_behavior(self):
         """Test time_behavior returns the requested time."""
-        from retriever.flow.coordination import time_behavior
+        from retriever.flow.frp import Behavior
         
-        behavior = time_behavior()
+        behavior = Behavior.time()
         
-        assert behavior.at_time(1.0) == 1.0
-        assert behavior.at_time(99.5) == 99.5
+        assert behavior.at(1.0) == 1.0
+        assert behavior.at(99.5) == 99.5
 
     def test_empty_event_stream(self):
         """Test empty_event_stream creates empty stream."""
-        from retriever.flow.coordination import empty_event_stream
+        from retriever.flow.frp import EventStream
         
-        stream = empty_event_stream()
+        stream = EventStream.empty()
         events = stream.events()
         
         assert events == []
 
     def test_single_event(self):
         """Test single_event creates stream with one event."""
-        from retriever.flow.coordination import single_event
+        from retriever.flow.frp import EventStream
         
-        stream = single_event(1.5, "test_value")
+        stream = EventStream.single(1.5, "test_value")
         events = stream.events()
         
         assert len(events) == 1
@@ -330,7 +330,7 @@ class TestFRPUtilities:
 
     def test_event_manager_handler_registration(self):
         """Test EventManager handler registration."""
-        from retriever.flow.coordination import EventManager
+        from retriever.flow.frp import EventManager
         
         manager = EventManager()
         handled_events = []
