@@ -80,12 +80,6 @@ curl -fsSL https://pixi.sh/install.sh | bash
 pixi run demo-dora
 ```
 
-If `dora` complains about version/schema, kill stale processes:
-
-```sh
-pkill -9 dora && pixi run demo-dora
-```
-
 `pixi.lock` is multi-platform (osx-arm64, linux-64). Commit it for reproducible installs; other platforms can re-lock after adding the platform to `pixi.toml` and running `pixi install`.
 
 Pixi manages its own env. If you prefer `uv`/`pip`, use a separate conda/venv to avoid mixing managers. Pixi installs the PyPI portion using `uv` internally; you usually don't need to run `uv` yourself when using Pixi.
