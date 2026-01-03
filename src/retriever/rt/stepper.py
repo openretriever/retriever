@@ -23,7 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter, EventBuffer
+from retriever.flow.adapter import Adapter
+from retriever.flow.frp import EventBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.context import FlowContext

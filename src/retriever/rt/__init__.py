@@ -20,7 +20,7 @@ Components:
 """
 
 from retriever.rt.runtime import execute_ir
-from retriever.rt.frp import Behavior, EventStream
+from retriever.flow.frp import Behavior, EventStream
 
 __all__ = [
     "execute_ir",

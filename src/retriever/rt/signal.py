@@ -26,7 +26,7 @@ from typing import (
 )
 
 from retriever.flow.adapter import Adapter, Latest
-from retriever.rt.frp import EventStream
+from retriever.flow.frp import EventStream
 
 if TYPE_CHECKING:
     from retriever.rt.backend.interface import Publisher, Subscriber
