@@ -8,14 +8,21 @@ for temporal alignment between cross-clock flow connections.
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Optional, Any
-from typing import Type, List, Tuple, Dict, Literal
+from typing import TypeVar, Generic, Optional, Any, Iterable
+from typing import Type, List, Dict, Literal
 from retriever.error import FlowError, ErrCode
+from retriever.flow.frp import EventBuffer
 
+# Forward references
 T = TypeVar('T')
-EventBuffer = List[Tuple[float, T]]
+U = TypeVar('U')
+
 # Backward-compat alias (older code/docs/tests may still refer to TBuffer).
 TBuffer = EventBuffer
+
+
+
+
 
 # Global adapter registry
 _adapter_registry: Dict[str, Type['Adapter']] = {}
@@ -274,11 +281,12 @@ class Events(Adapter[T]):
     def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None) -> Any:
         events: EventBuffer[T]
         if self.duration is None:
-            events = list(buffer)
+            # Explicitly cast to EventBuffer if we slice or copy
+            events = EventBuffer(buffer)
         else:
             current_time = time.time() if now is None else now
             start_time = current_time - self.duration
-            events = [(ts, value) for ts, value in buffer if ts >= start_time]
+            events = EventBuffer([(ts, value) for ts, value in buffer if ts >= start_time])
 
         if self.include_timestamps:
             return events
