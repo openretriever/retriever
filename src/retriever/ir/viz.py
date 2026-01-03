@@ -198,7 +198,25 @@ HTML_TEMPLATE = """
         irData.edges.forEach(edge => {
              const source = edge.source.node;
              const target = edge.destination.node;
-             const label = `${edge.source.port} → ${edge.destination.port}`;
+             let label = `${edge.source.port} → ${edge.destination.port}`;
+             
+             // Extract Adapter Name if present
+             if (edge.adapter) {
+                 const adapterName = Object.keys(edge.adapter)[0];
+                 const params = edge.adapter[adapterName];
+                 let args = [];
+                 if (params) {
+                     for (const [k, v] of Object.entries(params)) {
+                         if (k === 'buffer_size' && v === 1) continue;
+                         args.push(`${k}=${v}`);
+                     }
+                 }
+                 
+                 label += `: ${adapterName}`;
+                 if (args.length > 0) {
+                     label += `(${args.join(', ')})`;
+                 }
+             }
              
              // Group by sorted pair to handle parallel edges in either direction
              // Using sorted IDs ensures A->B and B->A share the same "lane set"
@@ -369,19 +387,20 @@ HTML_TEMPLATE = """
                 layout: {
                     name: 'dagre',
                     rankDir: 'LR',
-                    spacingFactor: 1.2,
+                    spacingFactor: 1.4,
                     animate: false,
-                    nodeSep: 60,
-                    rankSep: 180,
-                    edgeSep: 80,
-                    ranker: 'network-simplex'
+                    nodeSep: 80,
+                    rankSep: 220,
+                    edgeSep: 100,
+                    ranker: 'network-simplex',
+                    padding: 80
                 }
             });
 
             // Ensure graph fits in view
             cy.ready(function() {
-                cy.fit();
-                cy.zoom({ level: cy.zoom() * 0.95 }); // Zoom out slightly for breathing room
+                cy.fit(80); // Add 80px padding
+                cy.zoom({ level: Math.min(cy.zoom() * 0.85, 1.2) }); // Zoom out more, cap at 1.2
                 cy.center();
                 console.log("Cytoscape ready and fitted.");
             });
@@ -551,7 +570,17 @@ def generate_ascii_graph(ir: IRStruct) -> str:
                 adapter_info = ""
                 if edge.adapter:
                      adapter_name = list(edge.adapter.keys())[0]
-                     adapter_info = f" via {adapter_name}"
+                     params = edge.adapter[adapter_name]
+                     args = []
+                     for k, v in params.items():
+                         if k == 'buffer_size' and v == 1:
+                             continue
+                         args.append(f"{k}={v}")
+
+                     adapter_info = f": {adapter_name}"
+                     if args:
+                         adapter_info += f"({', '.join(args)})"
+
                 
                 # Check for cycle/feedback (if dest is earlier in list)
                 # Note: this is a heuristic based on print order
