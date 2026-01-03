@@ -40,6 +40,10 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 
 
+# Set global default (recommended)
+import retriever
+retriever.init(default_sync=Latest())
+
 pipe = Pipeline("quickstart")
 src = Source() @ Rate(hz=10)
 add = AddOne() @ Rate(hz=10)

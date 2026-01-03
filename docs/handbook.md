@@ -24,6 +24,7 @@ If you only read one document, read this one.
 
 Known caveat:
 - Backend execution reconstructs Flow instances from IR, so per-instance constructor args in examples won’t survive unless they’re represented in IR/config. Prefer self-healing defaults or explicit IR-level configuration.
+- **Sync Policy Breaking Change**: `pipe.connect(..., sync=...)` is now mandatory unless a global default is set via `retriever.init(default_sync=...)`.
 
 ---
 
@@ -156,7 +157,7 @@ pipe.connect(src, add, sync=Latest())
 ```
 
 Notes:
-- Default adapter is `Latest()` if you don’t specify `sync=...`.
+- `sync=...` is **required** unless you set a global default: `retriever.init(default_sync=Latest())`.
 - `map={"*": "*"}` is the default port mapping.
 
 You can also use a `Pipeline` as a context manager to enable `then(...)` / `>>` wiring:

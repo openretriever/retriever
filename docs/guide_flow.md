@@ -143,7 +143,21 @@ Pipeline-wide default:
 
 - `Pipeline("name", on_lag="error")` or `pipe.set_on_lag("error")` applies a default to any node still using the library default (`on_lag="warn"`).
 
-See also: `docs/guide_time.md`.
+### Global Defaults
+
+You can set global defaults for synchronization and lag policies at startup:
+
+```python
+import retriever
+from retriever.flow import Latest
+
+retriever.init(
+    default_sync=Latest(),
+    default_lag="warn"
+)
+```
+
+See also: `docs/guide_temporal.md`.
 
 ---
 
@@ -219,16 +233,18 @@ src.then(add, map={"value": "value"})     # src.value -> add.value
 
 Adapters define how a downstream samples its input **buffer**:
 
-- `Latest()` (default)
+- `Latest()` (default if configured globally)
 - `Hold(debounce=...)`
 - `Window(duration=..., agg=..., buffer_size=...)`
 - `Events(duration=..., include_timestamps=..., buffer_size=...)`
+- `Chunking(dt=...)`
+- `Linear()`
 
 Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
 `EventBuffer[T] = list[(timestamp: float, value: T)]`
 
-See: `docs/guide_time.md`.
+See: `docs/guide_temporal.md`.
 
 ---
 
