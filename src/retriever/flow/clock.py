@@ -9,7 +9,8 @@ Clocks define when a flow executes:
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+from retriever.flow.frp import EventStream, EventBuffer
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
@@ -416,3 +417,76 @@ class AdaptiveRate(Clock):
 
     def __repr__(self) -> str:
         return f"AdaptiveRate(target={self.target_hz}, min={self.min_hz}, max={self.max_hz})"
+
+
+@dataclass(init=False)
+class EventClock(Clock):
+    """
+    FRP Event-driven clock.
+
+    Executes whenever the provided `EventStream` emits an event.
+    
+    This is highly flexible, allowing execution on:
+    - User interactions (clicks)
+    - Sensor thresholds (via `stream.filter(...)`)
+    - Combined events (via `stream.merge(...)`)
+    
+    Dora Support:
+    - Maps to standard Dora input triggers.
+    """
+    stream: EventStream
+
+    def __init__(self, stream: EventStream):
+        self.stream = stream
+
+    def __repr__(self) -> str:
+        return "EventClock(stream=...)"
+
+
+@dataclass(init=False)
+class TimelineClock(Clock):
+    """
+    Schedule-driven clock.
+
+    Executes only at specific timestamps provided by a list or EventBuffer.
+    
+    This is useful for:
+    - Replaying recorded event logs (use timestamps from log)
+    - deterministic testing (e.g. "run at t=0.1, t=0.5, t=1.0")
+    - sparsely scheduled tasks
+    
+    Attributes:
+        timestamps: List of relative timestamps (seconds from start) when flow should run.
+        
+    Dora Support:
+    - This would map to a series of one-shot timers or a complex timer schedule.
+    """
+    timestamps: List[float]
+
+    def __init__(self, timestamps: Union[List[float], EventBuffer]):
+        from retriever.error import FlowError, ErrCode
+        
+        # Extract timestamps if given an EventBuffer
+        if hasattr(timestamps, 'events'): # is an EventStream/buffer-like
+             # If it's an EventBuffer (list), iter it directly
+             # If it's a generic stream, we can't know future times! 
+             # So we assume it's an iterable of (ts, val) or just list of floats.
+             pass
+
+        data = []
+        if isinstance(timestamps, list):
+             # Check if it's [float] or [(float, val)]
+             if not timestamps:
+                 data = []
+             elif isinstance(timestamps[0], (int, float)):
+                 data = sorted(list(timestamps))
+             elif isinstance(timestamps[0], (tuple, list)) and len(timestamps[0]) >= 1:
+                 # Assume (ts, val) tuples from EventBuffer
+                 data = sorted([item[0] for item in timestamps])
+        
+        self.timestamps = data
+
+    def __repr__(self) -> str:
+        count = len(self.timestamps)
+        fmt = f"[{self.timestamps[0]:.2f}, ...]" if count > 0 else "[]"
+        return f"TimelineClock({count} ticks: {fmt})"

@@ -14,12 +14,12 @@ Future:
 
 from __future__ import annotations
 
-import time
 from collections import deque
 from dataclasses import dataclass
 from typing import Any, Deque, Generic, Literal, Optional, TypeVar
 
-from retriever.flow.adapter import Adapter, EventBuffer, Events, Hold, Latest, Window
+from retriever.flow.adapter import Adapter, Latest
+from retriever.flow.frp import EventBuffer
 
 T = TypeVar("T")
 
@@ -72,56 +72,20 @@ class PythonBufferEngine(BufferEngine[T]):
         self._buffer.clear()
 
     def events(self) -> EventBuffer[T]:
-        return list(self._buffer)
+        return EventBuffer(self._buffer)
 
     def sample(self, adapter: Adapter[T], *, now: Optional[float] = None) -> Any:
         if not self._buffer:
             raise IndexError("cannot sample empty buffer")
 
-        # Fast-path common adapters without materializing a list.
+        # Fast-path common adapters where performance is critical and logic is trivial.
         if isinstance(adapter, Latest):
             return self._buffer[-1][1]
-
-        if isinstance(adapter, Hold):
-            # Preserve Hold's internal state by calling the adapter implementation.
-            return adapter.sample([self._buffer[-1]], now=now)
-
-        if isinstance(adapter, Window):
-            current_time = time.time() if now is None else now
-            start_time = current_time - adapter.duration
-
-            # Match Window semantics: include events with ts >= start_time.
-            window_values = [v for ts, v in self._buffer if ts >= start_time]
-            if not window_values:
-                return self._buffer[-1][1]
-
-            if adapter.agg == "first":
-                return window_values[0]
-            if adapter.agg == "last":
-                return window_values[-1]
-            if adapter.agg == "max":
-                return max(window_values)
-            if adapter.agg == "min":
-                return min(window_values)
-            if adapter.agg == "mean":
-                return sum(window_values) / len(window_values)
-
-            raise ValueError(f"Unknown Window.agg: {adapter.agg!r}")
-
-        if isinstance(adapter, Events):
-            if adapter.duration is None:
-                events: EventBuffer[T] = list(self._buffer)
-            else:
-                current_time = time.time() if now is None else now
-                start_time = current_time - adapter.duration
-                events = [(ts, v) for ts, v in self._buffer if ts >= start_time]
-
-            if adapter.include_timestamps:
-                return events
-            return [v for _, v in events]
-
-        # Fallback: preserve semantics for custom adapters by delegating.
-        return adapter.sample(list(self._buffer), now=now)
+        
+        # For complex adapters (Window, Events, Hold, Custom), delegate to the Adapter implementation.
+        # This ensures the Adapter class (and EventStream/EventBuffer definitions) is the single source of truth.
+        # Note: This involves converting deque -> EventBuffer (list copy), which is O(N).
+        return adapter.sample(EventBuffer(self._buffer), now=now)
 
 
 def create_buffer_engine(kind: BufferEngineKind, *, buffer_size: int) -> BufferEngine[Any]:
