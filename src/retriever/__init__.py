@@ -23,23 +23,27 @@ from retriever.flow.pipeline import (
 )
 
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from retriever.config import RecordConfig, set_global_config
 
 def init(
     name: Optional[str] = None,
     record: Optional[Union[str, RecordConfig]] = None,
     backend: Optional[str] = None,
+    default_sync: Optional[Any] = None,
 ) -> None:
     """
     Initialize the global retriever environment.
-    
+
     Args:
         name: Session name (useful for logging/recording)
         record: Recording path (str) or configuration (RecordConfig)
-        backend: Default backend for run() (e.g. "multiprocessing", "in-process")
+        backend: Default backend for run() (e.g. "multiprocessing", "dora")
+        default_sync: Default sync adapter for connections (e.g. Latest()).
+                      If None, every pipe.connect() must specify sync= explicitly.
     """
-    set_global_config(name=name, record=record, backend=backend)
+    set_global_config(name=name, record=record, backend=backend, default_sync=default_sync)
+
 
 __all__ = [
     "Flow",

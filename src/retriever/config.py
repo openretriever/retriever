@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Optional, List, Union
+from dataclasses import dataclass
+from typing import Any, Optional, Union
 from pathlib import Path
 
 @dataclass
@@ -24,23 +24,36 @@ class RecordConfig:
             else:
                 self.format = "mcap" # Default to mcap
 
-# Global configuration state
 _global_config = {
-    "record": None,  # Optional[RecordConfig]
-    "backend": "multiprocessing", # Default backend
-    "name": None,    # Session name
+    "record": None,       # Optional[RecordConfig]
+    "backend": "multiprocessing",  # Default backend
+    "name": None,         # Session name
+    "default_sync": None, # Default sync adapter (e.g., Latest()). If None, sync is required.
 }
 
 def set_global_config(
     name: Optional[str] = None,
     record: Optional[Union[RecordConfig, str]] = None,
     backend: Optional[str] = None,
+    default_sync: Optional[Any] = None,
 ):
+    """Configure global Retriever settings.
+
+    Args:
+        name: Session name for logging.
+        record: Recording config (RecordConfig or path string).
+        backend: Default execution backend ("multiprocessing", "dora", etc.).
+        default_sync: Default sync adapter for connections. If None, every
+                      connection must explicitly specify `sync=`.
+    """
     if name is not None:
         _global_config["name"] = name
-        
+
     if backend is not None:
         _global_config["backend"] = backend
+
+    if default_sync is not None:
+        _global_config["default_sync"] = default_sync
 
     if record is not None:
         if isinstance(record, str):
