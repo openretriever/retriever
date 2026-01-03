@@ -93,14 +93,39 @@ class Pipeline(FlowContext):
         dst: FlowHandle,
         *,
         map: Optional[Dict[str, str]] = None,
-        sync: Optional[Any] = None,
+        sync: Optional[Union[Any, Dict[str, Any]]] = None,
         qsize: int = 10,
     ) -> "Pipeline":
-        """Connect two handles inside this pipeline."""
-        from retriever.flow.adapter import Latest
+        """Connect two handles inside this pipeline.
 
+        Args:
+            src: Source FlowHandle.
+            dst: Destination FlowHandle.
+            map: Port mapping (e.g., {"a": "b"}). Default {"*": "*"} auto-matches.
+            sync: Sync adapter(s). Can be:
+                  - Single adapter: applied to all edges (e.g., `Latest()`)
+                  - Dict[str, Adapter]: per-port adapters (e.g., `{"a": Hold(), "b": Latest()}`)
+                  If None, uses `retriever.set_global_config(default_sync=...)`.
+                  If no global default, raises FlowError.
+            qsize: Queue size for buffering.
+
+        Raises:
+            FlowError: If sync is None and no global default_sync is configured.
+        """
+        from retriever.config import get_global_config
+        from retriever.error import FlowError, ErrCode
+
+        # Resolve sync: explicit > global default > error
         if sync is None:
-            sync = Latest()
+            sync = get_global_config().get("default_sync")
+            if sync is None:
+                raise FlowError(
+                    ErrCode.FLOW_CONNECTION_INVALID,
+                    "sync= is required. Set globally via retriever.set_global_config(default_sync=...) "
+                    "or pass sync= to each connect() call.",
+                    src=src.flow.__class__.__name__,
+                    dst=dst.flow.__class__.__name__,
+                )
 
         self.register_connection(
             src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
@@ -109,6 +134,7 @@ class Pipeline(FlowContext):
         dst.pipeline = self
         self._stepper = None
         return self
+
 
     def merge(self, other: "Pipeline") -> "Pipeline":
         """
