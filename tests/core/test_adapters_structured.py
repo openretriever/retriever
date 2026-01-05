@@ -1,5 +1,5 @@
 import pytest
-from retriever.flow.frp import EventBuffer
+from retriever.flow.types import EventBuffer
 from retriever.flow.adapter import Latest, Hold, Window, Events, Exact
 from retriever.error import FlowError
 

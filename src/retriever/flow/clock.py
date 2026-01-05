@@ -10,7 +10,7 @@ Clocks define when a flow executes:
 from abc import ABC
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Union
-from retriever.flow.frp import EventStream, EventBuffer
+from retriever.flow.types import EventStream, EventBuffer
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow

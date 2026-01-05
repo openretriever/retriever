@@ -293,7 +293,7 @@ class TestFRPUtilities:
 
     def test_constant_behavior(self):
         """Test constant_behavior creates a constant value behavior."""
-        from retriever.flow.frp import Behavior
+        from retriever.flow.types import Behavior
         
         behavior = Behavior.constant(42)
         
@@ -302,7 +302,7 @@ class TestFRPUtilities:
 
     def test_time_behavior(self):
         """Test time_behavior returns the requested time."""
-        from retriever.flow.frp import Behavior
+        from retriever.flow.types import Behavior
         
         behavior = Behavior.time()
         
@@ -311,7 +311,7 @@ class TestFRPUtilities:
 
     def test_empty_event_stream(self):
         """Test empty_event_stream creates empty stream."""
-        from retriever.flow.frp import EventStream
+        from retriever.flow.types import EventStream
         
         stream = EventStream.empty()
         events = stream.events()
@@ -320,7 +320,7 @@ class TestFRPUtilities:
 
     def test_single_event(self):
         """Test single_event creates stream with one event."""
-        from retriever.flow.frp import EventStream
+        from retriever.flow.types import EventStream
         
         stream = EventStream.single(1.5, "test_value")
         events = stream.events()
@@ -330,7 +330,7 @@ class TestFRPUtilities:
 
     def test_event_manager_handler_registration(self):
         """Test EventManager handler registration."""
-        from retriever.flow.frp import EventManager
+        from retriever.flow.types import EventManager
         
         manager = EventManager()
         handled_events = []

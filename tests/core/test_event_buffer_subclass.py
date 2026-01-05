@@ -45,7 +45,7 @@ def test_buffer_engine_returns_event_buffer():
     assert events == [(1.0, "a"), (2.0, "b")]
     assert events.latest() == "b"
 
-from retriever.flow.frp import EventStream
+from retriever.flow.types import EventStream
 
 def test_event_stream_import_compatibility():
     # Ensure EventStream is available from rt.frp where it used to be

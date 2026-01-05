@@ -11,8 +11,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional, Any, Iterable
 from typing import Type, List, Dict, Literal
 from retriever.error import FlowError, ErrCode
-from retriever.flow.frp import EventBuffer
-
+from retriever.flow.types import Behavior, EventBuffer, EventStream
 # Forward references
 T = TypeVar('T')
 U = TypeVar('U')

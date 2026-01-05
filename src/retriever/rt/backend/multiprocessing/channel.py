@@ -10,7 +10,7 @@ from queue import Empty
 from typing import Any, List, Optional
 
 from retriever.flow.adapter import Adapter
-from retriever.flow.frp import EventBuffer
+from retriever.flow.types import EventBuffer
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
 
 

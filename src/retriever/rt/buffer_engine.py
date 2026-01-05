@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Deque, Generic, Literal, Optional, TypeVar
 
 from retriever.flow.adapter import Adapter, Latest
-from retriever.flow.frp import EventBuffer
+from retriever.flow.types import EventBuffer
 
 T = TypeVar("T")
 
