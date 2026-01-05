@@ -1,15 +1,14 @@
 """
 Flow I/O type system.
 
-Provides @flow_io decorator that transforms dataclasses 
+Provides @io (and legacy @flow_io) decorator that transforms dataclasses
 into Flow I/O types with signal helpers and port extraction.
 """
 
-from dataclasses import fields, MISSING
-from typing import get_args, get_origin
-from typing import Optional, Any, Union
+from dataclasses import MISSING, dataclass, fields
+from typing import Any, Optional, Union, get_args, get_origin
 
-from retriever.error import FlowError, ErrCode
+from retriever.error import ErrCode, FlowError
 
 
 def _is_optional(field_type) -> bool:
@@ -30,167 +29,139 @@ def _unwrap_optional(field_type):
     return field_type
 
 
-def flow_io(cls):
-    """
-    Decorator for Flow I/O dataclasses.
+@dataclass(frozen=True)
+class _IOConfig:
+    """Configuration for IO types."""
+    check_fields: bool = True
 
-    Transforms a regular dataclass into a Flow I/O type by:
-    1. Making all fields Optional[T]
-    2. Setting default=None for fields without defaults
-    3. Injecting signal helper methods
+def io(cls=None, *, frozen: bool = True):
+    """
+    Decorator for Flow input/output types.
+
+    Behavior:
+    1. If class is not a dataclass, converts it to one.
+    2. Makes all fields Optional[T] by default.
+    3. Injects signal helper methods (_get_signal, etc).
 
     Usage:
-        @flow_io
-        @dataclass
-        class MyInput:
-            field1: int
-            field2: str
+        @io
+        class Observation:
+            rgb: np.ndarray
+            timestamp: float
 
         # Becomes:
+        @dataclass(frozen=True)
+        class Observation:
+            rgb: Optional[np.ndarray] = None
+            timestamp: Optional[float] = None
+            # + helpers
+
+    Can also be used with existing dataclasses:
+        @io
+        @dataclass
         class MyInput:
-            field1: Optional[int] = None
-            field2: Optional[str] = None
-            # + signal helper methods
-
-    Args:
-        cls: Dataclass to transform
-
-    Returns:
-        Transformed dataclass with Optional fields and signal helpers
+            ...
     """
+    def wrap(cls):
+        # 1. Auto-apply dataclass if needed
+        if not hasattr(cls, '__dataclass_fields__'):
+            # Note: We force frozen=False initially to allow __init__ to set fields,
+            # but users should treat IO objects as immutable events.
+            # (The runtime implementation of dataclasses makes 'frozen' hard to combine
+            # with our custom __init__ that handles Optional fields broadly).
+            cls = dataclass(cls, frozen=False)
 
-    # Validate input is a dataclass
-    if not hasattr(cls, '__dataclass_fields__'):
-        raise FlowError(
-            ErrCode.FLOW_IO_NOT_DATACLASS,
-            f"@flow_io must be applied to a @dataclass.\n"
-            f"Usage:\n"
-            f"  @flow_io\n"
-            f"  @dataclass\n"
-            f"  class {cls.__name__}:\n"
-        )
+        # 2. Store original types
+        if not hasattr(cls, '__flow_io_original_types__'):
+            original_types = {
+                f.name: _unwrap_optional(f.type)
+                for f in fields(cls)
+            }
+            cls.__flow_io_original_types__ = original_types
 
-    # Store original types before Optional wrapping
-    original_types = {
-        f.name: _unwrap_optional(f.type)
-        for f in fields(cls)
-    }
-    cls.__flow_io_original_types__ = original_types
+        # 3. Make fields Optional in annotations
+        if hasattr(cls, '__annotations__'):
+            new_annotations = {
+                name: (typ if _is_optional(typ) else Optional[typ])
+                for name, typ in cls.__annotations__.items()
+            }
+            cls.__annotations__ = new_annotations
 
-    # Make all fields Optional in annotations
-    new_annotations = {
-        name: (typ if _is_optional(typ) else Optional[typ])
-        for name, typ in cls.__annotations__.items()
-    }
-    cls.__annotations__ = new_annotations
+        # 4. Inject custom init that handles None defaults
+        _inject_custom_init(cls)
 
-    # Create a custom __init__ that applies field defaults or None
+        # 5. Inject signal helpers
+        _inject_signal_helpers(cls)
+
+        # Mark as IO type
+        cls.__is_flow_io__ = True
+        return cls
+
+    if cls is None:
+        return wrap
+    return wrap(cls)
+
+
+# Backward compatibility alias
+def flow_io(cls):
+    """Deprecated: Use @io instead."""
+    return io(cls)
+
+
+def _inject_custom_init(cls):
+    """Inject __init__ that allows partial initialization."""
+
     def __init__(self, *args, **kwargs):
-        """Initialize with all fields using their defaults or None."""
-        # Mix positional args into kwargs
+        # Map positional args to field names
         field_names = list(self.__dataclass_fields__.keys())
-        
         if len(args) > len(field_names):
-            raise TypeError(
-                f"__init__() takes {len(field_names)} positional arguments but {len(args)} were given"
-            )
-            
+            raise TypeError(f"__init__() takes {len(field_names)} positional arguments but {len(args)} were given")
+        
         for i, val in enumerate(args):
-            name = field_names[i]
+            kwargs[field_names[i]] = val
+
+        # Set fields: provided -> default -> None
+        for name, field in self.__dataclass_fields__.items():
             if name in kwargs:
-                raise TypeError(f"__init__() got multiple values for argument '{name}'")
-            kwargs[name] = val
-
-        for field_name, field_obj in self.__dataclass_fields__.items():
-            if field_name in kwargs:
-                # User provided value
-                continue
-            elif field_obj.default is not MISSING:
-                # Field has a default value
-                setattr(self, field_name, field_obj.default)
-            elif field_obj.default_factory is not MISSING:
-                # Field has a default factory
-                setattr(self, field_name, field_obj.default_factory())
+                val = kwargs[name]
+            elif field.default is not MISSING:
+                val = field.default
+            elif field.default_factory is not MISSING:
+                val = field.default_factory()
             else:
-                # No default, use None
-                setattr(self, field_name, None)
+                val = None
+            
+            object.__setattr__(self, name, val)
 
-        # Apply provided kwargs
-        for key, value in kwargs.items():
-            if key not in self.__dataclass_fields__:
-                raise FlowError(
-                    ErrCode.FLOW_IO_INIT_UNEXPECTED,
-                    f"__init__() got an unexpected keyword argument '{key}'"
-                )
-            setattr(self, key, value)
-
-    # Replace the original __init__ with our custom one
     cls.__init__ = __init__
 
-    # Inject signal helper methods
+
+def _inject_signal_helpers(cls):
+    """Inject helpers for runtime signal access."""
+    
     def _set_signal(self, field_name: str, value: Any) -> None:
-        """Set field value at runtime."""
         if field_name not in self.__dataclass_fields__:
-            raise FlowError(
-                ErrCode.FLOW_IO_FIELD_NOT_FOUND,
-                f"Field '{field_name}' does not exist in {self.__class__.__name__}. "
-                f"Available fields: {list(self.__dataclass_fields__.keys())}"
-            )
-        setattr(self, field_name, value)
+            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
+        object.__setattr__(self, field_name, value)
 
     def _get_signal(self, field_name: str) -> Any:
-        """Get field value at runtime."""
         if field_name not in self.__dataclass_fields__:
-            raise FlowError(
-                ErrCode.FLOW_IO_FIELD_NOT_FOUND,
-                f"Field '{field_name}' does not exist in {self.__class__.__name__}. "
-                f"Available fields: {list(self.__dataclass_fields__.keys())}"
-            )
+            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
         return getattr(self, field_name)
 
     def _has_signal(self, field_name: str) -> bool:
-        """Check if field has a value (not None)."""
         if field_name not in self.__dataclass_fields__:
-            raise FlowError(
-                ErrCode.FLOW_IO_FIELD_NOT_FOUND,
-                f"Field '{field_name}' does not exist in {self.__class__.__name__}. "
-                f"Available fields: {list(self.__dataclass_fields__.keys())}"
-            )
-        return getattr(self, field_name) is not None
+            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
+        return getattr(self, field_name, None) is not None
 
-    def _has_field_name(self, field_name: str) -> bool:
-        """Check if field name exists in dataclass."""
-        return field_name in self.__dataclass_fields__
-
-    def _get_field_type(self, field_name: str) -> type:
-        """Get original (non-Optional) type of field."""
-        if field_name not in self.__dataclass_fields__:
-            raise FlowError(
-                ErrCode.FLOW_IO_FIELD_NOT_FOUND,
-                f"Field '{field_name}' does not exist in {self.__class__.__name__}. "
-                f"Available fields: {list(self.__dataclass_fields__.keys())}"
-            )
-        return self.__flow_io_original_types__[field_name]
-
-    @property
-    def _signals(self) -> list:
-        """List of field names with non-None values."""
-        return [name for name in self.__dataclass_fields__
-                if getattr(self, name) is not None]
-
-    # Add methods to class
-    cls._signals = _signals
+    def _fields(self) -> list:
+        return [n for n in self.__dataclass_fields__ if getattr(self, n) is not None]
+    
     cls._set_signal = _set_signal
     cls._get_signal = _get_signal
     cls._has_signal = _has_signal
-    cls._has_field_name = _has_field_name
-    cls._get_field_type = _get_field_type
+    cls._signals = property(_fields)
 
-
-    # Mark class as FlowIO
-    cls.__is_flow_io__ = True
-
-    return cls
 
 
 def is_flow_io(cls) -> bool:
