@@ -7,7 +7,7 @@ import pytest
 from retriever.flow import flow_io
 from retriever.flow.adapter import Events, Hold, Latest, Window
 from retriever.rt.buffer_engine import PythonBufferEngine
-from retriever.rt.signal import Signal
+from retriever.rt.step import IOStep
 
 
 def test_python_buffer_engine_samples_builtin_adapters_without_list_materialization():
@@ -60,7 +60,7 @@ def test_signal_prefers_subscriber_sample_fast_path():
         x: int
 
     sub = SampleOnlySubscriber(123)
-    sig = Signal({"x": sub}, fields_filter=["..."], now=1.0).sample(
+    sig = IOStep({"x": sub}, fields_filter=["..."], now=1.0).sample(
         In,
         adapters={"x": Latest()},
         now=1.0,

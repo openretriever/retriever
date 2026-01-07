@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
-from retriever.ir import validate
 
 
 @flow_io
@@ -39,7 +38,7 @@ def test_then_outside_context_creates_pipeline():
     assert isinstance(pipe, Pipeline)
     assert pipe is add.pipeline is sink.pipeline
 
-    ir = validate(pipe)
+    ir = pipe.validate()
     assert len(ir.nodes) == 3
     assert len(ir.edges) == 2
 
@@ -64,7 +63,7 @@ def test_connecting_two_pipelines_merges_them():
     assert isinstance(pipe, Pipeline)
     assert pipe is left.pipeline is right.pipeline is sink.pipeline
 
-    ir = validate(pipe)
+    ir = pipe.validate()
     assert len(ir.nodes) == 4
     assert len(ir.edges) == 3
 
@@ -79,7 +78,7 @@ def test_pipeline_default_on_lag_applies_to_default_rate_nodes():
     pipe.connect(src, add, sync=Latest())
     pipe.connect(add, sink, sync=Latest())
 
-    validate(pipe)
+    ir = pipe.validate()
 
     assert src.config.clock.on_lag == "error"
     assert add.config.clock.on_lag == "drop"
@@ -103,7 +102,7 @@ def test_pipeline_context_wiring_sets_pipeline_and_persists_after_context():
     assert add.pipeline is pipe
     assert sink.pipeline is pipe
 
-    ir = validate(pipe)
+    ir = pipe.validate()
     assert len(ir.nodes) == 3
     assert len(ir.edges) == 2
 
@@ -124,7 +123,7 @@ def test_retriever_connect_uses_default_pipeline_by_default():
     assert src.pipeline is pipe
     assert add.pipeline is pipe
 
-    ir = validate(pipe)
+    ir = pipe.validate()
     assert len(ir.nodes) == 2
     assert len(ir.edges) == 1
 

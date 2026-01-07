@@ -4,8 +4,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from retriever.flow import Flow, FlowContext, Rate, Trigger, flow_io, Latest
-from retriever.ir import IRStruct, build_execution, compile_execution, optimize_ir, validate
+from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, flow_io, Latest
+
+from retriever.ir import IR
+from retriever.ir.execution import ExecutionGraph
 
 
 @flow_io
@@ -35,8 +37,8 @@ class Sink(Flow[ProcOut, None]):
         return None
 
 
-def _build_linear_chain_ir(name: str) -> IRStruct:
-    with FlowContext(name) as ctx:
+def _build_linear_chain_ir(name: str) -> IR:
+    with PipelineBuilder(name) as ctx:
         src = Source() @ Rate(hz=10)
         proc = Proc() @ Trigger("value")
         sink = Sink() @ Trigger("value")
@@ -44,13 +46,13 @@ def _build_linear_chain_ir(name: str) -> IRStruct:
         src.then(proc, map={"value": "value"}, sync=Latest())
         proc.then(sink, map={"value": "value"}, sync=Latest())
 
-        return validate(ctx)
+        return ctx.validate()
 
 
 def test_compile_execution_builds_execution_graph_and_lowes_to_ir():
     ir = _build_linear_chain_ir("test_compile_execution_builds_execution_graph_and_lowes_to_ir")
 
-    graph = build_execution(ir, policy="aggressive")
+    graph = ExecutionGraph.from_ir(ir, policy="aggressive")
     assert graph.ir.metadata.name == ir.metadata.name
 
     node_ids = [n.id for n in ir.nodes]
@@ -68,27 +70,7 @@ def test_compile_execution_builds_execution_graph_and_lowes_to_ir():
     assert len(execution_ir.nodes) < len(ir.nodes)
 
 
-def test_optimize_ir_is_deprecated_alias_for_compile_execution_lowering():
-    ir = _build_linear_chain_ir("test_optimize_ir_is_deprecated_alias_for_compile_execution_lowering")
-
-    graph = build_execution(ir, policy="aggressive")
-    lowered = graph.to_execution_ir()
-
-    with pytest.warns(DeprecationWarning):
-        optimized = optimize_ir(ir, policy="aggressive")
-
-    assert optimized.metadata.optimized is True
-    assert optimized.optimization is not None
-    assert len(optimized.nodes) == len(lowered.nodes)
 
 
-def test_compile_execution_is_alias_for_build_execution():
-    ir = _build_linear_chain_ir("test_compile_execution_is_alias_for_build_execution")
 
-    graph_a = build_execution(ir, policy="aggressive")
-    graph_b = compile_execution(ir, policy="aggressive")
 
-    assert [p.node_ids for p in graph_a.partitions] == [p.node_ids for p in graph_b.partitions]
-    assert [(e.source, e.destination, e.ir_edge_ids) for e in graph_a.edges] == [
-        (e.source, e.destination, e.ir_edge_ids) for e in graph_b.edges
-    ]

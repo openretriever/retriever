@@ -33,7 +33,11 @@ class Controller(Flow[Observation, Action]):
         return Action(action=1 if obs < 3 else 0)
 
 
+from retriever import set_global_config
+
+
 def test_cycle_pipeline_is_valid_and_reports_scc_group():
+    set_global_config(default_sync="liberal")
     pipe = Pipeline("cycle_demo")
 
     env = Env() @ Rate(hz=10)
@@ -42,7 +46,7 @@ def test_cycle_pipeline_is_valid_and_reports_scc_group():
     pipe.connect(env, ctrl)
     pipe.connect(ctrl, env)
 
-    ir = pipe.build_ir()
+    ir = pipe.validate()
     assert ir.topology.has_cycle is True
     assert any(len(group) > 1 for group in ir.topology.groups)
 

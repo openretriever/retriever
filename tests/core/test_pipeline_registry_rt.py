@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from retriever.flow import Flow, FlowContext, Rate, flow_io, Latest
-from retriever.ir import validate
+from retriever.flow import Flow, PipelineBuilder, Rate, flow_io, Latest
 from retriever.pipeline_registry import build_ir, register_pipeline
 
 
@@ -37,7 +36,7 @@ class Sink(Flow[ProcOut, None]):
 def test_pipeline_registry_factory_returns_irstruct():
     @register_pipeline("test_pipeline_registry_factory_returns_irstruct", overwrite=True)
     def build():
-        with FlowContext("test_pipeline_registry_factory_returns_irstruct") as ctx:
+        with PipelineBuilder("test_pipeline_registry_factory_returns_irstruct") as ctx:
             src = Source() @ Rate(hz=10)
             proc = Proc() @ Rate(hz=10)
             sink = Sink() @ Rate(hz=10)
@@ -45,7 +44,7 @@ def test_pipeline_registry_factory_returns_irstruct():
             src.then(proc, sync=Latest())
             proc.then(sink, sync=Latest())
 
-            return validate(ctx)
+            return ctx.validate()
 
     ir = build_ir("test_pipeline_registry_factory_returns_irstruct")
     assert ir.metadata.name == "test_pipeline_registry_factory_returns_irstruct"
@@ -56,7 +55,7 @@ def test_pipeline_registry_factory_returns_irstruct():
 def test_pipeline_registry_factory_returns_flowcontext():
     @register_pipeline("test_pipeline_registry_factory_returns_flowcontext", overwrite=True)
     def build():
-        with FlowContext("test_pipeline_registry_factory_returns_flowcontext") as ctx:
+        with PipelineBuilder("test_pipeline_registry_factory_returns_flowcontext") as ctx:
             src = Source() @ Rate(hz=10)
             proc = Proc() @ Rate(hz=10)
             sink = Sink() @ Rate(hz=10)
