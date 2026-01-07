@@ -116,6 +116,7 @@ def _resolve_recording_path(path: Path) -> Path:
 
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
+    pipe, camera = build_replay_pipeline(show_window=args.show_window)
 
     # Run with in-process backend (uses stepper internally)
     # visualize=True (or "rerun") auto-enables Rerun logging

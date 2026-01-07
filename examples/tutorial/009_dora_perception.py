@@ -18,9 +18,14 @@ import argparse
 import numpy as np
 import cv2
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
+try:
+    import rerun as rr
+except ImportError:
+    rr = None
 
-from retriever.flow import Flow, flow_io, Rate, Trigger, Pipeline
+from retriever.flow import Flow, io, Rate, Trigger, Pipeline
+from retriever.lib.rerun import RerunLoggable
 
 
 @dataclass
@@ -41,16 +46,55 @@ class Detection:
     confidence: float
     bbox: BBox
 
-@flow_io
+@io
 @dataclass
 class CameraData:
     image: Image
 
-@flow_io
+    def log_to_rerun(self, path: str) -> None:
+        if rr is None: return
+        rr.log(f"{path}/image", rr.Image(self.image.frame))
+
+@io
 @dataclass
 class DetectionResults:
     image: Image
     detections: List[Detection]
+
+    def log_to_rerun(self, path: str) -> None:
+        if rr is None: return
+        
+        # Log image
+        rr.log(f"{path}/image", rr.Image(self.image.frame))
+
+        # Log detections
+        if not self.detections:
+            rr.log(f"{path}/bbox", rr.Boxes2D([], labels=[]))
+            return
+
+        # Prepare arrays for Rerun
+        boxes = []
+        labels = []
+        confidences = []
+        class_ids = []
+
+        for det in self.detections:
+            b = det.bbox
+            boxes.append([b.x, b.y, b.width, b.height])
+            labels.append(f"{det.label} {det.confidence:.2f}")
+            confidences.append(det.confidence)
+            # Simple class ID mapping for color
+            class_ids.append(1 if "red" in det.label else 2)
+
+        rr.log(
+            f"{path}/bbox",
+            rr.Boxes2D(
+                array=np.array(boxes),
+                array_format=rr.Box2DFormat.XYWH,
+                labels=labels,
+                class_ids=class_ids
+            )
+        )
 
 
 class CameraSource(Flow[None, CameraData]):
@@ -236,7 +280,7 @@ def build_perception_pipeline() -> Pipeline:
 
     pipe = Pipeline("perception_demo")
 
-    # Preferred authoring: `with pipe: a >> b` (no separate FlowContext).
+    # Preferred authoring: `with pipe: a >> b` (no separate PipelineBuilder).
     with pipe:
         camera = CameraSource(use_real_camera=True) @ Rate(hz=30)
         detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
