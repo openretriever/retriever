@@ -1,60 +1,35 @@
 """
-IR (Intermediate Representation) module - validation + execution compilation.
+Retriever Intermediate Representation (IR).
 
-Transforms FlowContext to validated IR, and (optionally) plans a physical
-execution graph (partitioning + placement).
+The IR Layer is split into:
+1. `retriever.ir.core`: The Logical Representation (`IR`).
+2. `retriever.ir.execution`: The Physical Execution Plan (`ExecutionGraph`).
+
+This module exports the high-level classes needed by users and backends.
 """
 
-from retriever.ir.struct import (
-    IRStruct,
+from retriever.ir.core import (
+    IR,
     IRNode,
     IREdge,
-    IREdgeSource,
-    IREdgeDestination,
-    IRTopology,
-    IRMetadata,
-    IROptimization,
+    IRAnalysis,
 )
-from retriever.ir.validator import validate
 from retriever.ir.execution import (
     ExecutionGraph,
     ExecutionPartition,
     ExecutionEdge,
     Placement,
 )
-from retriever.ir.compiler import build_execution, compile_execution
-from retriever.ir.optimizer import optimize_ir
-from retriever.ir.analysis import run_all_analyses, IRAnalysis
-from retriever.ir.loader import IRLoader
+from retriever.ir.rules import PlacementRule
 
 __all__ = [
-    # IR Structure
-    'IRStruct',
-    'IRNode',
-    'IREdge',
-    'IREdgeSource',
-    'IREdgeDestination',
-    'IRTopology',
-    'IRMetadata',
-    'IROptimization',
-
-    # Execution compilation
-    'ExecutionGraph',
-    'ExecutionPartition',
-    'ExecutionEdge',
-    'Placement',
-    # Preferred name (compile_execution remains as compatibility alias)
-    'build_execution',
-    'compile_execution',
-
-    # Validation & (legacy) optimization
-    'validate',
-    'optimize_ir',
-
-    # Analysis
-    'run_all_analyses',
-    'IRAnalysis',
-
-    # Loader
-    'IRLoader',
+    "IR",
+    "IRNode",
+    "IREdge",
+    "IRAnalysis",
+    "ExecutionGraph",
+    "ExecutionPartition",
+    "ExecutionEdge",
+    "Placement",
+    "PlacementRule",
 ]
