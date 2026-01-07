@@ -145,7 +145,7 @@ def build_robot_localization_pipeline(*, camera: str = "mock_camera") -> Pipelin
     Pipeline factory.
 
     The pipeline registry expects factories to return either:
-      - `IRStruct`, or
+      - `IR`, or
       - `FlowContext` (including `Pipeline`)
 
     Returning `Pipeline` lets you:
@@ -193,7 +193,7 @@ def main() -> None:
     print("examples pipelines:", sorted(retriever.list_pipelines(category="examples").keys()))
     print("tagged vision:", sorted(retriever.find_pipelines(tags=["vision"]).keys()))
 
-    # Build IR via pipeline registry (factory → FlowContext.validate → IRStruct)
+    # Build IR via pipeline registry (factory → FlowContext.validate → IR)
     ir = retriever.build_ir("robot_localization", camera=args.camera)
     print(f"\n[IR] name={ir.metadata.name!r} nodes={len(ir.nodes)} edges={len(ir.edges)} camera={args.camera!r}")
 

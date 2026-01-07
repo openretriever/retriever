@@ -1,5 +1,5 @@
 """
-IR Validation - FlowGraph → IRStruct
+IR Validation - FlowGraph → IR
 
 Validates a Pipeline/FlowContext and produces typed IR (Intermediate Representation).
 Shows IR structure via JSON and explains validation checks.
