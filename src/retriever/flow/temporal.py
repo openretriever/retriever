@@ -7,8 +7,16 @@ as the foundation for time-aware execution.
 
 from dataclasses import dataclass, field
 import time
-from typing import List, Optional, Deque
+from typing import List, Optional, Deque, TYPE_CHECKING
 from collections import deque
+
+if TYPE_CHECKING:
+    from retriever.flow.handle import FlowHandle
+
+from retriever.flow.handle import FlowHandle
+
+# Alias for backward compatibility and semantic clarity
+TemporalFlow = FlowHandle
 
 
 @dataclass
