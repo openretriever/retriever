@@ -1,5 +1,5 @@
 """
-Core Temporal Primitives for Retriever Flow v2.7
+Core Temporal Primitives for Retriever Flow
 
 This module provides general-purpose timing and coordination utilities that serve
 as the foundation for time-aware execution. These primitives are application-agnostic

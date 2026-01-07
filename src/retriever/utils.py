@@ -5,7 +5,7 @@ Retriever utility functions.
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from importlib import metadata
 from typing import Any, Dict, Iterable, TypeVar
 
@@ -106,6 +106,8 @@ def as_tagged(obj: T) -> Dict[str, Any]:
     Returns:
         Dict in format {ClassName: fields_dict}
     """
+    if not is_dataclass(obj):
+        return obj
     class_name = obj.__class__.__name__
     fields = asdict(obj)
     return {class_name: fields}

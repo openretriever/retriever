@@ -1,6 +1,6 @@
 from typing import Dict, List, Any, Tuple
 
-from retriever.ir.struct import IRStruct, IRNode
+from retriever.ir.core import IR, IRNode
 
 # --- HTML Template with Cytoscape.js and Dagre ---
 HTML_TEMPLATE = """
@@ -159,8 +159,10 @@ HTML_TEMPLATE = """
                  label += `\n@ ${clockDetail}`;
             } else if (clockType === "Trigger") {
                  label += `\n@ Trigger`;
-            } else if (clockType === "Hybrid") {
-                 label += `\n@ Hybrid`;
+            } else if (clockType === "Hybrid" && clockDetail) {
+                 // Show detailed Hybrid info: "@ 2.5 Hz & Trigger"
+                 const hz = clock.Hybrid ? clock.Hybrid.hz : (clock.Rate ? clock.Rate.hz : "?");
+                 label += `\n@ ${hz} Hz & Trigger`;
             } else {
                  label += `\n@ ${clockType}`;
             }
@@ -492,8 +494,18 @@ def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
             
     return c_type, detail
 
-def generate_ascii_graph(ir: IRStruct) -> str:
-    """ASCII Tree View using IR Structure, topologically sorted."""
+from retriever.ir.core import IR
+
+def generate_ascii_graph(ir: 'IR') -> str:
+    """
+    Generate ASCII representation of the IR graph.
+    
+    Args:
+        ir: The IR object to visualize
+        
+    Returns:
+        String containing ASCII graph
+    """
     
     output = []
     output.append(f"Pipeline: {ir.metadata.name}")
@@ -601,7 +613,7 @@ def generate_ascii_graph(ir: IRStruct) -> str:
         
     return "\n".join(output)
 
-def save_interactive_html(ir: IRStruct, filename: str = "pipeline_viz.html") -> None:
+def save_interactive_html(ir: 'IR', filename: str = "pipeline_viz.html") -> None:
     """Export the pipeline visualization to a self-contained HTML file using IR."""
     
     # Serialize IR to JSON

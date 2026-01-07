@@ -46,7 +46,7 @@ def execute_ir(
         RTError: If backend errors occur
 
     Examples:
-        # Execute from IR
+        # Execute from IRStruct
         execute_ir(ir, backend='multiprocessing', duration=10.0)
 
         # Execute from file path
@@ -72,7 +72,7 @@ def execute_ir(
         except Exception as e:
             raise ValueError(f"Failed to load IR from {filepath}: {e}") from e
     elif isinstance(ir, ExecutionGraph):
-        ir_struct = ir.to_execution_ir()
+        ir_struct = ir.ir  # Use the underlying IR
     else:
         ir_struct = ir
 

@@ -88,7 +88,7 @@ class FlowEdge:
         return hash((self.src_node, self.src_port, self.dst_node, self.dst_port))
 
 
-class PipelineGraph:
+class FlowGraph:
     """
     Directed graph with port-level connections.
 
@@ -478,7 +478,7 @@ class PipelineGraph:
         All fields are Optional in the new @flow_io design.
 
         Example output:
-            PipelineGraph:
+            FlowGraph:
 
               Nodes (2):
                 sensor_0
@@ -520,10 +520,7 @@ class PipelineGraph:
         return "\n".join(lines)
 
     def __repr__(self) -> str:
-        return f"PipelineGraph(nodes={len(self.nodes)}, edges={len(self.edges)})"
+        return f"FlowGraph(nodes={len(self.nodes)}, edges={len(self.edges)})"
 
     def __str__(self) -> str:
         return self.visualize()
-
-# Alias for compatibility
-FlowGraph = PipelineGraph
