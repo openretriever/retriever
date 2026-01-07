@@ -282,11 +282,6 @@ class FrequencyCoordinator:
             timer.print_performance_summary()
 
 
-# Backward-compatibility alias used in tests and older notes
-class MultiRateCoordinator(FrequencyCoordinator):
-    pass
-
-
 # Functional helpers for declarative timing constraints
 def with_timing_constraint(constraint: TimeConstraint):
     """Decorator to add timing constraint to any function."""
