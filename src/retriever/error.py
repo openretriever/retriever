@@ -41,15 +41,16 @@ class ErrCode(IntEnum):
     FLOW_IO_NOT_DATACLASS = 1202
     FLOW_IO_FIELD_NOT_FOUND = 1203
     FLOW_IO_INIT_UNEXPECTED = 1204
+    FLOW_AMBIGUOUS_FIELD = 1205
 
-    # FlowGraph Errors (1300-1399)
-    FLOW_GRAPH_NODE_NOT_FOUND = 1300
-    FLOW_GRAPH_PORT_NOT_FOUND = 1301
+    # PipelineGraph Errors (1300-1399)
+    PIPELINE_GRAPH_NODE_NOT_FOUND = 1300
+    PIPELINE_GRAPH_PORT_NOT_FOUND = 1301
 
-    # FlowContext Errors (1400-1499)
-    FLOW_CONTEXT_INACTIVE = 1400
+    # PipelineBuilder Errors (1400-1499)
+    PIPELINE_BUILDER_INACTIVE = 1400
     FLOW_CONNECTION_INVALID = 1401
-    FLOW_CONTEXT_NODE_NOT_FOUND = 1402
+    PIPELINE_BUILDER_NODE_NOT_FOUND = 1402
 
     # Service Errors (1500-1599)
     FLOW_SERVICE_UNKNOWN = 1500
@@ -135,15 +136,16 @@ ERROR_MSGS: Dict[ErrCode, str] = {
     ErrCode.FLOW_IO_NOT_DATACLASS: "@flow_io must be applied to a @dataclass",
     ErrCode.FLOW_IO_FIELD_NOT_FOUND: "Field not found in FlowIO type",
     ErrCode.FLOW_IO_INIT_UNEXPECTED: "Unexpected keyword argument in FlowIO __init__",
+    ErrCode.FLOW_AMBIGUOUS_FIELD: "Ambiguous field access in composite input",
 
-    # Flow layer - FlowGraph (1300-1399)
-    ErrCode.FLOW_GRAPH_NODE_NOT_FOUND: "Node not found in FlowGraph",
-    ErrCode.FLOW_GRAPH_PORT_NOT_FOUND: "Port not found in FlowNode",
+    # Flow layer - PipelineGraph (1300-1399)
+    ErrCode.PIPELINE_GRAPH_NODE_NOT_FOUND: "Node not found in PipelineGraph",
+    ErrCode.PIPELINE_GRAPH_PORT_NOT_FOUND: "Port not found in PipelineNode",
 
-    # Flow layer - FlowContext (1400-1499)
-    ErrCode.FLOW_CONTEXT_INACTIVE: "Operation requires active FlowContext",
+    # Flow layer - PipelineBuilder (1400-1499)
+    ErrCode.PIPELINE_BUILDER_INACTIVE: "Operation requires active PipelineBuilder",
     ErrCode.FLOW_CONNECTION_INVALID: "Invalid flow connection parameters",
-    ErrCode.FLOW_CONTEXT_NODE_NOT_FOUND: "Node not found in FlowContext",
+    ErrCode.PIPELINE_BUILDER_NODE_NOT_FOUND: "Node not found in PipelineBuilder",
 
     # Flow layer - Service (1500-1599)
     ErrCode.FLOW_SERVICE_UNKNOWN: "Unknown service error",

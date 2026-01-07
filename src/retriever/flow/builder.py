@@ -5,7 +5,7 @@ Context manager that tracks flow connections and builds FlowGraph.
 """
 
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
 from retriever.error import ErrCode, FlowError
@@ -239,11 +239,18 @@ class PipelineBuilder:
         # Build dict of {port_name: field_type} using OO pattern
         final_ports = {}
 
-        # Cache field types using classmethod
+        # Cache field types using classmethod (with fallback for older types)
         type_cache = {}
         for t in types_list:
             if t is not type(None) and is_flow_io(t):
-                type_cache[t.__name__] = t._field_types()
+                # Use _field_types if available, otherwise fall back to dataclass fields
+                if hasattr(t, '_field_types') and callable(t._field_types):
+                    type_cache[t.__name__] = t._field_types()
+                elif is_dataclass(t):
+                    from dataclasses import fields as dc_fields
+                    type_cache[t.__name__] = {f.name: f.type for f in dc_fields(t)}
+                else:
+                    type_cache[t.__name__] = {}
 
         for port_name, (t_name, field_name) in port_map.items():
             if t_name in type_cache:
@@ -368,7 +375,16 @@ class PipelineBuilder:
             handle=handle.flow.__class__.__name__,
         )
 
+    # ========================================================================
+    # Validation Entry Point (delegates to IR layer)
+    # ========================================================================
 
+    def validate(self):
+        """Validate the flow graph (delegates to IR layer)."""
+        # Ensure graph is built
+        _ = self.graph
+
+        # Delegate to IR validator
     def build_ir(self) -> 'IR':
         """
         Compile pipeline construction context into pure IR.
@@ -546,8 +562,7 @@ class PipelineBuilder:
 
     def _validate_fan_in(self, flow_graph: PipelineGraph, dst_node: str, dst_port: str, edges: list) -> None:
         """Validate fan-in consistency."""
-        if len(edges) < 2:
-            return
+        if len(edges) < 2: return
         ref_edge = edges[0]
         ref_src = flow_graph.nodes[ref_edge.src_node]
         ref_type = ref_src.output_ports.get(ref_edge.src_port)

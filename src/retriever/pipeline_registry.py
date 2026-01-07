@@ -2,11 +2,11 @@
 Pipeline registry (IR-first).
 
 This registry is designed for the refactored runtime:
-  FlowContext -> validate(...) -> IRStruct -> execute_ir(...)
+  FlowContext -> validate(...) -> IR -> execute_ir(...)
 
 It registers *pipeline factories* (callables) that return either:
-  - IRStruct (preferred), or
-  - FlowContext (will be validated to IRStruct).
+  - IR (preferred), or
+  - FlowContext (will be validated to IR).
 
 This enables:
   - Discoverable pipelines (for a future `retriever` CLI)
@@ -18,11 +18,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple
 
-from retriever.flow.context import FlowContext
-from retriever.ir.struct import IRStruct
+from retriever.flow.builder import PipelineBuilder
+from retriever.ir import IR
 from retriever.utils import load_plugins
 
-PipelineFactory = Callable[..., Union[IRStruct, FlowContext]]
+PipelineFactory = Callable[..., Union[IR, PipelineBuilder]]
 
 
 def _ensure_plugins_loaded() -> None:
@@ -87,19 +87,23 @@ class PipelineRegistry:
             return dict(self._pipelines)
         return {name: info for name, info in self._pipelines.items() if info.category == category}
 
-    def build_ir(self, name: str, **kwargs: Any) -> IRStruct:
-        """Build an IRStruct for a registered pipeline."""
+    def build_ir(self, name: str, **kwargs: Any) -> IR:
+        """Build an IR for a registered pipeline."""
         info = self.get(name)
         result = info.factory(**kwargs)
 
-        if isinstance(result, IRStruct):
+        if isinstance(result, IR):
             return result
-        if isinstance(result, FlowContext):
+        if isinstance(result, PipelineBuilder):
             return result.validate()
+        
+        # Support Pipeline objects (via duck typing or direct import)
+        if hasattr(result, "validate") and hasattr(result, "_build_ir"):
+             return result.validate()
 
         raise TypeError(
             f"Pipeline factory '{name}' returned unsupported type: {type(result)} "
-            "(expected IRStruct or FlowContext)"
+            "(expected IR, PipelineBuilder, or Pipeline)"
         )
 
 
@@ -119,7 +123,7 @@ def register_pipeline(
 
     Example:
         @register_pipeline("perception_demo", category="examples")
-        def build() -> IRStruct:
+        def build() -> IR:
             with FlowContext("perception_demo") as ctx:
                 ...
                 return validate(ctx)
@@ -149,17 +153,17 @@ def list_pipelines(category: Optional[str] = None) -> Dict[str, PipelineInfo]:
     return _global_pipeline_registry.list(category=category)
 
 
-def build_ir(name: str, **kwargs: Any) -> IRStruct:
-    """Build a pipeline IRStruct by name."""
+def build_ir(name: str, **kwargs: Any) -> IR:
+    """Build a pipeline IR by name."""
     return _global_pipeline_registry.build_ir(name, **kwargs)
 
 
-def get_pipeline(name: str, **kwargs: Any) -> IRStruct:
+def get_pipeline(name: str, **kwargs: Any) -> IR:
     """
     Backward-compatible alias for `build_ir`.
 
     Historically, `get_pipeline(...)` returned a "pipeline instance" in an older
-    API. In the refactored runtime, pipelines are built as `IRStruct`.
+    API. In the refactored runtime, pipelines are built as `IR`.
     """
     return build_ir(name, **kwargs)
 

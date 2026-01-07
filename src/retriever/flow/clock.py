@@ -14,7 +14,7 @@ from retriever.flow.types import EventStream, EventBuffer
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
-    from retriever.flow.handle import FlowHandle
+    from retriever.flow.temporal import TemporalFlow
 
 
 class Clock(ABC):
@@ -24,7 +24,7 @@ class Clock(ABC):
     Clocks determine when flows execute in the system.
     """
 
-    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+    def __rmatmul__(self, flow: 'Flow') -> 'TemporalFlow':
         """
         Enable flow @ clock syntax.
 
@@ -32,8 +32,8 @@ class Clock(ABC):
         Returns: FlowHandle with FlowConfig containing this clock
         """
         from retriever.flow.config import FlowConfig
-        from retriever.flow.handle import FlowHandle
-        return FlowHandle(flow=flow, config=FlowConfig(clock=self))
+        from retriever.flow.temporal import TemporalFlow
+        return TemporalFlow(flow=flow, config=FlowConfig(clock=self))
 
 
 @dataclass(init=False)
@@ -301,7 +301,7 @@ class DefaultRate(Clock):
         camera = CameraFlow() @ DefaultRate()  # Uses 30 Hz
     """
     
-    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+    def __rmatmul__(self, flow: 'Flow') -> 'TemporalFlow':
         """
         Called when: flow @ DefaultRate()
         
@@ -309,7 +309,7 @@ class DefaultRate(Clock):
         """
         from retriever.error import FlowError, ErrCode
         from retriever.flow.config import FlowConfig
-        from retriever.flow.handle import FlowHandle
+        from retriever.flow.temporal import TemporalFlow
         
         flow_cls = type(flow)
         rate_config = getattr(flow_cls, 'rate_config', None)
@@ -325,7 +325,7 @@ class DefaultRate(Clock):
         
         # Create a standard Rate clock with the default hz
         rate_clock = Rate(hz=default_hz)
-        return FlowHandle(flow=flow, config=FlowConfig(clock=rate_clock))
+        return TemporalFlow(flow=flow, config=FlowConfig(clock=rate_clock))
 
     def __repr__(self) -> str:
         return "DefaultRate()"
@@ -376,7 +376,7 @@ class AdaptiveRate(Clock):
         self.min_hz = min
         self.max_hz = max
     
-    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+    def __rmatmul__(self, flow: 'Flow') -> 'TemporalFlow':
         """
         Called when: flow @ AdaptiveRate(...)
         
@@ -384,7 +384,7 @@ class AdaptiveRate(Clock):
         """
         from retriever.error import FlowError, ErrCode
         from retriever.flow.config import FlowConfig
-        from retriever.flow.handle import FlowHandle
+        from retriever.flow.temporal import TemporalFlow
         
         flow_cls = type(flow)
         rate_config = getattr(flow_cls, 'rate_config', None)
@@ -408,7 +408,7 @@ class AdaptiveRate(Clock):
                         f"{flow_cls.__name__}.rate_config.rate_range ({flow_min}, {flow_max})",
                     )
         
-        return FlowHandle(flow=flow, config=FlowConfig(clock=self))
+        return TemporalFlow(flow=flow, config=FlowConfig(clock=self))
     
     @property
     def interval(self) -> float:

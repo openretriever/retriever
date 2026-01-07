@@ -6,8 +6,11 @@ A Flow is a signal function that transforms inputs to outputs.
 
 from abc import ABC, abstractmethod
 from typing import get_origin, get_args
-from typing import ClassVar, Tuple, TypeVar, Generic, Optional, Type
+from typing import ClassVar, Tuple, TypeVar, Generic, Optional, Type, TYPE_CHECKING
 from retriever.error import FlowError, ErrCode
+
+if TYPE_CHECKING:
+    from retriever.flow.config import FlowRateConfig
 
 I = TypeVar("I")
 O = TypeVar("O")
@@ -22,9 +25,12 @@ class Flow(ABC, Generic[I, O]):
     I and O must be @flow_io decorated dataclasses.
     """
 
-    _input_type: Optional[Type] = None
-    _output_type: Optional[Type] = None
+    _input_types: Tuple[Type, ...] = ()
+    _output_types: Tuple[Type, ...] = ()
+    _input_type: Optional[Type] = None  # Legacy/Singular accessor
+    _output_type: Optional[Type] = None # Legacy/Singular accessor
     _main_thread: bool = False  # If True, run in main thread (for GUI flows)
+    _is_composite_input: bool = False
 
     # Rate configuration (optional, used by DefaultRate/AdaptiveRate clocks)
     # Set this to a FlowRateConfig instance to configure rate behavior
@@ -54,16 +60,27 @@ class Flow(ABC, Generic[I, O]):
                 f"Flow '{cls.__name__}' type parameters [I, O] missing",
             )
 
-        # Extract types (None if TypeVar)
-        input_type = args[0] if not isinstance(args[0], TypeVar) else None
-        output_type = args[1] if not isinstance(args[1], TypeVar) else None
+        # Helper to extract one or multiple types
+        def _extract_types(arg) -> Tuple[Type, ...]:
+            if isinstance(arg, TypeVar):
+                return ()
+            if arg is type(None):
+                return ()
+            # Handle Tuple[A, B]
+            if get_origin(arg) is tuple:
+                return get_args(arg)
+            return (arg,)
 
-        # Normalize type(None) to None
-        cls._input_type = None if input_type is type(None) else input_type
-        cls._output_type = None if output_type is type(None) else output_type
+        cls._input_types = _extract_types(args[0])
+        cls._is_composite_input = (len(cls._input_types) > 1)
+        cls._output_types = _extract_types(args[1])
+        
+        # Set legacy single-type fields (first type or None)
+        cls._input_type = cls._input_types[0] if cls._input_types else None
+        cls._output_type = cls._output_types[0] if cls._output_types else None
 
         # Validate @flow_io decoration
-        cls._validate_flow_io_types(input_type, output_type)
+        cls._validate_flow_io_types(cls._input_types, cls._output_types)
 
     @classmethod
     def _find_flow_base(cls):
@@ -76,31 +93,51 @@ class Flow(ABC, Generic[I, O]):
         return None
 
     @classmethod
-    def _validate_flow_io_types(cls, input_type, output_type):
-        """Validate that input/output types use @flow_io decorator."""
+    def _validate_flow_io_types(cls, input_types: Tuple[Type, ...], output_types: Tuple[Type, ...]):
+        """Validate that input/output types use @io decorator."""
         from retriever.flow.io import is_flow_io
 
-        if input_type and input_type is not type(None) and not is_flow_io(input_type):
-            raise FlowError(
-                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                f"Flow input type must use @flow_io decorator, got {input_type}",
-            )
+        for typ in input_types:
+            if typ is not type(None) and not is_flow_io(typ):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                    f"Flow input type must use @io decorator, got {typ}",
+                )
 
-        if output_type and output_type is not type(None) and not is_flow_io(output_type):
-            raise FlowError(
-                ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
-                f"Flow output type must use @flow_io decorator, got {output_type}",
-            )
+        for typ in output_types:
+            if typ is not type(None) and not is_flow_io(typ):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_NOT_COMPATIBLE,
+                    f"Flow output type must use @io decorator, got {typ}",
+                )
 
     @property
     def input_type(self) -> Type[I]:
-        """Get the input type I of this flow."""
+        """
+        Get the input type I of this flow.
+        If multiple inputs (tuple), returns the first one (Warning: Legacy).
+        Use `input_types` for full list.
+        """
         return self._input_type
 
     @property
     def output_type(self) -> Type[O]:
-        """Get the output type O of this flow."""
+        """
+        Get the output type O of this flow.
+        If multiple outputs, returns the first one.
+        Use `output_types` for full list.
+        """
         return self._output_type
+        
+    @property
+    def input_types(self) -> Tuple[Type, ...]:
+        """Get all input types (for composition)."""
+        return self._input_types
+
+    @property
+    def output_types(self) -> Tuple[Type, ...]:
+        """Get all output types (for composition)."""
+        return self._output_types
 
     def init(self) -> None:
         """

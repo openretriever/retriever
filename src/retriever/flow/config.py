@@ -13,7 +13,7 @@ from retriever.error import FlowError, ErrCode
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
     from retriever.flow.clock import Clock
-    from retriever.flow.handle import FlowHandle
+    from retriever.flow.temporal import TemporalFlow
 
 
 @dataclass
@@ -180,7 +180,7 @@ class FlowConfig:
             'resources': self.resources.to_dict() if self.resources else None
         }
 
-    def __rmatmul__(self, flow: 'Flow') -> 'FlowHandle':
+    def __rmatmul__(self, flow: 'Flow') -> 'TemporalFlow':
         """
         Bind flow to this config using @ operator.
 
@@ -188,7 +188,7 @@ class FlowConfig:
             flow: Flow instance to bind
 
         Returns:
-            FlowHandle with this configuration
+            TemporalFlow with this configuration
         """
-        from retriever.flow.handle import FlowHandle
-        return FlowHandle(flow=flow, config=self)
+        from retriever.flow.temporal import TemporalFlow
+        return TemporalFlow(flow=flow, config=self)

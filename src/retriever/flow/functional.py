@@ -14,7 +14,7 @@ from __future__ import annotations
 from contextvars import ContextVar
 from typing import Any, Dict, Optional
 
-from retriever.flow.handle import FlowHandle
+from retriever.flow.temporal import TemporalFlow
 from retriever.flow.pipeline import Pipeline
 
 
@@ -56,20 +56,20 @@ def clear_default_pipeline() -> None:
 
 
 def connect(
-    src: FlowHandle,
-    dst: FlowHandle,
+    src: TemporalFlow,
+    dst: TemporalFlow,
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
     qsize: int = 10,
     pipeline: Optional[Pipeline] = None,
-) -> FlowHandle:
+) -> TemporalFlow:
     """
     Connect two handles, optionally using a default Pipeline.
 
     Precedence:
     1) If `pipeline=` is provided: connect into it.
-    2) If a FlowContext/Pipeline context is active: delegate to `src.then(...)`.
+    2) If a PipelineBuilder/Pipeline context is active: delegate to `src.then(...)`.
     3) If either handle is already Pipeline-owned: delegate to `src.then(...)` (will merge).
     4) Otherwise: connect into the thread-local `default_pipeline()`.
     """
@@ -77,9 +77,9 @@ def connect(
         pipeline.connect(src, dst, map=map, sync=sync, qsize=qsize)
         return dst
 
-    from retriever.flow.context import FlowContext
+    from retriever.flow.builder import PipelineBuilder
 
-    if FlowContext.active() is not None:
+    if PipelineBuilder.active() is not None:
         return src.then(dst, map=map, sync=sync, qsize=qsize)
 
     if src.pipeline is not None or dst.pipeline is not None:

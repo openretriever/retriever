@@ -1,5 +1,5 @@
 """
-FlowGraph - Directed graph for Flow connections
+PipelineGraph - Directed graph for Pipeline connections
 
 Port-level connections with explicit field names.
 """
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FlowNode:
+class PipelineNode:
     """
     Node representing a Flow in the graph.
 
@@ -29,7 +29,7 @@ class FlowNode:
 
     def __repr__(self) -> str:
         return (
-            f"FlowNode(node_id='{self.node_id}', "
+            f"PipelineNode(node_id='{self.node_id}', "
             f"inputs={list(self.input_ports.keys())}, "
             f"outputs={list(self.output_ports.keys())})"
         )
@@ -52,7 +52,7 @@ class FlowNode:
 
 
 @dataclass
-class FlowEdge:
+class PipelineEdge:
     """
     Edge connecting two node ports in the graph.
 
@@ -74,7 +74,7 @@ class FlowEdge:
 
     def __eq__(self, other) -> bool:
         """Check edge equality based on connection"""
-        if not isinstance(other, FlowEdge):
+        if not isinstance(other, PipelineEdge):
             return False
         return (
             self.src_node == other.src_node and
@@ -88,21 +88,21 @@ class FlowEdge:
         return hash((self.src_node, self.src_port, self.dst_node, self.dst_port))
 
 
-class FlowGraph:
+class PipelineGraph:
     """
     Directed graph with port-level connections.
 
-    Built incrementally by FlowContext during Flow connections.
+    Built incrementally by PipelineBuilder during Flow connections.
 
     Structure:
-        - nodes: Dict[node_id, FlowNode]
-        - edges: List[FlowEdge]
+        - nodes: Dict[node_id, PipelineNode]
+        - edges: List[PipelineEdge]
     """
 
     def __init__(self):
         """Initialize empty graph"""
-        self.nodes: Dict[str, FlowNode] = {}
-        self.edges: List[FlowEdge] = []
+        self.nodes: Dict[str, PipelineNode] = {}
+        self.edges: List[PipelineEdge] = []
 
     # ========================================================================
     # Graph Construction
@@ -113,14 +113,14 @@ class FlowGraph:
         node_id: str,
         input_ports: Dict[str, Type],
         output_ports: Dict[str, Type],
-    ) -> FlowNode:
+    ) -> PipelineNode:
         """Add a flow node to the graph"""
         # Check for duplicate node
         if node_id in self.nodes:
             logger.warning(f"Skipped node '{node_id}' already exists in graph")
             return self.nodes[node_id]
 
-        node = FlowNode(
+        node = PipelineNode(
             node_id=node_id,
             input_ports=input_ports,
             output_ports=output_ports,
@@ -136,17 +136,17 @@ class FlowGraph:
         dst_node: str,
         dst_port: str,
         metadata: Dict[str, Any],
-    ) -> FlowEdge:
+    ) -> PipelineEdge:
         """Create port-to-port connection with metadata"""
         # Validate nodes exist
         if src_node not in self.nodes:
             raise FlowError(
-                ErrCode.FLOW_GRAPH_NODE_NOT_FOUND,
+                ErrCode.PIPELINE_GRAPH_NODE_NOT_FOUND,
                 f"Source node '{src_node}' not found"
             )
         if dst_node not in self.nodes:
             raise FlowError(
-                ErrCode.FLOW_GRAPH_NODE_NOT_FOUND,
+                ErrCode.PIPELINE_GRAPH_NODE_NOT_FOUND,
                 f"Destination node '{dst_node}' not found"
             )
 
@@ -156,19 +156,19 @@ class FlowGraph:
         # Validate ports exist
         if not src.has_output_port(src_port):
             raise FlowError(
-                ErrCode.FLOW_GRAPH_PORT_NOT_FOUND,
+                ErrCode.PIPELINE_GRAPH_PORT_NOT_FOUND,
                 f"Port '{src_port}' not in outputs of {src_node}. "
                 f"Available: {src.get_output_port_names()}"
             )
         if not dst.has_input_port(dst_port):
             raise FlowError(
-                ErrCode.FLOW_GRAPH_PORT_NOT_FOUND,
+                ErrCode.PIPELINE_GRAPH_PORT_NOT_FOUND,
                 f"Port '{dst_port}' not in inputs of {dst_node}. "
                 f"Available: {dst.get_input_port_names()}"
             )
 
         # Create edge
-        edge = FlowEdge(
+        edge = PipelineEdge(
             src_node=src_node,
             src_port=src_port,
             dst_node=dst_node,
@@ -188,7 +188,7 @@ class FlowGraph:
     # Graph Queries
     # ========================================================================
 
-    def get_node(self, node_id: str) -> Optional[FlowNode]:
+    def get_node(self, node_id: str) -> Optional[PipelineNode]:
         """Get node by ID"""
         return self.nodes.get(node_id)
 
@@ -204,11 +204,11 @@ class FlowGraph:
         """Get number of edges"""
         return len(self.edges)
 
-    def get_outgoing_edges(self, node_id: str) -> List[FlowEdge]:
+    def get_outgoing_edges(self, node_id: str) -> List[PipelineEdge]:
         """Get all edges going out from a node"""
         return [edge for edge in self.edges if edge.src_node == node_id]
 
-    def get_incoming_edges(self, node_id: str) -> List[FlowEdge]:
+    def get_incoming_edges(self, node_id: str) -> List[PipelineEdge]:
         """Get all edges coming into a node"""
         return [edge for edge in self.edges if edge.dst_node == node_id]
 
@@ -478,7 +478,7 @@ class FlowGraph:
         All fields are Optional in the new @flow_io design.
 
         Example output:
-            FlowGraph:
+            PipelineGraph:
 
               Nodes (2):
                 sensor_0
@@ -520,7 +520,7 @@ class FlowGraph:
         return "\n".join(lines)
 
     def __repr__(self) -> str:
-        return f"FlowGraph(nodes={len(self.nodes)}, edges={len(self.edges)})"
+        return f"PipelineGraph(nodes={len(self.nodes)}, edges={len(self.edges)})"
 
     def __str__(self) -> str:
         return self.visualize()
