@@ -12,7 +12,7 @@ from retriever.flow.clock import Clock
 from retriever.flow.adapter import Adapter
 from retriever.rt.backend.interface import Executor, Subscriber, Publisher
 from retriever.rt.backend.multiprocessing.scheduler import MPScheduler
-from retriever.rt.signal import Signal
+from retriever.rt.step import IOStep
 from retriever.rt.logging.worker import configure_worker
 from retriever.rt.logging.handlers.otel import shutdown_otel
 
@@ -132,8 +132,8 @@ class MPExecutor(multiprocessing.Process, Executor):
                             'node_id': self.node_id,
                             'fields': result.fields_to_sample,
                         })
-                    Signal(self.inputs, result.fields_to_sample, now=result.now) \
-                        .sample(self.flow.input_type, self.adapters, now=result.now) \
+                    IOStep(self.inputs, result.fields_to_sample, now=result.now) \
+                        .sample(self.flow.input_types, self.adapters, now=result.now) \
                         .transform(self.flow.run) \
                         .publish(self.outputs)
 

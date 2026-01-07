@@ -1,5 +1,5 @@
 """
-Dora Compiler - Compile IRStruct to Dora dataflow YAML.
+Dora Compiler - Compile IR to Dora dataflow YAML.
 
 Converts validated IR graph structure to dora-rs compatible YAML.
 
@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Mapping, Optional, Union
 
 import yaml
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
-from retriever.ir.struct import IRNode, IRStruct
+from retriever.ir.core import IR, IRNode
 
 logger = logging.getLogger(__name__)
 
@@ -96,9 +96,9 @@ class DoraGraph:
         }
 
 
-def compile_to_yaml(ir: IRStruct) -> str:
+def compile_to_yaml(ir: IR) -> str:
     """
-    Compile IRStruct to dora dataflow YAML.
+    Compile IR to dora dataflow YAML.
 
     Converts validated IR graph into dora-compatible YAML format:
     - Each IRNode → DoraNode with dynamic source
@@ -106,7 +106,7 @@ def compile_to_yaml(ir: IRStruct) -> str:
     - Rate/Hybrid clocks → dora/timer inputs
 
     Args:
-        ir: Validated IRStruct
+        ir: Validated IR
 
     Returns:
         YAML string ready to write to file
@@ -177,7 +177,7 @@ def resolve_node_path(
 
 
 def get_node_paths(
-    ir: IRStruct,
+    ir: IR,
     *,
     node_path_overrides: Optional[Mapping[str, Any]],
 ) -> Dict[str, str]:
@@ -186,17 +186,17 @@ def get_node_paths(
 
 
 def _compile_graph(
-    ir: IRStruct,
+    ir: IR,
     *,
     node_path_overrides: Optional[Mapping[str, Any]],
     deployment_overrides: Optional[Mapping[str, str]] = None,
     env_overrides: Optional[Mapping[str, str]] = None
 ) -> DoraGraph:
     """
-    Compile IRStruct to DoraGraph.
+    Compile IR to DoraGraph.
 
     Args:
-        ir: Validated IRStruct
+        ir: Validated IR
 
     Returns:
         DoraGraph with all nodes compiled
@@ -217,7 +217,7 @@ def _compile_graph(
 
 def _compile_node(
     node: IRNode,
-    ir: IRStruct,
+    ir: IR,
     *,
     node_path_overrides: Optional[Mapping[str, Any]] = None,
     deployment_overrides: Optional[Mapping[str, str]] = None,
@@ -296,10 +296,9 @@ def _compile_node(
 
 def _extract_clock(config: Dict[str, Any]) -> Clock:
     """Extract Clock object from node config."""
-    from retriever.ir.loader import IRLoader
 
     try:
-        return IRLoader.load_clock(config)
+        return IRNode.instantiate_clock(config)
     except Exception as e:
         logger.warning(f"Failed to load clock from config: {e}")
         return None
@@ -380,7 +379,7 @@ def _validate_yaml(yaml_str: str) -> bool:
 
 
 def compile_and_validate(
-    ir: IRStruct,
+    ir: IR,
     *,
     node_path_overrides: Optional[Mapping[str, Any]] = None,
     deployment_overrides: Optional[Mapping[str, str]] = None,
@@ -391,7 +390,7 @@ def compile_and_validate(
     Compile IR to YAML and validate it.
 
     Args:
-        ir: IRStruct to compile
+        ir: IR to compile
 
     Returns:
         Validated YAML string

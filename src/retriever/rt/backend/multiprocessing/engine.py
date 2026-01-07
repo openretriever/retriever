@@ -8,9 +8,7 @@ import time
 from typing import Dict, List, Any, Optional
 from multiprocessing import Queue
 
-from retriever.ir.struct import IRStruct, IRNode, IREdge
-from retriever.ir.loader import IRLoader
-from retriever.ir.fanin import is_fan_in_port, get_logical_port
+from retriever.ir.core import IR, IRNode, IREdge
 from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.backend.multiprocessing.channel import MPChannel
 from retriever.rt.backend.multiprocessing.executor import MPExecutor
@@ -33,12 +31,12 @@ class MPEngine(ExecutionEngine):
     4. stop(): Graceful shutdown
     """
 
-    def __init__(self, ir: IRStruct, config: Dict[str, Any] = None):
+    def __init__(self, ir: IR, config: Dict[str, Any] = None):
         """
         Initialize engine from IR.
 
         Args:
-            ir: Validated IRStruct
+            ir: Validated IR
             config: Backend-specific configuration
         """
         self.ir = ir
@@ -72,7 +70,7 @@ class MPEngine(ExecutionEngine):
         buffer_engine = self.config.get("buffer_engine", "python")
         for edge in self.ir.edges:
             queue = Queue(maxsize=edge.qsize)
-            adapter = IRLoader.load_adapter(edge.adapter)
+            adapter = edge.instantiate_adapter()
             self.channels[edge.id] = MPChannel(queue, adapter.buffer_size, buffer_engine=buffer_engine)
             logger.debug(f"Created channel {edge.id} "
                          f"(queue_size={edge.qsize}, buffer_size={adapter.buffer_size})")
@@ -81,10 +79,10 @@ class MPEngine(ExecutionEngine):
         """Create MPExecutor for each node."""
         for node in self.ir.nodes:
             # Load flow instance
-            flow = IRLoader.load_flow(node)
+            flow = node.instantiate()
 
             # Load clock from config
-            clock = IRLoader.load_clock(node.config)
+            clock = IRNode.instantiate_clock(node.config)
 
             # Build input channels mapping
             inputs = {}
@@ -93,9 +91,9 @@ class MPEngine(ExecutionEngine):
             for edge in self.ir.edges:
                 if edge.destination.node == node.id:
                     actual_port = edge.destination.port
-                    logical_port = get_logical_port(actual_port)
+                    logical_port = IR.get_logical_port(actual_port)
 
-                    if is_fan_in_port(actual_port):
+                    if IR.is_fan_in_port(actual_port):
                         # Fan-in: one channel with multiple queues
                         if logical_port in inputs:
                             inputs[logical_port].add_queue(self.channels[edge.id].queue)
@@ -106,7 +104,7 @@ class MPEngine(ExecutionEngine):
 
                     # Load adapter once per logical port (fan-in edges have same adapter)
                     if logical_port not in adapters:
-                        adapter = IRLoader.load_adapter(edge.adapter)
+                        adapter = edge.instantiate_adapter()
                         adapters[logical_port] = adapter
 
             # Build output channels mapping

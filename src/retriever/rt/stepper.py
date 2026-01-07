@@ -27,12 +27,11 @@ from retriever.flow.adapter import Adapter
 from retriever.flow.types import EventBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
-from retriever.flow.context import FlowContext
-from retriever.flow.handle import FlowHandle
-from retriever.ir.fanin import is_fan_in_port, get_logical_port
-from retriever.ir.loader import IRLoader
-from retriever.ir.struct import IREdge, IRStruct
-from retriever.rt.signal import Signal
+from retriever.flow.builder import PipelineBuilder
+from retriever.flow.temporal import TemporalFlow
+from retriever.ir.core import IR, IREdge
+from retriever.rt.step import IOStep
+from retriever.rt.step import IOStep
 
 T = TypeVar("T")
 
@@ -54,7 +53,7 @@ class InMemoryChannel:
         self._arrival_flag = True
 
     def get_all(self):
-        return list(self._buffer)
+        return EventBuffer(self._buffer)
 
     def new_arrival(self) -> bool:
         result = self._arrival_flag
@@ -81,17 +80,17 @@ class StepResult:
 
 class PipelineStepper:
     """
-    In-process stepper bound to a FlowContext/Pipeline.
+    In-process stepper bound to a PipelineBuilder/Pipeline.
 
     Loads adapters from IR (so buffer sizes match runtime) but executes *the same*
     flow instances that were used when authoring the Pipeline.
     """
 
-    def __init__(self, ctx: FlowContext):
+    def __init__(self, ctx: PipelineBuilder):
         self._ctx = ctx
-        self._ir: IRStruct = ctx.validate()
+        self._ir: IR = ctx.validate()
 
-        self._flows: Dict[str, FlowHandle] = {n.id: ctx.get_handle_for_node(n.id) for n in self._ir.nodes}
+        self._flows: Dict[str, TemporalFlow] = {n.id: ctx.get_handle_for_node(n.id) for n in self._ir.nodes}
 
         self._channels: Dict[str, InMemoryChannel] = {}
         self._inputs: Dict[str, Dict[str, InMemoryChannel]] = {}
@@ -106,7 +105,7 @@ class PipelineStepper:
         self._build_io()
 
     @property
-    def ir(self) -> IRStruct:
+    def ir(self) -> IR:
         return self._ir
 
     def close(self) -> None:
@@ -161,12 +160,12 @@ class PipelineStepper:
                 continue
             dst = edge.destination.node
             actual_port = edge.destination.port
-            logical_port = get_logical_port(actual_port)
+            logical_port = IR.get_logical_port(actual_port)
 
-            if is_fan_in_port(actual_port):
+            if IR.is_fan_in_port(actual_port):
                 # Fan-in: share one channel for all edges to same logical port
                 if logical_port not in self._inputs[dst]:
-                    adapter = IRLoader.load_adapter(edge.adapter)
+                    adapter = edge.instantiate_adapter()
                     channel = InMemoryChannel(buffer_size=adapter.buffer_size)
                     self._inputs[dst][logical_port] = channel
                     self._adapters[dst][logical_port] = adapter
@@ -174,7 +173,7 @@ class PipelineStepper:
                 self._channels[edge.id] = self._inputs[dst][logical_port]
             else:
                 # Normal: one channel per edge
-                adapter = IRLoader.load_adapter(edge.adapter)
+                adapter = edge.instantiate_adapter()
                 channel = InMemoryChannel(buffer_size=adapter.buffer_size)
                 self._channels[edge.id] = channel
                 self._inputs[dst][logical_port] = channel
@@ -245,8 +244,8 @@ class PipelineStepper:
             if not should_execute:
                 continue
 
-            signal = Signal(self._inputs[node_id], fields_filter=fields, now=step_now)
-            signal.sample(handle.flow.input_type, self._adapters[node_id], now=step_now)
+            signal = IOStep(self._inputs[node_id], fields_filter=fields, now=step_now)
+            signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
             inputs_snapshot[node_id] = signal.instance
 
             signal.transform(handle.flow.run)
@@ -347,7 +346,7 @@ def replay_flow(buffer: EventBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     return _ReplayFlow()
 
 
-def replay_handle(buffer: EventBuffer[T], clock: Any, *, output_type: Type[T]) -> FlowHandle:
+def replay_handle(buffer: EventBuffer[T], clock: Any, *, output_type: Type[T]) -> TemporalFlow:
     """Convenience: bind `replay_flow(...)` to a clock via `@`."""
     return replay_flow(buffer, output_type=output_type) @ clock
 
@@ -360,7 +359,7 @@ class EventStreamRecorder(Generic[T]):
     EventStream (an `EventBuffer`) suitable for replay in the stepper.
     """
 
-    def __init__(self, pipeline: Any, handle: FlowHandle, *, name: str = "stream"):
+    def __init__(self, pipeline: Any, handle: TemporalFlow, *, name: str = "stream"):
         self._pipeline = pipeline
         self._handle = handle
         self._node_id = pipeline.get_node_id(handle)

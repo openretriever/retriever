@@ -13,7 +13,7 @@ Features:
     - Zero-copy IPC via Apache Arrow
     - Supports all clock types (Rate, Trigger, Hybrid)
     - Supports all adapters (Latest, Hold, Window)
-    - Compatible with existing IRStruct
+    - Compatible with existing IR
 
 Requirements:
     - dora-rs: Python bindings for dora runtime
@@ -28,7 +28,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from retriever.rt.backend.factory import BackendFactory, register_backend
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 
 logger = logging.getLogger(__name__)
 
@@ -86,14 +86,14 @@ class DoraBackendFactory(BackendFactory):
 
     def create_engine(
         self,
-        ir: IRStruct,
+        ir: IR,
         config: Optional[Dict[str, Any]] = None,
     ):
         """
         Create DoraEngine from IR.
 
         Args:
-            ir: Validated IRStruct
+            ir: Validated IR
             config: Backend-specific configuration:
                     - 'keep_yaml': Don't delete YAML after stop (default: False)
                     - 'yaml_dir': Custom directory for YAML (default: tempdir)

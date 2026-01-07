@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 
 from retriever.rt.backend.interface import BackendFactory, ExecutionEngine
 from retriever.rt.backend.factory import register_backend
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 from retriever.flow.pipeline import Pipeline
 from retriever.config import RecordConfig, get_global_config
 
@@ -21,8 +21,10 @@ class InProcessEngine(ExecutionEngine):
     - Simulation (fast execution of logical steps)
     """
     
-    def __init__(self, ir: IRStruct, config: Optional[Dict[str, Any]] = None):
-        super().__init__(ir, config)
+    def __init__(self, ir: IR, config: Optional[Dict[str, Any]] = None):
+        super().__init__()
+        self.ir = ir
+        self.config = config or {}
         self._pipeline: Optional[Pipeline] = None
         self._stepper = None
         self._running = False
@@ -42,6 +44,7 @@ class InProcessEngine(ExecutionEngine):
         self._recorder = None
         self._mcap_writer = None
         self._record_config: Optional[RecordConfig] = None
+        self._rerun_manager = None
         
         # Check explicit config or global config
         if config and "record" in config:
@@ -54,7 +57,25 @@ class InProcessEngine(ExecutionEngine):
              # Fallback to global default
              glob = get_global_config()
              if glob.get("record"):
-                 self._record_config = glob["record"]
+                  self._record_config = glob["record"]
+
+        # Setup Rerun
+        if config and config.get("rerun_config"):
+            try:
+                from retriever.lib.rerun import RerunManager, RerunConfig
+                rr_cfg_data = config["rerun_config"]
+                if isinstance(rr_cfg_data, bool):
+                     rr_cfg = RerunConfig(spawn=True)
+                elif isinstance(rr_cfg_data, dict):
+                     rr_cfg = RerunConfig(**rr_cfg_data)
+                else:
+                     rr_cfg = rr_cfg_data
+
+                app_id = self.ir.metadata.name
+                self._rerun_manager = RerunManager(rr_cfg, app_id=app_id)
+                self._rerun_manager.init()
+            except ImportError as e:
+                logger.warning(f"Rerun logging enabled but failed to init: {e}")
 
     def build(self) -> None:
         """Prepare the stepper."""
@@ -126,6 +147,10 @@ class InProcessEngine(ExecutionEngine):
                 # Record
                 if self._mcap_writer:
                     self._mcap_writer.write_step(result, step_idx)
+
+                # Rerun
+                if self._rerun_manager:
+                    self._rerun_manager.log_step_result(result, step_idx)
                 
                 step_idx += 1
                 
@@ -143,6 +168,9 @@ class InProcessEngine(ExecutionEngine):
             self._mcap_writer.__exit__(None, None, None)
             self._mcap_writer = None
             logger.info("Recording saved.")
+             
+        if self._rerun_manager:
+            self._rerun_manager.cleanup()
             
         if self._pipeline:
             self._pipeline.reset_stepper()
@@ -160,5 +188,5 @@ class InProcessBackendFactory(BackendFactory):
     def validate_dependencies(self) -> bool:
         return True
 
-    def create_engine(self, ir: IRStruct, config: Optional[Dict[str, Any]] = None) -> ExecutionEngine:
+    def create_engine(self, ir: IR, config: Optional[Dict[str, Any]] = None) -> ExecutionEngine:
         return InProcessEngine(ir, config)

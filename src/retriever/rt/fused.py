@@ -8,13 +8,20 @@ Chains sub-flows with direct method calls and port mapping.
 import importlib
 from typing import Any, List, Dict, Tuple
 from retriever.flow.base import Flow
+from retriever.flow.io import io
 from retriever.error import FlowError, ErrCode
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class FusedFlow(Flow):
+@io
+class FusedAny:
+    """Dynamic type placeholder for FusedFlow"""
+    pass
+
+
+class FusedFlow(Flow[FusedAny, FusedAny]):
     """
     Wrapper that chains multiple flows for zero-copy execution.
 

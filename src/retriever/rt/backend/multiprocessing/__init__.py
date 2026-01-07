@@ -6,7 +6,7 @@ Implements execution engine using Python's multiprocessing module.
 
 from retriever.rt.backend.factory import register_backend
 from retriever.rt.backend.interface import BackendFactory, ExecutionEngine
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 from typing import Dict, Any, Optional
 
 
@@ -31,7 +31,7 @@ class MPBackendFactory(BackendFactory):
 
     def create_engine(
         self,
-        ir: IRStruct,
+        ir: IR,
         config: Optional[Dict[str, Any]] = None,
     ) -> ExecutionEngine:
         from retriever.rt.backend.multiprocessing.engine import MPEngine

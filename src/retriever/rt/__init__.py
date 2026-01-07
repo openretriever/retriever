@@ -9,7 +9,7 @@ with pluggable backend support:
 
 Main entry point:
 - execute_ir(ir, backend='multiprocessing', duration=None, blocking=True)
-  Execute IRStruct or load from file path, returns ExecutionEngine instance
+  Execute IR or load from file path, returns ExecutionEngine instance
 
 Components:
 - runtime: High-level execution API (execute_ir)

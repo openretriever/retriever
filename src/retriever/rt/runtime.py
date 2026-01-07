@@ -9,7 +9,7 @@ from typing import Dict, Any, Union, Optional
 from pathlib import Path
 
 from retriever.ir.execution import ExecutionGraph
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 from retriever.rt.backend.factory import get_backend
 from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.logging import LogConfig
@@ -19,7 +19,7 @@ logger = logging.getLogger('retriever')
 
 
 def execute_ir(
-    ir: Union[IRStruct, ExecutionGraph, str, Path],
+    ir: Union[IR, ExecutionGraph, str, Path],
     backend: str = 'multiprocessing',
     duration: Optional[float] = None,
     blocking: bool = True,
@@ -30,7 +30,7 @@ def execute_ir(
     Execute pipeline from IR or IR file with backend selection.
 
     Args:
-        ir: Either IRStruct instance or path to IR JSON file
+        ir: Either IR instance or path to IR JSON file
         backend: Backend name ('multiprocessing' or 'dora')
         duration: Optional duration in seconds (None = run indefinitely)
         blocking: If True, wait for completion/duration. If False, return immediately.
@@ -46,7 +46,7 @@ def execute_ir(
         RTError: If backend errors occur
 
     Examples:
-        # Execute from IRStruct
+        # Execute from IR
         execute_ir(ir, backend='multiprocessing', duration=10.0)
 
         # Execute from file path
@@ -66,7 +66,7 @@ def execute_ir(
         filepath = Path(ir)
         try:
             with open(filepath, 'r') as f:
-                ir_struct = IRStruct.from_json(f.read())
+                ir_struct = IR.from_json(f.read())
         except FileNotFoundError:
             raise FileNotFoundError(f"IR file not found: {filepath}")
         except Exception as e:

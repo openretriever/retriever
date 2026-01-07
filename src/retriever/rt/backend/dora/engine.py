@@ -15,10 +15,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from retriever.ir.loader import IRLoader
-from retriever.ir.struct import IRStruct
-from retriever.ir.loader import IRLoader
-from retriever.ir.fanin import is_fan_in_port, get_logical_port
+from retriever.ir.core import IR, IRNode, IREdge
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.backend.interface import ExecutionEngine
@@ -40,12 +37,12 @@ class DoraEngine(ExecutionEngine):
     4. stop(): Graceful shutdown
     """
 
-    def __init__(self, ir: IRStruct, config: Dict[str, Any] = None):
+    def __init__(self, ir: IR, config: Dict[str, Any] = None):
         """
         Initialize engine from IR.
 
         Args:
-            ir: Validated IRStruct
+            ir: Validated IR
             config: Backend-specific configuration:
                 - 'keep_yaml': Don't delete YAML after stop (default: False)
                 - 'yaml_dir': Custom directory for YAML (default: tempdir)
@@ -154,10 +151,10 @@ class DoraEngine(ExecutionEngine):
     def _create_executor(self, node) -> DoraExecutor:
         """Create DoraExecutor for each node."""
         # Load flow instance
-        flow = IRLoader.load_flow(node)
+        flow = node.instantiate()
 
         # Load clock from config
-        clock = IRLoader.load_clock(node.config)
+        clock = IRNode.instantiate_clock(node.config)
 
         # Get data port names (filter out service ports)
         from retriever.flow.service import is_service_port
@@ -177,22 +174,22 @@ class DoraEngine(ExecutionEngine):
             if is_service_port(actual_port):
                 continue
 
-            logical_port = get_logical_port(actual_port)
+            logical_port = IR.get_logical_port(actual_port)
 
-            if is_fan_in_port(actual_port):
+            if IR.is_fan_in_port(actual_port):
                 # Fan-in port: map actual -> logical for event routing
                 fan_in_map[actual_port] = logical_port
 
             logical_ports.add(logical_port)
             # Only load adapter once per logical port (all fan-in edges have same adapter)
             if logical_port not in adapters:
-                adapter = IRLoader.load_adapter(edge.adapter)
+                adapter = edge.instantiate_adapter()
                 adapters[logical_port] = adapter
 
         input_ports = list(logical_ports)
 
         # Warn about unconnected ports from node.inputs
-        declared_ports = [p for p in node.inputs.keys() if not is_service_port(p) and not is_fan_in_port(p)]
+        declared_ports = [p for p in node.inputs.keys() if not is_service_port(p) and not IR.is_fan_in_port(p)]
         for p in declared_ports:
             if p not in adapters:
                 logger.warning(

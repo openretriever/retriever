@@ -12,14 +12,11 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
-from retriever.flow.context import FlowContext
-from retriever.flow.handle import FlowHandle
+from retriever.flow.builder import PipelineBuilder
+from retriever.flow.temporal import TemporalFlow
 
 
-
-
-
-class Pipeline(FlowContext):
+class Pipeline:
     """
     A FlowContext-compatible graph builder with an explicit owner object.
 
@@ -31,7 +28,9 @@ class Pipeline(FlowContext):
     """
 
     def __init__(self, name: str = "pipeline", *, on_lag: Optional[str] = None):
-        super().__init__(name=name)
+        self._builder = PipelineBuilder(name=name)
+        self._builder.owner = self
+        self._name = name
         self._stepper = None
         self._default_on_lag = on_lag
 
@@ -82,15 +81,86 @@ class Pipeline(FlowContext):
             ):
                 clock.on_lag = desired
 
-    def validate(self):  # type: ignore[override]
+    def validate(self):
         """Validate the pipeline (applies pipeline-level defaults first)."""
         self._apply_clock_defaults()
-        return super().validate()
+        return self._builder.validate()
+
+    def visualize(
+        self,
+        path: str | Path = "pipeline_viz.html",
+        *,
+        open_browser: bool = False,
+    ) -> Path:
+        """
+        Generate an interactive HTML visualization of the pipeline.
+
+        Args:
+            path: Output file path for the HTML visualization.
+            open_browser: If True, open the visualization in the default browser.
+
+        Returns:
+            Path: The absolute path to the generated HTML file.
+
+        Example:
+            pipe.visualize("my_pipeline.html")
+            pipe.visualize("debug.html", open_browser=True)
+        """
+        ir = self.validate()
+        ir.visualize(str(path), open_browser=False)
+
+        if open_browser:
+            import webbrowser
+            webbrowser.open(f"file://{Path(path).resolve()}")
+
+        return Path(path).resolve()
+
+    # ========================================================================
+    # Delegate Context / Builder Methods
+    # ========================================================================
+
+    def __enter__(self) -> "Pipeline":
+        # Set Pipeline as active context (not the inner builder)
+        # This ensures isinstance(ctx, Pipeline) works in TemporalFlow.then()
+        from retriever.flow.builder import _active_context
+        _active_context.set(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        from retriever.flow.builder import _active_context
+        _active_context.set(None)
+        return False
+
+    def register_connection(self, *args, **kwargs):
+        return self._builder.register_connection(*args, **kwargs)
+
+    def get_handles(self) -> List[TemporalFlow]:
+        return self._builder.get_handles()
+
+    def get_connections(self) -> List[Any]:
+        return self._builder.get_connections()
+
+    def get_handle_for_node(self, node_id: str) -> TemporalFlow:
+        return self._builder.get_handle_for_node(node_id)
+
+    def get_node_id(self, handle: TemporalFlow) -> str:
+        return self._builder.get_node_id(handle)
+
+    def get_name(self) -> str:
+        return self._builder.get_name()
+
+    def get_graph(self):
+        """Get the underlying PipelineGraph (physical structure). Alias for graph()."""
+        return self._builder.graph
+
+    def graph(self):
+        """Get the underlying PipelineGraph (physical structure)."""
+        return self._builder.graph
 
     def connect(
         self,
-        src: FlowHandle,
-        dst: FlowHandle,
+        src: TemporalFlow,
+        dst: TemporalFlow,
         *,
         map: Optional[Dict[str, str]] = None,
         sync: Optional[Union[Any, Dict[str, Any]]] = None,
@@ -99,8 +169,8 @@ class Pipeline(FlowContext):
         """Connect two handles inside this pipeline.
 
         Args:
-            src: Source FlowHandle.
-            dst: Destination FlowHandle.
+            src: Source TemporalFlow.
+            dst: Destination TemporalFlow.
             map: Port mapping (e.g., {"a": "b"}). Default {"*": "*"} auto-matches.
             sync: Sync adapter(s). Can be:
                   - Single adapter: applied to all edges (e.g., `Latest()`)
@@ -127,7 +197,7 @@ class Pipeline(FlowContext):
                     dst=dst.flow.__class__.__name__,
                 )
 
-        self.register_connection(
+        self._builder.register_connection(
             src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
         )
         src.pipeline = self
@@ -150,7 +220,7 @@ class Pipeline(FlowContext):
         for conn in other.get_connections():
             src = other.get_handle_for_node(conn.src_node_id)
             dst = other.get_handle_for_node(conn.dst_node_id)
-            self.register_connection(
+            self._builder.register_connection(
                 src=src,
                 dst=dst,
                 map=conn.map,
@@ -164,7 +234,7 @@ class Pipeline(FlowContext):
         self._stepper = None
         return self
 
-    def replace(self, old: FlowHandle, new: FlowHandle) -> "Pipeline":
+    def replace(self, old: TemporalFlow, new: TemporalFlow) -> "Pipeline":
         """
         Replace a node handle inside this pipeline.
 
@@ -172,38 +242,36 @@ class Pipeline(FlowContext):
         camera source for a replay source while keeping the rest of the pipeline.
         """
         old_id = self.get_node_id(old)
-        new_id = self._register_handle(new)  # type: ignore[attr-defined]
+        new_id = self._builder._register_handle(new)  # type: ignore[attr-defined]
 
         # Rewrite connections
-        for conn in self._connections:  # type: ignore[attr-defined]
+        for conn in self._builder._connections:  # type: ignore[attr-defined]
             if conn.src_node_id == old_id:
                 conn.src_node_id = new_id
             if conn.dst_node_id == old_id:
                 conn.dst_node_id = new_id
 
         # Swap handle table
-        self._handles.pop(old_id, None)  # type: ignore[attr-defined]
-        self._handles[new_id] = new  # type: ignore[attr-defined]
+        self._builder._handles.pop(old_id, None)  # type: ignore[attr-defined]
+        self._builder._handles[new_id] = new  # type: ignore[attr-defined]
 
         # Update pipeline owner pointers
         old.pipeline = None
         new.pipeline = self
 
         # Invalidate caches
-        self._graph = None  # type: ignore[attr-defined]
+        self._builder._graph = None  # type: ignore[attr-defined]
         self._stepper = None
         return self
 
-    def build_ir(self):
-        """Validate and return an IRStruct."""
+    def _build_ir(self):
+        """Validate and return an IR (Internal)."""
         return self.validate()
 
     def build_execution(self, *, policy: Any = "aggressive", **kwargs: Any):
-        """Build an ExecutionGraph from this pipeline's IRStruct."""
-        from retriever.ir import build_execution
-
-        ir = self.build_ir()
-        return build_execution(ir, policy=policy, **kwargs)
+        """Build an ExecutionGraph from this pipeline's IR."""
+        ir = self._build_ir()
+        return ir.compile(policy=policy, **kwargs)
 
     def step(self, *, now: Optional[float] = None, dt: Optional[float] = None):
         """
@@ -262,7 +330,7 @@ class Pipeline(FlowContext):
     # Stepper-first Record / Replay helpers
     # ==================================================================================
 
-    def _create_recorder(self, handle: FlowHandle, *, name: str = "stream"):
+    def _create_recorder(self, handle: TemporalFlow, *, name: str = "stream"):
         """
         Create an in-process recorder bound to this pipeline and handle.
 
@@ -275,7 +343,7 @@ class Pipeline(FlowContext):
 
     def record(
         self,
-        arg1: FlowHandle | str | Path,
+        arg1: TemporalFlow | str | Path,
         arg2: Optional[str | Path] = None,
         *,
         steps: int,
@@ -299,7 +367,7 @@ class Pipeline(FlowContext):
             pipe.record(camera, "stream.pkl.gz", steps=50)
 
         Args:
-            arg1: Output Path (for session) OR FlowHandle (for single stream)
+            arg1: Output Path (for session) OR TemporalFlow (for single stream)
             arg2: Output Path (if arg1 is handle)
             steps: Number of step iterations
             dt: Logical dt per step (seconds)
@@ -308,13 +376,13 @@ class Pipeline(FlowContext):
             visualize: Stream to Rerun live viewer during recording (default False)
         """
         import time as _time
-        from retriever.flow.handle import FlowHandle
+        from retriever.flow.temporal import TemporalFlow
 
         # Parse arguments to support both signatures
-        handle: Optional[FlowHandle] = None
+        handle: Optional[TemporalFlow] = None
         path: Path
 
-        if isinstance(arg1, FlowHandle):
+        if isinstance(arg1, TemporalFlow):
             # pipe.record(handle, path, ...)
             handle = arg1
             if arg2 is None:
@@ -329,7 +397,7 @@ class Pipeline(FlowContext):
         use_mcap = path.suffix.lower() == ".mcap"
 
         if not use_mcap and handle is None:
-            raise ValueError("Legacy recording (.pkl.gz) requires a specific FlowHandle argument.")
+            raise ValueError("Legacy recording (.pkl.gz) requires a specific TemporalFlow argument.")
 
         # Setup MCAP writer if using MCAP format
         mcap_writer = None
@@ -407,13 +475,13 @@ class Pipeline(FlowContext):
 
     def replay(
         self,
-        handle: FlowHandle,
+        handle: TemporalFlow,
         *,
         buffer: Optional[Any] = None,
         path: str | Path | None = None,
         clock: Optional[Any] = None,
         output_type: Optional[Type] = None,
-    ) -> FlowHandle:
+    ) -> TemporalFlow:
         """
         Replace `handle` with an in-process replay source and return the new handle.
 
@@ -456,7 +524,7 @@ class Pipeline(FlowContext):
         self.replace(handle, replay)
         return replay
 
-    def replay_from(self, path: str | Path, inputs: List[FlowHandle]) -> None:
+    def replay_from(self, path: str | Path, inputs: List[TemporalFlow]) -> None:
         """
         Systematic Replay: Configure multiple inputs to replay from a recording.
 
@@ -508,7 +576,7 @@ class Pipeline(FlowContext):
             visualize: "rerun" for live streaming.
             record: Path (str) or RecordConfig to enable recording. 
                     Forces backend="in-process" currently.
-            deploy: Dict mapping FlowHandle or node_id (str) to machine name.
+            deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
             **kwargs: Extra arguments.
         """
 
@@ -542,14 +610,16 @@ class Pipeline(FlowContext):
                 )
                 backend = "in-process"
 
-        # Prepare backend config
-        backend_config = backend_config or {}
+        # Prepare backend config: merge global defaults with local overrides
+        global_backend_config = glob.get("backend_config", {})
+        local_backend_config = backend_config or {}
+        backend_config = {**global_backend_config, **local_backend_config}
         
         # Handle deployment overrides
         if deploy:
             overrides = {}
             for target, machine in deploy.items():
-                if hasattr(target, 'flow'): # Is FlowHandle
+                if hasattr(target, 'flow'): # Is TemporalFlow
                     # We need the node ID. The handle doesn't strictly know its ID 
                     # until pipeline validation, but we can look it up if registered.
                     node_id = self.get_node_id(target)
@@ -557,7 +627,7 @@ class Pipeline(FlowContext):
                 elif isinstance(target, str):
                     overrides[target] = machine
                 else:
-                    raise ValueError(f"Invalid deploy target: {target} (expected FlowHandle or str ID)")
+                    raise ValueError(f"Invalid deploy target: {target} (expected TemporalFlow or str ID)")
             
             backend_config["deployment_overrides"] = overrides
 
@@ -573,9 +643,13 @@ class Pipeline(FlowContext):
         # Enable visualization if requested
         if visualize == "rerun" or visualize is True:
             import retriever.lib.rerun
-            retriever.lib.rerun.enable_rerun_logging(self)
+            retriever.lib.rerun.enable_rerun_logging(self) # Still init process for safety/pre-checks
+            
+            # Ensure backend knows to use Rerun
+            if "rerun_config" not in backend_config:
+                 backend_config["rerun_config"] = {"mode": "spawn"}
 
-        ir = self.build_ir() if not build else None
+        ir = self._build_ir() if not build else None
         # Note: 'build=True' path in original code calls build_execution.
         # But for in-process, we mostly use IR or live instance.
         # Standard execute_ir handles 'ir' being ExecutionGraph if passed.
@@ -634,21 +708,27 @@ def default_pipeline() -> Pipeline:
 
 
 def connect(
-    src: FlowHandle,
-    dst: FlowHandle,
+    src: TemporalFlow,
+    dst: TemporalFlow,
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
     qsize: int = 10,
-) -> Pipeline | FlowContext:
+) -> Pipeline | PipelineBuilder:
     """
     Connect two flows in the active context (or default pipeline).
 
-    1. If a FlowContext is active (via `with Pipeline():` or `with FlowContext():`), use it.
+    1. If a PipelineBuilder is active (via `with Pipeline():` or `with PipelineBuilder():`), use it.
     2. Otherwise, use `retriever.default_pipeline()`.
     """
+    # Fallback for raw PipelineBuilder (manual defaults)
+    from retriever.flow.adapter import Latest
+
+    if sync is None:
+        sync = Latest()
+
     # Check for active context
-    ctx = FlowContext.active()
+    ctx = PipelineBuilder.active()
 
     if ctx is None:
         # Fallback to default pipeline
@@ -658,15 +738,16 @@ def connect(
     if isinstance(ctx, Pipeline):
         return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
 
-    # Fallback for raw FlowContext (manual defaults)
-    from retriever.flow.adapter import Latest
-
-    if sync is None:
-        sync = Latest()
+    # Check if context belongs to a pipeline (Composition support)
+    if getattr(ctx, "owner", None) and isinstance(ctx.owner, Pipeline):
+        return ctx.owner.connect(src, dst, map=map, sync=sync, qsize=qsize)
 
     ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
-    src.pipeline = ctx if isinstance(ctx, Pipeline) else None
-    dst.pipeline = ctx if isinstance(ctx, Pipeline) else None
+    
+    # Try to set pipeline pointer if possible
+    pipeline_ref = getattr(ctx, "owner", None) if isinstance(getattr(ctx, "owner", None), Pipeline) else None
+    src.pipeline = pipeline_ref
+    dst.pipeline = pipeline_ref
     return ctx
 
 

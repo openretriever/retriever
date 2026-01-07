@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
 
 from retriever.rt.runtime import execute_ir
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 from retriever.ir.execution import ExecutionGraph
 
 
@@ -79,7 +79,7 @@ class PerformanceBenchmarker:
 
     def benchmark_pipeline(
         self,
-        ir: Union[IRStruct, ExecutionGraph],
+        ir: Union[IR, ExecutionGraph],
         name: str,
         duration: float = 5.0,
         backends: List[str] = None,
@@ -88,7 +88,7 @@ class PerformanceBenchmarker:
         Benchmark a pipeline execution on multiple backends.
 
         Args:
-            ir: Pipeline definition (IRStruct or ExecutionGraph)
+            ir: Pipeline definition (IR or ExecutionGraph)
             name: Benchmark name
             duration: Time to run the pipeline in seconds
             backends: List of backends to test (default: ['multiprocessing', 'dora'])
@@ -126,7 +126,7 @@ class PerformanceBenchmarker:
 
     def _run_benchmark(
         self,
-        ir: Union[IRStruct, ExecutionGraph],
+        ir: Union[IR, ExecutionGraph],
         name: str,
         backend: str,
         duration: float

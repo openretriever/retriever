@@ -8,7 +8,7 @@ from typing import Tuple, Dict, Any, List, Optional
 from typing import Protocol, runtime_checkable
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from retriever.ir.struct import IRStruct
+from retriever.ir import IR
 from retriever.flow.clock import Clock
 
 
@@ -24,16 +24,7 @@ class ExecutionEngine(ABC):
     Manages the complete lifecycle: build → start → run → stop.
     """
 
-    @abstractmethod
-    def __init__(self, ir: IRStruct, config: Optional[Dict[str, Any]] = None):
-        """
-        Initialize execution engine from IR.
 
-        Args:
-            ir: Validated IRStruct
-            config: Backend-specific configuration
-        """
-        pass
 
     @abstractmethod
     def build(self) -> None:
@@ -335,14 +326,14 @@ class BackendFactory(Protocol):
 
     def create_engine(
         self,
-        ir: IRStruct,
+        ir: IR,
         config: Optional[Dict[str, Any]] = None,
     ) -> ExecutionEngine:
         """
         Create execution engine for this backend.
 
         Args:
-            ir: Validated IRStruct
+            ir: Validated IR
             config: Backend-specific configuration
 
         Returns:
