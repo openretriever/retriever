@@ -62,6 +62,32 @@ def _ensure_rerun():
     return rr
 
 
+def _normalize_rerun_url(address: str) -> str:
+    if address.startswith(("rerun://", "rerun+http://", "rerun+https://")):
+        url = address
+    elif address.startswith(("http://", "https://")):
+        url = f"rerun+{address}"
+    else:
+        url = f"rerun+http://{address}"
+
+    if not url.endswith("/proxy"):
+        url = url.rstrip("/") + "/proxy"
+    return url
+
+
+def _connect_rerun(rr_module, address: str) -> None:
+    if hasattr(rr_module, "connect"):
+        rr_module.connect(address)
+    elif hasattr(rr_module, "connect_grpc"):
+        if address:
+            url = _normalize_rerun_url(address)
+            rr_module.connect_grpc(url)
+            return
+        rr_module.connect_grpc()
+    else:
+        raise AttributeError("rerun has no connect or connect_grpc")
+
+
 # =============================================================================
 # Protocol for Loggable Types
 # =============================================================================
@@ -264,7 +290,7 @@ class RerunManager:
             rr.init(self.app_id, spawn=True)
         elif self.config.mode == "connect":
             rr.init(self.app_id)
-            rr.connect(self.config.address)
+            _connect_rerun(rr, self.config.address)
         elif self.config.mode == "record":
             if self.config.recording_path:
                 self._recording_path = Path(self.config.recording_path)
@@ -282,7 +308,7 @@ class RerunManager:
 
         rr = _ensure_rerun()
         rr.init(self.app_id)
-        rr.connect(self.config.address)
+        _connect_rerun(rr, self.config.address)
 
     def log(self, path: str, value: Any, time_seconds: Optional[float] = None) -> None:
         """
@@ -333,7 +359,7 @@ class RerunManager:
 
         # Scalar types
         if isinstance(value, (int, float)):
-            rr.log(path, rr.Scalar(value))
+            rr.log(path, rr.Scalars([value]))
             return
 
         # String -> TextLog
