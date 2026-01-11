@@ -25,17 +25,19 @@ class MPChannel:
     Implements Publisher/Subscriber protocols.
     """
 
-    def __init__(self, queue: Queue, buffer_size: int, *, buffer_engine: BufferEngineKind = "python"):
+    def __init__(self, queue: Queue, buffer_size: int, *, buffer_engine: BufferEngineKind = "python", on_full: Optional[str] = None):
         """
         Initialize MPChannel.
 
         Args:
             queue: multiprocessing.Queue for IPC
             buffer_size: temporal buffer capacity
+            on_full: Behavior when queue is full ('drop' or 'warn')
         """
         self._queues = [queue]
         self._engine = create_buffer_engine(buffer_engine, buffer_size=buffer_size)
         self.arrival_flag = False
+        self.on_full = on_full
 
     @property
     def queue(self) -> Queue:
@@ -97,7 +99,15 @@ class MPChannel:
             timestamp: Sender timestamp
             block: Block until space available
         """
-        self.queue.put((timestamp, value), block=block)
+        try:
+            self.queue.put((timestamp, value), block=block)
+        except Exception as e:
+            # Handle Queue Full
+            import queue
+            if isinstance(e, queue.Full):
+                if self.on_full == 'drop':
+                    return # Silent drop
+            raise e
 
     def get_all(self) -> EventBuffer[Any]:
         """

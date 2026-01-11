@@ -393,11 +393,19 @@ class DoraExecutor(multiprocessing.Process, Executor):
         if connect_addr:
             try:
                 import rerun as rr
+                from retriever.lib.rerun import _normalize_rerun_url
                 rr.init(app_id)
-                rr.connect(connect_addr)
+                if hasattr(rr, "connect"):
+                    rr.connect(connect_addr)
+                elif hasattr(rr, "connect_grpc"):
+                    try:
+                        rr.connect_grpc(_normalize_rerun_url(connect_addr))
+                    except Exception:
+                        rr.connect_grpc()
+                else:
+                    raise AttributeError("rerun has no connect or connect_grpc")
                 logger.info(f"[{self.node_id}] Connected to shared Rerun at {connect_addr} (App: {app_id})")
             except ImportError:
                 logger.warning(f"[{self.node_id}] Rerun invalid: module 'rerun' not found")
             except Exception as e:
                 logger.warning(f"[{self.node_id}] Failed to connect to Rerun at {connect_addr}: {e}")
-

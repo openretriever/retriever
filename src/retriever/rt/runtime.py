@@ -18,6 +18,21 @@ from retriever.rt.logging.manager import LogManager
 logger = logging.getLogger('retriever')
 
 
+def _extract_rerun_port(connect_addr: str, default_port: int = 9876) -> int:
+    if not connect_addr:
+        return default_port
+    addr = connect_addr
+    if "://" in addr:
+        addr = addr.split("://", 1)[1]
+    addr = addr.split("/", 1)[0]
+    if ":" in addr:
+        try:
+            return int(addr.rsplit(":", 1)[1])
+        except ValueError:
+            return default_port
+    return default_port
+
+
 def execute_ir(
     ir: Union[IR, ExecutionGraph, str, Path],
     backend: str = 'multiprocessing',
@@ -94,9 +109,6 @@ def execute_ir(
         if isinstance(rr_config, bool):
             rr_config = {"spawn": True}
 
-        # Start Rerun
-        rr.init(ir_struct.metadata.name, spawn=rr_config.get("spawn", True))
-        
         # In a real shared setup, we might want to start the Rerun server separately
         # or assume it's running via `rerun` config.
         # For now, we assume the user might have provided a connect addr or we use default.
@@ -111,6 +123,20 @@ def execute_ir(
         
         # Also set in current process for main thread logic
         os.environ["RERUN_CONNECT_ADDR"] = connect_addr
+        os.environ["RERUN_APP_ID"] = ir_struct.metadata.name
+
+        # Start Rerun after env is set so SDK picks up the correct address.
+        spawn_viewer = rr_config.get("spawn", True)
+        rr.init(ir_struct.metadata.name, spawn=False)
+        if spawn_viewer:
+            port = _extract_rerun_port(connect_addr)
+            rr.spawn(port=port, connect=True)
+        else:
+            try:
+                from retriever.lib.rerun import _connect_rerun
+                _connect_rerun(rr, connect_addr)
+            except Exception as e:
+                logger.warning(f"Failed to connect Rerun at {connect_addr}: {e}")
         logger.info(f"Rerun enabled: {connect_addr}")
 
     # Get backend factory

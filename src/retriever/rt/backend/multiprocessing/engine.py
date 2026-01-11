@@ -71,7 +71,12 @@ class MPEngine(ExecutionEngine):
         for edge in self.ir.edges:
             queue = Queue(maxsize=edge.qsize)
             adapter = edge.instantiate_adapter()
-            self.channels[edge.id] = MPChannel(queue, adapter.buffer_size, buffer_engine=buffer_engine)
+            self.channels[edge.id] = MPChannel(
+                queue,
+                adapter.buffer_size,
+                buffer_engine=buffer_engine,
+                on_full=edge.on_full
+            )
             logger.debug(f"Created channel {edge.id} "
                          f"(queue_size={edge.qsize}, buffer_size={adapter.buffer_size})")
 
