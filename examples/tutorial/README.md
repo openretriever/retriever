@@ -49,12 +49,36 @@ pixi run python -m examples.tutorial.<module_name>
 - `013_debug_perception_stepper_real_camera.py`: debug perception with a real camera (still in-process)
 - `014_record_replay_perception.py`: record once (camera), replay later (no hardware)
 
+### State management (Flow state + pipelines)
+
+- `03_state_management/00_stateful_flow_reset.py`: internal state + reset + stepper
+- `03_state_management/01_belief_updater.py`: belief update with implicit internal state
+- `03_state_management/02_stateful_composition.py`: multi-flow stateful composition
+
+### Resource management (hints + fusion)
+
+- `07_resource_management/00_strict_resource_fusion.py`: strict co-location constraints
+- `07_resource_management/01_resource_hints.py`: ResourceSpec patterns + IR inspection
+
+### Feedback loops (events + monitoring)
+
+- `06_feedback_loops/00_feedback_intro.py`: minimal closed-loop control
+- `06_feedback_loops/01_event_driven_replan.py`: emit plans only on events
+- `06_feedback_loops/02_execution_monitoring.py`: alerts when execution stalls
+- `06_feedback_loops/03_time_triggers.py`: one-shot timer event
+- `06_feedback_loops/04_safety_monitoring.py`: safety events + action mapping
+- `06_feedback_loops/05_stateful_replanning.py`: planner with internal memory
+
 ### Runtime internals demos
 
 - `015_buffer_engine_demo.py`: select runtime buffer engine via `backend_config`
 - `016_closed_loop_env.py`: closed-loop (cyclic) env/controller pipeline (mp or dora)
 - `017_pipeline_ergonomics.py`: explicit vs `with pipe:` vs `retriever.connect(...)`
 - `018_registry_basics.py`: type/flow/pipeline registries (PyTorch-ish discovery)
+
+### Physics demos (advanced)
+
+See `examples/advanced/hierarchical_physics_demo/` for time-aware physics demos with Rerun.
 
 ## Recommended progression
 

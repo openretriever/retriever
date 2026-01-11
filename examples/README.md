@@ -60,6 +60,17 @@ A comprehensive list of advanced canonical examples. Run these from the project 
 | **Twist2 Simulation** | `pixi run -e twist2 demo-twist2` | `twist2` | Massive parallel simulation example using Twist2. |
 | **Code as Policies** | `pixi run -e code-policies demo-code-policies` | `code-policies` | LLM generates Python code to solve robotic tasks (Ravens benchmark). |
 
+### 🌀 Physics & Dynamics
+
+| Name | Command | Environment | Description |
+|------|---------|-------------|-------------|
+| **Double Pendulum (Rerun)** | `pixi run python examples/advanced/hierarchical_physics_demo/double_pendulum.py --backend dora` | `default` | Time-stepped chaotic double pendulum with trails + energy in Rerun. |
+| **Three-Body Orbit (Rerun)** | `pixi run python examples/advanced/hierarchical_physics_demo/three_body.py --backend dora` | `default` | Figure-eight three-body orbit with Rerun trails and energy. |
+| **Hierarchical Physics Demo** | `pixi run python examples/advanced/hierarchical_physics_demo/app.py --demo both` | `default` | Combined physics demo (double pendulum + three-body) with Rerun + CLI progress. |
+| **Hybrid Bouncing Ball** | `pixi run python examples/advanced/real_time_hybrid_systems/bouncing_ball_hybrid.py --backend dora` | `default` | Hybrid event dynamics with restitution mode switching + deadline monitoring. |
+| **Hybrid Deadline Throttle** | `pixi run python examples/advanced/real_time_hybrid_systems/hybrid_deadline_throttle.py --backend dora` | `default` | Vertical thrust control with explicit deadline misses and mode switching. |
+| **Autopilot Mode Manager** | `pixi run python examples/advanced/real_time_hybrid_systems/autopilot_mode_manager.py --backend dora` | `default` | Aero-style mode ladder with deadlines (takeoff → climb → cruise → descent → flare). |
+
 ### 🧠 LLM & Agents
 
 | Name | Command | Environment | Description |
