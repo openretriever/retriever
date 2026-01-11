@@ -13,6 +13,7 @@ from retriever.flow.graph import PipelineGraph
 
 if TYPE_CHECKING:
     from retriever.flow.adapter import Adapter
+    from retriever.flow.config import EdgeConfig
     from retriever.flow.temporal import TemporalFlow
 
 from retriever.ir.core import (
@@ -41,7 +42,7 @@ class Pipe:
     dst_node_id: str
     map: Dict[str, str]
     sync: Union['Adapter', Dict[str, 'Adapter']]
-    qsize: int
+    edge_config: Optional[Dict[str, 'EdgeConfig']] = None  # Per-port buffer config
 
 class PipelineBuilder:
     """
@@ -121,7 +122,7 @@ class PipelineBuilder:
         dst: 'TemporalFlow',
         map: Dict[str, str],
         sync: Union['Adapter', Dict[str, 'Adapter']],
-        qsize: int
+        edge_config: Optional[Dict[str, 'EdgeConfig']] = None
     ) -> None:
         """Register connection from FlowHandle.then() with basic validation."""
         # Invalidate any previously-built graph cache.
@@ -136,13 +137,6 @@ class PipelineBuilder:
                 dst=dst.flow.__class__.__name__
             )
 
-        if qsize <= 0:
-            raise FlowError(
-                ErrCode.FLOW_CONNECTION_INVALID,
-                f"Queue size must be positive, got {qsize}",
-                qsize=qsize
-            )
-
         # Register handles and get node IDs
         src_node_id = self._register_handle(src)
         dst_node_id = self._register_handle(dst)
@@ -154,7 +148,7 @@ class PipelineBuilder:
                 dst_node_id=dst_node_id,
                 map=map,
                 sync=sync,
-                qsize=qsize
+                edge_config=edge_config
             )
         )
 
@@ -268,69 +262,77 @@ class PipelineBuilder:
         """Create edges for connection with adapter and qsize metadata."""
         from retriever.utils import as_tagged
 
-        # Per-edge adapter resolution: supports both scalar and dict `sync`
+        def resolve_port_config(port: str):
+            """Resolve qsize, on_full, and adapter for a specific port."""
+            # Start with defaults from connection
+            qsize = 10
+            on_full = None
+            adapter = conn.sync
+
+            # Check edge_config for per-port overrides
+            if conn.edge_config and port in conn.edge_config:
+                cfg = conn.edge_config[port]
+                qsize = cfg.qsize
+                on_full = cfg.on_full or on_full
+                # Use adapter from edge_config if specified
+                if cfg.adapter is not None:
+                    adapter = cfg.adapter
+
+            # Resolve sync dict -> specific adapter
+            if isinstance(adapter, dict):
+                adapter = adapter.get(port) or adapter.get('*')
+                if adapter is None:
+                    from retriever.error import FlowError, ErrCode
+                    raise FlowError(
+                        ErrCode.FLOW_CONNECTION_INVALID,
+                        f"Missing sync adapter for port '{port}' in dict sync"
+                    )
+
+            return qsize, on_full, adapter
 
         # Atomic connection: connect all matching fields by name
         if conn.map == {'*': '*'}:
             src_node = graph.get_node(src_id)
             dst_node = graph.get_node(dst_id)
 
-            # Auto-match ports by name
             src_ports = src_node.get_output_port_names()
             dst_ports = dst_node.get_input_port_names()
 
             for src_port in src_ports:
                 if src_port in dst_ports:
-                    # Resolve adapter: dict[port] -> adapter, or use scalar directly
-                    adapter = conn.sync
-                    if isinstance(adapter, dict):
-                        adapter = adapter.get(src_port) or adapter.get('*')
-                        if adapter is None:
-                            from retriever.error import FlowError, ErrCode
-                            raise FlowError(
-                                ErrCode.FLOW_CONNECTION_INVALID,
-                                f"Missing sync adapter for port '{src_port}' in dict sync"
-                            )
-
+                    qsize, on_full, adapter = resolve_port_config(src_port)
                     graph.connect(
                         src_id, src_port,
                         dst_id, src_port,
                         {
                             'adapter': as_tagged(adapter),
-                            'qsize': conn.qsize
+                            'qsize': qsize,
+                            'on_full': on_full
                         }
                     )
                     logger.debug(
                         f"Created atomic edge: {src_id}.{src_port} -> "
-                        f"{dst_id}.{src_port}"
+                        f"{dst_id}.{src_port} (qsize={qsize})"
                     )
 
         # Composite connection: edge per field mapping
         else:
             for src_field, dst_field in conn.map.items():
-                # Resolve adapter: dict[field] -> adapter, or use scalar directly
-                adapter = conn.sync
-                if isinstance(adapter, dict):
-                    adapter = adapter.get(src_field) or adapter.get('*')
-                    if adapter is None:
-                        from retriever.error import FlowError, ErrCode
-                        raise FlowError(
-                            ErrCode.FLOW_CONNECTION_INVALID,
-                            f"Missing sync adapter for field '{src_field}' in dict sync"
-                        )
-
+                qsize, on_full, adapter = resolve_port_config(dst_field)
                 graph.connect(
                     src_id, src_field,
                     dst_id, dst_field,
                     {
                         'adapter': as_tagged(adapter),
-                        'qsize': conn.qsize
+                        'qsize': qsize,
+                        'on_full': on_full
                     }
                 )
                 logger.debug(
                     f"Created composite edge: {src_id}.{src_field} -> "
-                    f"{dst_id}.{dst_field}"
+                    f"{dst_id}.{dst_field} (qsize={qsize})"
                 )
+
 
     # ========================================================================
     # Accessors
@@ -555,7 +557,8 @@ class PipelineBuilder:
                 source=IREdgeSource(node=edge.src_node, port=edge.src_port),
                 destination=IREdgeDestination(node=edge.dst_node, port=ir_dst_port),
                 adapter=edge.metadata.get('adapter', {}),
-                qsize=edge.metadata.get('qsize', 10)
+                qsize=edge.metadata.get('qsize', 10),
+                on_full=edge.metadata.get('on_full')
             ))
 
         return ir_edges

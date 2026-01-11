@@ -88,7 +88,7 @@ class Pipeline:
 
     def visualize(
         self,
-        path: str | Path = "pipeline_viz.html",
+        path: str | Path = None,
         *,
         open_browser: bool = False,
     ) -> Path:
@@ -107,6 +107,8 @@ class Pipeline:
             pipe.visualize("debug.html", open_browser=True)
         """
         ir = self.validate()
+        if path is None:
+            path = f"viz-{self._name}-pipeline.html"
         ir.visualize(str(path), open_browser=False)
 
         if open_browser:
@@ -164,7 +166,7 @@ class Pipeline:
         *,
         map: Optional[Dict[str, str]] = None,
         sync: Optional[Union[Any, Dict[str, Any]]] = None,
-        qsize: int = 10,
+        edge_config: Optional[Dict[str, Any]] = None,
     ) -> "Pipeline":
         """Connect two handles inside this pipeline.
 
@@ -177,7 +179,7 @@ class Pipeline:
                   - Dict[str, Adapter]: per-port adapters (e.g., `{"a": Hold(), "b": Latest()}`)
                   If None, uses `retriever.set_global_config(default_sync=...)`.
                   If no global default, raises FlowError.
-            qsize: Queue size for buffering.
+            edge_config: Per-port buffer config (Dict[str, EdgeConfig]).
 
         Raises:
             FlowError: If sync is None and no global default_sync is configured.
@@ -198,7 +200,8 @@ class Pipeline:
                 )
 
         self._builder.register_connection(
-            src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
+            src=src, dst=dst, map=map or {"*": "*"}, sync=sync,
+            edge_config=edge_config
         )
         src.pipeline = self
         dst.pipeline = self
@@ -225,7 +228,7 @@ class Pipeline:
                 dst=dst,
                 map=conn.map,
                 sync=conn.sync,
-                qsize=conn.qsize,
+                edge_config=conn.edge_config,
             )
 
         for handle in other.get_handles():
@@ -713,7 +716,7 @@ def connect(
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
-    qsize: int = 10,
+    edge_config: Optional[Dict[str, Any]] = None,
 ) -> Pipeline | PipelineBuilder:
     """
     Connect two flows in the active context (or default pipeline).
@@ -736,13 +739,13 @@ def connect(
 
     # Reuse Pipeline.connect logic if available (handles defaults)
     if isinstance(ctx, Pipeline):
-        return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
+        return ctx.connect(src, dst, map=map, sync=sync, edge_config=edge_config)
 
     # Check if context belongs to a pipeline (Composition support)
     if getattr(ctx, "owner", None) and isinstance(ctx.owner, Pipeline):
-        return ctx.owner.connect(src, dst, map=map, sync=sync, qsize=qsize)
+        return ctx.owner.connect(src, dst, map=map, sync=sync, edge_config=edge_config)
 
-    ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
+    ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, edge_config=edge_config)
     
     # Try to set pipeline pointer if possible
     pipeline_ref = getattr(ctx, "owner", None) if isinstance(getattr(ctx, "owner", None), Pipeline) else None
