@@ -59,6 +59,10 @@ optax = "*"
 [feature.llm.pypi-dependencies]
 openai = "*"
 google-generativeai = "*"
+google-genai = "*"
+fastapi = "*"
+uvicorn = "*"
+pydantic = "*"
 pillow = "*"
 pyarrow = ">=14.0.0"
 
@@ -198,14 +202,6 @@ demo-jax-inference = "python examples/advanced/jax_cuda_async/inference.py"
 demo-jax-train = "python examples/advanced/jax_cuda_async/train.py"
 
 
-# VLM GridWorld Navigation
-# Run: pixi run -e llm demo-vlm-gridworld
-demo-vlm-gridworld = { cmd = "python -m examples.advanced.vlm_gridworld.app --backend dora", env = { PYTHONNOUSERSITE = "1" } }
-
-# LLM Streaming RL (20 Questions)
-# Run: pixi run -e llm demo-llm-streaming
-demo-llm-streaming = { cmd = "python -m examples.advanced.llm_streaming_rl.app --backend dora", env = { PYTHONNOUSERSITE = "1" } }
-
 # =============================================================================
 # OPTIONAL FEATURE: PyTorch (Vision + VLA)
 # =============================================================================
@@ -304,6 +300,25 @@ demo-remote = { cmd = "python -m examples.advanced.remote_connection.app", env =
 demo-rerun-debug = { cmd = "python examples/advanced/rerun_step_debug/app.py", env = { PYTHONPATH = "." } }
 
 [feature.llm.tasks]
+# VLM GridWorld Navigation
+# Run: pixi run -e llm demo-vlm-gridworld
+demo-vlm-gridworld = { cmd = "python -m examples.advanced.vlm_gridworld.app --backend dora", env = { PYTHONPATH = ".", PYTHONNOUSERSITE = "1" } }
+
+# LLM Streaming RL (20 Questions)
+# Run: pixi run -e llm demo-llm-streaming
+demo-llm-streaming = { cmd = "python -m examples.advanced.llm_streaming_rl.app --backend dora", env = { PYTHONPATH = ".", PYTHONNOUSERSITE = "1" } }
+
+# VLM Streaming Reasoning (Webcam + Web Interface)
+# Run: pixi run -e llm demo-vlm-planning
+demo-vlm-planning = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_planning_stream.py", env = { PYTHONPATH = "." } }
+# Run: pixi run -e llm demo-vlm-belief
+demo-vlm-belief = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_belief_planning.py", env = { PYTHONPATH = "." } }
+# Run: pixi run -e llm demo-highlevel-planning
+demo-highlevel-planning = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_highlevel_planning.py", env = { PYTHONPATH = "." } }
+# Run: pixi run -e llm demo-highlevel-planning-v2
+demo-highlevel-planning-v2 = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_highlevel_planning_v2.py", env = { PYTHONPATH = "." } }
+demo-vlm-perception = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_perception_stream.py", env = { PYTHONPATH = "." } }
+
 # Code as Policies (Ravens)
 # Run: pixi run -e code-policies demo-code-policies
 demo-code-policies = { cmd = "python -m examples.advanced.code_as_policies.app", env = { PYTHONPATH = "." } }
