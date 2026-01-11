@@ -131,6 +131,7 @@ class IREdge:
     destination: IREdgeDestination
     adapter: Dict[str, Any]
     qsize: int
+    on_full: Optional[str] = None
 
     def instantiate_adapter(self) -> Adapter:
         """Instantiate the runtime Adapter object for this edge."""
@@ -235,7 +236,8 @@ class IR:
                 source=IREdgeSource(**e['source']),
                 destination=IREdgeDestination(**e['destination']),
                 adapter=e['adapter'],
-                qsize=e['qsize']
+                qsize=e['qsize'],
+                on_full=e.get('on_full')
             ) for e in data['edges']
         ]
 
