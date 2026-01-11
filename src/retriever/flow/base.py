@@ -31,6 +31,7 @@ class Flow(ABC, Generic[I, O]):
     _output_type: Optional[Type] = None # Legacy/Singular accessor
     _main_thread: bool = False  # If True, run in main thread (for GUI flows)
     _is_composite_input: bool = False
+    _rr_instance = None  # Cached Rerun instance
 
     # Rate configuration (optional, used by DefaultRate/AdaptiveRate clocks)
     # Set this to a FlowRateConfig instance to configure rate behavior
@@ -138,6 +139,38 @@ class Flow(ABC, Generic[I, O]):
     def output_types(self) -> Tuple[Type, ...]:
         """Get all output types (for composition)."""
         return self._output_types
+
+    @property
+    def rr(self):
+        """
+        Get Rerun instance, auto-connecting via gRPC if needed.
+        
+        Usage in Flow.step():
+            if self.rr:
+                self.rr.log("metrics/latency", rr.Scalars([value]))
+        
+        Returns None if Rerun is not available.
+        """
+        if self._rr_instance is None:
+            try:
+                import os
+                import rerun as _rr
+                from retriever.config import get_global_config
+                from retriever.lib.rerun import _connect_rerun
+                config = get_global_config()
+                app_id = os.environ.get("RERUN_APP_ID") or config.get("app_id", "retriever")
+                connect_addr = os.environ.get("RERUN_CONNECT_ADDR") or config.get(
+                    "rerun_connect_addr", "127.0.0.1:9876"
+                )
+                # Init with spawn=False (subprocess connects to main viewer)
+                _rr.init(app_id, spawn=False)
+                _connect_rerun(_rr, connect_addr)
+                self._rr_instance = _rr
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).info(f"Rerun not initialized: {e}")
+                self._rr_instance = False  # Sentinel to avoid retrying
+        return self._rr_instance if self._rr_instance else None
 
     def init(self) -> None:
         """

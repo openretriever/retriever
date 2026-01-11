@@ -61,7 +61,7 @@ def connect(
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
-    qsize: int = 10,
+    edge_config: Optional[Dict[str, Any]] = None,
     pipeline: Optional[Pipeline] = None,
 ) -> TemporalFlow:
     """
@@ -74,17 +74,17 @@ def connect(
     4) Otherwise: connect into the thread-local `default_pipeline()`.
     """
     if pipeline is not None:
-        pipeline.connect(src, dst, map=map, sync=sync, qsize=qsize)
+        pipeline.connect(src, dst, map=map, sync=sync, edge_config=edge_config)
         return dst
 
     from retriever.flow.builder import PipelineBuilder
 
     if PipelineBuilder.active() is not None:
-        return src.then(dst, map=map, sync=sync, qsize=qsize)
+        return src.then(dst, map=map, sync=sync, edge_config=edge_config)
 
     if src.pipeline is not None or dst.pipeline is not None:
-        return src.then(dst, map=map, sync=sync, qsize=qsize)
+        return src.then(dst, map=map, sync=sync, edge_config=edge_config)
 
-    default_pipeline().connect(src, dst, map=map, sync=sync, qsize=qsize)
+    default_pipeline().connect(src, dst, map=map, sync=sync, edge_config=edge_config)
     return dst
 

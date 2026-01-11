@@ -21,6 +21,7 @@ from retriever.flow.pipeline import (
     reset,
     view,
 )
+from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 
 from typing import Any, Optional, Union
@@ -30,6 +31,7 @@ def init(
     name: Optional[str] = None,
     record: Optional[Union[str, RecordConfig]] = None,
     backend: Optional[str] = None,
+    backend_config: Optional[dict] = None,
     default_sync: Optional[Any] = None,
 ) -> None:
     """
@@ -39,11 +41,37 @@ def init(
         name: Session name (useful for logging/recording)
         record: Recording path (str) or configuration (RecordConfig)
         backend: Default backend for run() (e.g. "multiprocessing", "dora")
+        backend_config: Default backend configuration dict. Values are merged
+                        with (and overridden by) `pipe.run(backend_config=...)`.
         default_sync: Default sync adapter for connections (e.g. Latest()).
                       If None, every pipe.connect() must specify sync= explicitly.
     """
-    set_global_config(name=name, record=record, backend=backend, default_sync=default_sync)
+    set_global_config(name=name, record=record, backend=backend, backend_config=backend_config, default_sync=default_sync)
 
+
+
+# Registry Exports
+from retriever.flow_registry import (
+    register_flow,
+    get_flow,
+    get_flow_class,
+    list_flows,
+    find_flows,
+)
+from retriever.pipeline_registry import (
+    register_pipeline,
+    get_pipeline,
+    get_pipeline_factory,
+    list_pipelines,
+    find_pipelines,
+    build_ir,
+)
+from retriever.types_registry import (
+    register_type,
+    get_type,
+    list_types,
+    find_types,
+)
 
 __all__ = [
     "Flow",
@@ -59,5 +87,24 @@ __all__ = [
     "view",
     "init",
     "RecordConfig",
+    "io",
+    "TemporalFlow",
+    "PipelineBuilder",
+    # Registry
+    "register_flow",
+    "get_flow",
+    "get_flow_class",
+    "list_flows",
+    "find_flows",
+    "register_pipeline",
+    "get_pipeline",
+    "get_pipeline_factory",
+    "list_pipelines",
+    "find_pipelines",
+    "build_ir",
+    "register_type",
+    "get_type",
+    "list_types",
+    "find_types",
 ]
 
