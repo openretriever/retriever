@@ -5,7 +5,7 @@ FlowConfig encapsulates execution metadata for a flow.
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
+from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple, Literal, Union
 from enum import Enum
 
 from retriever.error import FlowError, ErrCode
@@ -14,6 +14,41 @@ if TYPE_CHECKING:
     from retriever.flow.base import Flow
     from retriever.flow.clock import Clock
     from retriever.flow.temporal import TemporalFlow
+    from retriever.flow.adapter import Adapter
+
+
+@dataclass
+class EdgeConfig:
+    """
+    Per-port edge configuration for buffer and sync behavior.
+    
+    Used in FlowHandle.then() to configure individual input ports:
+    - qsize: Buffer size for this port
+    - on_full: Policy when buffer is full ("drop" or "block")
+    - adapter: Optional sync adapter override for this port
+    
+    Example:
+        cam.then(planner, edge_config={
+            "frame": EdgeConfig(qsize=100, on_full="drop"),
+            "timestamp": EdgeConfig(qsize=10),
+        })
+    """
+    qsize: int = 10
+    on_full: Literal["drop", "block"] = "drop"
+    adapter: Optional['Adapter'] = None
+    
+    def __post_init__(self):
+        if self.qsize < 1:
+            raise FlowError(
+                ErrCode.FLOW_INVALID,
+                "EdgeConfig qsize must be >= 1",
+                qsize=self.qsize,
+            )
+        if self.on_full not in ("drop", "block"):
+            raise FlowError(
+                ErrCode.FLOW_INVALID,
+                f"EdgeConfig on_full must be 'drop' or 'block', got '{self.on_full}'",
+            )
 
 
 @dataclass
