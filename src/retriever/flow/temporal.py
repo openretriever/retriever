@@ -43,6 +43,8 @@ class TemporalFlow:
         next: "TemporalFlow",
         map: Optional[Dict[str, str]] = None,
         sync: Optional["Adapter"] = None,
+        qsize: int = 0,
+        on_full: str = "overwrite",
         edge_config: Optional[Dict[str, "EdgeConfig"]] = None,
     ) -> "TemporalFlow":
         """
@@ -122,7 +124,13 @@ class TemporalFlow:
                     )
 
                 ctx.connect(
-                    self, next, map=map, sync=sync, edge_config=edge_config
+                    self,
+                    next,
+                    map=map,
+                    sync=sync,
+                    qsize=qsize,
+                    on_full=on_full,
+                    edge_config=edge_config,
                 )
                 return next
 
@@ -136,7 +144,13 @@ class TemporalFlow:
                 )
 
             ctx.register_connection(
-                src=self, dst=next, map=map, sync=sync, edge_config=edge_config
+                src=self,
+                dst=next,
+                map=map,
+                sync=sync,
+                qsize=qsize,
+                on_full=on_full,
+                edge_config=edge_config,
             )
             return next
 
@@ -148,8 +162,15 @@ class TemporalFlow:
             left.merge(right)
 
         pipeline = left or right or Pipeline()
-        pipeline.connect(self, next, map=map, sync=sync, qsize=qsize, on_full=on_full,
-                         edge_config=edge_config)
+        pipeline.connect(
+            self,
+            next,
+            map=map,
+            sync=sync,
+            qsize=qsize,
+            on_full=on_full,
+            edge_config=edge_config,
+        )
 
         return next
 
