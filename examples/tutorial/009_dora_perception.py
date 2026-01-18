@@ -19,6 +19,7 @@ import numpy as np
 import cv2
 from dataclasses import dataclass
 from typing import List, Optional
+
 try:
     import rerun as rr
 except ImportError:
@@ -35,10 +36,12 @@ class BBox:
     width: float
     height: float
 
+
 @dataclass
 class Image:
     frame: np.ndarray
     frame_id: int
+
 
 @dataclass
 class Detection:
@@ -46,14 +49,17 @@ class Detection:
     confidence: float
     bbox: BBox
 
+
 @io
 @dataclass
 class CameraData:
     image: Image
 
     def log_to_rerun(self, path: str) -> None:
-        if rr is None: return
+        if rr is None:
+            return
         rr.log(f"{path}/image", rr.Image(self.image.frame))
+
 
 @io
 @dataclass
@@ -62,8 +68,9 @@ class DetectionResults:
     detections: List[Detection]
 
     def log_to_rerun(self, path: str) -> None:
-        if rr is None: return
-        
+        if rr is None:
+            return
+
         # Log image
         rr.log(f"{path}/image", rr.Image(self.image.frame))
 
@@ -92,13 +99,14 @@ class DetectionResults:
                 array=np.array(boxes),
                 array_format=rr.Box2DFormat.XYWH,
                 labels=labels,
-                class_ids=class_ids
-            )
+                class_ids=class_ids,
+            ),
         )
 
 
 class CameraSource(Flow[None, CameraData]):
     """Camera capture - tries real camera, falls back to mock"""
+
     def __init__(self, use_real_camera=True, width=640, height=480):
         super().__init__()
         self.use_real_camera = use_real_camera
@@ -140,7 +148,9 @@ class CameraSource(Flow[None, CameraData]):
             ret, frame = self.cap.read()
             if ret:
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                return CameraData(image=Image(frame=rgb_frame, frame_id=self.frame_count))
+                return CameraData(
+                    image=Image(frame=rgb_frame, frame_id=self.frame_count)
+                )
 
         # Fallback: synthetic moving blobs (useful on CI / no camera / permissions)
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
@@ -159,6 +169,7 @@ class CameraSource(Flow[None, CameraData]):
 
 class ColorDetector(Flow[CameraData, DetectionResults]):
     """Detect colored objects in image"""
+
     def __init__(self, min_confidence=0.6):
         super().__init__()
         self.min_confidence = min_confidence
@@ -168,20 +179,21 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
         frame = input.image.frame
 
         # Detect red objects
-        red_mask = (frame[:,:,0] > 180) & (frame[:,:,1] < 120) & (frame[:,:,2] < 120)
+        red_mask = (
+            (frame[:, :, 0] > 180) & (frame[:, :, 1] < 120) & (frame[:, :, 2] < 120)
+        )
         detections.extend(self._detect_from_mask(red_mask, "red_object"))
 
         # Detect blue objects
-        blue_mask = (frame[:,:,2] > 180) & (frame[:,:,0] < 120) & (frame[:,:,1] < 120)
+        blue_mask = (
+            (frame[:, :, 2] > 180) & (frame[:, :, 0] < 120) & (frame[:, :, 1] < 120)
+        )
         detections.extend(self._detect_from_mask(blue_mask, "blue_object"))
 
         # Filter by confidence
         filtered = [d for d in detections if d.confidence >= self.min_confidence]
 
-        return DetectionResults(
-            image=input.image,
-            detections=filtered
-        )
+        return DetectionResults(image=input.image, detections=filtered)
 
     def _detect_from_mask(self, mask: np.ndarray, label: str) -> List[Detection]:
         """Create detection from binary mask"""
@@ -196,10 +208,7 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
         confidence = min(0.95, area / 5000.0)
 
         bbox = BBox(
-            x=float(x1),
-            y=float(y1),
-            width=float(x2 - x1),
-            height=float(y2 - y1)
+            x=float(x1), y=float(y1), width=float(x2 - x1), height=float(y2 - y1)
         )
 
         return [Detection(label=label, confidence=confidence, bbox=bbox)]
@@ -207,6 +216,7 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
 
 class DisplayFlow(Flow[DetectionResults, None]):
     """Display detection results with cv2 window"""
+
     def __init__(self, show_window=True):
         super().__init__()
         self.show_window = show_window
@@ -215,10 +225,12 @@ class DisplayFlow(Flow[DetectionResults, None]):
         """Create window on process start"""
         if self.show_window:
             try:
-                cv2.namedWindow('Perception Demo', cv2.WINDOW_NORMAL)
-                cv2.resizeWindow('Perception Demo', 1280, 720)
+                cv2.namedWindow("Perception Demo", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("Perception Demo", 1280, 720)
             except Exception as e:
-                print(f"[DisplayFlow] Failed to create OpenCV window, disabling UI: {e}")
+                print(
+                    f"[DisplayFlow] Failed to create OpenCV window, disabling UI: {e}"
+                )
                 self.show_window = False
 
     def finalize(self):
@@ -238,7 +250,9 @@ class DisplayFlow(Flow[DetectionResults, None]):
         if dets:
             labels = [d.label for d in dets]
             confs = [f"{d.confidence:.2f}" for d in dets]
-            print(f"  Frame {frame_id}: {len(dets)} objects - {list(zip(labels, confs))}")
+            print(
+                f"  Frame {frame_id}: {len(dets)} objects - {list(zip(labels, confs))}"
+            )
         else:
             print(f"  Frame {frame_id}: No objects")
 
@@ -252,22 +266,36 @@ class DisplayFlow(Flow[DetectionResults, None]):
                 x, y, w, h = int(bbox.x), int(bbox.y), int(bbox.width), int(bbox.height)
 
                 # Color based on detection type
-                if 'red' in det.label:
+                if "red" in det.label:
                     color = (0, 0, 255)
-                elif 'blue' in det.label:
+                elif "blue" in det.label:
                     color = (255, 0, 0)
                 else:
                     color = (255, 255, 255)
 
                 cv2.rectangle(display_frame, (x, y), (x + w, y + h), color, 2)
-                cv2.putText(display_frame, f"{det.label}: {det.confidence:.2f}",
-                           (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                cv2.putText(
+                    display_frame,
+                    f"{det.label}: {det.confidence:.2f}",
+                    (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    color,
+                    2,
+                )
 
             # Add frame info
-            cv2.putText(display_frame, f"Frame {frame_id}",
-                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.putText(
+                display_frame,
+                f"Frame {frame_id}",
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
+            )
 
-            cv2.imshow('Perception Demo', display_frame)
+            cv2.imshow("Perception Demo", display_frame)
             cv2.waitKey(1)
 
         return None
@@ -284,18 +312,22 @@ def build_perception_pipeline() -> Pipeline:
     with pipe:
         camera = CameraSource(use_real_camera=True) @ Rate(hz=30)
         detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
-        display = DisplayFlow(show_window=True) @ Rate(hz=20)
+        display = DisplayFlow(show_window=True) @ Rate(hz=3)
 
         # Default adapter is Latest(), so `>>` is the shortest form.
         camera >> detector >> display
 
     graph = pipe.get_graph()
-    print(f"✓ Graph created: {graph.get_node_count()} nodes, {graph.get_edge_count()} edges\n")
+    print(
+        f"✓ Graph created: {graph.get_node_count()} nodes, {graph.get_edge_count()} edges\n"
+    )
     return pipe
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Perception demo (camera -> detection -> display)")
+    p = argparse.ArgumentParser(
+        description="Perception demo (camera -> detection -> display)"
+    )
     p.add_argument("--backend", default="dora", choices=["dora", "multiprocessing"])
     p.add_argument("--duration", type=float, default=20.0)
     return p.parse_args()
