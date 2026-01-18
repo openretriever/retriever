@@ -259,6 +259,9 @@ class RerunConfig:
     log_outputs: bool = True
     """Log flow outputs."""
 
+    recording_id: Optional[str] = None
+    """Shared recording ID for multi-process logging."""
+
 
 # =============================================================================
 # Rerun Manager
@@ -284,17 +287,19 @@ class RerunManager:
         if not self.config.enabled or self._initialized:
             return
 
+        import os
         rr = _ensure_rerun()
+        recording_id = self.config.recording_id or os.environ.get("RERUN_RECORDING_ID")
 
         if self.config.mode == "spawn":
-            rr.init(self.app_id, spawn=True)
+            rr.init(self.app_id, spawn=True, recording_id=recording_id)
         elif self.config.mode == "connect":
-            rr.init(self.app_id)
+            rr.init(self.app_id, recording_id=recording_id)
             _connect_rerun(rr, self.config.address)
         elif self.config.mode == "record":
             if self.config.recording_path:
                 self._recording_path = Path(self.config.recording_path)
-                rr.init(self.app_id)
+                rr.init(self.app_id, recording_id=recording_id)
                 rr.save(str(self._recording_path))
             else:
                 raise ValueError("recording_path required for mode='record'")
@@ -306,8 +311,10 @@ class RerunManager:
         if not self.config.enabled:
             return
 
+        import os
         rr = _ensure_rerun()
-        rr.init(self.app_id)
+        recording_id = self.config.recording_id or os.environ.get("RERUN_RECORDING_ID")
+        rr.init(self.app_id, recording_id=recording_id)
         _connect_rerun(rr, self.config.address)
 
     def log(self, path: str, value: Any, time_seconds: Optional[float] = None) -> None:

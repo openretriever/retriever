@@ -196,28 +196,35 @@ HTML_TEMPLATE = """
         // Edges
         // Track edge counts between node pairs to calculate offsets for unbundled-bezier
         const pair_counts = {};
+        const fanin_counts = {}; // Track fan-in index per (dstNode, logicalPort)
+
 
         irData.edges.forEach(edge => {
              const source = edge.source.node;
              const target = edge.destination.node;
-             let label = `${edge.source.port} → ${edge.destination.port}`;
+             const source = edge.source.node;
+             const target = edge.destination.node;
+             
+             // Handle Fan-in Labeling
+             let dstPortDisplay = edge.destination.port;
+             if (dstPortDisplay.startsWith("_fanin/")) {
+                  // Format: _fanin/SourceNode/LogicalPort
+                  const parts = dstPortDisplay.split('/');
+                  if (parts.length >= 3) {
+                      const logicalPort = parts[2];
+                      const key = `${target}_${logicalPort}`;
+                      if (!fanin_counts[key]) fanin_counts[key] = 0;
+                      fanin_counts[key]++;
+                      dstPortDisplay = `${logicalPort} (${fanin_counts[key]})`;
+                  }
+             }
+             
+             let label = `${edge.source.port} → ${dstPortDisplay}`;
              
              // Extract Adapter Name if present
              if (edge.adapter) {
                  const adapterName = Object.keys(edge.adapter)[0];
-                 const params = edge.adapter[adapterName];
-                 let args = [];
-                 if (params) {
-                     for (const [k, v] of Object.entries(params)) {
-                         if (k === 'buffer_size' && v === 1) continue;
-                         args.push(`${k}=${v}`);
-                     }
-                 }
-                 
                  label += `: ${adapterName}`;
-                 if (args.length > 0) {
-                     label += `(${args.join(', ')})`;
-                 }
              }
              
              // Group by sorted pair to handle parallel edges in either direction
@@ -461,15 +468,16 @@ HTML_TEMPLATE = """
 </html>
 """
 
+
 def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
     """Extract readable clock info from IR node config."""
     clock_cfg = ir_node.config.get("clock", {})
     if not clock_cfg:
         return "Unknown", ""
-    
+
     # In IR, clock config is usually a dict with the clock type as the key
     # e.g. {'Rate': {'hz': 10}} or {'Trigger': {'fields': ['obs']}}
-    
+
     if "Rate" in clock_cfg:
         c_type = "Rate"
         params = clock_cfg["Rate"]
@@ -491,29 +499,33 @@ def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
         # Fallback if structure is different
         c_type = clock_cfg.get("type", "Unknown")
         detail = str(clock_cfg)
-            
+
     return c_type, detail
+
 
 from retriever.ir.core import IR
 
-def generate_ascii_graph(ir: 'IR') -> str:
+
+def generate_ascii_graph(ir: "IR") -> str:
     """
     Generate ASCII representation of the IR graph.
-    
+
     Args:
         ir: The IR object to visualize
-        
+
     Returns:
         String containing ASCII graph
     """
-    
+
     output = []
     output.append(f"Pipeline: {ir.metadata.name}")
     output.append("=" * (len(ir.metadata.name) + 10))
-    
+
     if ir.topology.has_cycle:
-        output.append("NOTE: Cycle detected in graph topology (expected for closed-loop systems).")
-    
+        output.append(
+            "NOTE: Cycle detected in graph topology (expected for closed-loop systems)."
+        )
+
     # 1. Build Adjacency
     adj: Dict[str, List[Any]] = {node.id: [] for node in ir.nodes}
     for edge in ir.edges:
@@ -528,24 +540,24 @@ def generate_ascii_graph(ir: 'IR') -> str:
     in_degree = {n.id: 0 for n in ir.nodes}
     for edge in ir.edges:
         in_degree[edge.destination.node] += 1
-        
+
     ordered_nodes = []
     # Simple heuristic: Start with 0 in-degree, then BFS
     queue = [n for n in ir.nodes if in_degree[n.id] == 0]
     visited = set(n.id for n in queue)
-    
+
     # If no 0 in-degree (pure cycle), pick arbitrary (e.g. first definition)
     if not queue and ir.nodes:
         queue = [ir.nodes[0]]
         visited.add(ir.nodes[0].id)
-        
+
     # Mapping id -> node
     id_to_node = {n.id: n for n in ir.nodes}
-    
+
     while queue:
         n = queue.pop(0)
         ordered_nodes.append(n)
-        
+
         # Add neighbors not visited
         # Sort neighbors for deterministic output
         neighbors = sorted([e.destination.node for e in adj[n.id]])
@@ -553,24 +565,24 @@ def generate_ascii_graph(ir: 'IR') -> str:
             if neigh_id not in visited:
                 visited.add(neigh_id)
                 queue.append(id_to_node[neigh_id])
-    
+
     # Add any remaining nodes (disconnected components or unreachable in this simple BFS)
     for n in ir.nodes:
         if n.id not in visited:
             ordered_nodes.append(n)
-            
+
     # 3. Print
     for i, node in enumerate(ordered_nodes):
         c_type, c_detail = get_node_clock_info(node)
         clock_str = f"{c_type}({c_detail})" if c_detail else c_type
-        
+
         # Simplify ID for display (NodeClass_123 -> NodeClass)
         display_name = node.id
         if "_" in display_name:
             display_name = display_name.split("_")[0]
-            
+
         output.append(f"[{display_name}] <{clock_str}>")
-        
+
         outgoing = adj[node.id]
         if not outgoing:
             output.append("   (no outputs)")
@@ -578,50 +590,44 @@ def generate_ascii_graph(ir: 'IR') -> str:
             for edge in outgoing:
                 dest_id = edge.destination.node
                 dest_display = dest_id.split("_")[0] if "_" in dest_id else dest_id
-                
+
                 adapter_info = ""
                 if edge.adapter:
-                     adapter_name = list(edge.adapter.keys())[0]
-                     params = edge.adapter[adapter_name]
-                     args = []
-                     for k, v in params.items():
-                         if k == 'buffer_size' and v == 1:
-                             continue
-                         args.append(f"{k}={v}")
+                    adapter_name = list(edge.adapter.keys())[0]
+                    params = edge.adapter[adapter_name]
+                    adapter_info = f": {adapter_name}"
 
-                     adapter_info = f": {adapter_name}"
-                     if args:
-                         adapter_info += f"({', '.join(args)})"
-
-                
                 # Check for cycle/feedback (if dest is earlier in list)
                 # Note: this is a heuristic based on print order
                 is_feedback = False
-                for prev in ordered_nodes[:i+1]:
+                for prev in ordered_nodes[: i + 1]:
                     if prev.id == dest_id:
                         is_feedback = True
                         break
-                
+
                 arrow = "-->"
                 note = ""
                 if is_feedback:
                     note = " (feedback/cycle)"
-                    arrow = "-->" # Could use different arrow
-                
-                output.append(f"   --({edge.source.port} -> {edge.destination.port}{adapter_info}){arrow} [{dest_display}]{note}")
+                    arrow = "-->"  # Could use different arrow
+
+                output.append(
+                    f"   --({edge.source.port} -> {edge.destination.port}{adapter_info}){arrow} [{dest_display}]{note}"
+                )
         output.append("")
-        
+
     return "\n".join(output)
 
-def save_interactive_html(ir: 'IR', filename: str = "pipeline_viz.html") -> None:
+
+def save_interactive_html(ir: "IR", filename: str = "pipeline_viz.html") -> None:
     """Export the pipeline visualization to a self-contained HTML file using IR."""
-    
+
     # Serialize IR to JSON
     json_data = ir.to_json(indent=2)
-    
+
     # Inject into template
     html_content = HTML_TEMPLATE.replace("__IR_DATA__", json_data)
-    
+
     with open(filename, "w") as f:
         f.write(html_content)
     print(f"\n[Success] Visualization saved to: {filename}")
