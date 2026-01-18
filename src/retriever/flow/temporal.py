@@ -43,7 +43,7 @@ class TemporalFlow:
         next: "TemporalFlow",
         map: Optional[Dict[str, str]] = None,
         sync: Optional["Adapter"] = None,
-        qsize: int = 0,
+        qsize: int = 10,
         on_full: str = "overwrite",
         edge_config: Optional[Dict[str, "EdgeConfig"]] = None,
     ) -> "TemporalFlow":

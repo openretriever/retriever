@@ -162,8 +162,9 @@ class Flow(ABC, Generic[I, O]):
                 connect_addr = os.environ.get("RERUN_CONNECT_ADDR") or config.get(
                     "rerun_connect_addr", "127.0.0.1:9876"
                 )
+                recording_id = os.environ.get("RERUN_RECORDING_ID")
                 # Init with spawn=False (subprocess connects to main viewer)
-                _rr.init(app_id, spawn=False)
+                _rr.init(app_id, spawn=False, recording_id=recording_id)
                 _connect_rerun(_rr, connect_addr)
                 self._rr_instance = _rr
             except Exception as e:

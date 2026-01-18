@@ -17,8 +17,15 @@ if TYPE_CHECKING:
     from retriever.flow.temporal import TemporalFlow
 
 from retriever.ir.core import (
-    IR, IRNode, IREdge, IREdgeSource, IREdgeDestination,
-    IRServiceHandler, IRServiceCaller, IRMetadata, IRTopology
+    IR,
+    IRNode,
+    IREdge,
+    IREdgeSource,
+    IREdgeDestination,
+    IRServiceHandler,
+    IRServiceCaller,
+    IRMetadata,
+    IRTopology,
 )
 from retriever.error import IRError
 from retriever.flow.service import ServiceMethod
@@ -26,23 +33,28 @@ from retriever.utils import type_to_str
 from datetime import datetime
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 # Thread-safe context storage
-_active_context: ContextVar[Optional['PipelineBuilder']] = ContextVar(
-    'flow_context',
-    default=None
+_active_context: ContextVar[Optional["PipelineBuilder"]] = ContextVar(
+    "flow_context", default=None
 )
+
 
 @dataclass
 class Pipe:
     """Record of a single connection registered via then()"""
+
     src_node_id: str
     dst_node_id: str
     map: Dict[str, str]
-    sync: Union['Adapter', Dict[str, 'Adapter']]
-    edge_config: Optional[Dict[str, 'EdgeConfig']] = None  # Per-port buffer config
+    sync: Union["Adapter", Dict[str, "Adapter"]]
+    edge_config: Optional[Dict[str, "EdgeConfig"]] = None  # Per-port buffer config
+    qsize: int = 10
+    on_full: Optional[str] = None
+
 
 class PipelineBuilder:
     """
@@ -65,7 +77,7 @@ class PipelineBuilder:
         self._name: str = name
 
         # Track handles: node_id → handle
-        self._handles: Dict[str, 'TemporalFlow'] = {}
+        self._handles: Dict[str, "TemporalFlow"] = {}
 
         # Optional owner (e.g. Pipeline)
         self.owner: Any = None
@@ -80,7 +92,7 @@ class PipelineBuilder:
     # Context Management
     # ========================================================================
 
-    def __enter__(self) -> 'PipelineBuilder':
+    def __enter__(self) -> "PipelineBuilder":
         """Activate this context for the current thread"""
         _active_context.set(self)
         logger.debug(f"PipelineBuilder '{self._name}' activated")
@@ -93,16 +105,17 @@ class PipelineBuilder:
         return False
 
     @staticmethod
-    def active() -> Optional['PipelineBuilder']:
+    def active() -> Optional["PipelineBuilder"]:
         """Get currently active PipelineBuilder for this thread"""
         return _active_context.get()
 
     @staticmethod
-    def require_active() -> 'PipelineBuilder':
+    def require_active() -> "PipelineBuilder":
         """Get active context or raise FlowError if none active."""
         ctx = PipelineBuilder.active()
         if not ctx:
             import inspect
+
             frame = inspect.currentframe()
             if frame and frame.f_back:
                 method_name = frame.f_back.f_code.co_name
@@ -118,11 +131,13 @@ class PipelineBuilder:
 
     def register_connection(
         self,
-        src: 'TemporalFlow',
-        dst: 'TemporalFlow',
+        src: "TemporalFlow",
+        dst: "TemporalFlow",
         map: Dict[str, str],
-        sync: Union['Adapter', Dict[str, 'Adapter']],
-        edge_config: Optional[Dict[str, 'EdgeConfig']] = None
+        sync: Union["Adapter", Dict[str, "Adapter"]],
+        edge_config: Optional[Dict[str, "EdgeConfig"]] = None,
+        qsize: int = 10,
+        on_full: Optional[str] = None,
     ) -> None:
         """Register connection from FlowHandle.then() with basic validation."""
         # Invalidate any previously-built graph cache.
@@ -134,7 +149,7 @@ class PipelineBuilder:
                 ErrCode.FLOW_CONNECTION_INVALID,
                 "Map parameter cannot be empty",
                 src=src.flow.__class__.__name__,
-                dst=dst.flow.__class__.__name__
+                dst=dst.flow.__class__.__name__,
             )
 
         # Register handles and get node IDs
@@ -148,29 +163,33 @@ class PipelineBuilder:
                 dst_node_id=dst_node_id,
                 map=map,
                 sync=sync,
-                edge_config=edge_config
+                edge_config=edge_config,
+                qsize=qsize,
+                on_full=on_full,
             )
         )
 
         # Propagate pipeline ownership if this context is part of a Pipeline
         if self.owner:
-             src.pipeline = self.owner
-             dst.pipeline = self.owner
+            src.pipeline = self.owner
+            dst.pipeline = self.owner
 
         logger.debug(
             f"Registered connection: {src.flow.__class__.__name__} -> "
             f"{dst.flow.__class__.__name__} (map={map})"
         )
 
-    def _register_handle(self, handle: 'TemporalFlow') -> str:
+    def _register_handle(self, handle: "TemporalFlow") -> str:
         """Register handle if not already registered, return node_id"""
         node_id = self._create_node_id(handle)
         if node_id not in self._handles:
             self._handles[node_id] = handle
-            logger.debug(f"Registered handle: {handle.flow.__class__.__name__} as {node_id}")
+            logger.debug(
+                f"Registered handle: {handle.flow.__class__.__name__} as {node_id}"
+            )
         return node_id
 
-    def _create_node_id(self, handle: 'TemporalFlow') -> str:
+    def _create_node_id(self, handle: "TemporalFlow") -> str:
         """Create unique node ID from handle"""
         flow = handle.flow
         return f"{flow.__class__.__name__}_{id(handle)}"
@@ -216,7 +235,9 @@ class PipelineBuilder:
         )
         return graph
 
-    def _extract_ports(self, io_types: Union[Type, Tuple[Type, ...]]) -> Dict[str, Type]:
+    def _extract_ports(
+        self, io_types: Union[Type, Tuple[Type, ...]]
+    ) -> Dict[str, Type]:
         """Extract port info from @io types (Composite aware)."""
         from retriever.flow.io import is_flow_io
         from retriever.rt.step import IOView
@@ -238,10 +259,11 @@ class PipelineBuilder:
         for t in types_list:
             if t is not type(None) and is_flow_io(t):
                 # Use _field_types if available, otherwise fall back to dataclass fields
-                if hasattr(t, '_field_types') and callable(t._field_types):
+                if hasattr(t, "_field_types") and callable(t._field_types):
                     type_cache[t.__name__] = t._field_types()
                 elif is_dataclass(t):
                     from dataclasses import fields as dc_fields
+
                     type_cache[t.__name__] = {f.name: f.type for f in dc_fields(t)}
                 else:
                     type_cache[t.__name__] = {}
@@ -253,11 +275,7 @@ class PipelineBuilder:
         return final_ports
 
     def _create_edges(
-        self,
-        graph: PipelineGraph,
-        src_id: str,
-        dst_id: str,
-        conn: Pipe
+        self, graph: PipelineGraph, src_id: str, dst_id: str, conn: Pipe
     ) -> None:
         """Create edges for connection with adapter and qsize metadata."""
         from retriever.utils import as_tagged
@@ -265,8 +283,8 @@ class PipelineBuilder:
         def resolve_port_config(port: str):
             """Resolve qsize, on_full, and adapter for a specific port."""
             # Start with defaults from connection
-            qsize = 10
-            on_full = None
+            qsize = conn.qsize
+            on_full = conn.on_full
             adapter = conn.sync
 
             # Check edge_config for per-port overrides
@@ -280,18 +298,19 @@ class PipelineBuilder:
 
             # Resolve sync dict -> specific adapter
             if isinstance(adapter, dict):
-                adapter = adapter.get(port) or adapter.get('*')
+                adapter = adapter.get(port) or adapter.get("*")
                 if adapter is None:
                     from retriever.error import FlowError, ErrCode
+
                     raise FlowError(
                         ErrCode.FLOW_CONNECTION_INVALID,
-                        f"Missing sync adapter for port '{port}' in dict sync"
+                        f"Missing sync adapter for port '{port}' in dict sync",
                     )
 
             return qsize, on_full, adapter
 
         # Atomic connection: connect all matching fields by name
-        if conn.map == {'*': '*'}:
+        if conn.map == {"*": "*"}:
             src_node = graph.get_node(src_id)
             dst_node = graph.get_node(dst_id)
 
@@ -302,13 +321,15 @@ class PipelineBuilder:
                 if src_port in dst_ports:
                     qsize, on_full, adapter = resolve_port_config(src_port)
                     graph.connect(
-                        src_id, src_port,
-                        dst_id, src_port,
+                        src_id,
+                        src_port,
+                        dst_id,
+                        src_port,
                         {
-                            'adapter': as_tagged(adapter),
-                            'qsize': qsize,
-                            'on_full': on_full
-                        }
+                            "adapter": as_tagged(adapter),
+                            "qsize": qsize,
+                            "on_full": on_full,
+                        },
                     )
                     logger.debug(
                         f"Created atomic edge: {src_id}.{src_port} -> "
@@ -320,19 +341,16 @@ class PipelineBuilder:
             for src_field, dst_field in conn.map.items():
                 qsize, on_full, adapter = resolve_port_config(dst_field)
                 graph.connect(
-                    src_id, src_field,
-                    dst_id, dst_field,
-                    {
-                        'adapter': as_tagged(adapter),
-                        'qsize': qsize,
-                        'on_full': on_full
-                    }
+                    src_id,
+                    src_field,
+                    dst_id,
+                    dst_field,
+                    {"adapter": as_tagged(adapter), "qsize": qsize, "on_full": on_full},
                 )
                 logger.debug(
                     f"Created composite edge: {src_id}.{src_field} -> "
                     f"{dst_id}.{dst_field} (qsize={qsize})"
                 )
-
 
     # ========================================================================
     # Accessors
@@ -346,7 +364,7 @@ class PipelineBuilder:
         """Get all registered connections."""
         return self._connections.copy()
 
-    def get_handles(self) -> List['TemporalFlow']:
+    def get_handles(self) -> List["TemporalFlow"]:
         """Get all registered handles."""
         return list(self._handles.values())
 
@@ -354,19 +372,19 @@ class PipelineBuilder:
         """Get pipeline name"""
         return self._name
 
-    def get_handle_for_node(self, node_id: str) -> 'TemporalFlow':
+    def get_handle_for_node(self, node_id: str) -> "TemporalFlow":
         """Get TemporalFlow for a node ID."""
         if node_id not in self._handles:
             raise FlowError(
                 ErrCode.FLOW_CONTEXT_NODE_NOT_FOUND,
                 f"Node '{node_id}' not found in context. "
                 f"Available: {list(self._handles.keys())}",
-                node_id=node_id
+                node_id=node_id,
             )
 
         return self._handles[node_id]
 
-    def get_node_id(self, handle: 'TemporalFlow') -> str:
+    def get_node_id(self, handle: "TemporalFlow") -> str:
         """Get node_id for a TemporalFlow registered in this context."""
         for node_id, h in self._handles.items():
             if h is handle:
@@ -387,7 +405,8 @@ class PipelineBuilder:
         _ = self.graph
 
         # Delegate to IR validator
-    def build_ir(self) -> 'IR':
+
+    def build_ir(self) -> "IR":
         """
         Compile pipeline construction context into pure IR.
 
@@ -426,9 +445,7 @@ class PipelineBuilder:
 
         # Create metadata
         metadata = IRMetadata(
-            name=pipeline_name,
-            created_at=datetime.now().isoformat(),
-            validated=True
+            name=pipeline_name, created_at=datetime.now().isoformat(), validated=True
         )
 
         logger.info(
@@ -442,10 +459,10 @@ class PipelineBuilder:
             metadata=metadata,
             nodes=ir_nodes,
             edges=ir_edges,
-            topology=topology
+            topology=topology,
         )
 
-    def validate(self) -> 'IR':
+    def validate(self) -> "IR":
         """Alias for build_ir."""
         return self.build_ir()
 
@@ -485,12 +502,16 @@ class PipelineBuilder:
                 module=flow_class.__module__,
                 init_config=init_config,
                 config=handle.config.to_dict(),
-                inputs={name: type_to_str(typ) for name, typ in node.input_ports.items()},
-                outputs={name: type_to_str(typ) for name, typ in node.output_ports.items()},
+                inputs={
+                    name: type_to_str(typ) for name, typ in node.input_ports.items()
+                },
+                outputs={
+                    name: type_to_str(typ) for name, typ in node.output_ports.items()
+                },
                 successors=flow_graph.get_successors(node_id),
                 predecessors=flow_graph.get_predecessors(node_id),
                 service_handlers=service_handlers,
-                service_callers=[]  # Resolved in second pass
+                service_callers=[],  # Resolved in second pass
             )
             ir_nodes.append(ir_node)
 
@@ -498,9 +519,7 @@ class PipelineBuilder:
         handlers = self._build_handler_index(ir_nodes)
         for ir_node in ir_nodes:
             ir_node.service_callers = self._resolve_service_callers(
-                ir_node.id,
-                callers_map[ir_node.id],
-                handlers
+                ir_node.id, callers_map[ir_node.id], handlers
             )
 
         return ir_nodes
@@ -533,15 +552,23 @@ class PipelineBuilder:
             dst_port_type = dst_node.input_ports.get(edge.dst_port)
 
             if src_port_type is None:
-                raise IRError(ErrCode.IR_VAL_PORT_NOT_FOUND, f"Source port '{edge.src_port}' missing", node=edge.src_node)
+                raise IRError(
+                    ErrCode.IR_VAL_PORT_NOT_FOUND,
+                    f"Source port '{edge.src_port}' missing",
+                    node=edge.src_node,
+                )
             if dst_port_type is None:
-                raise IRError(ErrCode.IR_VAL_PORT_NOT_FOUND, f"Dest port '{edge.dst_port}' missing", node=edge.dst_node)
+                raise IRError(
+                    ErrCode.IR_VAL_PORT_NOT_FOUND,
+                    f"Dest port '{edge.dst_port}' missing",
+                    node=edge.dst_node,
+                )
 
             if src_port_type != dst_port_type:
                 raise IRError(
                     ErrCode.IR_VAL_TYPE_MISMATCH,
                     f"Type mismatch: {edge.src_node}.{edge.src_port}({type_to_str(src_port_type)}) -> "
-                    f"{edge.dst_node}.{edge.dst_port}({type_to_str(dst_port_type)})"
+                    f"{edge.dst_node}.{edge.dst_port}({type_to_str(dst_port_type)})",
                 )
 
             # Determine destination port name (rename for fan-in)
@@ -551,35 +578,46 @@ class PipelineBuilder:
             else:
                 ir_dst_port = edge.dst_port
 
-            ir_edges.append(IREdge(
-                id=repr(edge),
-                type=type_to_str(src_port_type),
-                source=IREdgeSource(node=edge.src_node, port=edge.src_port),
-                destination=IREdgeDestination(node=edge.dst_node, port=ir_dst_port),
-                adapter=edge.metadata.get('adapter', {}),
-                qsize=edge.metadata.get('qsize', 10),
-                on_full=edge.metadata.get('on_full')
-            ))
+            ir_edges.append(
+                IREdge(
+                    id=repr(edge),
+                    type=type_to_str(src_port_type),
+                    source=IREdgeSource(node=edge.src_node, port=edge.src_port),
+                    destination=IREdgeDestination(node=edge.dst_node, port=ir_dst_port),
+                    adapter=edge.metadata.get("adapter", {}),
+                    qsize=edge.metadata.get("qsize", 10),
+                    on_full=edge.metadata.get("on_full"),
+                )
+            )
 
         return ir_edges
 
-    def _validate_fan_in(self, flow_graph: PipelineGraph, dst_node: str, dst_port: str, edges: list) -> None:
+    def _validate_fan_in(
+        self, flow_graph: PipelineGraph, dst_node: str, dst_port: str, edges: list
+    ) -> None:
         """Validate fan-in consistency."""
-        if len(edges) < 2: return
+        if len(edges) < 2:
+            return
         ref_edge = edges[0]
         ref_src = flow_graph.nodes[ref_edge.src_node]
         ref_type = ref_src.output_ports.get(ref_edge.src_port)
-        ref_adapter = ref_edge.metadata.get('adapter', {})
+        ref_adapter = ref_edge.metadata.get("adapter", {})
 
         for edge in edges[1:]:
             src_node = flow_graph.nodes[edge.src_node]
             edge_type = src_node.output_ports.get(edge.src_port)
-            edge_adapter = edge.metadata.get('adapter', {})
+            edge_adapter = edge.metadata.get("adapter", {})
 
             if edge_type != ref_type:
-                raise IRError(ErrCode.IR_VAL_TYPE_MISMATCH, f"Fan-in type mismatch on {dst_node}.{dst_port}")
+                raise IRError(
+                    ErrCode.IR_VAL_TYPE_MISMATCH,
+                    f"Fan-in type mismatch on {dst_node}.{dst_port}",
+                )
             if edge_adapter != ref_adapter:
-                raise IRError(ErrCode.IR_VAL_INVALID, f"Fan-in adapter mismatch on {dst_node}.{dst_port}")
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Fan-in adapter mismatch on {dst_node}.{dst_port}",
+                )
 
     def _build_service_edges(self, ir_nodes: List[IRNode]) -> List[IREdge]:
         """Build service request/response edges."""
@@ -588,21 +626,33 @@ class PipelineBuilder:
             for caller in node.service_callers:
                 adapter = {"latest": {"buffer_size": 1}}
                 # Request
-                edges.append(IREdge(
-                    id=f"{node.id}._request_out->{caller.target_node}._request_in/{node.id}",
-                    type="bytes",
-                    source=IREdgeSource(node=node.id, port="_request_out"),
-                    destination=IREdgeDestination(node=caller.target_node, port=f"_request_in/{node.id}"),
-                    adapter=adapter, qsize=10
-                ))
+                edges.append(
+                    IREdge(
+                        id=f"{node.id}._request_out->{caller.target_node}._request_in/{node.id}",
+                        type="bytes",
+                        source=IREdgeSource(node=node.id, port="_request_out"),
+                        destination=IREdgeDestination(
+                            node=caller.target_node, port=f"_request_in/{node.id}"
+                        ),
+                        adapter=adapter,
+                        qsize=10,
+                    )
+                )
                 # Response
-                edges.append(IREdge(
-                    id=f"{caller.target_node}._response_out->{node.id}._response_in/{caller.target_node}",
-                    type="bytes",
-                    source=IREdgeSource(node=caller.target_node, port="_response_out"),
-                    destination=IREdgeDestination(node=node.id, port=f"_response_in/{caller.target_node}"),
-                    adapter=adapter, qsize=10
-                ))
+                edges.append(
+                    IREdge(
+                        id=f"{caller.target_node}._response_out->{node.id}._response_in/{caller.target_node}",
+                        type="bytes",
+                        source=IREdgeSource(
+                            node=caller.target_node, port="_response_out"
+                        ),
+                        destination=IREdgeDestination(
+                            node=node.id, port=f"_response_in/{caller.target_node}"
+                        ),
+                        adapter=adapter,
+                        qsize=10,
+                    )
+                )
         return edges
 
     def _build_topology(self, flow_graph: PipelineGraph) -> IRTopology:
@@ -614,7 +664,7 @@ class PipelineBuilder:
             node_count=flow_graph.get_node_count(),
             edge_count=flow_graph.get_edge_count(),
             has_cycle=flow_graph.has_cycles(),
-            is_connected=flow_graph.is_connected()
+            is_connected=flow_graph.is_connected(),
         )
 
     def _add_service_ports(self, ir_nodes: List[IRNode]) -> None:
@@ -638,12 +688,17 @@ class PipelineBuilder:
 
     @staticmethod
     def _extract_service_handlers(flow_class: type) -> List[IRServiceHandler]:
-        handlers = getattr(flow_class, '__flow_service_handlers__', [])
-        return [IRServiceHandler(service_id=h.descriptor.service_id, method=h.descriptor.method_name) for h in handlers]
+        handlers = getattr(flow_class, "__flow_service_handlers__", [])
+        return [
+            IRServiceHandler(
+                service_id=h.descriptor.service_id, method=h.descriptor.method_name
+            )
+            for h in handlers
+        ]
 
     @staticmethod
     def _extract_service_methods(flow_class: type) -> List[ServiceMethod]:
-        return getattr(flow_class, '__flow_service_callers__', [])
+        return getattr(flow_class, "__flow_service_callers__", [])
 
     @staticmethod
     def _build_handler_index(ir_nodes: List[IRNode]) -> Dict[str, str]:
@@ -651,17 +706,24 @@ class PipelineBuilder:
         for node in ir_nodes:
             for h in node.service_handlers:
                 if h.service_id in handlers:
-                    raise IRError(ErrCode.IR_VAL_DUPLICATE_SERVICE, f"Duplicate service: {h.service_id}")
+                    raise IRError(
+                        ErrCode.IR_VAL_DUPLICATE_SERVICE,
+                        f"Duplicate service: {h.service_id}",
+                    )
                 handlers[h.service_id] = node.id
         return handlers
 
     @staticmethod
-    def _resolve_service_callers(node_id: str, methods: List[ServiceMethod], handlers: Dict[str, str]) -> List[IRServiceCaller]:
+    def _resolve_service_callers(
+        node_id: str, methods: List[ServiceMethod], handlers: Dict[str, str]
+    ) -> List[IRServiceCaller]:
         callers = []
         for m in methods:
             sid = m.descriptor.service_id
             if sid not in handlers:
-                raise IRError(ErrCode.IR_VAL_SERVICE_NOT_FOUND, f"Unknown service: {sid}")
+                raise IRError(
+                    ErrCode.IR_VAL_SERVICE_NOT_FOUND, f"Unknown service: {sid}"
+                )
             callers.append(IRServiceCaller(service_id=sid, target_node=handlers[sid]))
         return callers
 
