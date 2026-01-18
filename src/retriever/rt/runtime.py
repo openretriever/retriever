@@ -5,6 +5,7 @@ Provides high-level API for executing pipelines using different backends.
 """
 
 import logging
+import uuid
 from typing import Dict, Any, Union, Optional
 from pathlib import Path
 
@@ -121,13 +122,22 @@ def execute_ir(
         backend_config["env_overrides"]["RERUN_CONNECT_ADDR"] = connect_addr
         backend_config["env_overrides"]["RERUN_APP_ID"] = ir_struct.metadata.name
         
+        recording_id = (
+            rr_config.get("recording_id")
+            or os.environ.get("RERUN_RECORDING_ID")
+            or str(uuid.uuid4())
+        )
+
         # Also set in current process for main thread logic
         os.environ["RERUN_CONNECT_ADDR"] = connect_addr
         os.environ["RERUN_APP_ID"] = ir_struct.metadata.name
+        os.environ["RERUN_RECORDING_ID"] = recording_id
+
+        backend_config["env_overrides"]["RERUN_RECORDING_ID"] = recording_id
 
         # Start Rerun after env is set so SDK picks up the correct address.
         spawn_viewer = rr_config.get("spawn", True)
-        rr.init(ir_struct.metadata.name, spawn=False)
+        rr.init(ir_struct.metadata.name, spawn=False, recording_id=recording_id)
         if spawn_viewer:
             port = _extract_rerun_port(connect_addr)
             rr.spawn(port=port, connect=True)

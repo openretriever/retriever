@@ -104,10 +104,10 @@ class DoraEngine(ExecutionEngine):
         # Compile IR to YAML (with optional per-node path overrides)
         try:
             yaml_content = compile_and_validate(
-                self.ir, 
+                self.ir,
                 node_path_overrides=node_path_overrides,
                 deployment_overrides=deployment_overrides,
-                env_overrides=env_overrides
+                env_overrides=env_overrides,
             )
 
             logger.debug(f"Generated YAML:\n{yaml_content}")
@@ -189,7 +189,11 @@ class DoraEngine(ExecutionEngine):
         input_ports = list(logical_ports)
 
         # Warn about unconnected ports from node.inputs
-        declared_ports = [p for p in node.inputs.keys() if not is_service_port(p) and not IR.is_fan_in_port(p)]
+        declared_ports = [
+            p
+            for p in node.inputs.keys()
+            if not is_service_port(p) and not IR.is_fan_in_port(p)
+        ]
         for p in declared_ports:
             if p not in adapters:
                 logger.warning(
