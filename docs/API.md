@@ -18,7 +18,7 @@ Canonical workflow:
 
 `Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
 
-Legacy API reference (pre-refactor): `docs/legacy/API_legacy.md`.
+
 
 ---
 

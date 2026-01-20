@@ -4,7 +4,7 @@ title: "🐕 Retriever Framework"
 
 # 🐕 Retriever Framework
 
-**Type-safe, composable framework for production robotics**
+**Building Modular Robot Agents with Causal Functional Composition**
 
 <div align="center">
   <strong>Retriever</strong>
@@ -65,22 +65,24 @@ pipe.close_stepper()
 ## 📚 Documentation
 
 ### Getting Started
-- **[Install](install.md)** - Pixi / uv setup and troubleshooting
+- **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
-- **[Debugging](guide_debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
+    - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
+- **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
-- **[Development Guide](guide_dev.md)** - Dev workflow and architecture
+    - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
+    - See also: **[MCP Guide](guide_mcp.md)** (External Tools & Memory)
+- **[Development Guide](development.md)** - Dev workflow and architecture
 
 ### Reference
 - **[Architecture](architecture.md)** - Design philosophy and system overview
 - **[API](API.md)** - API reference
-- **[Legacy Flow Guide](legacy/guide_flow_legacy.md)** - Pre-refactor notes (for reference)
-- **[Legacy API](legacy/API_legacy.md)** - Pre-refactor API reference
 
 ### Quick Navigation
-- **Getting Started**: [Install](install.md)
+- **Getting Started**: [Install](getting_started/install.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)
+- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md), [MCP](guide_mcp.md)
 - **Examples**: `examples/` directory and `tests/core/`
 - **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
 
