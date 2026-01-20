@@ -129,6 +129,7 @@ retriever = { path = ".", editable = true, extras = [
 rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
 mcap = "*" # MCAP recording support
 google-genai = "*" # VLM Support
+build = "*" # For building wheels
 
 
 uvicorn = { extras = ["standard"], version = "*" }
@@ -151,55 +152,13 @@ dora-rs-cli = ">=0.3.12"
 # =============================================================================
 [tasks]
 
+# Build the wheel
+# Run: pixi run build
+build = "python -m build"
 
-
-# Functional Wiring Examples (FRP-style)
-# Run: pixi run demo-wiring-comparison
-demo-wiring-comparison = { cmd = "python examples/advanced/wiring_comparison.py", env = { PYTHONPATH = "src" } }
-demo-chaining = { cmd = "python examples/advanced/functional_wiring/chaining.py", env = { PYTHONPATH = "src" } }
-demo-fanout = { cmd = "python examples/advanced/functional_wiring/fanout.py", env = { PYTHONPATH = "src" } }
-demo-sync-policies = { cmd = "python examples/advanced/functional_wiring/sync_policies.py", env = { PYTHONPATH = "src" } }
-demo-combinators = { cmd = "python examples/advanced/functional_wiring/combinators.py", env = { PYTHONPATH = "src" } }
-
-# Closed Loop Planning PoC
-# Run: pixi run demo-closed-loop-planning
-demo-closed-loop-planning = { cmd = "python -m examples.experimental.closed_loop_planning.main", env = { PYTHONPATH = "." } }
-viz-closed-loop = { cmd = "python examples/experimental/visualization/visualize_pipeline.py", env = { PYTHONPATH = "." } }
-
-# New Pipelines
-# New Pipelines
-demo-rise-sim = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_rise_sim", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-spot-real = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_spot_real", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-simple-grid = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_simple_grid", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-manipulation = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_manipulation", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-demo-manipulation-chunking = { cmd = "python -m examples.experimental.closed_loop_planning.pipelines.demo_manipulation_chunking", env = { PYTHONPATH = ".", RUST_LOG = "info" } }
-
-# Skill Switching Demo
-# Run: pixi run demo-skill-switching
-demo-skill-switching = { cmd = "python -m examples.advanced.skill_switching.main", env = { PYTHONPATH = "src" } }
-demo-skill-switching-fanin = { cmd = "python -m examples.advanced.skill_switching.main --fan-in", env = { PYTHONPATH = "src" } }
-
-# Mujoco Manipulation (Robot Simulation + Rerun)
-# Run: pixi run demo-mujoco
-demo-mujoco = { cmd = "python examples/advanced/mujoco_manipulation/app.py", env = { PYTHONPATH = "." } }
-
-
-
-# Binding acceleration (Rust/C++) helpers
-binding-toolchain = "rustc --version && cargo --version && maturin --version"
-
-# Python controller baseline (for binding comparison)
-# Run: pixi run binding-controller-python
-binding-controller-python = "python examples/advanced/native_controller/app.py --backend python"
-
-[feature.jax.tasks]
-# JAX Async Inference Demo
-# Run: pixi run -e jax demo-jax-inference
-demo-jax-inference = "python examples/advanced/jax_cuda_async/inference.py"
-
-# JAX Async Training Demo
-# Run: pixi run -e jax demo-jax-train
-demo-jax-train = "python examples/advanced/jax_cuda_async/train.py"
+# Create distribution bundle (Wheel + Examples + Config)
+# Run: pixi run package
+package = "python scripts/package_dist.py"
 
 
 # =============================================================================
@@ -213,118 +172,3 @@ pillow = "*"
 openpi = "*"
 timm = "*"
 scipy = "*"
-
-
-[feature.torch.tasks]
-# Interactive Vision
-# Run: pixi run -e torch demo-vision
-demo-vision = "python examples/advanced/interactive_detection/app.py"
-
-# VLA Web Command
-# Run: pixi run -e torch demo-web
-demo-web = "python examples/advanced/web_command_interface/app.py" # Uses vision flows? Check imports.
-
-# OpenPI VLA Demo
-# Run: pixi run -e torch demo-vla
-demo-vla = "python examples/advanced/vla_inference_optim/app.py"
-
-# Rerun Visualization (OwlViT + SAM + Webcam)
-# Real-time object detection and segmentation visualized in Rerun.
-# Run: pixi run -e torch demo-webcam-rerun
-demo-webcam-rerun = "python examples/advanced/webcam_rerun/app.py"
-
-# PyTorch Async Example
-# Run: pixi run -e torch demo-pytorch-async
-demo-pytorch-async = { cmd = "python examples/advanced/pytorch_cuda_async/app.py", env = { KMP_DUPLICATE_LIB_OK = "TRUE" } }
-
-# Hierarchical VLA Demo (Robotics)
-# Run: pixi run -e torch demo-hierarchical-vla
-demo-hierarchical-vla = { cmd = "python examples/advanced/hierarchical_vla/app.py", env = { KMP_DUPLICATE_LIB_OK = "TRUE", PYTHONPATH = "." } }
-
-# Multirate Sensor Fusion (Async)
-# Run: pixi run -e torch demo-multirate-fusion
-demo-multirate-fusion = { cmd = "python examples/advanced/pytorch_multirate_fusion/app.py", env = { PYTHONPATH = ".", KMP_DUPLICATE_LIB_OK = "TRUE" } }
-
-# =============================================================================
-# Rust Binding Examples
-# =============================================================================
-[feature.rust.tasks]
-# Build and run Rust controller
-# Run: pixi run -e rust binding-controller-rust
-binding-build-rust = { cmd = "cargo build --release", cwd = "examples/advanced/native_controller" }
-binding-controller-rust = { cmd = "python examples/advanced/native_controller/app.py --backend rust", depends-on = [
-    "binding-build-rust",
-] }
-
-# Run benchmark comparing all backends (requires bindings env -> rust + cpp)
-# Run: pixi run -e bindings binding-benchmark
-binding-benchmark = { cmd = "python examples/advanced/native_controller/benchmark.py", depends-on = [
-    "binding-build-rust",
-    "binding-build-cpp",
-] }
-
-# =============================================================================
-# C++ Binding Examples
-# =============================================================================
-[feature.cpp.tasks]
-# Build and run C++ controller  
-# Run: pixi run -e cpp binding-controller-cpp
-binding-build-cpp = { cmd = "mkdir -p build && cd build && cmake .. && cmake --build .", cwd = "examples/advanced/native_controller" }
-binding-controller-cpp = { cmd = "python examples/advanced/native_controller/app.py --backend cpp", depends-on = [
-    "binding-build-cpp",
-] }
-
-# =============================================================================
-# Twist2 Simulation Feature
-# =============================================================================
-[feature.twist2.pypi-dependencies]
-onnxruntime = "*"
-
-[feature.twist2.tasks]
-# Run with native MuJoCo viewer (requires mjpython on macOS):
-# pixi run -e twist2 demo-twist2
-demo-twist2 = { cmd = "mjpython examples/advanced/twist2_simulation/app.py", env = { PYTHONPATH = "." } }
-# Run with Rerun only:
-demo-twist2-rerun = { cmd = "python examples/advanced/twist2_simulation/app.py --no-viewer", env = { PYTHONPATH = "." } }
-
-# =============================================================================
-# Additional Core & Experimental Demos
-# =============================================================================
-
-# Remote Connection / Distributed Deployment
-# Run: pixi run demo-remote
-demo-remote = { cmd = "python -m examples.advanced.remote_connection.app", env = { PYTHONPATH = "src" } }
-
-# Rerun Step Debugging
-# Run: pixi run demo-rerun-debug
-demo-rerun-debug = { cmd = "python examples/advanced/rerun_step_debug/app.py", env = { PYTHONPATH = "." } }
-
-[feature.llm.tasks]
-# VLM GridWorld Navigation
-# Run: pixi run -e llm demo-vlm-gridworld
-demo-vlm-gridworld = { cmd = "python -m examples.advanced.vlm_gridworld.app --backend dora", env = { PYTHONPATH = ".", PYTHONNOUSERSITE = "1" } }
-
-# LLM Streaming RL (20 Questions)
-# Run: pixi run -e llm demo-llm-streaming
-demo-llm-streaming = { cmd = "python -m examples.advanced.llm_streaming_rl.app --backend dora", env = { PYTHONPATH = ".", PYTHONNOUSERSITE = "1" } }
-
-# VLM Streaming Reasoning (Webcam + Web Interface)
-# Run: pixi run -e llm demo-vlm-planning
-demo-vlm-planning = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_planning_stream.py", env = { PYTHONPATH = "." } }
-# Run: pixi run -e llm demo-vlm-belief
-demo-vlm-belief = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_belief_planning.py", env = { PYTHONPATH = "." } }
-# Run: pixi run -e llm demo-highlevel-planning
-demo-highlevel-planning = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_highlevel_planning.py", env = { PYTHONPATH = "." } }
-# Run: pixi run -e llm demo-highlevel-planning-v2
-demo-highlevel-planning-v2 = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_highlevel_planning_v2.py", env = { PYTHONPATH = "." } }
-demo-vlm-perception = { cmd = "python examples/experimental/closed_loop_planning/pipelines/demo_perception_stream.py", env = { PYTHONPATH = "." } }
-
-# Code as Policies (Ravens)
-# Run: pixi run -e code-policies demo-code-policies
-demo-code-policies = { cmd = "python -m examples.advanced.code_as_policies.app", env = { PYTHONPATH = "." } }
-
-[feature.ray.tasks]
-# Ray Integration Demo
-# Run: pixi run -e ray demo-ray
-demo-ray = { cmd = "python examples/advanced/ray_integration/app.py", env = { PYTHONPATH = "." } }
-
