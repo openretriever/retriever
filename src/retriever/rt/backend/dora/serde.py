@@ -119,18 +119,21 @@ def serialize_arrow(value: Any) -> Tuple[pa.Array, Dict[str, Any]]:
 
     # Handle numpy arrays
     elif isinstance(value, np.ndarray):
-        # Prefer a stable cross-language format: bytes + dtype + shape.
-        # This is friendlier for future Rust-native nodes.
+        # Prefer a stable, zero-copy cross-language format: Arrow Generic Array
         if value.dtype == object:
             # Object arrays are not portable; fall back to pickle.
             pass
         else:
-            arr = np.ascontiguousarray(value)
-            data = arr.tobytes(order="C")
-            return pa.array([data], type=pa.binary()), {
+            # Zero-copy optimization:
+            # We flatten to 1D to be compatible with Arrow's list-of-values model.
+            # This is generally zero-copy if the array is contiguous.
+            # Even if not, Arrow copying is faster than tobytes().
+            flat = value.reshape(-1)
+            
+            return pa.array(flat), {
                 "_type": "ndarray",
-                "_shape": list(arr.shape),
-                "_dtype": str(arr.dtype),
+                "_shape": list(value.shape),
+                "_dtype": str(value.dtype),
             }
 
     # Handle PyArrow Array (Pass-through for Zero Copy)
@@ -237,13 +240,17 @@ def deserialize_arrow(arrow_array: pa.Array, metadata: Dict[str, Any]) -> Any:
         shape = tuple(metadata.get("_shape", ()))
         dtype = metadata.get("_dtype")
 
-        # New encoding: binary bytes + dtype
-        if dtype is not None:
-            raw = arrow_array[0].as_py()
-            arr = np.frombuffer(raw, dtype=np.dtype(dtype))
-            return arr.reshape(shape)
-
-        # Backward-compatible encoding: numeric Arrow array
+        # Check if we have the binary blob format (legacy/specific dtypes)
+        # or the Arrow numeric format (zero-copy optimized)
+        
+        if arrow_array.type == pa.binary() or pa.types.is_binary(arrow_array.type):
+             # Binary buffer format
+             if dtype is not None:
+                raw = arrow_array[0].as_py()
+                arr = np.frombuffer(raw, dtype=np.dtype(dtype))
+                return arr.reshape(shape)
+        
+        # Arrow numeric array (Zero-Copy capable path)
         flat = arrow_array.to_numpy()
         return flat.reshape(shape)
 
