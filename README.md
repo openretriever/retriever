@@ -4,7 +4,9 @@
 
 
 
-# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span>: *Building Modular Robot Agents with Causal Functional Composition*
+# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span>
+
+## **Building Modular Closed-loop Robot Agents with Causal Functional Composition**
 
 <!-- **Retriever: a type-safe runtime for robotics dataflow pipelines** -->
 
