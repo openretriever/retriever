@@ -1,4 +1,5 @@
-from typing import Dict, List, Any, Tuple
+from pathlib import Path
+from typing import Dict, List, Any, Tuple, Optional
 
 from retriever.ir.core import IR, IRNode
 
@@ -9,9 +10,9 @@ HTML_TEMPLATE = """
 <head>
     <title>Retriever Pipeline Visualization</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+    __CYTOSCAPE_SCRIPT__
+    __DAGRE_SCRIPT__
+    __CYTOSCAPE_DAGRE_SCRIPT__
     <style>
         :root {
             --bg-color: #ffffff;
@@ -39,7 +40,23 @@ HTML_TEMPLATE = """
         h1 { margin: 0; font-size: 1.4rem; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 10px; }
         .logo-mark { width: 12px; height: 12px; background: var(--color-inter-border); border-radius: 50%; display: inline-block; }
         
-        #cy { flex: 1; min-height: 0; background-color: #fafafa; }
+        #cy { flex: 1; min-height: 0; background-color: #fafafa; position: relative; }
+        #fallback-ascii {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            margin: 0;
+            padding: 16px 18px;
+            font-family: 'Menlo', 'Monaco', monospace;
+            font-size: 12px;
+            color: #4b5563;
+            white-space: pre;
+            background: transparent;
+            z-index: 1;
+        }
         
         #info-panel {
             position: absolute; top: 80px; right: 25px; width: 320px;
@@ -75,7 +92,7 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div id="header">
-        <h1><span class="logo-mark"></span>Retriever <span style="font-weight:400; color:#666; font-size:1.1rem; margin-left:8px;" id="pipeline-name">Loading...</span></h1>
+        <h1><span class="logo-mark"></span>Retriever <span style="font-weight:400; color:#666; font-size:1.1rem; margin-left:8px;" id="pipeline-name">__PIPELINE_NAME__</span></h1>
         <div class="legend">
             <!-- Topology Colors -->
             <div class="legend-item"><div class="dot" style="background:var(--color-source-bg); border:2px solid var(--color-source-border)"></div>Source (Orange)</div>
@@ -90,7 +107,7 @@ HTML_TEMPLATE = """
             <div class="legend-item"><div class="dot" style="background:#fff; border:2px dotted #666"></div>Hybrid (Dotted)</div>
         </div>
     </div>
-    <div id="cy"></div>
+    <div id="cy"><pre id="fallback-ascii">__ASCII_GRAPH__</pre></div>
     <div id="info-panel">
         <h3 id="panel-title">Node Info</h3>
         <div id="panel-content"></div>
@@ -99,6 +116,7 @@ HTML_TEMPLATE = """
     <script>
         const irData = __IR_DATA__;
 
+        const fallback = document.getElementById('fallback-ascii');
         try {
             document.getElementById('pipeline-name').innerText = irData.metadata.name;
         } catch(e) {
@@ -193,15 +211,12 @@ HTML_TEMPLATE = """
         });
 
         // Edges
-        // Edges
         // Track edge counts between node pairs to calculate offsets for unbundled-bezier
         const pair_counts = {};
         const fanin_counts = {}; // Track fan-in index per (dstNode, logicalPort)
 
 
         irData.edges.forEach(edge => {
-             const source = edge.source.node;
-             const target = edge.destination.node;
              const source = edge.source.node;
              const target = edge.destination.node;
              
@@ -405,6 +420,7 @@ HTML_TEMPLATE = """
                     padding: 80
                 }
             });
+            if (fallback) { fallback.style.display = 'none'; }
 
             // Ensure graph fits in view
             cy.ready(function() {
@@ -467,6 +483,26 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+
+_ASSET_DIR = Path(__file__).resolve().parent / "assets"
+_CYTOSCAPE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"
+_DAGRE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"
+_CYTOSCAPE_DAGRE_CDN = "https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"
+
+
+def _load_asset(name: str) -> Optional[str]:
+    asset_path = _ASSET_DIR / name
+    if not asset_path.exists():
+        return None
+    text = asset_path.read_text(encoding="utf-8")
+    return text.replace("</script>", "<\\/script>")
+
+
+def _script_tag_inline_or_cdn(asset_name: str, cdn_url: str) -> str:
+    inline = _load_asset(asset_name)
+    if inline is None:
+        return f'<script src="{cdn_url}"></script>'
+    return f"<script>\n{inline}\n</script>"
 
 
 def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
@@ -625,8 +661,23 @@ def save_interactive_html(ir: "IR", filename: str = "pipeline_viz.html") -> None
     # Serialize IR to JSON
     json_data = ir.to_json(indent=2)
 
-    # Inject into template
-    html_content = HTML_TEMPLATE.replace("__IR_DATA__", json_data)
+    # Inject into template (inline assets if available)
+    html_content = HTML_TEMPLATE
+    html_content = html_content.replace(
+        "__CYTOSCAPE_SCRIPT__",
+        _script_tag_inline_or_cdn("cytoscape.min.js", _CYTOSCAPE_CDN),
+    )
+    html_content = html_content.replace(
+        "__DAGRE_SCRIPT__",
+        _script_tag_inline_or_cdn("dagre.min.js", _DAGRE_CDN),
+    )
+    html_content = html_content.replace(
+        "__CYTOSCAPE_DAGRE_SCRIPT__",
+        _script_tag_inline_or_cdn("cytoscape-dagre.min.js", _CYTOSCAPE_DAGRE_CDN),
+    )
+    html_content = html_content.replace("__PIPELINE_NAME__", ir.metadata.name)
+    html_content = html_content.replace("__ASCII_GRAPH__", generate_ascii_graph(ir))
+    html_content = html_content.replace("__IR_DATA__", json_data)
 
     with open(filename, "w") as f:
         f.write(html_content)
