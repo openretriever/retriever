@@ -57,6 +57,14 @@ jaxlib = "*"
 flax = "*"
 optax = "*"
 
+# =============================================================================
+# Optional Feature: Pipeline Control System
+# =============================================================================
+[feature.control.pypi-dependencies]
+pynput = "*"       # Global keyboard control
+fastapi = "*"      # Web dashboard
+uvicorn = "*"      # FastAPI server (already in main deps, but included for clarity)
+
 
 # -----------------------------------------------------------------------------
 # Environments
@@ -68,6 +76,7 @@ cpp = { features = ["cpp"] }
 bindings = { features = ["rust", "cpp"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
+control = { features = ["control"] }  # Pipeline control with web + keyboard
 
 
 # =============================================================================
