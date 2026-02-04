@@ -34,6 +34,12 @@ class Pipeline:
         self._stepper = None
         self._default_on_lag = on_lag
 
+        # Control support (opt-in)
+        self._controller: Optional[Any] = None
+        self._control_channel: Optional[Any] = None
+        self._web_dashboard: Optional[Any] = None
+        self._keyboard_controller: Optional[Any] = None
+
     def set_on_lag(self, on_lag: Optional[str]) -> "Pipeline":
         """
         Set a pipeline-level default for Rate/Hybrid lag handling.
@@ -88,7 +94,7 @@ class Pipeline:
 
     def visualize(
         self,
-        path: str | Path = None,
+        path: str | Path = "pipeline_viz.html",
         *,
         open_browser: bool = False,
     ) -> Path:
@@ -107,13 +113,10 @@ class Pipeline:
             pipe.visualize("debug.html", open_browser=True)
         """
         ir = self.validate()
-        if path is None:
-            path = f"viz-{self._name}-pipeline.html"
         ir.visualize(str(path), open_browser=False)
 
         if open_browser:
             import webbrowser
-
             webbrowser.open(f"file://{Path(path).resolve()}")
 
         return Path(path).resolve()
@@ -126,13 +129,11 @@ class Pipeline:
         # Set Pipeline as active context (not the inner builder)
         # This ensures isinstance(ctx, Pipeline) works in TemporalFlow.then()
         from retriever.flow.builder import _active_context
-
         _active_context.set(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         from retriever.flow.builder import _active_context
-
         _active_context.set(None)
         return False
 
@@ -169,9 +170,7 @@ class Pipeline:
         *,
         map: Optional[Dict[str, str]] = None,
         sync: Optional[Union[Any, Dict[str, Any]]] = None,
-        edge_config: Optional[Dict[str, Any]] = None,
         qsize: int = 10,
-        on_full: Optional[str] = None,
     ) -> "Pipeline":
         """Connect two handles inside this pipeline.
 
@@ -184,9 +183,7 @@ class Pipeline:
                   - Dict[str, Adapter]: per-port adapters (e.g., `{"a": Hold(), "b": Latest()}`)
                   If None, uses `retriever.set_global_config(default_sync=...)`.
                   If no global default, raises FlowError.
-            edge_config: Per-port buffer config (Dict[str, EdgeConfig]).
-            qsize: Queue size (default 10).
-            on_full: Strategy when full (e.g. "drop", "block").
+            qsize: Queue size for buffering.
 
         Raises:
             FlowError: If sync is None and no global default_sync is configured.
@@ -207,18 +204,13 @@ class Pipeline:
                 )
 
         self._builder.register_connection(
-            src=src,
-            dst=dst,
-            map=map or {"*": "*"},
-            sync=sync,
-            edge_config=edge_config,
-            qsize=qsize,
-            on_full=on_full,
+            src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
         )
         src.pipeline = self
         dst.pipeline = self
         self._stepper = None
         return self
+
 
     def merge(self, other: "Pipeline") -> "Pipeline":
         """
@@ -239,7 +231,7 @@ class Pipeline:
                 dst=dst,
                 map=conn.map,
                 sync=conn.sync,
-                edge_config=conn.edge_config,
+                qsize=conn.qsize,
             )
 
         for handle in other.get_handles():
@@ -341,6 +333,44 @@ class Pipeline:
         self._stepper = None
 
     # ==================================================================================
+    # Control System
+    # ==================================================================================
+
+    def _enable_control_from_config(self, config: Any) -> Any:
+        """Internal: Enable control from ControlConfig."""
+        try:
+            from retriever.rt.control.channel import MPControlChannel
+            from retriever.rt.control.controller import PipelineController
+        except ImportError:
+            raise ImportError(
+                "Control system not available. Ensure retriever.rt.control is installed."
+            )
+
+        self._control_channel = MPControlChannel()
+        self._controller = PipelineController(self, self._control_channel)
+
+        if config.web_port:
+            try:
+                from retriever.rt.control.web import WebDashboard
+                self._web_dashboard = WebDashboard(self._controller, port=config.web_port)
+            except ImportError:
+                print(f"Web dashboard requires FastAPI: pip install fastapi uvicorn")
+
+        if config.keyboard:
+            try:
+                from retriever.rt.control.keyboard import GlobalKeyboardController
+                self._keyboard_controller = GlobalKeyboardController(self._controller)
+            except ImportError:
+                print(f"Keyboard control requires pynput: pip install pynput")
+
+        return self._controller
+
+    @property
+    def controller(self) -> Optional[Any]:
+        """Get the controller if control is enabled."""
+        return self._controller
+
+    # ==================================================================================
     # Stepper-first Record / Replay helpers
     # ==================================================================================
 
@@ -411,9 +441,7 @@ class Pipeline:
         use_mcap = path.suffix.lower() == ".mcap"
 
         if not use_mcap and handle is None:
-            raise ValueError(
-                "Legacy recording (.pkl.gz) requires a specific TemporalFlow argument."
-            )
+            raise ValueError("Legacy recording (.pkl.gz) requires a specific TemporalFlow argument.")
 
         # Setup MCAP writer if using MCAP format
         mcap_writer = None
@@ -572,8 +600,10 @@ class Pipeline:
         policy: Any = "aggressive",
         deploy: Optional[Dict[Any, str]] = None,
         build: bool = False,
+
         visualize: Optional[str] = None,
-        record: Optional[Union[str, Any]] = None,  # RecordConfig
+        record: Optional[Union[str, Any]] = None, # RecordConfig
+        control: Optional[Any] = None,  # ControlConfig
         **kwargs: Any,
     ):
         """
@@ -588,9 +618,8 @@ class Pipeline:
             visualize: "rerun" for live streaming.
             record: Path (str) or RecordConfig to enable recording.
                     Forces backend="in-process" currently.
-            visualize: "rerun" for live streaming.
-            record: Path (str) or RecordConfig to enable recording.
-                    Forces backend="in-process" currently.
+            control: ControlConfig for pause/resume/reset control.
+                     Example: control=ControlConfig(web_port=8080, keyboard=True)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
             **kwargs: Extra arguments.
         """
@@ -603,24 +632,30 @@ class Pipeline:
         if backend is None:
             backend = glob.get("backend", "multiprocessing")
 
+        # Resolve control config: arg > global
+        control_cfg = control or glob.get("control")
+        if control_cfg and control_cfg.enabled:
+            # Enable control if not already enabled
+            if not self._controller:
+                self._enable_control_from_config(control_cfg)
+
         # Resolve recording config
         # hierarchy: arg > global
         record_cfg = None
         if record is not None:
-            if isinstance(record, str):
-                record_cfg = RecordConfig(path=record)
-            else:
-                record_cfg = record
+             if isinstance(record, str):
+                 record_cfg = RecordConfig(path=record)
+             else:
+                 record_cfg = record
         elif glob.get("record"):
-            # Global default
-            record_cfg = glob["record"]
+             # Global default
+             record_cfg = glob["record"]
 
         # Handling "in-process" enforcement for recording
         if record_cfg:
-            if backend != "in-process" and backend != "dora":
+            if backend != "in-process" and backend != "dora": 
                 # Currently only in-process supports unified recording via this API
                 import logging
-
                 logging.getLogger("retriever").info(
                     f"Recording enabled ({record_cfg.path}); switching backend to 'in-process'."
                 )
@@ -631,51 +666,57 @@ class Pipeline:
         local_backend_config = backend_config or {}
         backend_config = {**global_backend_config, **local_backend_config}
 
+        # Inject control channel if enabled
+        if self._control_channel:
+            backend_config["control_channel"] = self._control_channel
+        
         # Handle deployment overrides
         if deploy:
             overrides = {}
             for target, machine in deploy.items():
-                if hasattr(target, "flow"):  # Is TemporalFlow
-                    # We need the node ID. The handle doesn't strictly know its ID
+                if hasattr(target, 'flow'): # Is TemporalFlow
+                    # We need the node ID. The handle doesn't strictly know its ID 
                     # until pipeline validation, but we can look it up if registered.
                     node_id = self.get_node_id(target)
                     overrides[node_id] = machine
                 elif isinstance(target, str):
                     overrides[target] = machine
                 else:
-                    raise ValueError(
-                        f"Invalid deploy target: {target} (expected TemporalFlow or str ID)"
-                    )
-
+                    raise ValueError(f"Invalid deploy target: {target} (expected TemporalFlow or str ID)")
+            
             backend_config["deployment_overrides"] = overrides
+
+
 
         # Inject live pipeline instance for in-process backend optimization
         if backend == "in-process":
-            backend_config["pipeline_instance"] = self
-            # Pass record config explicitly if we possess it (engine will assume it)
-            if record_cfg:
-                backend_config["record"] = record_cfg
+             backend_config["pipeline_instance"] = self
+             # Pass record config explicitly if we possess it (engine will assume it)
+             if record_cfg:
+                 backend_config["record"] = record_cfg
+
+        # Start web dashboard if enabled
+        if self._web_dashboard:
+            self._web_dashboard.start(blocking=False)
 
         # Enable visualization if requested
         if visualize == "rerun" or visualize is True:
             import retriever.lib.rerun
-
-            retriever.lib.rerun.enable_rerun_logging(
-                self
-            )  # Still init process for safety/pre-checks
+            retriever.lib.rerun.enable_rerun_logging(self) # Still init process for safety/pre-checks
 
             # Ensure backend knows to use Rerun
             if "rerun_config" not in backend_config:
-                backend_config["rerun_config"] = {"mode": "spawn"}
+                 backend_config["rerun_config"] = {"mode": "spawn"}
 
         ir = self._build_ir() if not build else None
         # Note: 'build=True' path in original code calls build_execution.
         # But for in-process, we mostly use IR or live instance.
         # Standard execute_ir handles 'ir' being ExecutionGraph if passed.
 
+        
         if build:
-            graph = self.build_execution(policy=policy, **kwargs)
-            return execute_ir(
+             graph = self.build_execution(policy=policy, **kwargs)
+             return execute_ir(
                 graph,
                 backend=backend,
                 duration=duration,
@@ -731,7 +772,7 @@ def connect(
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
-    edge_config: Optional[Dict[str, Any]] = None,
+    qsize: int = 10,
 ) -> Pipeline | PipelineBuilder:
     """
     Connect two flows in the active context (or default pipeline).
@@ -754,22 +795,16 @@ def connect(
 
     # Reuse Pipeline.connect logic if available (handles defaults)
     if isinstance(ctx, Pipeline):
-        return ctx.connect(src, dst, map=map, sync=sync, edge_config=edge_config)
+        return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
 
     # Check if context belongs to a pipeline (Composition support)
     if getattr(ctx, "owner", None) and isinstance(ctx.owner, Pipeline):
-        return ctx.owner.connect(src, dst, map=map, sync=sync, edge_config=edge_config)
+        return ctx.owner.connect(src, dst, map=map, sync=sync, qsize=qsize)
 
-    ctx.register_connection(
-        src, dst, map=map or {"*": "*"}, sync=sync, edge_config=edge_config
-    )
-
+    ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
+    
     # Try to set pipeline pointer if possible
-    pipeline_ref = (
-        getattr(ctx, "owner", None)
-        if isinstance(getattr(ctx, "owner", None), Pipeline)
-        else None
-    )
+    pipeline_ref = getattr(ctx, "owner", None) if isinstance(getattr(ctx, "owner", None), Pipeline) else None
     src.pipeline = pipeline_ref
     dst.pipeline = pipeline_ref
     return ctx
@@ -785,6 +820,8 @@ def run(
     policy: Any = "aggressive",
     deploy: Optional[Dict[Any, str]] = None,
     build: bool = False,
+
+
     **kwargs: Any,
 ):
     """
@@ -804,6 +841,7 @@ def run(
         build=build,
         **kwargs,
     )
+
 
 
 def step(*, now: Optional[float] = None, dt: Optional[float] = None):
@@ -860,3 +898,4 @@ __all__ = [
     "reset",
     "view",
 ]
+
