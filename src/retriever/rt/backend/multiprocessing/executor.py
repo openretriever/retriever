@@ -19,6 +19,14 @@ from retriever.rt.logging.handlers.otel import shutdown_otel
 import logging
 logger = logging.getLogger(__name__)
 
+# Control support (optional)
+try:
+    from retriever.rt.control.channel import ControlChannel, ControlCommand, ControlMessage, ControlResponse
+    from retriever.rt.control.controllable import Controllable, FlowState
+    CONTROL_AVAILABLE = True
+except ImportError:
+    CONTROL_AVAILABLE = False
+
 
 class MPExecutor(multiprocessing.Process, Executor):
     """
@@ -40,6 +48,7 @@ class MPExecutor(multiprocessing.Process, Executor):
         outputs: Dict[str, List[Publisher]],
         adapters: Dict[str, Adapter],
         log_params: Optional[Dict[str, Any]] = None,
+        control_channel: Optional[Any] = None,
     ):
         """
         Initialize MPExecutor.
@@ -52,6 +61,7 @@ class MPExecutor(multiprocessing.Process, Executor):
             outputs: Dict mapping output port names to List[Publishers]
             adapters: Dict mapping input port names to Adapters
             log_params: Logging params (queue, config, log_dir)
+            control_channel: Optional ControlChannel for pause/resume/reset
         """
         super().__init__(name=node_id)
         self.node_id = node_id
@@ -63,11 +73,143 @@ class MPExecutor(multiprocessing.Process, Executor):
         self.log_params = log_params
         self.scheduler = MPScheduler(clock)
         self._stop_flag = multiprocessing.Event()
+        self._control_channel = control_channel
+        self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
 
     @property
     def name(self) -> str:
         """Executor name/identifier."""
         return self.node_id
+
+    def _process_control_commands(self) -> bool:
+        """
+        Process any pending control commands.
+
+        Returns:
+            False if executor should stop, True otherwise.
+        """
+        if not self._control_channel or not CONTROL_AVAILABLE:
+            return True
+
+        # Non-blocking check for commands
+        message = self._control_channel.receive_command(timeout=0)
+        if message is None:
+            return True
+
+        # Check if this command targets us
+        if message.target is not None and message.target != self.node_id:
+            return True
+
+        # Handle command
+        response = self._handle_control_command(message)
+        self._control_channel.send_response(response)
+
+        # STOP command returns False
+        if message.command == ControlCommand.STOP:
+            return False
+
+        return True
+
+    def _handle_control_command(self, message: ControlMessage) -> ControlResponse:
+        """Handle a single control command."""
+        if not CONTROL_AVAILABLE:
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=False,
+                error="Control not available",
+            )
+
+        try:
+            if message.command == ControlCommand.PAUSE:
+                if self._is_controllable:
+                    self.flow.pause()
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                )
+
+            elif message.command == ControlCommand.RESUME:
+                if self._is_controllable:
+                    self.flow.resume()
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                )
+
+            elif message.command == ControlCommand.RESET:
+                # Ensure paused before reset
+                if self._is_controllable:
+                    was_running = self.flow.control_state == FlowState.RUNNING
+                    if was_running:
+                        self.flow.pause()
+
+                    self.flow.reset()
+
+                    if was_running:
+                        self.flow.resume()
+                else:
+                    # Non-controllable flow: try calling reset() anyway
+                    if hasattr(self.flow, 'reset'):
+                        self.flow.reset()
+
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                )
+
+            elif message.command == ControlCommand.STOP:
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                )
+
+            elif message.command == ControlCommand.GET_STATE:
+                if self._is_controllable:
+                    status = self.flow.get_status(self.node_id)
+                    data = status.to_dict()
+                else:
+                    # Non-controllable: basic info only
+                    data = {
+                        "node_id": self.node_id,
+                        "flow_class": self.flow.__class__.__name__,
+                        "state": "running",
+                        "step_count": 0,
+                        "custom_state": {},
+                    }
+
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                    data=data,
+                )
+
+            else:
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=False,
+                    error=f"Unknown command: {message.command}",
+                )
+
+        except Exception as e:
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=False,
+                error=str(e),
+            )
+
+    def _should_execute_step(self) -> bool:
+        """Check if step should proceed (respecting pause state)."""
+        if self._is_controllable:
+            return self.flow.control_pre_step()
+        return True
 
     def run(self):
         """
@@ -107,6 +249,8 @@ class MPExecutor(multiprocessing.Process, Executor):
         try:
             # Initialize flow
             self.flow.init()
+            if self._is_controllable:
+                self.flow.control_init()
             logger.info(f"[{self.node_id}] Flow initialized")
 
             # Reset scheduler
@@ -114,6 +258,16 @@ class MPExecutor(multiprocessing.Process, Executor):
 
             # Main execution loop
             while not self._stop_flag.is_set():
+                # Check for control commands
+                if not self._process_control_commands():
+                    break
+
+                # Check if paused
+                if not self._should_execute_step():
+                    import time
+                    time.sleep(0.01)  # Avoid busy loop when paused
+                    continue
+
                 # Advance to next execution point (scheduler handles drain)
                 result = self.scheduler.next(self.inputs)
 
@@ -137,12 +291,19 @@ class MPExecutor(multiprocessing.Process, Executor):
                         .transform(self.flow.run) \
                         .publish(self.outputs)
 
+                if self._is_controllable:
+                    self.flow.control_post_step()
+
         except KeyboardInterrupt:
             logger.info(f"[{self.node_id}] Interrupted")
         except Exception as e:
             logger.error(f"[{self.node_id}] Error: {e}", exc_info=True)
+            if self._is_controllable:
+                self.flow.control_error(e)
         finally:
             # Finalize flow
+            if self._is_controllable:
+                self.flow.control_finalize()
             self.flow.finalize()
             logger.info(f"[{self.node_id}] MPExecutor terminated")
             # Flush OTel before exit only if it was enabled/configured for this worker.
