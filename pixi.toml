@@ -131,6 +131,14 @@ build = "python -m build"
 # Run: pixi run package
 package = "python scripts/package_dist.py"
 
+# Test tasks
+test = "pytest tests/ -v"
+test-control = "pytest tests/test_control.py tests/test_adapter_reset.py tests/test_output_capture.py -v"
+
+# Control System Demos
+demo-control = "python examples/control_demo.py --web-port 8080 --keyboard"
+demo-control-web = "python examples/control_demo.py --web-port 8080"
+
 # Tutorial Examples
 demo-webcam-detection = "python -m examples.tutorial.009_dora_perception --backend dora"
 demo-stepper = "python -m examples.tutorial.011_debug_stepper"
