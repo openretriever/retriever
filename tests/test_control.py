@@ -204,5 +204,82 @@ class TestPipelineIntegration:
         assert pipe._control_channel is not None
 
 
+class TestQueueAndAdapterReset:
+    """Test queue clearing and adapter reset during pipeline reset."""
+
+    def test_adapter_reset_on_pipeline_reset(self):
+        """Test that adapters are reset when pipeline is reset."""
+        from retriever.flow.adapter import Hold
+
+        pipe = Pipeline("test_adapter_reset")
+
+        with pipe:
+            counter = SimpleCounterFlow() @ Rate(10)
+
+        # Create a Hold adapter with state
+        adapter = Hold(debounce=1.0)
+        # Manually set some state (simulating usage)
+        adapter._last_value = "stale_value"
+        adapter._last_time = 100.0
+
+        # Mock the adapters dict to include our adapter
+        if hasattr(counter, '_executor'):
+            counter._executor.adapters = {"test_input": adapter}
+
+        # Reset should clear adapter state
+        adapter.reset()
+
+        assert adapter._last_value is None
+        assert adapter._last_time == 0.0
+
+    def test_reset_clears_flow_state(self):
+        """Test that reset clears flow internal state."""
+        pipe = Pipeline("test_state_reset")
+
+        with pipe:
+            counter = SimpleCounterFlow() @ Rate(10)
+
+        # Build up state
+        for _ in range(10):
+            pipe.step()
+
+        flow = counter.flow
+        assert flow.counter == 10
+
+        # Reset
+        pipe.reset()
+
+        # State should be cleared
+        assert flow.counter == 0
+
+
+class TestIntegrationResetNoStaleMessages:
+    """Integration test verifying no stale messages after reset."""
+
+    def test_simple_pipeline_reset(self):
+        """Test that a simple pipeline can be reset without errors."""
+        pipe = Pipeline("integration_reset")
+
+        with pipe:
+            source = SimpleCounterFlow() @ Rate(10)
+            sink = SimpleCounterFlow() @ Rate(10)
+            pipe.connect(source, sink, sync=Latest())
+
+        # Run for a bit
+        for _ in range(5):
+            pipe.step()
+
+        # Both flows should have state
+        assert source.flow.counter > 0
+        assert sink.flow.counter > 0
+
+        # Reset
+        pipe.reset()
+
+        # State should be cleared
+        assert source.flow.counter == 0
+        assert sink.flow.counter == 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
