@@ -49,6 +49,8 @@ class MPExecutor(multiprocessing.Process, Executor):
         adapters: Dict[str, Adapter],
         log_params: Optional[Dict[str, Any]] = None,
         control_channel: Optional[Any] = None,
+        control_command_queue: Optional[Any] = None,
+        control_response_queue: Optional[Any] = None,
     ):
         """
         Initialize MPExecutor.
@@ -61,7 +63,9 @@ class MPExecutor(multiprocessing.Process, Executor):
             outputs: Dict mapping output port names to List[Publishers]
             adapters: Dict mapping input port names to Adapters
             log_params: Logging params (queue, config, log_dir)
-            control_channel: Optional ControlChannel for pause/resume/reset
+            control_channel: Optional ControlChannel (deprecated, use queues instead)
+            control_command_queue: Optional multiprocessing.Queue for commands
+            control_response_queue: Optional multiprocessing.Queue for responses
         """
         super().__init__(name=node_id)
         self.node_id = node_id
@@ -73,7 +77,12 @@ class MPExecutor(multiprocessing.Process, Executor):
         self.log_params = log_params
         self.scheduler = MPScheduler(clock)
         self._stop_flag = multiprocessing.Event()
-        self._control_channel = control_channel
+
+        # Store queue references (will create channel in run() after fork/spawn)
+        self._control_command_queue = control_command_queue
+        self._control_response_queue = control_response_queue
+        self._control_channel = control_channel  # May be set lazily in run() from queues
+
         self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
 
     @property
@@ -146,12 +155,19 @@ class MPExecutor(multiprocessing.Process, Executor):
                     if was_running:
                         self.flow.pause()
 
+                    # Clear queues and adapters before resetting flow state
+                    self._clear_input_queues()
+                    self._reset_adapters()
+
                     self.flow.reset()
 
                     if was_running:
                         self.flow.resume()
                 else:
-                    # Non-controllable flow: try calling reset() anyway
+                    # Non-controllable flow: still clear queues/adapters, then reset
+                    self._clear_input_queues()
+                    self._reset_adapters()
+
                     if hasattr(self.flow, 'reset'):
                         self.flow.reset()
 
@@ -211,6 +227,39 @@ class MPExecutor(multiprocessing.Process, Executor):
             return self.flow.control_pre_step()
         return True
 
+    def _clear_input_queues(self) -> None:
+        """
+        Drain all input queues to remove stale messages.
+
+        Called during reset to ensure downstream flows don't process
+        messages from before the reset point.
+        """
+        from queue import Empty
+
+        for port_name, subscriber in self.inputs.items():
+            count = 0
+            try:
+                while not subscriber.empty():
+                    subscriber.get_nowait()
+                    count += 1
+            except Empty:
+                pass
+
+            if count > 0:
+                logger.info(f"[{self.node_id}] Cleared {count} stale messages from '{port_name}'")
+
+    def _reset_adapters(self) -> None:
+        """
+        Reset all adapters to clear their internal state.
+
+        Adapters like Hold maintain state (last value, timestamps)
+        that should be cleared during pipeline reset.
+        """
+        for port_name, adapter in self.adapters.items():
+            if hasattr(adapter, 'reset'):
+                adapter.reset()
+                logger.debug(f"[{self.node_id}] Reset adapter for '{port_name}'")
+
     def run(self):
         """
         Main process loop.
@@ -236,6 +285,21 @@ class MPExecutor(multiprocessing.Process, Executor):
                 self.log_params['config'],
                 self.log_params['log_dir'],
             )
+
+        # Create control channel from queues (now that we're in the child process)
+        if self._control_channel is None and self._control_command_queue is not None and self._control_response_queue is not None:
+            from retriever.rt.control.channel import MPControlChannel
+            self._control_channel = MPControlChannel(self._control_command_queue, self._control_response_queue)
+
+        # Wrap stdout/stderr for output capture (if control enabled)
+        if self._control_channel and CONTROL_AVAILABLE:
+            try:
+                import sys
+                from retriever.rt.control.output_capture import FlowOutputCapture
+                sys.stdout = FlowOutputCapture(self.node_id, self._control_channel, "stdout")
+                sys.stderr = FlowOutputCapture(self.node_id, self._control_channel, "stderr")
+            except Exception as e:
+                logger.warning(f"[{self.node_id}] Failed to enable output capture: {e}")
 
         tracer = None
         try:

@@ -5,8 +5,10 @@ Orchestrates pipeline execution using Python's multiprocessing module.
 """
 
 import time
+import sys
 from typing import Dict, List, Any, Optional
 from multiprocessing import Queue
+import multiprocessing
 
 from retriever.ir.core import IR, IRNode, IREdge
 from retriever.rt.backend.interface import ExecutionEngine
@@ -16,6 +18,15 @@ from retriever.rt.logging.manager import LogManager
 
 import logging
 logger = logging.getLogger(__name__)
+
+# Configure multiprocessing start method for compatibility
+# Fork is faster and allows queue sharing; spawn requires full pickling
+if sys.platform != 'win32':
+    try:
+        multiprocessing.set_start_method('fork', force=True)
+    except RuntimeError:
+        # Start method already set
+        pass
 
 
 class MPEngine(ExecutionEngine):
@@ -134,6 +145,16 @@ class MPEngine(ExecutionEngine):
                     'log_dir': log_manager.get_log_dir(),
                 }
 
+            # Extract control queue references (not the channel object itself)
+            # Queues must be inherited, not pickled
+            control_cmd_queue = None
+            control_resp_queue = None
+            if "control_channel" in self.config:
+                ctrl_chan = self.config["control_channel"]
+                if hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
+                    control_cmd_queue = ctrl_chan.command_queue
+                    control_resp_queue = ctrl_chan.response_queue
+
             executor = MPExecutor(
                 node_id=node.id,
                 flow=flow,
@@ -142,6 +163,8 @@ class MPEngine(ExecutionEngine):
                 outputs=outputs,
                 adapters=adapters,
                 log_params=log_params,
+                control_command_queue=control_cmd_queue,
+                control_response_queue=control_resp_queue,
             )
 
             self.executors.append(executor)
