@@ -25,6 +25,14 @@ from retriever.error import FlowError, RTError, ErrCode
 from retriever.rt.logging.worker import configure_worker
 from retriever.rt.logging.handlers.otel import shutdown_otel
 
+# Control system (optional)
+try:
+    from retriever.rt.control import Controllable, FlowState
+    from retriever.rt.control.channel import ControlCommand, ControlResponse
+    CONTROL_AVAILABLE = True
+except ImportError:
+    CONTROL_AVAILABLE = False
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -51,6 +59,9 @@ class DoraExecutor(multiprocessing.Process, Executor):
         fan_in_map: Dict[str, str] = None,
         buffer_engine: str = "python",
         log_params: Optional[Dict[str, Any]] = None,
+        control_channel: Optional[Any] = None,
+        control_command_queue: Optional[Any] = None,
+        control_response_queue: Optional[Any] = None,
     ):
         """
         Initialize DoraExecutor.
@@ -64,6 +75,9 @@ class DoraExecutor(multiprocessing.Process, Executor):
             adapters: Dict mapping logical port names to Adapters
             fan_in_map: Dict mapping actual fan-in port names to logical port names
             log_params: Logging params (queue, config, log_dir)
+            control_channel: Optional ControlChannel (deprecated, use queues instead)
+            control_command_queue: Optional multiprocessing.Queue for commands
+            control_response_queue: Optional multiprocessing.Queue for responses
         """
         super().__init__(name=node_id)
         self.node_id = node_id
@@ -75,6 +89,13 @@ class DoraExecutor(multiprocessing.Process, Executor):
         self.fan_in_map = fan_in_map or {}
         self.buffer_engine = buffer_engine
         self.log_params = log_params
+
+        # Store queue references (will create channel in run() after fork/spawn)
+        self._control_command_queue = control_command_queue
+        self._control_response_queue = control_response_queue
+        self._control_channel = control_channel  # May be set lazily in run() from queues
+
+        self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
         self._stop_flag = multiprocessing.Event()
 
         # Process-local resources (created in run())
@@ -92,6 +113,124 @@ class DoraExecutor(multiprocessing.Process, Executor):
     def name(self) -> str:
         """Executor name/identifier."""
         return self.node_id
+
+    def _handle_control_messages(self) -> bool:
+        """
+        Check for and handle control messages (pause, resume, reset, etc.).
+
+        Returns:
+            False if executor should stop, True otherwise.
+        """
+        if not self._control_channel or not CONTROL_AVAILABLE:
+            return True
+
+        # Non-blocking check for commands
+        message = self._control_channel.receive_command(timeout=0)
+        if message is None:
+            return True
+
+        # Check if message is for this node or all nodes
+        if message.target and message.target != self.node_id:
+            return True
+
+        # Handle command
+        response = self._handle_control_command(message)
+        self._control_channel.send_response(response)
+
+        # STOP command returns False
+        return message.command != ControlCommand.STOP
+
+    def _handle_control_command(self, message) -> ControlResponse:
+        """Handle a specific control command."""
+        from retriever.rt.control.channel import ControlCommand
+
+        if message.command == ControlCommand.PAUSE:
+            if self._is_controllable:
+                self.flow.pause()
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=True,
+            )
+
+        elif message.command == ControlCommand.RESUME:
+            if self._is_controllable:
+                self.flow.resume()
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=True,
+            )
+
+        elif message.command == ControlCommand.RESET:
+            # Ensure paused before reset
+            if self._is_controllable:
+                was_running = self.flow.control_state == FlowState.RUNNING
+                if was_running:
+                    self.flow.pause()
+
+                # Clear adapters before resetting flow state
+                self._reset_adapters()
+
+                self.flow.reset()
+
+                if was_running:
+                    self.flow.resume()
+            else:
+                # Non-controllable flow: still reset adapters, then reset
+                self._reset_adapters()
+
+                if hasattr(self.flow, 'reset'):
+                    self.flow.reset()
+
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=True,
+            )
+
+        elif message.command == ControlCommand.GET_STATE:
+            if self._is_controllable:
+                status = self.flow.get_status(self.node_id)
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=True,
+                    data=status.__dict__,
+                )
+            else:
+                return ControlResponse(
+                    request_id=message.request_id,
+                    node_id=self.node_id,
+                    success=False,
+                    error="Flow is not controllable",
+                )
+
+        else:
+            return ControlResponse(
+                request_id=message.request_id,
+                node_id=self.node_id,
+                success=False,
+                error=f"Unknown command: {message.command}",
+            )
+
+    def _should_execute_step(self) -> bool:
+        """Check if step should proceed (respecting pause state)."""
+        if self._is_controllable:
+            return self.flow.control_pre_step()
+        return True
+
+    def _reset_adapters(self) -> None:
+        """
+        Reset all adapters to clear their internal state.
+
+        Adapters like Hold maintain state (last value, timestamps)
+        that should be cleared during pipeline reset.
+        """
+        for port_name, adapter in self.adapters.items():
+            if hasattr(adapter, 'reset'):
+                adapter.reset()
+                logger.debug(f"[{self.node_id}] Reset adapter for '{port_name}'")
 
     def run(self) -> None:
         """
@@ -120,6 +259,21 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 self.log_params['config'],
                 self.log_params['log_dir'],
             )
+
+        # Create control channel from queues (now that we're in the child process)
+        if self._control_channel is None and self._control_command_queue is not None and self._control_response_queue is not None:
+            from retriever.rt.control.channel import MPControlChannel
+            self._control_channel = MPControlChannel(self._control_command_queue, self._control_response_queue)
+
+        # Wrap stdout/stderr for output capture (if control enabled)
+        if self._control_channel and CONTROL_AVAILABLE:
+            try:
+                import sys
+                from retriever.rt.control.output_capture import FlowOutputCapture
+                sys.stdout = FlowOutputCapture(self.node_id, self._control_channel, "stdout")
+                sys.stderr = FlowOutputCapture(self.node_id, self._control_channel, "stderr")
+            except Exception as e:
+                logger.warning(f"[{self.node_id}] Failed to enable output capture: {e}")
 
         logger.info(f"[{self.node_id}] Starting DoraExecutor")
 
@@ -158,6 +312,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
             logger.info(f"[{self.node_id}] Entering event loop")
 
             while not self._stop_flag.is_set():
+                # Check for control messages (non-blocking)
+                if not self._handle_control_messages():
+                    logger.info(f"[{self.node_id}] Stopping due to control command")
+                    break
+
                 event = self._next_event()
 
                 if event is None:

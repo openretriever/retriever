@@ -210,6 +210,16 @@ class DoraEngine(ExecutionEngine):
                 "log_dir": log_manager.get_log_dir(),
             }
 
+        # Extract control queue references (not the channel object itself)
+        # Queues must be inherited, not pickled
+        control_cmd_queue = None
+        control_resp_queue = None
+        if "control_channel" in self.config:
+            ctrl_chan = self.config["control_channel"]
+            if hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
+                control_cmd_queue = ctrl_chan.command_queue
+                control_resp_queue = ctrl_chan.response_queue
+
         executor = DoraExecutor(
             node_id=node.id,
             flow=flow,
@@ -220,6 +230,8 @@ class DoraEngine(ExecutionEngine):
             fan_in_map=fan_in_map,
             buffer_engine=self.config.get("buffer_engine", "python"),
             log_params=log_params,
+            control_command_queue=control_cmd_queue,
+            control_response_queue=control_resp_queue,
         )
 
         logger.debug(f"Created executor for {node.id}")
