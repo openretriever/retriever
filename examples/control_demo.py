@@ -67,6 +67,11 @@ class SensorFlow(Controllable, Flow[None, SensorData]):
 
     def step(self, _) -> SensorData:
         self.reading_count += 1
+
+        # Add periodic status messages to demonstrate log capture
+        if self.reading_count % 10 == 0:
+            print(f"[SensorFlow] Generated {self.reading_count} readings")
+
         return SensorData(
             value=self.reading_count * 1.5,
             timestamp=time.time()
@@ -105,6 +110,11 @@ class ProcessorFlow(Controllable, Flow[SensorData, ProcessedData]):
                 self.buffer.pop(0)
 
         avg = sum(self.buffer) / len(self.buffer) if self.buffer else 0
+
+        # Add periodic status messages to demonstrate log capture
+        if self.process_count % 10 == 0:
+            print(f"[ProcessorFlow] Processed {self.process_count} samples, avg={avg:.2f}")
+
         return ProcessedData(result=avg, count=self.process_count)
 
 
@@ -155,8 +165,8 @@ def main():
     try:
         pipe.run(
             duration=args.duration,
-            backend="multiprocessing",
-            control=control_config,  # NEW: Pass ControlConfig to run()
+            backend="multiprocessing",  # Multiprocessing backend with control support
+            control=control_config,
         )
     except KeyboardInterrupt:
         print("\n\nPipeline interrupted by user")
