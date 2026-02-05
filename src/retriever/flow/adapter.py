@@ -61,6 +61,15 @@ class Adapter(ABC, Generic[T]):
         """
         return self(buffer, now=now, **kwargs)
 
+    def reset(self) -> None:
+        """
+        Reset adapter's internal state.
+
+        Called when the pipeline or flow is reset to clear any cached values,
+        timers, or accumulated state. Override in subclasses that maintain state.
+        """
+        pass
+
 
 # ============================================================================
 # Adapter Registration
@@ -211,6 +220,11 @@ class Hold(Adapter[T]):
         self._last_time = timestamp
 
         return value
+
+    def reset(self) -> None:
+        """Reset hold state - clear last value and timestamp."""
+        self._last_value = None
+        self._last_time = 0.0
 
 
 @register_adapter("window")

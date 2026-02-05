@@ -21,6 +21,7 @@ class ControlCommand(Enum):
     STOP = "stop"
     GET_STATE = "get_state"
     SET_CONFIG = "set_config"
+    LOG_OUTPUT = "log_output"  # Flow stdout/stderr output for web UI
 
 
 @dataclass
@@ -102,6 +103,8 @@ class MPControlChannel(ControlChannel):
     - response_queue: Executors -> Controller
 
     Each executor polls command_queue in its event loop.
+
+    Note: Queues can only be shared through inheritance (fork), not pickling.
     """
 
     def __init__(self, command_queue=None, response_queue=None):

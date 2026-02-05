@@ -175,6 +175,37 @@ class Controllable(ABC):
             self._last_step_time = None
             self._error_message = None
 
+    def __getstate__(self):
+        """
+        Exclude threading primitives when pickling.
+
+        This allows Controllable flows to be pickled for multiprocessing.
+        Threading locks and events cannot be pickled and must be recreated
+        in the child process.
+        """
+        state = self.__dict__.copy()
+        # Remove unpicklable threading objects
+        state.pop('_control_lock', None)
+        state.pop('_pause_event', None)
+        return state
+
+    def __setstate__(self, state):
+        """
+        Recreate threading primitives after unpickling.
+
+        Called in the child process after pickling to restore the flow state.
+        """
+        self.__dict__.update(state)
+        # Recreate threading objects
+        import threading
+        self._control_lock = threading.Lock()
+        self._pause_event = threading.Event()
+        # Restore pause state based on control state
+        if self._control_state == FlowState.RUNNING:
+            self._pause_event.set()  # Not paused
+        else:
+            self._pause_event.clear()  # Paused
+
     # =========================================================================
     # State Reporting
     # =========================================================================
