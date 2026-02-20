@@ -170,7 +170,9 @@ class Pipeline:
         *,
         map: Optional[Dict[str, str]] = None,
         sync: Optional[Union[Any, Dict[str, Any]]] = None,
+        edge_config: Optional[Dict[str, Any]] = None,
         qsize: int = 10,
+        on_full: Optional[str] = None,
     ) -> "Pipeline":
         """Connect two handles inside this pipeline.
 
@@ -183,7 +185,9 @@ class Pipeline:
                   - Dict[str, Adapter]: per-port adapters (e.g., `{"a": Hold(), "b": Latest()}`)
                   If None, uses `retriever.set_global_config(default_sync=...)`.
                   If no global default, raises FlowError.
+            edge_config: Optional per-port queue/adapter overrides.
             qsize: Queue size for buffering.
+            on_full: Optional queue-full policy for edges from this connection.
 
         Raises:
             FlowError: If sync is None and no global default_sync is configured.
@@ -204,7 +208,13 @@ class Pipeline:
                 )
 
         self._builder.register_connection(
-            src=src, dst=dst, map=map or {"*": "*"}, sync=sync, qsize=qsize
+            src=src,
+            dst=dst,
+            map=map or {"*": "*"},
+            sync=sync,
+            edge_config=edge_config,
+            qsize=qsize,
+            on_full=on_full,
         )
         src.pipeline = self
         dst.pipeline = self
@@ -352,7 +362,17 @@ class Pipeline:
         if config.web_port:
             try:
                 from retriever.rt.control.web import WebDashboard
-                self._web_dashboard = WebDashboard(self._controller, port=config.web_port)
+                config_info = {
+                    "Pipeline": self._name or "Unnamed",
+                    "Control Features": "Web Dashboard + Individual Flow Control",
+                }
+                if config.keyboard:
+                    config_info["Keyboard Controls"] = "Enabled"
+                self._web_dashboard = WebDashboard(
+                    self._controller,
+                    port=config.web_port,
+                    config_info=config_info
+                )
             except ImportError:
                 print(f"Web dashboard requires FastAPI: pip install fastapi uvicorn")
 
@@ -697,6 +717,11 @@ class Pipeline:
 
         # Start web dashboard if enabled
         if self._web_dashboard:
+            # Update config info with execution details
+            self._web_dashboard.config_info.update({
+                "Backend": backend,
+                "Duration": f"{duration}s" if duration else "Unlimited",
+            })
             self._web_dashboard.start(blocking=False)
 
         # Enable visualization if requested
@@ -772,7 +797,9 @@ def connect(
     *,
     map: Optional[Dict[str, str]] = None,
     sync: Optional[Any] = None,
+    edge_config: Optional[Dict[str, Any]] = None,
     qsize: int = 10,
+    on_full: Optional[str] = None,
 ) -> Pipeline | PipelineBuilder:
     """
     Connect two flows in the active context (or default pipeline).
@@ -795,13 +822,37 @@ def connect(
 
     # Reuse Pipeline.connect logic if available (handles defaults)
     if isinstance(ctx, Pipeline):
-        return ctx.connect(src, dst, map=map, sync=sync, qsize=qsize)
+        return ctx.connect(
+            src,
+            dst,
+            map=map,
+            sync=sync,
+            edge_config=edge_config,
+            qsize=qsize,
+            on_full=on_full,
+        )
 
     # Check if context belongs to a pipeline (Composition support)
     if getattr(ctx, "owner", None) and isinstance(ctx.owner, Pipeline):
-        return ctx.owner.connect(src, dst, map=map, sync=sync, qsize=qsize)
+        return ctx.owner.connect(
+            src,
+            dst,
+            map=map,
+            sync=sync,
+            edge_config=edge_config,
+            qsize=qsize,
+            on_full=on_full,
+        )
 
-    ctx.register_connection(src, dst, map=map or {"*": "*"}, sync=sync, qsize=qsize)
+    ctx.register_connection(
+        src,
+        dst,
+        map=map or {"*": "*"},
+        sync=sync,
+        edge_config=edge_config,
+        qsize=qsize,
+        on_full=on_full,
+    )
     
     # Try to set pipeline pointer if possible
     pipeline_ref = getattr(ctx, "owner", None) if isinstance(getattr(ctx, "owner", None), Pipeline) else None
@@ -898,4 +949,3 @@ __all__ = [
     "reset",
     "view",
 ]
-
