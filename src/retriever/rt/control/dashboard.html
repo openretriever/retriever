@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retriever Pipeline Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6ed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
+        }
+
+        h1 { font-size: 28px; font-weight: 700; color: white; margin-bottom: 8px; }
+        .header-info { display: flex; gap: 24px; font-size: 14px; color: rgba(255, 255, 255, 0.9); flex-wrap: wrap; }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: #1e2439;
+            padding: 8px;
+            border-radius: 12px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: #8b92a7;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover { background: rgba(102, 126, 234, 0.1); color: #b8c1d9; }
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .tab-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .tab.active .tab-badge { background: rgba(255, 255, 255, 0.3); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Overview Tab */
+        .global-controls {
+            background: #1e2439;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        button:active { transform: translateY(0); }
+
+        .btn-play { background: #10b981; color: white; }
+        .btn-pause { background: #f59e0b; color: white; }
+        .btn-reset { background: #3b82f6; color: white; }
+        .btn-stop { background: #ef4444; color: white; }
+
+        /* Status Bar */
+        .status-bar {
+            background: linear-gradient(135deg, #1e2439 0%, #252d47 100%);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item { text-align: center; }
+        .stat-label {
+            font-size: 13px;
+            color: #8b92a7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .stat-value.running { color: #10b981; }
+        .stat-value.paused { color: #f59e0b; }
+        .stat-value.stopped { color: #ef4444; }
+
+        /* Flow Cards Grid (Overview) */
+        .flows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .flow-card {
+            background: linear-gradient(135deg, #1e2439 0%, #252d47 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .flow-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3); }
+        .flow-card.paused { border-left-color: #f59e0b; }
+        .flow-card.stopped { border-left-color: #ef4444; }
+
+        .flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .flow-name { font-size: 16px; font-weight: 700; color: #e0e6ed; }
+        .flow-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .flow-badge.running { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .flow-badge.paused { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .flow-badge.stopped { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        .flow-stat-small {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #b8c1d9;
+        }
+
+        .flow-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .flow-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        /* Individual Flow Tab */
+        .flow-detail {
+            background: linear-gradient(135deg, #1e2439 0%, #252d47 100%);
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .flow-detail-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .flow-detail-name {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .flow-detail-class {
+            font-size: 14px;
+            color: #8b92a7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Toggle Switch */
+        .control-section {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .control-section h3 {
+            font-size: 16px;
+            color: #8b92a7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 32px;
+            background: #ef4444;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active { background: #10b981; }
+
+        .toggle-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider { transform: translateX(28px); }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #8b92a7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #e0e6ed;
+        }
+
+        /* Custom State Section */
+        .custom-state {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .custom-state h3 {
+            font-size: 14px;
+            color: #8b92a7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .state-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .state-key {
+            font-size: 14px;
+            color: #8b92a7;
+        }
+
+        .state-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e6ed;
+        }
+
+        /* Logs */
+        .logs-container {
+            background: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .logs-toolbar {
+            background: #161b22;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .logs-toolbar select {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #0d1117;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+
+        .logs-toolbar button { padding: 8px 16px; font-size: 13px; }
+
+        #logs-output {
+            height: 600px;
+            overflow-y: auto;
+            padding: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            margin: 2px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .log-line:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .log-time { color: #6e7681; }
+        .log-flow { color: #58a6ff; font-weight: 600; }
+        .log-level { font-weight: 700; margin: 0 8px; }
+        .log-level.INFO { color: #3fb950; }
+        .log-level.WARN { color: #d29922; }
+        .log-level.ERROR { color: #f85149; }
+        .log-message { color: #c9d1d9; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .flows-grid { grid-template-columns: 1fr; }
+            .status-bar { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Pipeline Control Dashboard</h1>
+            <div class="header-info">
+                <span>⚙️ <strong id="pipeline-name">Loading...</strong></span>
+                <span>🔌 <span id="connection-status">Connecting...</span></span>
+            </div>
+        </header>
+
+        <div class="tabs" id="tabs-container">
+            <button class="tab active" data-tab="overview">📊 Overview</button>
+            <button class="tab" data-tab="logs">📋 Logs</button>
+            <!-- Flow tabs will be added dynamically -->
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="global-controls">
+                <button class="btn-play" onclick="resumeAll()">▶️ Resume All</button>
+                <button class="btn-pause" onclick="pauseAll()">⏸️ Pause All</button>
+                <button class="btn-reset" onclick="resetAll()">🔄 Reset All</button>
+                <button class="btn-stop" onclick="stopPipeline()">⏹️ Stop</button>
+            </div>
+
+            <div class="status-bar">
+                <div class="stat-item">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value running" id="pipeline-status">RUNNING</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Active Flows</div>
+                    <div class="stat-value" id="flow-count">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Steps</div>
+                    <div class="stat-value" id="total-steps">0</div>
+                </div>
+            </div>
+
+            <div class="flows-grid" id="flows-container"></div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs" class="tab-content">
+            <div class="logs-container">
+                <div class="logs-toolbar">
+                    <select id="flow-filter"><option value="">All Flows</option></select>
+                    <select id="level-filter">
+                        <option value="">All Levels</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>
+                    <button class="btn-reset" onclick="clearLogs()">Clear</button>
+                </div>
+                <div id="logs-output"></div>
+            </div>
+        </div>
+
+        <!-- Individual Flow Tabs (created dynamically) -->
+    </div>
+
+    <script>
+        let ws, logsWs;
+        let currentFlows = {};
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+
+            const contentEl = document.getElementById(tabName);
+            if (contentEl) contentEl.classList.add('active');
+
+            const tabEl = document.querySelector(`[data-tab="${tabName}"]`);
+            if (tabEl) tabEl.classList.add('active');
+        }
+
+        // Tab click handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab') || e.target.closest('.tab')) {
+                const tab = e.target.classList.contains('tab') ? e.target : e.target.closest('.tab');
+                const tabName = tab.getAttribute('data-tab');
+                if (tabName) showTab(tabName);
+            }
+        });
+
+        function connect() {
+            ws = new WebSocket(`ws://${location.host}/ws`);
+            ws.onmessage = e => {
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'status') updateStatus(msg.data);
+            };
+            ws.onopen = () => document.getElementById('connection-status').textContent = 'Connected';
+            ws.onclose = () => {
+                document.getElementById('connection-status').textContent = 'Reconnecting...';
+                setTimeout(connect, 1000);
+            };
+        }
+
+        function updateStatus(status) {
+            document.getElementById('pipeline-name').textContent = status.name || 'Unknown';
+
+            const nodes = status.nodes || {};
+            const flowCount = Object.keys(nodes).length;
+            document.getElementById('flow-count').textContent = flowCount;
+
+            let totalSteps = 0;
+
+            // Update or create flow tabs
+            const tabsContainer = document.getElementById('tabs-container');
+            const existingFlowTabs = Array.from(tabsContainer.querySelectorAll('[data-flow-id]'));
+
+            Object.entries(nodes).forEach(([id, node]) => {
+                totalSteps += node.step_count || 0;
+
+                // Create/update flow tab
+                let flowTab = tabsContainer.querySelector(`[data-flow-id="${id}"]`);
+                if (!flowTab) {
+                    flowTab = document.createElement('button');
+                    flowTab.className = 'tab';
+                    flowTab.setAttribute('data-tab', `flow-${id}`);
+                    flowTab.setAttribute('data-flow-id', id);
+                    flowTab.innerHTML = `
+                        ${id}
+                        <span class="tab-badge ${node.state}">${node.state}</span>
+                    `;
+                    tabsContainer.appendChild(flowTab);
+
+                    // Create flow detail page
+                    createFlowDetailPage(id);
+                } else {
+                    // Update badge
+                    const badge = flowTab.querySelector('.tab-badge');
+                    badge.className = `tab-badge ${node.state}`;
+                    badge.textContent = node.state;
+                }
+
+                // Update flow detail content
+                updateFlowDetail(id, node);
+
+                // Store current flow data
+                currentFlows[id] = node;
+            });
+
+            // Remove tabs for flows that no longer exist
+            existingFlowTabs.forEach(tab => {
+                const flowId = tab.getAttribute('data-flow-id');
+                if (!nodes[flowId]) {
+                    tab.remove();
+                    const content = document.getElementById(`flow-${flowId}`);
+                    if (content) content.remove();
+                }
+            });
+
+            // Update overview cards
+            updateOverviewCards(nodes);
+
+            document.getElementById('total-steps').textContent = totalSteps;
+        }
+
+        function createFlowDetailPage(flowId) {
+            const container = document.querySelector('.container');
+            const flowDetail = document.createElement('div');
+            flowDetail.id = `flow-${flowId}`;
+            flowDetail.className = 'tab-content';
+            flowDetail.innerHTML = `
+                <div class="flow-detail">
+                    <div class="flow-detail-header">
+                        <div class="flow-detail-name" id="detail-${flowId}-name">${flowId}</div>
+                        <div class="flow-detail-class" id="detail-${flowId}-class">Loading...</div>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Flow Control</h3>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Flow Execution</span>
+                            <div class="toggle-switch active" id="toggle-${flowId}" onclick="toggleFlow('${flowId}')">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <button class="btn-reset" style="width: 100%; margin-top: 12px;" onclick="resetNode('${flowId}')">🔄 Reset Flow State</button>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Metrics</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Step Count</div>
+                                <div class="metric-value" id="detail-${flowId}-steps">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Status</div>
+                                <div class="metric-value" id="detail-${flowId}-state" style="font-size: 20px;">RUNNING</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="custom-state" id="detail-${flowId}-custom">
+                        <h3>Custom State</h3>
+                        <div id="detail-${flowId}-custom-content">No custom state</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(flowDetail);
+        }
+
+        function updateFlowDetail(flowId, node) {
+            // Update header
+            const nameEl = document.getElementById(`detail-${flowId}-name`);
+            const classEl = document.getElementById(`detail-${flowId}-class`);
+            if (nameEl) nameEl.textContent = flowId;
+            if (classEl) classEl.textContent = node.flow_class || 'Flow';
+
+            // Update toggle switch
+            const toggle = document.getElementById(`toggle-${flowId}`);
+            if (toggle) {
+                if (node.state === 'running') {
+                    toggle.classList.add('active');
+                } else {
+                    toggle.classList.remove('active');
+                }
+            }
+
+            // Update metrics
+            const stepsEl = document.getElementById(`detail-${flowId}-steps`);
+            const stateEl = document.getElementById(`detail-${flowId}-state`);
+            if (stepsEl) stepsEl.textContent = node.step_count || 0;
+            if (stateEl) {
+                stateEl.textContent = (node.state || 'unknown').toUpperCase();
+                stateEl.className = `metric-value stat-value ${node.state}`;
+            }
+
+            // Update custom state
+            const customContentEl = document.getElementById(`detail-${flowId}-custom-content`);
+            if (customContentEl && node.custom_state) {
+                const customState = node.custom_state || {};
+                if (Object.keys(customState).length > 0) {
+                    customContentEl.innerHTML = Object.entries(customState).map(([key, value]) => `
+                        <div class="state-item">
+                            <span class="state-key">${key}</span>
+                            <span class="state-value">${value}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    customContentEl.innerHTML = 'No custom state';
+                }
+            }
+        }
+
+        function updateOverviewCards(nodes) {
+            const container = document.getElementById('flows-container');
+            container.innerHTML = '';
+
+            Object.entries(nodes).forEach(([id, node]) => {
+                const card = document.createElement('div');
+                card.className = `flow-card ${node.state}`;
+                card.innerHTML = `
+                    <div class="flow-header">
+                        <span class="flow-name">${id}</span>
+                        <span class="flow-badge ${node.state}">${node.state}</span>
+                    </div>
+                    <div class="flow-stat-small">
+                        <strong>${node.step_count || 0}</strong> steps
+                        ${node.flow_class ? ` • ${node.flow_class}` : ''}
+                    </div>
+                    <div class="flow-actions">
+                        <button class="btn-pause" onclick="pauseNode('${id}')">⏸️</button>
+                        <button class="btn-play" onclick="resumeNode('${id}')">▶️</button>
+                        <button class="btn-reset" onclick="resetNode('${id}')">🔄</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleFlow(id) {
+            const flow = currentFlows[id];
+            if (!flow) return;
+
+            if (flow.state === 'running') {
+                pauseNode(id);
+            } else {
+                resumeNode(id);
+            }
+        }
+
+        function pauseAll() { fetch('/api/pause', {method: 'POST'}); }
+        function resumeAll() { fetch('/api/resume', {method: 'POST'}); }
+        function resetAll() { fetch('/api/reset', {method: 'POST'}); }
+        function pauseNode(id) { fetch(`/api/pause?node=${id}`, {method: 'POST'}); }
+        function resumeNode(id) { fetch(`/api/resume?node=${id}`, {method: 'POST'}); }
+        function resetNode(id) { fetch(`/api/reset?node=${id}`, {method: 'POST'}); }
+        function stopPipeline() { if(confirm('Stop pipeline?')) fetch('/api/stop', {method: 'POST'}); }
+
+        function connectLogs() {
+            logsWs = new WebSocket(`ws://${location.host}/ws/logs`);
+            logsWs.onmessage = e => {
+                const data = JSON.parse(e.data);
+                if (data.type === 'log') appendLog(data.data);
+            };
+            logsWs.onclose = () => setTimeout(connectLogs, 1000);
+        }
+
+        function appendLog(log) {
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            const time = new Date(log.timestamp * 1000).toLocaleTimeString();
+            line.innerHTML = `<span class="log-time">${time}</span> <span class="log-flow">[${log.node_id}]</span> <span class="log-level ${log.level}">${log.level}</span> <span class="log-message">${escapeHtml(log.message)}</span>`;
+            document.getElementById('logs-output').appendChild(line);
+            document.getElementById('logs-output').scrollTop = 999999;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs-output').innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        connect();
+        connectLogs();
+    </script>
+</body>
+</html>
