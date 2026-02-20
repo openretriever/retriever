@@ -24,17 +24,19 @@ class EdgeConfig:
     
     Used in FlowHandle.then() to configure individual input ports:
     - qsize: Buffer size for this port
-    - on_full: Policy when buffer is full ("drop" or "block")
+    - on_full: Policy when buffer is full ("drop" or "block"), or None for backend default
     - adapter: Optional sync adapter override for this port
+    - "*" key in edge_config dict: defaults for all ports on this edge
     
     Example:
         cam.then(planner, edge_config={
+            "*": EdgeConfig(qsize=32, on_full="drop"),
             "frame": EdgeConfig(qsize=100, on_full="drop"),
             "timestamp": EdgeConfig(qsize=10),
         })
     """
     qsize: int = 10
-    on_full: Literal["drop", "block"] = "drop"
+    on_full: Optional[Literal["drop", "block"]] = "drop"
     adapter: Optional['Adapter'] = None
     
     def __post_init__(self):
@@ -44,7 +46,7 @@ class EdgeConfig:
                 "EdgeConfig qsize must be >= 1",
                 qsize=self.qsize,
             )
-        if self.on_full not in ("drop", "block"):
+        if self.on_full is not None and self.on_full not in ("drop", "block"):
             raise FlowError(
                 ErrCode.FLOW_INVALID,
                 f"EdgeConfig on_full must be 'drop' or 'block', got '{self.on_full}'",
