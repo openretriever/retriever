@@ -93,6 +93,25 @@ class ControlChannel(ABC):
         """Close the channel and release resources."""
         pass
 
+    def send_log(self, message: ControlMessage) -> None:
+        """
+        Send a log message to dashboard consumers.
+
+        Default behavior falls back to command transport for backward compatibility.
+        """
+        self.send_command(message)
+
+    def receive_log(self, timeout: float = 0.0) -> Optional[ControlMessage]:
+        """
+        Receive a log message.
+
+        Default behavior falls back to command transport.
+        """
+        message = self.receive_command(timeout=timeout)
+        if message and message.command == ControlCommand.LOG_OUTPUT:
+            return message
+        return None
+
 
 class MPControlChannel(ControlChannel):
     """
@@ -106,9 +125,10 @@ class MPControlChannel(ControlChannel):
     Note: Queues can only be shared through inheritance (fork), not pickling.
     """
 
-    def __init__(self, command_queue=None, response_queue=None):
+    def __init__(self, command_queue=None, response_queue=None, log_queue=None):
         import multiprocessing
         self._response_queue = response_queue or multiprocessing.Queue()
+        self._log_queue = log_queue or multiprocessing.Queue()
         # Per-node queues: registered before fork via register_node()
         self._node_command_queues: dict = {}
         # Fallback/per-executor command queue (used when constructed inside executor process)
@@ -125,11 +145,28 @@ class MPControlChannel(ControlChannel):
         return self._node_command_queues.get(node_id, self._broadcast_queue)
 
     @property
+    def command_queue(self):
+        """
+        Legacy compatibility queue.
+
+        Dora backend currently expects a single command queue handle.
+        """
+        return self._broadcast_queue
+
+    @property
     def response_queue(self):
         return self._response_queue
 
+    @property
+    def log_queue(self):
+        return self._log_queue
+
     def send_command(self, message: ControlMessage) -> None:
         """Send command - routes to specific node queue or broadcasts to all."""
+        if message.command == ControlCommand.LOG_OUTPUT:
+            self.send_log(message)
+            return
+
         if message.target and message.target in self._node_command_queues:
             self._node_command_queues[message.target].put(message, block=False)
         elif message.target is None:
@@ -156,10 +193,20 @@ class MPControlChannel(ControlChannel):
         except Exception:
             return None
 
+    def send_log(self, message: ControlMessage) -> None:
+        self._log_queue.put(message, block=False)
+
+    def receive_log(self, timeout: float = 0.0) -> Optional[ControlMessage]:
+        try:
+            return self._log_queue.get(block=True, timeout=timeout)
+        except Exception:
+            return None
+
     def close(self) -> None:
         for q in self._node_command_queues.values():
             q.close()
         self._broadcast_queue.close()
+        self._log_queue.close()
         self._response_queue.close()
 
 
@@ -174,8 +221,12 @@ class InProcessControlChannel(ControlChannel):
         from queue import Queue
         self._command_queue = Queue()
         self._response_queue = Queue()
+        self._log_queue = Queue()
 
     def send_command(self, message: ControlMessage) -> None:
+        if message.command == ControlCommand.LOG_OUTPUT:
+            self.send_log(message)
+            return
         self._command_queue.put(message)
 
     def receive_command(self, timeout: float = 0.0) -> Optional[ControlMessage]:
@@ -192,6 +243,16 @@ class InProcessControlChannel(ControlChannel):
         from queue import Empty
         try:
             return self._response_queue.get(block=True, timeout=timeout)
+        except Empty:
+            return None
+
+    def send_log(self, message: ControlMessage) -> None:
+        self._log_queue.put(message)
+
+    def receive_log(self, timeout: float = 0.0) -> Optional[ControlMessage]:
+        from queue import Empty
+        try:
+            return self._log_queue.get(block=True, timeout=timeout)
         except Empty:
             return None
 
