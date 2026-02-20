@@ -149,6 +149,7 @@ class MPEngine(ExecutionEngine):
             # Queues must be inherited, not pickled
             control_cmd_queue = None
             control_resp_queue = None
+            control_log_queue = None
             if "control_channel" in self.config:
                 ctrl_chan = self.config["control_channel"]
                 if hasattr(ctrl_chan, 'register_node'):
@@ -156,10 +157,14 @@ class MPEngine(ExecutionEngine):
                     ctrl_chan.register_node(node.id)
                     control_cmd_queue = ctrl_chan.get_node_command_queue(node.id)
                     control_resp_queue = ctrl_chan.response_queue
+                    if hasattr(ctrl_chan, "log_queue"):
+                        control_log_queue = ctrl_chan.log_queue
                 elif hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
                     # Legacy shared queue channel
                     control_cmd_queue = ctrl_chan.command_queue
                     control_resp_queue = ctrl_chan.response_queue
+                    if hasattr(ctrl_chan, "log_queue"):
+                        control_log_queue = ctrl_chan.log_queue
 
             executor = MPExecutor(
                 node_id=node.id,
@@ -171,6 +176,7 @@ class MPEngine(ExecutionEngine):
                 log_params=log_params,
                 control_command_queue=control_cmd_queue,
                 control_response_queue=control_resp_queue,
+                control_log_queue=control_log_queue,
             )
 
             self.executors.append(executor)
