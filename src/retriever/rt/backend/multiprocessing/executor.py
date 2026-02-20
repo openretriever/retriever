@@ -105,7 +105,7 @@ class MPExecutor(multiprocessing.Process, Executor):
         if message is None:
             return True
 
-        # Check if this command targets us
+        # Check if this command targets us (with per-node queues, this should always match)
         if message.target is not None and message.target != self.node_id:
             return True
 
