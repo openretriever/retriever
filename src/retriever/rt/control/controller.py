@@ -159,25 +159,34 @@ class PipelineController:
         Returns:
             PipelineStatus with state of all requested flows.
         """
-        message = ControlMessage(
-            command=ControlCommand.GET_STATE,
-            target=target,
-        )
+        # Send separate command for each node to avoid queue contention
+        # (multiprocessing.Queue doesn't support broadcast)
+        expected = {target} if target else self._node_ids.copy()
 
-        self._channel.send_command(message)
+        request_ids = set()
+        for node_id in expected:
+            message = ControlMessage(
+                command=ControlCommand.GET_STATE,
+                target=node_id,  # Target specific node
+            )
+            self._channel.send_command(message)
+            request_ids.add(message.request_id)
 
         # Collect responses
-        expected = {target} if target else self._node_ids.copy()
         responses: Dict[str, FlowStatus] = {}
         deadline = time.time() + self._timeout
+        expected_responses = expected.copy()
 
-        while expected and time.time() < deadline:
+        while expected_responses and time.time() < deadline:
             response = self._channel.receive_response(timeout=0.1)
-            if response and response.request_id == message.request_id:
+            if response and response.request_id in request_ids:
                 if response.success and response.data:
-                    status = FlowStatus(**response.data)
+                    data = {**response.data}
+                    if isinstance(data.get("state"), str):
+                        data["state"] = FlowState(data["state"])
+                    status = FlowStatus(**data)
                     responses[response.node_id] = status
-                    expected.discard(response.node_id)
+                    expected_responses.discard(response.node_id)
 
         # Update cache
         with self._state_lock:
@@ -248,23 +257,28 @@ class PipelineController:
         payload: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Send command and wait for acknowledgment."""
-        message = ControlMessage(
-            command=command,
-            target=target,
-            payload=payload,
-        )
+        # Send separate command for each node to avoid queue contention
+        expected = {target} if target else self._node_ids.copy()
 
-        self._channel.send_command(message)
+        request_ids = set()
+        for node_id in expected:
+            message = ControlMessage(
+                command=command,
+                target=node_id,  # Target specific node
+                payload=payload,
+            )
+            self._channel.send_command(message)
+            request_ids.add(message.request_id)
 
         # Wait for acknowledgments
-        expected = {target} if target else self._node_ids.copy()
+        expected_responses = expected.copy()
         deadline = time.time() + self._timeout
 
-        while expected and time.time() < deadline:
+        while expected_responses and time.time() < deadline:
             response = self._channel.receive_response(timeout=0.1)
-            if response and response.request_id == message.request_id:
+            if response and response.request_id in request_ids:
                 if response.success:
-                    expected.discard(response.node_id)
+                    expected_responses.discard(response.node_id)
                 else:
                     self._emit("on_error", response.node_id, response.error)
 
@@ -277,4 +291,4 @@ class PipelineController:
         if command in event_map:
             self._emit(event_map[command], target)
 
-        return len(expected) == 0
+        return len(expected_responses) == 0
