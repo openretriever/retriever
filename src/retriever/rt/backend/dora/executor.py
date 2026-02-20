@@ -62,6 +62,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         control_channel: Optional[Any] = None,
         control_command_queue: Optional[Any] = None,
         control_response_queue: Optional[Any] = None,
+        control_log_queue: Optional[Any] = None,
     ):
         """
         Initialize DoraExecutor.
@@ -78,6 +79,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
             control_channel: Optional ControlChannel (deprecated, use queues instead)
             control_command_queue: Optional multiprocessing.Queue for commands
             control_response_queue: Optional multiprocessing.Queue for responses
+            control_log_queue: Optional multiprocessing.Queue for flow log messages
         """
         super().__init__(name=node_id)
         self.node_id = node_id
@@ -93,6 +95,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         # Store queue references (will create channel in run() after fork/spawn)
         self._control_command_queue = control_command_queue
         self._control_response_queue = control_response_queue
+        self._control_log_queue = control_log_queue
         self._control_channel = control_channel  # May be set lazily in run() from queues
 
         self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
@@ -263,7 +266,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
         # Create control channel from queues (now that we're in the child process)
         if self._control_channel is None and self._control_command_queue is not None and self._control_response_queue is not None:
             from retriever.rt.control.channel import MPControlChannel
-            self._control_channel = MPControlChannel(self._control_command_queue, self._control_response_queue)
+            self._control_channel = MPControlChannel(
+                self._control_command_queue,
+                self._control_response_queue,
+                self._control_log_queue,
+            )
 
         # Wrap stdout/stderr for output capture (if control enabled)
         if self._control_channel and CONTROL_AVAILABLE:
