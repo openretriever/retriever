@@ -98,34 +98,52 @@ class MPControlChannel(ControlChannel):
     """
     Multiprocessing-based control channel using Queues.
 
-    Uses two queues:
-    - command_queue: Controller -> Executors
-    - response_queue: Executors -> Controller
-
-    Each executor polls command_queue in its event loop.
+    Uses per-node command queues to avoid message routing issues:
+    - command_queues: Dict[node_id, Queue] - Controller -> specific Executor
+    - broadcast_queue: Queue - Controller -> all Executors (for target=None commands)
+    - response_queue: Queue - Executors -> Controller (shared)
 
     Note: Queues can only be shared through inheritance (fork), not pickling.
     """
 
     def __init__(self, command_queue=None, response_queue=None):
         import multiprocessing
-        self._command_queue = command_queue or multiprocessing.Queue()
         self._response_queue = response_queue or multiprocessing.Queue()
+        # Per-node queues: registered before fork via register_node()
+        self._node_command_queues: dict = {}
+        # Fallback/per-executor command queue (used when constructed inside executor process)
+        self._broadcast_queue = command_queue or multiprocessing.Queue()
 
-    @property
-    def command_queue(self):
-        return self._command_queue
+    def register_node(self, node_id: str):
+        """Register a node and create its dedicated command queue. Call before fork."""
+        import multiprocessing
+        if node_id not in self._node_command_queues:
+            self._node_command_queues[node_id] = multiprocessing.Queue()
+
+    def get_node_command_queue(self, node_id: str):
+        """Get the command queue for a specific node (for executor to read from)."""
+        return self._node_command_queues.get(node_id, self._broadcast_queue)
 
     @property
     def response_queue(self):
         return self._response_queue
 
     def send_command(self, message: ControlMessage) -> None:
-        self._command_queue.put(message, block=False)
+        """Send command - routes to specific node queue or broadcasts to all."""
+        if message.target and message.target in self._node_command_queues:
+            self._node_command_queues[message.target].put(message, block=False)
+        elif message.target is None:
+            # Broadcast: send to all registered node queues
+            for queue in self._node_command_queues.values():
+                queue.put(message, block=False)
+        else:
+            # Unknown target: use broadcast queue
+            self._broadcast_queue.put(message, block=False)
 
     def receive_command(self, timeout: float = 0.0) -> Optional[ControlMessage]:
+        """Read from broadcast queue (used for unregistered nodes)."""
         try:
-            return self._command_queue.get(block=True, timeout=timeout)
+            return self._broadcast_queue.get(block=True, timeout=timeout)
         except Exception:
             return None
 
@@ -139,7 +157,9 @@ class MPControlChannel(ControlChannel):
             return None
 
     def close(self) -> None:
-        self._command_queue.close()
+        for q in self._node_command_queues.values():
+            q.close()
+        self._broadcast_queue.close()
         self._response_queue.close()
 
 
