@@ -13,6 +13,7 @@ import asyncio
 import json
 import time
 import threading
+import socket
 
 try:
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -240,13 +241,13 @@ class WebDashboard:
         """
         Collect log messages from control channel and broadcast to log clients.
 
-        Polls the control channel for LOG_OUTPUT messages and forwards them
+        Polls the channel log stream for LOG_OUTPUT messages and forwards them
         to all connected WebSocket clients on /ws/logs.
         """
         while True:
             try:
-                # Poll control channel for LOG_OUTPUT messages
-                message = self.controller._channel.receive_command(timeout=0.01)
+                # Poll dedicated log stream to avoid consuming control commands.
+                message = self.controller._channel.receive_log(timeout=0.01)
 
                 if message and message.command == ControlCommand.LOG_OUTPUT:
                     # Create log entry
@@ -281,6 +282,19 @@ class WebDashboard:
 
             await asyncio.sleep(0.01)
 
+    def _find_available_port(self, start_port: int, max_tries: int = 50) -> Optional[int]:
+        """Return first available port >= start_port for the configured host."""
+        for port in range(start_port, start_port + max_tries):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.bind((self.host, port))
+                return port
+            except OSError:
+                continue
+            finally:
+                sock.close()
+        return None
+
     def _get_dashboard_html(self) -> str:
         """Return the dashboard HTML."""
         import os
@@ -293,6 +307,19 @@ class WebDashboard:
 
     def start(self, blocking: bool = True) -> None:
         """Start the web dashboard server."""
+        requested_port = self.port
+        resolved_port = self._find_available_port(requested_port)
+        if resolved_port is None:
+            raise RuntimeError(
+                f"Could not find an available port starting at {requested_port} for dashboard"
+            )
+        if resolved_port != requested_port:
+            print(
+                f"[WebDashboard] Requested port {requested_port} is in use; "
+                f"falling back to {resolved_port}"
+            )
+            self.port = resolved_port
+
         async def start_server():
             config = uvicorn.Config(
                 self.app,
