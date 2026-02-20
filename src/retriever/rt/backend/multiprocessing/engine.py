@@ -151,7 +151,13 @@ class MPEngine(ExecutionEngine):
             control_resp_queue = None
             if "control_channel" in self.config:
                 ctrl_chan = self.config["control_channel"]
-                if hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
+                if hasattr(ctrl_chan, 'register_node'):
+                    # Per-node queue channel: register this node and get its queue
+                    ctrl_chan.register_node(node.id)
+                    control_cmd_queue = ctrl_chan.get_node_command_queue(node.id)
+                    control_resp_queue = ctrl_chan.response_queue
+                elif hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
+                    # Legacy shared queue channel
                     control_cmd_queue = ctrl_chan.command_queue
                     control_resp_queue = ctrl_chan.response_queue
 
