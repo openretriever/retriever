@@ -288,7 +288,16 @@ class PipelineBuilder:
             adapter = conn.sync
 
             # Check edge_config for per-port overrides
+            if conn.edge_config and "*" in conn.edge_config:
+                # "*" acts as edge-level defaults for all ports.
+                cfg = conn.edge_config["*"]
+                qsize = cfg.qsize
+                on_full = cfg.on_full or on_full
+                if cfg.adapter is not None:
+                    adapter = cfg.adapter
+
             if conn.edge_config and port in conn.edge_config:
+                # Port-specific config overrides "*" defaults.
                 cfg = conn.edge_config[port]
                 qsize = cfg.qsize
                 on_full = cfg.on_full or on_full
