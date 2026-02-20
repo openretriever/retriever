@@ -44,7 +44,7 @@ class TemporalFlow:
         map: Optional[Dict[str, str]] = None,
         sync: Optional["Adapter"] = None,
         qsize: int = 10,
-        on_full: str = "overwrite",
+        on_full: Optional[str] = None,
         edge_config: Optional[Dict[str, "EdgeConfig"]] = None,
     ) -> "TemporalFlow":
         """
@@ -73,6 +73,7 @@ class TemporalFlow:
 
             Per-port config:
                 camera.then(planner, edge_config={
+                    "*": EdgeConfig(qsize=32, on_full="drop"),
                     "frame": EdgeConfig(qsize=100, on_full="drop"),
                     "timestamp": EdgeConfig(qsize=10),
                 })
@@ -85,6 +86,18 @@ class TemporalFlow:
 
         if sync is None:
             sync = Latest()
+
+        # Legacy shorthand: normalize qsize/on_full into edge-level defaults.
+        # This keeps per-edge transport policy in EdgeConfig (wildcard "*"),
+        # while preserving existing call sites that still pass qsize/on_full.
+        if qsize != 10 or on_full is not None:
+            from retriever.flow.config import EdgeConfig
+
+            normalized_edge_config = dict(edge_config or {})
+            normalized_edge_config.setdefault("*", EdgeConfig(qsize=qsize, on_full=on_full))
+            edge_config = normalized_edge_config
+            qsize = 10
+            on_full = None
 
         # Validate adapter conflict: sync and edge_config.adapter for same port
         if edge_config:
