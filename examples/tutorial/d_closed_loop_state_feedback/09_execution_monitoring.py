@@ -20,7 +20,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 
 
 @flow_io
@@ -121,8 +121,8 @@ def build_pipeline(*, hz: float) -> Pipeline:
     monitor = ExecutionMonitor() @ Rate(hz=hz)
     printer = PrintAlert() @ Trigger("alert")
 
-    pipe.connect(sim, monitor)
-    pipe.connect(monitor, printer)
+    pipe.connect(sim, monitor, sync=Latest())
+    pipe.connect(monitor, printer, sync=Latest())
 
     return pipe
 
