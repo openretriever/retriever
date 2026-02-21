@@ -44,7 +44,11 @@ Expected outputs for P0:
 pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
 pixi run demo-backend-parity
 pixi run verify-backend-parity
+pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
+pixi run demo-incident-replay
+pixi run verify-incident-replay
 ```
 
 Expected output for P1:
 - `examples/tutorial/expected_outputs/032_backend_parity_benchmark.md`
+- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`

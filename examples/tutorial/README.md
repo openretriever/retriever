@@ -25,6 +25,7 @@ Each track uses local numbering (`01_`, `02_`, ...) within that folder.
 ## P1 Reliability Hardening Modules
 
 - `b_ir_and_execution/09_backend_parity_benchmark.py`
+- `c_debug_and_replay/07_incident_response_replay_drill.py`
 
 ## P0 Runner
 
@@ -40,3 +41,4 @@ Each track uses local numbering (`01_`, `02_`, ...) within that folder.
 - `expected_outputs/028_operator_mode_and_authority_fsm.md`
 - `expected_outputs/029_release_readiness_walkthrough.md`
 - `expected_outputs/032_backend_parity_benchmark.md`
+- `expected_outputs/033_incident_response_replay_drill.md`
