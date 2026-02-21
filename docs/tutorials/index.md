@@ -21,7 +21,11 @@ Canonical tutorials are organized in one-level topic tracks under `examples/tuto
 
 - [Lecture Packs L01-L11](lectures/index.md)
 
-## Core Workflow Walkthrough
+## Read This First
+
+- [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
+
+## Additional Deep-Dives
 
 - [Stepper, Debugger, and MCAP Replay](walkthrough_stepper_debug_and_replay.md)
 - [Core Release Path](walkthrough_core_release_path.md)

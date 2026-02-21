@@ -6,8 +6,8 @@ title: "Track H: Release Readiness"
 
 Focus: manifest lineage, acceptance-gate evidence, and go/no-go decisions.
 
-Start here for semantic flow:
-- [Core Release Path Walkthrough](walkthrough_core_release_path.md)
+Start here:
+- [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
 
 ## Modules
 

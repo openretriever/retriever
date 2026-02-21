@@ -6,8 +6,8 @@ title: "Track C: Debug and Replay"
 
 Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
-Start here for semantic flow:
-- [Stepper, Debugger, and MCAP Replay Walkthrough](walkthrough_stepper_debug_and_replay.md)
+Start here:
+- [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
 
 ## Modules
 

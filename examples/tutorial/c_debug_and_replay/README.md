@@ -1,7 +1,7 @@
 # C Debug and Replay
 
 Walkthrough first:
-- `docs/tutorials/walkthrough_stepper_debug_and_replay.md`
+- `docs/tutorials/tutorial_integrated_debug_to_release.md`
 
 ## Tutorials
 
