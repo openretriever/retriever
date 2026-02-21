@@ -17,6 +17,10 @@ Canonical tutorials are organized in one-level topic tracks under `examples/tuto
 - [G: Operations and Interfaces](track_g_operations_interfaces.md)
 - [H: Release Readiness](track_h_release_readiness.md)
 
+## Lecture Pack
+
+- [L01-L06 Foundations](lectures/index.md)
+
 ## P0 Release-Readiness Sequence
 
 ```bash
