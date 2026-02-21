@@ -8,11 +8,13 @@
 - `04_record_replay_perception.py`
 - `05_buffer_engine_demo.py`
 - `06_trace_contract_basics.py`
+- `07_incident_response_replay_drill.py`
 
 ## What To Expect
 
 - Use stepper workflows to isolate failures.
 - Record/replay traces and identify bottlenecks.
+- Run incident-response drills and verify replay diagnosis consistency.
 
 ## Run
 
@@ -23,4 +25,8 @@ pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_step
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
+pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 ```
+
+Expected output reference:
+- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`

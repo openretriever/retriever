@@ -15,6 +15,7 @@ pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_step
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
+pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 ```
 
 ## What To Observe
@@ -22,8 +23,14 @@ pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 - In-process stepper behavior vs backend run behavior.
 - Replay workflows that isolate regressions.
 - Edge latency + queue depth bottleneck identification.
+- Incident triage with replay signature consistency checks.
 
-## Expected Artifacts (P0)
+## Expected Artifacts (P0/P1)
 
 - `logs/tutorial_trace/tut024_trace_envelopes.jsonl`
 - `logs/tutorial_trace/tut024_trace_report.json`
+- `logs/tutorial_incident/tut033_incident_report.json`
+- `logs/tutorial_incident/tut033_incident_checklist.md`
+
+Expected output reference:
+- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
