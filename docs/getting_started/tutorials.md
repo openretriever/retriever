@@ -24,11 +24,7 @@ Canonical tutorials are grouped into one-level topic tracks under `examples/tuto
 ## Fast P0 Sequence
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
-pixi run python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
-pixi run python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm
-pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
+pixi run p0-release-readiness
 ```
 
 ## Related
@@ -38,6 +34,9 @@ pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_wa
   - `examples/tutorial/expected_outputs/025_run_manifest_and_lineage.md`
   - `examples/tutorial/expected_outputs/027_closed_loop_policy_backend_abstraction.md`
   - `examples/tutorial/expected_outputs/028_operator_mode_and_authority_fsm.md`
-  - `examples/tutorial/expected_outputs/029_release_readiness_walkthrough.md`
+- Notebook-ready export:
+  - [Notebook-Ready Export](../tutorials/notebook_ready.md)
+  - `pixi run export-notebook-ready`
+  - `pixi run check-notebook-ready`
 - Advanced examples:
   - [Zero-Copy Guide](../guides/advanced_zero_copy.md)

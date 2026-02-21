@@ -29,15 +29,21 @@ Canonical tutorials are organized in one-level topic tracks under `examples/tuto
 
 - [Stepper, Debugger, and MCAP Replay](walkthrough_stepper_debug_and_replay.md)
 - [Core Release Path](walkthrough_core_release_path.md)
+- [Notebook-Ready Export](notebook_ready.md)
 
 ## P0 Release-Readiness Sequence
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
-pixi run python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
-pixi run python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm
-pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
+pixi run p0-release-readiness
+```
+
+Equivalent step-by-step commands:
+
+```bash
+pixi run demo-trace-contract
+pixi run demo-manifest-lineage
+pixi run demo-policy-backends
+pixi run demo-authority-fsm
 ```
 
 Expected outputs for P0:
@@ -45,19 +51,28 @@ Expected outputs for P0:
 - `examples/tutorial/expected_outputs/025_run_manifest_and_lineage.md`
 - `examples/tutorial/expected_outputs/027_closed_loop_policy_backend_abstraction.md`
 - `examples/tutorial/expected_outputs/028_operator_mode_and_authority_fsm.md`
-- `examples/tutorial/expected_outputs/029_release_readiness_walkthrough.md`
 
 ## P1 Reliability Extensions
 
 ```bash
-pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
-pixi run demo-backend-parity
+pixi run p1-reliability-gates
 pixi run verify-backend-parity
-pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
-pixi run demo-incident-replay
 pixi run verify-incident-replay
 ```
 
 Expected output for P1:
 - `examples/tutorial/expected_outputs/032_backend_parity_benchmark.md`
 - `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
+
+## Advanced Tutorial Extensions
+
+- `examples/tutorial/expected_outputs/034_functional_fanin_fanout.md`
+- `examples/tutorial/expected_outputs/035_deadline_aware_mode_switch.md`
+- `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`
+
+## Notebook-Ready Artifacts
+
+```bash
+pixi run export-notebook-ready
+pixi run check-notebook-ready
+```

@@ -24,6 +24,15 @@ pixi run verify-incident-replay
 pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
 ```
 
+Task-oriented equivalent:
+
+```bash
+pixi run demo-policy-backends
+pixi run verify-backend-parity
+pixi run verify-incident-replay
+pixi run demo-release-readiness
+```
+
 ## What Each Step Proves
 
 ### Step 1: Backend Abstraction Contract (`TUT-027`)
