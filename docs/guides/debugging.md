@@ -142,11 +142,11 @@ to step through Flow logic is to run **in-process** with `Pipeline.step()`.
 
 ### Minimal example
 
-Use: `examples/tutorial/011_debug_stepper.py`
+Use: `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`
 
 What to do:
 
-1. Open `examples/tutorial/011_debug_stepper.py`
+1. Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`
 2. Set a breakpoint inside `DebugFlow.run()` (or any `Flow.run()` you want to inspect)
 3. Start the VS Code debugger (F5) using the provided launch config (see `.vscode/launch.json`)
 
@@ -155,7 +155,7 @@ What to do:
 The example can optionally raise an exception when the counter reaches a value:
 
 ```sh
-python -m examples.tutorial.011_debug_stepper --fail-at 3
+python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --fail-at 3
 ```
 
 In VS Code, enable “Break on exceptions” to stop exactly where the exception is raised inside `Flow.run()`.
@@ -164,7 +164,7 @@ In VS Code, enable “Break on exceptions” to stop exactly where the exception
 
 If you want to debug the *real* `ColorDetector` logic from the dora perception demo without starting dora or a camera, use:
 
-- `examples/tutorial/012_debug_perception_stepper.py`
+- `examples/tutorial/c_debug_and_replay/02_debug_perception_stepper.py`
 
 It generates synthetic red/blue frames in-process and runs:
 
@@ -176,7 +176,7 @@ Set breakpoints inside `ColorDetector.run()` / `_detect_from_mask()` and run und
 
 If you want to debug the perception demo with an actual camera (while still staying in-process for VS Code breakpoints), use:
 
-- `examples/tutorial/013_debug_perception_stepper_real_camera.py`
+- `examples/tutorial/c_debug_and_replay/03_debug_perception_stepper_real_camera.py`
 
 This runs:
 
@@ -211,8 +211,8 @@ Library helpers (stepper-first):
 - Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
 
 Perception example:
-- `examples/tutorial/014_record_replay_perception.py`:
-  - Record: `python -m examples.tutorial.014_record_replay_perception record ...`
-  - Replay: `python -m examples.tutorial.014_record_replay_perception replay ...`
+- `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:
+  - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
+  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay ...`
 
 These examples store a gzip+pickle file by default at `logs/perception_recording.pkl.gz`.

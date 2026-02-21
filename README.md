@@ -79,14 +79,14 @@ Quick start with [Pixi](https://pixi.sh):
 
 ```sh
 curl -fsSL https://pixi.sh/install.sh | bash
-pixi run demo-dora
+pixi run demo-webcam-detection
 ```
 
 `pixi.lock` is multi-platform (osx-arm64, linux-64). Commit it for reproducible installs; other platforms can re-lock after adding the platform to `pixi.toml` and running `pixi install`.
 
 Pixi manages its own env. If you prefer `uv`/`pip`, use a separate conda/venv to avoid mixing managers. Pixi installs the PyPI portion using `uv` internally; you usually don't need to run `uv` yourself when using Pixi.
 
-Full installation (Pixi/conda/uv), dora CLI notes, and troubleshooting: `docs/install.md`.
+Full installation (Pixi/conda/uv), dora CLI notes, and troubleshooting: `docs/getting_started/install.md`.
 
 Golden/system split prep:
 
@@ -99,11 +99,12 @@ Golden/system split prep:
 
 ## Documentation
 
-Docs live in `docs/` (served via MkDocs):
+Docs live in `docs/`:
 
 - Runtime handbook (canonical): `docs/handbook.md`
 - Architecture: `docs/architecture.md`
-- Install: `docs/install.md`
+- Tutorials: `docs/tutorials/index.md`
+- Install: `docs/getting_started/install.md`
 - Advanced Examples: `examples/advanced/`
   - **Skill Switching**: Dynamic behavior switching pattern with **Fan-in** support (`examples/advanced/skill_switching/`)
   - **Native Controller**: Rust/C++ native extension bindings (`examples/advanced/native_controller/`)
@@ -114,5 +115,4 @@ Docs live in `docs/` (served via MkDocs):
 Recent features:
 - **Main Thread Flow** (`@gui_flow`): Run flows in main thread for native GUI support (MuJoCo viewers, Qt, etc.)
   - See: `examples/advanced/twist2_simulation/` for usage example
-
 

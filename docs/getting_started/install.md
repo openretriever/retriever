@@ -4,49 +4,58 @@ title: "Installation Guide"
 
 # Installation Guide
 
-Environment definitions (Pixi tasks/environments) live in `pixi.toml`. Pixi is the recommended path; the conda+uv section below is an alternative if you prefer a pure Python workflow.
+Use Python 3.10-3.12 for the current runtime stack.
 
-## Supported Python
+## Recommended: Pixi
 
-Use Python 3.10–3.12 for the full stack. The runtime/core is pure-Python, but some optional “system” deps (e.g. Ray) may lag on newer Python versions.
+Pixi is the default environment manager for this repo.
 
-## Pixi vs uv (how they fit together)
-
-- **Pixi** manages the whole dev/runtime environment (conda + PyPI) from `pixi.toml` and stores it under `.pixi/`.
-  It uses `uv` internally for resolving/installing the PyPI portion.
-- **uv** is great if you want a pure Python workflow (venv/conda + `uv pip install ...` / `uv sync ...`), but avoid
-  mixing `uv sync` into a Pixi-managed environment unless you also update `pixi.toml`/`pixi.lock`.
-
-## Quick Start (Pip / Venv)
-
-The documentation build and website are decoupled from `pixi` for simplicity. To build the docs locally:
-
-```sh
-# Create a venv (optional)
-python -m venv .venv
-source .venv/bin/activate
-
-# Install docs dependencies
-pip install -r doc_requirements.txt
-
-# Run the build
-./scripts/build_site.sh
-```
-
-## Runtime Environment (Pixi)
-
-For running the actual Retriever codebase and examples, we use [Pixi](https://pixi.sh).
-
-```sh
+```bash
 # Install pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run a demo
-pixi run demo-dora
+# Run a tutorial demo (auto-resolves env)
+pixi run demo-webcam-detection
 ```
 
-See `pixi.toml` for available environments and tasks.
+Useful follow-ups:
 
-## Manual Setup (conda + uv)
-...
-(Rest of the file remains similar or can be simplified)
+```bash
+# Run tests
+pixi run python -m pytest tests -q
+
+# Open an interactive shell in the resolved env
+pixi shell
+```
+
+## Alternative: venv + pip/uv
+
+If you prefer a plain Python environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e ".[demo,dora,recording]"
+```
+
+Then run tutorials directly:
+
+```bash
+python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend multiprocessing
+```
+
+## Dora Notes
+
+If `dora` reports stale coordinator/state errors, kill stale processes and retry:
+
+```bash
+pkill -9 dora || true
+pixi run demo-webcam-detection
+```
+
+## Where To Go Next
+
+- Tutorial index: `docs/tutorials/index.md`
+- Runtime handbook: `docs/handbook.md`
+- Debugging guide: `docs/guides/debugging.md`

@@ -16,6 +16,8 @@ If you only read one page, read `docs/handbook.md` top-to-bottom.
 
 Optional deep dives (may be merged into the handbook over time):
 - `docs/getting_started/install.md`
+- `docs/getting_started/tutorials.md`
+- `docs/tutorials/index.md`
 - `docs/guide_runtime.md`
 - `docs/guide_flow.md`
 - `docs/guide_temporal.md`

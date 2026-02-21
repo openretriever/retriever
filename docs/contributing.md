@@ -14,7 +14,7 @@ This repo is early-stage and moves fast. Keep PRs small, include tests when it m
 
 ## Setup
 
-1) Set up an environment by following `docs/install.md`.
+1) Set up an environment by following `docs/getting_started/install.md`.
 
 2) Install dev tooling (ruff/black/mypy/pytest/pre-commit) inside the Pixi env:
 
@@ -41,5 +41,5 @@ pixi run python -m pytest tests/core -q
 
 ## Documentation
 
-- Docs are in `docs/` and served by MkDocs (`mkdocs.yml`).
-- Local preview: `mkdocs serve`
+- Docs are in `docs/` with tutorial curriculum pages in `docs/tutorials/`.
+- `docs/index.md` is the public entry point for docs navigation.

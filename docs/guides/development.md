@@ -39,7 +39,7 @@ git clone <repository-url>
 cd Retriever
 
 # Option A: Pixi (quick demo env defined in pixi.toml)
-pixi run demo-dora
+pixi run demo-webcam-detection
 pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 
 # Option B: uv (in your own venv/conda env)
@@ -99,20 +99,13 @@ pixi run mypy retriever
 pixi run python -m pytest
 ```
 
-### Documentation (MkDocs)
+### Documentation
 
-MkDocs config lives in `mkdocs.yml`, with pages under `docs/`.
+Public docs are authored as markdown under `docs/` with tutorial track pages in `docs/tutorials/`.
 
-```bash
-# Install mkdocs tooling (in your active env)
-python -m pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin
-
-# Serve docs locally
-mkdocs serve
-
-# Build static site
-mkdocs build
-```
+Current repo note:
+- A checked-in `mkdocs.yml` is not present right now.
+- Use repo markdown files directly as the source of truth.
 
 ### Environment Variables
 
@@ -677,7 +670,7 @@ enable_flow_tracing()
 
 After reading this guide:
 
-1. **Set up your environment**: follow `docs/install.md`
+1. **Set up your environment**: follow `docs/getting_started/install.md`
 2. **Run the test suite**: `python -m pytest`
 3. **Try the examples**: Start with `examples/simple_flow.py`
 4. **Read the architecture guide**: [architecture.md](architecture.md) for technical details

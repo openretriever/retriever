@@ -66,13 +66,13 @@ pipe.close_stepper()
 
 ### Getting Started
 - **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
+- **[Tutorial Tracks](tutorials/index.md)** - Runnable tutorial curriculum (Tracks A-H)
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
     - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
 - **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
     - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
-    - See also: **[MCP Guide](guide_mcp.md)** (External Tools & Memory)
-- **[Development Guide](development.md)** - Dev workflow and architecture
+- **[Development Guide](guides/development.md)** - Dev workflow and architecture
 
 ### Reference
 - **[Architecture](architecture.md)** - Design philosophy and system overview
@@ -80,9 +80,10 @@ pipe.close_stepper()
 
 ### Quick Navigation
 - **Getting Started**: [Install](getting_started/install.md)
+- **Tutorial Curriculum**: [tutorials/index.md](tutorials/index.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)
-- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md), [MCP](guide_mcp.md)
+- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md)
 - **Examples**: `examples/` directory and `tests/core/`
 - **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
 

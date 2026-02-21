@@ -148,5 +148,5 @@ Entry point group:
 ## 5) “What to read next”
 
 - User guide: `docs/guide_runtime.md`
-- Installation: `docs/install.md`
+- Installation: `docs/getting_started/install.md`
 - Legacy architecture reference: `docs/architecture_legacy.md`
