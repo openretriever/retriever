@@ -44,7 +44,8 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics 
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --steps 5
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --steps 4
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 4
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 4
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 pixi run python -m examples.tutorial.e_resource_and_sync.01_multirate_window --backend multiprocessing --duration 2
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset --steps 5 --dt 0.1
