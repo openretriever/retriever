@@ -24,6 +24,7 @@ Canonical tutorials are organized in one-level topic tracks under `examples/tuto
 ## Core Workflow Walkthrough
 
 - [Stepper, Debugger, and MCAP Replay](walkthrough_stepper_debug_and_replay.md)
+- [Core Release Path](walkthrough_core_release_path.md)
 
 ## P0 Release-Readiness Sequence
 
