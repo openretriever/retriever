@@ -81,7 +81,7 @@ This distribution contains a `pixi.toml` configured to install the included whee
     ```
 3.  Run examples:
     ```bash
-    pixi run python examples/tutorial/009_dora_perception.py
+    pixi run python examples/tutorial/b_ir_and_execution/06_dora_perception.py
     ```
 4.  Enter shell:
     ```bash
@@ -109,13 +109,13 @@ The `examples/` directory contains tutorial and advanced examples.
 
 ```bash
 # Via Pixi
-pixi run python examples/tutorial/009_dora_perception.py
+pixi run python examples/tutorial/b_ir_and_execution/06_dora_perception.py
 
 # Or
 pixi run demo-webcam-detection
 
 # Via Pip environment
-python examples/tutorial/009_dora_perception.py
+python examples/tutorial/b_ir_and_execution/06_dora_perception.py
 ```
 """
     with open(bundle_dir / "README.md", "w") as f:
