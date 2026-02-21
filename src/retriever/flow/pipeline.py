@@ -23,7 +23,7 @@ class Pipeline:
     `Pipeline` intentionally provides a small ergonomic surface:
     - connect flows with `handle.then(...)` (outside of FlowContext)
     - or connect explicitly with `pipeline.connect(a, b, ...)`
-    - build artifacts: `pipeline.build_ir()`, `pipeline.build_execution()`
+    - build artifacts: `pipeline.validate()`, `pipeline.build_execution()`
     - run on a backend: `pipeline.run(...)`
     """
 
@@ -44,7 +44,7 @@ class Pipeline:
         """
         Set a pipeline-level default for Rate/Hybrid lag handling.
 
-        The default is applied at `build_ir()` time to any node whose clock is still
+        The default is applied at `validate()` time to any node whose clock is still
         using the library default (`on_lag="warn"`).
 
         Per-node overrides are still possible by explicitly setting `Rate(on_lag=...)`
