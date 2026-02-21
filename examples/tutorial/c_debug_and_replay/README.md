@@ -1,5 +1,8 @@
 # C Debug and Replay
 
+Walkthrough first:
+- `docs/tutorials/walkthrough_stepper_debug_and_replay.md`
+
 ## Tutorials
 
 - `01_debug_stepper.py`

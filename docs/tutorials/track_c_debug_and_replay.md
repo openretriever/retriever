@@ -6,6 +6,9 @@ title: "Track C: Debug and Replay"
 
 Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
+Start here for semantic flow:
+- [Stepper, Debugger, and MCAP Replay Walkthrough](walkthrough_stepper_debug_and_replay.md)
+
 ## Modules
 
 ```bash
@@ -24,6 +27,13 @@ pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_rep
 - Replay workflows that isolate regressions.
 - Edge latency + queue depth bottleneck identification.
 - Incident triage with replay signature consistency checks.
+
+## Core Feature Flow
+
+1. Step pipeline in-process (`01_debug_stepper`) to debug logic with breakpoints.
+2. Record real sensor session to MCAP (`04_record_replay_perception record`).
+3. Replay the same MCAP (`04_record_replay_perception replay`) for deterministic debugging.
+4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
 
 ## Expected Artifacts (P0/P1)
 
