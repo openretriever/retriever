@@ -12,6 +12,7 @@ Walkthrough first:
 - `05_buffer_engine_demo.py`
 - `06_trace_contract_basics.py`
 - `07_incident_response_replay_drill.py`
+- `08_mcap_session_inspection.py`
 
 ## What To Expect
 
@@ -25,10 +26,12 @@ Walkthrough first:
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
+pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
 ```
 
 Expected output reference:

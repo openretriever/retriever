@@ -21,6 +21,7 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.09_execution_m
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.10_time_triggers
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.11_safety_monitoring
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.12_stateful_replanning
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1
 ```
 
 ## What To Observe
@@ -28,7 +29,11 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.12_stateful_re
 - Closed-loop dynamics under different scheduler choices.
 - State reset and persistence boundaries.
 - Valid vs invalid authority-mode transitions.
+- Deadline-driven mode transitions (`NOMINAL <-> SAFE`) under periodic overload.
 
 ## Expected Artifacts (P0)
 
 - `logs/tutorial_authority/tut028_authority_log.json`
+
+Advanced extension artifact:
+- `logs/tutorial_deadline/tut035_deadline_mode_switch.json`

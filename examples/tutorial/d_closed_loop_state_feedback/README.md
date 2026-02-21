@@ -14,6 +14,7 @@
 - `10_time_triggers.py`
 - `11_safety_monitoring.py`
 - `12_stateful_replanning.py`
+- `13_deadline_aware_mode_switch.py`
 - `90_legacy_eff_basics.py`
 - `91_legacy_robotics_state.py`
 - `92_legacy_state_intro.py`
@@ -32,4 +33,5 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.02_symbolic_pl
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.07_feedback_intro --backend multiprocessing --duration 3
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1
 ```

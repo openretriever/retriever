@@ -15,10 +15,12 @@ Start here:
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
+pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
 ```
 
 ## What To Observe
@@ -27,6 +29,7 @@ pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_rep
 - Replay workflows that isolate regressions.
 - Edge latency + queue depth bottleneck identification.
 - Incident triage with replay signature consistency checks.
+- MCAP session inspection outputs for notebook-ready analysis.
 
 ## Core Feature Flow
 
@@ -41,6 +44,10 @@ pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_rep
 - `logs/tutorial_trace/tut024_trace_report.json`
 - `logs/tutorial_incident/tut033_incident_report.json`
 - `logs/tutorial_incident/tut033_incident_checklist.md`
+- `logs/tutorial_mcap/tut036_mcap_session_summary.json`
+- `logs/tutorial_mcap/tut036_mcap_step_table.jsonl`
 
 Expected output reference:
+- `examples/tutorial/expected_outputs/024_trace_contract_basics.md`
 - `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
+- `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`

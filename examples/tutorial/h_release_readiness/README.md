@@ -13,6 +13,6 @@
 ## Run
 
 ```bash
-pixi run python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage
+pixi run python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
 pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
 ```

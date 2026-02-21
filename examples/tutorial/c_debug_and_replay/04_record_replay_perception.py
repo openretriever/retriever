@@ -25,6 +25,7 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest
 _perception = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
 CameraSource = _perception.CameraSource
 CameraData = _perception.CameraData
+Image = _perception.Image
 ColorDetector = _perception.ColorDetector
 DisplayFlow = _perception.DisplayFlow
 
@@ -99,33 +100,133 @@ def cmd_record(args: argparse.Namespace) -> None:
 
 
 def _resolve_recording_path(path: Path) -> Path:
-    """
-    Resolve default recording path with a small legacy fallback.
-
-    This keeps the demo usable if you recorded using the older filename:
-      logs/perception_bag.pkl.gz
-    """
-    default = Path("logs/perception_recording.pkl.gz")
-    if path == default and not path.exists():
-        legacy = Path("logs/perception_bag.pkl.gz")
-        if legacy.exists():
-            print(f"[Replay] {path} not found; using legacy {legacy}")
-            return legacy
+    """Resolve and validate recording path."""
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Recording not found: {path}. Run 'record' first to create an MCAP session."
+        )
     return path
+
+
+def _as_camera_data(obj: object) -> CameraData | None:
+    """Best-effort conversion from MCAP JSON payloads back into `CameraData`."""
+    if isinstance(obj, CameraData):
+        return obj
+
+    # Covers the case where MCAP decoding returns real dataclass objects.
+    if hasattr(obj, "image"):
+        img = getattr(obj, "image", None)
+        if img is None:
+            return None
+        if hasattr(img, "frame") and hasattr(img, "frame_id"):
+            return CameraData(image=Image(frame=img.frame, frame_id=int(img.frame_id)))
+        if isinstance(img, dict):
+            frame = img.get("frame")
+            if frame is None:
+                return None
+            return CameraData(image=Image(frame=frame, frame_id=int(img.get("frame_id") or 0)))
+        return None
+
+    if not isinstance(obj, dict):
+        return None
+
+    img = obj.get("image")
+    if not isinstance(img, dict):
+        return None
+
+    frame = img.get("frame")
+    if frame is None:
+        return None
+
+    frame_id = img.get("frame_id") or 0
+    try:
+        frame_id = int(frame_id)
+    except Exception:
+        frame_id = 0
+
+    return CameraData(image=Image(frame=frame, frame_id=frame_id))
+
+
+def _load_camera_buffer_from_mcap(path: Path) -> list[tuple[float, CameraData]]:
+    """
+    Extract a CameraData time series from an MCAP file.
+
+    Note: node IDs inside MCAP topics are not stable across processes, so we detect the camera stream
+    by inspecting payload shape instead of hard-coding a node id.
+    """
+    from retriever.lib.mcap import MCAPReader
+
+    with MCAPReader(path) as reader:
+        steps = list(reader)
+
+    if not steps:
+        raise RuntimeError(f"MCAP recording is empty: {path}")
+
+    camera_key: str | None = None
+    for step in steps:
+        outputs = step.get("outputs", {}) or {}
+        if not isinstance(outputs, dict):
+            continue
+        for key, val in outputs.items():
+            if _as_camera_data(val) is not None:
+                camera_key = str(key)
+                break
+        if camera_key is not None:
+            break
+
+    if camera_key is None:
+        raise RuntimeError(f"Could not locate a CameraData-like stream in MCAP: {path}")
+
+    buffer: list[tuple[float, CameraData]] = []
+    for step in steps:
+        now = step.get("now", 0.0) or 0.0
+        try:
+            ts = float(now)
+        except Exception:
+            ts = 0.0
+
+        outputs = step.get("outputs", {}) or {}
+        if not isinstance(outputs, dict):
+            continue
+        cam = _as_camera_data(outputs.get(camera_key))
+        if cam is None:
+            continue
+        buffer.append((ts, cam))
+
+    if not buffer:
+        raise RuntimeError(f"Camera stream extracted but contained no frames: {path}")
+
+    print(f"[Replay] extracted camera stream key={camera_key} frames={len(buffer)} from {path}")
+    return buffer
 
 
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
     pipe, camera = build_replay_pipeline(show_window=args.show_window)
 
-    # Run with in-process backend (uses stepper internally)
-    # visualize=True (or "rerun") auto-enables Rerun logging
-    pipe.run(
-        backend="in-process",
-        visualize=args.stream,
-        duration=args.steps * args.dt,
-        blocking=True
-    )
+    camera_buffer = _load_camera_buffer_from_mcap(recording)
+    pipe.replay(camera, buffer=camera_buffer)
+
+    rerun_manager = None
+    if args.stream:
+        from retriever.lib.rerun import RerunConfig, RerunManager
+
+        config = RerunConfig(mode="spawn")
+        rerun_manager = RerunManager(config, app_id="perception_replay")
+        rerun_manager.init()
+
+    try:
+        for i in range(args.steps):
+            result = pipe.step(dt=args.dt)
+            if rerun_manager is not None:
+                rerun_manager.log_step_result(result, i)
+            if args.sleep > 0:
+                time.sleep(args.sleep)
+    finally:
+        pipe.close_stepper()
+        if rerun_manager is not None:
+            rerun_manager.cleanup()
+    print(f"[Replay] ran {args.steps} steps from {recording}")
 
 
 def main() -> None:
