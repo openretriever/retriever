@@ -149,6 +149,8 @@ demo-record-replay = "python -m examples.tutorial.c_debug_and_replay.04_record_r
 demo-symbolic-planning = "python -m examples.tutorial.d_closed_loop_state_feedback.02_symbolic_planning"
 demo-multirate = "python -m examples.tutorial.e_resource_and_sync.01_multirate_window"
 demo-dora-simple = "python -m examples.tutorial.b_ir_and_execution.05_dora_simple"
+demo-backend-parity = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark"
+verify-backend-parity = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark --fail-on-drift && python -c \"import json, pathlib; p=pathlib.Path('logs/tutorial_parity/tut032_backend_parity.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['parity']['overall_pass'] is True; assert d['metrics']['multiprocessing']['count'] > 0; assert d['metrics']['dora']['count'] > 0; print('backend parity verified')\""
 
 
 # =============================================================================
