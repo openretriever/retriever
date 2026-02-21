@@ -19,7 +19,7 @@ import argparse
 import time
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 
 
 @flow_io
@@ -123,9 +123,9 @@ def build_pipeline(
     # Closed-loop wiring:
     #   plant -> controller (obs)
     #   controller -> plant (action)
-    pipe.connect(plant, controller)
-    pipe.connect(controller, plant)
-    pipe.connect(plant, printer)
+    pipe.connect(plant, controller, sync=Latest())
+    pipe.connect(controller, plant, sync=Latest())
+    pipe.connect(plant, printer, sync=Latest())
 
     return pipe
 

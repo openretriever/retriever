@@ -5,8 +5,7 @@ Demonstrates how to bundle multiple disparate streams (e.g. Det and Seg) by time
 
 import time
 import random
-from dataclasses import dataclass, fields
-from typing import Optional
+from dataclasses import dataclass, field as dc_field, fields
 
 from retriever.flow import Flow, Rate, Pipeline, flow_io, Latest, Trigger
 from retriever.flow.sync import Synchronizer
@@ -30,12 +29,12 @@ class Segmentation:
 @dataclass
 class SyncInput:
     # Flattened input to avoid nesting complexity in graph ports
-    det_label: Optional[str] = None
-    det_box: Optional[list[int]] = None
-    det_timestamp: Optional[float] = None
+    det_label: str = ""
+    det_box: list[int] = dc_field(default_factory=lambda: [0, 0, 0, 0])
+    det_timestamp: float = 0.0
     
-    seg_mask_rle: Optional[str] = None
-    seg_timestamp: Optional[float] = None
+    seg_mask_rle: str = ""
+    seg_timestamp: float = 0.0
 
 @flow_io
 @dataclass
@@ -114,7 +113,7 @@ def main():
     # Sync Node: 
     # 1. Use Synchronized Clock -> Triggers only when timestamps match
     # 2. Use Exact Adapter -> Ensures we pull the matching sample
-    from retriever.flow.clock import Synchronized, Trigger, Rate
+    from retriever.flow.clock import Trigger, Rate
     from retriever.flow.adapter import Exact
 
     with pipe:
@@ -123,15 +122,15 @@ def main():
         
         # Detector/Segmenter need BOTH signals to be valid.
         # Use Synchronized to ensure we have id AND timestamp before running.
-        det_node = Detector() @ Synchronized("id", "timestamp")
-        seg_node = Segmenter() @ Synchronized("id", "timestamp")
+        det_node = Detector() @ Trigger("id", "timestamp")
+        seg_node = Segmenter() @ Trigger("id", "timestamp")
         
         
-        sync_node = SyncBundler() @ Synchronized("det_timestamp", "seg_timestamp")
+        sync_node = SyncBundler() @ Trigger("det_timestamp", "seg_timestamp")
         
         # Fan out
-        pipe.connect(cam, det_node)
-        pipe.connect(cam, seg_node)
+        pipe.connect(cam, det_node, sync=Latest())
+        pipe.connect(cam, seg_node, sync=Latest())
         
         # Fan in
         def get_map(cls, prefix):
@@ -143,7 +142,7 @@ def main():
         
         # Sink
         sink = Printer() @ Trigger("det")
-        pipe.connect(sync_node, sink)
+        pipe.connect(sync_node, sink, sync=Latest())
         
     print("Running Native Sync Demo...")
     pipe.run(backend="multiprocessing", duration=3.0)
