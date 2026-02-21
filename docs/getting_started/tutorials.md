@@ -19,6 +19,8 @@ Canonical tutorials are grouped into one-level topic tracks under `examples/tuto
    - `examples/tutorial/f_policy_backends`
    - `examples/tutorial/g_operations_interfaces`
    - `examples/tutorial/h_release_readiness`
+4. Browse the track guide: [../tutorials/index.md](../tutorials/index.md)
+5. Optional lecture-format notes: [Lecture Pack L01-L06](../tutorials/lectures/index.md)
 
 ## Recommended first runs
 
