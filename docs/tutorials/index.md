@@ -19,7 +19,7 @@ Canonical tutorials are organized in one-level topic tracks under `examples/tuto
 
 ## Lecture Pack
 
-- [L01-L06 Foundations](lectures/index.md)
+- [Lecture Packs L01-L11](lectures/index.md)
 
 ## P0 Release-Readiness Sequence
 
