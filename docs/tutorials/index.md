@@ -37,3 +37,14 @@ Expected outputs for P0:
 - `examples/tutorial/expected_outputs/027_closed_loop_policy_backend_abstraction.md`
 - `examples/tutorial/expected_outputs/028_operator_mode_and_authority_fsm.md`
 - `examples/tutorial/expected_outputs/029_release_readiness_walkthrough.md`
+
+## P1 Reliability Extensions
+
+```bash
+pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
+pixi run demo-backend-parity
+pixi run verify-backend-parity
+```
+
+Expected output for P1:
+- `examples/tutorial/expected_outputs/032_backend_parity_benchmark.md`
