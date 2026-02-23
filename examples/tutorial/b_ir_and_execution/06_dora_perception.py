@@ -16,9 +16,7 @@ from __future__ import annotations
 
 import argparse
 
-from examples.shared.perception_runtime import (
-    build_tutorial_perception_pipeline,
-)
+from retriever.tutorials.perception import build_tutorial_perception_pipeline
 
 
 def build_perception_pipeline():

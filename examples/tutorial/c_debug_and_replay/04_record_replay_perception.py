@@ -2,16 +2,14 @@
 Record + replay a perception camera stream (in-process stepper) for debugging.
 
 This is a stepper-first workflow:
-  - record once from hardware (real camera) to MCAP
+  - record once from hardware (real camera) to `.rrd` and/or `.mcap`
   - replay later (still in-process) so breakpoints inside `Flow.step()` work
-  - optionally stream to Rerun for live visualization
+  - optionally visualize replay in stdout, OpenCV, Rerun, or both
 
 Run:
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --steps 10
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --stream  # with live Rerun
-
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize both
 """
 
 from __future__ import annotations
@@ -20,7 +18,8 @@ import argparse
 import time
 from pathlib import Path
 
-from examples.shared.perception_runtime import (
+from retriever.config import RecordConfig
+from retriever.tutorials.perception import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,
@@ -30,11 +29,22 @@ from examples.shared.perception_runtime import (
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Record + replay perception stream (in-process stepper).")
-    sub = p.add_subparsers(dest="cmd", required=True)
+    parser = argparse.ArgumentParser(description="Record + replay perception stream (in-process stepper).")
+    sub = parser.add_subparsers(dest="cmd", required=True)
 
     record = sub.add_parser("record", help="Record a short stream from the real camera")
-    record.add_argument("--out", type=Path, default=Path("logs/perception.mcap"), help="Output recording path (.mcap)")
+    record.add_argument(
+        "--out",
+        type=Path,
+        default=Path("logs/perception.rrd"),
+        help="Primary output artifact (.rrd recommended for inspection).",
+    )
+    record.add_argument(
+        "--replay-out",
+        type=Path,
+        default=Path("logs/perception.mcap"),
+        help="Optional replay artifact path (.mcap recommended for portable replay).",
+    )
     record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
     record.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
@@ -42,23 +52,30 @@ def parse_args() -> argparse.Namespace:
 
     replay = sub.add_parser("replay", help="Replay a recorded stream (no hardware needed)")
     replay.add_argument(
-        "--recording", type=Path, default=Path("logs/perception.mcap"), help="Input recording path (.mcap)"
+        "--recording",
+        type=Path,
+        default=Path("logs/perception.mcap"),
+        help="Input recording path (.rrd or .mcap).",
     )
     replay.add_argument("--steps", type=int, default=10, help="Max number of step iterations")
     replay.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
     replay.add_argument("--sleep", type=float, default=0.0, help="Sleep seconds between steps (optional)")
-    replay.add_argument("--show-window", action="store_true", help="Enable OpenCV window")
-    replay.add_argument("--stream", action="store_true", help="Stream to Rerun live while replaying")
+    replay.add_argument(
+        "--visualize",
+        choices=("stdout", "cv2", "rerun", "both"),
+        default="stdout",
+        help="Replay visualization mode: stdout logs, cv2 window, live Rerun, or both cv2+Rerun.",
+    )
 
-    return p.parse_args()
+    return parser.parse_args()
 
 
 def cmd_record(args: argparse.Namespace) -> None:
-    pipe, camera = build_record_pipeline()
+    pipe, _camera = build_record_pipeline()
+    cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
-        # Record the entire session (all streams) to MCAP
         pipe.record(
-            args.out,
+            cfg,
             steps=args.steps,
             dt=args.dt,
             sleep_s=args.sleep,
@@ -67,36 +84,52 @@ def cmd_record(args: argparse.Namespace) -> None:
         )
     finally:
         pipe.close_stepper()
-    print(f"[Recording] saved {args.steps} steps to {args.out}")
+    outputs = ", ".join(str(path) for path in cfg.artifact_paths())
+    print(f"[Recording] saved {args.steps} steps to {outputs}")
 
 
 def _resolve_recording_path(path: Path) -> Path:
     resolved = path.expanduser()
     if not resolved.exists():
-        raise FileNotFoundError(f"Recording not found: {resolved}")
+        raise FileNotFoundError(
+            f"Recording not found: {resolved}. Run 'record' first to create a perception recording (.rrd or .mcap)."
+        )
     return resolved
 
 
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
-    buffer = load_camera_buffer_from_recording(recording)
-    max_steps = len(buffer) if args.steps <= 0 else min(args.steps, len(buffer))
-    replay_buffer = buffer[:max_steps]
+    camera_buffer = load_camera_buffer_from_recording(recording)
+    max_steps = len(camera_buffer) if args.steps <= 0 else min(args.steps, len(camera_buffer))
+    replay_buffer = camera_buffer[:max_steps]
 
-    pipe, camera = build_replay_pipeline(display="cv2" if args.show_window else "stdout")
-    if args.stream:
-        print("[Replay] --stream is not supported for explicit stepper replay; proceeding without live Rerun.")
-
+    display = "cv2" if args.visualize in {"cv2", "both"} else "stdout" if args.visualize == "stdout" else "none"
+    pipe, camera = build_replay_pipeline(display=display)
     emit_replay_started(recording_path=str(recording), frame_count_estimate=max_steps)
+    pipe.replay(camera, buffer=replay_buffer)
+
+    rerun_manager = None
+    if args.visualize in {"rerun", "both"}:
+        from retriever.lib.rerun import RerunConfig, RerunManager
+
+        rerun_manager = RerunManager(RerunConfig(mode="spawn"), app_id="perception_replay")
+        rerun_manager.init()
+
+    completed = 0
     try:
-        pipe.replay(camera, buffer=replay_buffer)
-        for _ in range(max_steps):
-            pipe.step(dt=args.dt)
+        for i in range(max_steps):
+            result = pipe.step(dt=args.dt)
+            completed = i + 1
+            if rerun_manager is not None:
+                rerun_manager.log_step_result(result, i)
             if args.sleep > 0:
                 time.sleep(args.sleep)
     finally:
         pipe.close_stepper()
-    emit_replay_finished(recording_path=str(recording), steps_completed=max_steps)
+        if rerun_manager is not None:
+            rerun_manager.cleanup()
+        emit_replay_finished(recording_path=str(recording), steps_completed=completed)
+    print(f"[Replay] ran {completed} steps from {recording}")
 
 
 def main() -> None:
