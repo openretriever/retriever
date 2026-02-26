@@ -59,19 +59,89 @@ class IOView:
     """
 
     def __init__(self, types: List[Type], instances: Dict[str, Any] = None):
-        object.__setattr__(self, '_types', {t.__name__: t for t in types})
-        object.__setattr__(self, '_instances', instances or {t.__name__: t() for t in types})
-        object.__setattr__(self, '_routes', self._build_routes())
+        alias_items = self._build_aliases(types)
+        alias_types = {alias: typ for alias, typ in alias_items}
 
-    def _build_routes(self) -> Dict[str, List[str]]:
-        """Build field_name → [type_names] mapping."""
-        routes: Dict[str, List[str]] = {}
-        for name, t in self._types.items():
-            if not is_dataclass(t):
+        object.__setattr__(self, "_types", alias_types)
+        object.__setattr__(self, "_instances", self._build_instances(alias_items, instances))
+
+        unqualified_routes: Dict[str, List[str]] = {}
+        qualified_routes: Dict[str, Tuple[str, str]] = {}
+        for alias, typ in alias_items:
+            if not is_dataclass(typ):
                 continue
-            for f in fields(t):
-                routes.setdefault(f.name, []).append(name)
-        return routes
+            for f in fields(typ):
+                unqualified_routes.setdefault(f.name, []).append(alias)
+                qualified_routes[f"{alias}.{f.name}"] = (alias, f.name)
+
+        object.__setattr__(self, "_routes", unqualified_routes)
+        object.__setattr__(self, "_qualified_routes", qualified_routes)
+
+    @staticmethod
+    def _build_aliases(types: List[Type]) -> List[Tuple[str, Type]]:
+        dataclass_types = [t for t in types if t is not type(None) and is_dataclass(t)]
+        name_counts: Dict[str, int] = {}
+        for t in dataclass_types:
+            name_counts[t.__name__] = name_counts.get(t.__name__, 0) + 1
+
+        running: Dict[str, int] = {}
+        alias_items: List[Tuple[str, Type]] = []
+        for t in dataclass_types:
+            base = t.__name__
+            if name_counts[base] == 1:
+                alias = base
+            else:
+                idx = running.get(base, 0) + 1
+                running[base] = idx
+                alias = f"{base}__{idx}"
+            alias_items.append((alias, t))
+        return alias_items
+
+    @staticmethod
+    def resolve_alias_types(types: List[Type]) -> Dict[str, Type]:
+        return {alias: typ for alias, typ in IOView._build_aliases(types)}
+
+    def _build_instances(
+        self,
+        alias_items: List[Tuple[str, Type]],
+        instances: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        built: Dict[str, Any] = {}
+        instances = instances or {}
+        base_name_counts: Dict[str, int] = {}
+        for _, typ in alias_items:
+            base_name_counts[typ.__name__] = base_name_counts.get(typ.__name__, 0) + 1
+
+        for alias, typ in alias_items:
+            if alias in instances:
+                built[alias] = instances[alias]
+                continue
+            if base_name_counts.get(typ.__name__, 0) == 1 and typ.__name__ in instances:
+                built[alias] = instances[typ.__name__]
+                continue
+            built[alias] = typ()
+        return built
+
+    def _resolve_field_route(self, field_name: str) -> Tuple[str, str]:
+        if "." in field_name:
+            route = self._qualified_routes.get(field_name)
+            if route is None:
+                raise FlowError(
+                    ErrCode.FLOW_IO_FIELD_NOT_FOUND,
+                    f"Qualified field '{field_name}' not found",
+                )
+            return route
+
+        sources = self._routes.get(field_name, [])
+        if not sources:
+            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
+        if len(sources) > 1:
+            paths = [f"{s}.{field_name}" for s in sources]
+            raise FlowError(
+                ErrCode.FLOW_AMBIGUOUS_FIELD,
+                f"Ambiguous field '{field_name}'. Exists in: {', '.join(paths)}. Use qualified access.",
+            )
+        return (sources[0], field_name)
 
     def __getattr__(self, name: str) -> Any:
         # 1. Qualified: view.TypeName
@@ -79,39 +149,37 @@ class IOView:
             return self._instances[name]
 
         # 2. Direct: view.field
-        sources = self._routes.get(name, [])
-        if not sources:
+        if name not in self._routes:
             raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
 
-        if len(sources) > 1:
-            paths = [f"{s}.{name}" for s in sources]
-            raise FlowError(
-                ErrCode.FLOW_AMBIGUOUS_FIELD,
-                f"Ambiguous field '{name}'. Exists in: {', '.join(paths)}. Use qualified access."
-            )
-
-        return getattr(self._instances[sources[0]], name)
+        alias, field = self._resolve_field_route(name)
+        return self._instances[alias]._get_signal(field)
 
     def _set_signal(self, field_name: str, value: Any) -> None:
-        sources = self._routes.get(field_name, [])
-        if not sources:
-            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
-        for s in sources:
-            self._instances[s]._set_signal(field_name, value)
+        alias, field = self._resolve_field_route(field_name)
+        self._instances[alias]._set_signal(field, value)
 
     def _get_signal(self, field_name: str) -> Any:
-        return getattr(self, field_name)
+        alias, field = self._resolve_field_route(field_name)
+        return self._instances[alias]._get_signal(field)
 
     def _has_signal(self, field_name: str) -> bool:
-        sources = self._routes.get(field_name, [])
-        return any(self._instances[s]._has_signal(field_name) for s in sources)
+        alias, field = self._resolve_field_route(field_name)
+        return self._instances[alias]._has_signal(field)
 
     @property
     def _signals(self) -> List[str]:
         active = []
         for field_name, sources in self._routes.items():
-            if any(self._instances[s]._has_signal(field_name) for s in sources):
-                active.append(field_name)
+            if len(sources) == 1:
+                alias = sources[0]
+                if self._instances[alias]._has_signal(field_name):
+                    active.append(field_name)
+                continue
+
+            for alias in sources:
+                if self._instances[alias]._has_signal(field_name):
+                    active.append(f"{alias}.{field_name}")
         return active
 
     def __repr__(self) -> str:
@@ -131,24 +199,20 @@ class IOView:
         """
         from retriever.flow.io import is_flow_io
 
-        # Map field_name -> list of type_names
+        # Map field_name -> list of aliases
         field_map: Dict[str, List[str]] = {}
-
-        for t in types:
-            if t is type(None) or not is_dataclass(t):
-                continue
-            t_name = t.__name__
-            for f in fields(t):
-                field_map.setdefault(f.name, []).append(t_name)
+        for alias, typ in IOView._build_aliases(types):
+            for f in fields(typ):
+                field_map.setdefault(f.name, []).append(alias)
 
         # Generate ports
         ports: Dict[str, Tuple[str, str]] = {}
-        for field_name, type_names in field_map.items():
-            if len(type_names) == 1:
-                ports[field_name] = (type_names[0], field_name)
+        for field_name, aliases in field_map.items():
+            if len(aliases) == 1:
+                ports[field_name] = (aliases[0], field_name)
             else:
-                for t_name in type_names:
-                    ports[f"{t_name}.{field_name}"] = (t_name, field_name)
+                for alias in aliases:
+                    ports[f"{alias}.{field_name}"] = (alias, field_name)
 
         return ports
 
@@ -220,8 +284,7 @@ class IOStep:
         if isinstance(input_type, tuple):
              # Composite Flow - use IOView
              types_list = list(input_type)
-             instances = {t.__name__: t() for t in types_list}
-             self.instance = IOView(types_list, instances)
+             self.instance = IOView(types_list)
         else:
              # Single Flow
              self.instance = input_type()
