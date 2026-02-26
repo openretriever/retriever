@@ -1,12 +1,9 @@
 """
 02 Vision Processing — Windowed Detection Stats
 
-Demonstrates a vision pipeline that computes **windowed statistics** over detections:
+Demonstrates a vision pipeline that computes windowed statistics over detections:
 
   Camera @ Rate → Detector @ Trigger → Window(mean) → Print @ Trigger
-
-This is a runtime-aligned extraction of the idea in legacy:
-`examples/legacy/02_vision_processing/02_camera_detection_window.py`.
 
 This tutorial uses a deterministic synthetic camera source so it works the same
 everywhere (CI, no camera permissions, no colored objects, etc.). For a real

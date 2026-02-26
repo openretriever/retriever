@@ -2,7 +2,7 @@
 Stateful robot updates with a small task script (no Eff).
 
 Run:
-  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.91_legacy_robotics_state --steps 8 --dt 0.1
+  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.15_robot_state_task_script --steps 8 --dt 0.1
 """
 
 from __future__ import annotations
@@ -158,7 +158,7 @@ class Printer(Flow[RobotOut, None]):
 
 
 def build_pipeline(hz: float) -> Pipeline:
-    pipe = Pipeline("robotics_state_eff")
+    pipe = Pipeline("robot_state_task_script")
     clock = Rate(hz=hz)
 
     with pipe:
@@ -172,7 +172,7 @@ def build_pipeline(hz: float) -> Pipeline:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Eff-based robot state updates.")
+    p = argparse.ArgumentParser(description="Robot state updates from a scripted task stream.")
     p.add_argument("--steps", type=int, default=8)
     p.add_argument("--dt", type=float, default=0.1)
     return p.parse_args()

@@ -4,8 +4,7 @@
 Key idea: model time-based events as a normal flow that only publishes a signal
 when the timer fires. Downstream `Trigger("event")` then runs exactly once.
 
-This is a runtime-aligned extraction of the legacy idea in:
-`examples/legacy/06_feedback_loops/10_one_shot_time_triggers.py`.
+This is the canonical one-shot time-trigger tutorial for the current runtime.
 
 Run:
   pixi run python -m examples.tutorial.d_closed_loop_state_feedback.10_time_triggers --steps 12 --dt 0.1 --delay 0.6

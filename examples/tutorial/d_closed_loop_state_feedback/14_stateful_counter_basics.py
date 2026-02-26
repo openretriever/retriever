@@ -1,14 +1,13 @@
 """
-Stateful counter flow (no Eff).
+Stateful counter flow with explicit reset semantics.
 
 Run:
-  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.90_legacy_eff_basics --steps 6 --dt 0.1
+  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.14_stateful_counter_basics --steps 6 --dt 0.1
 """
 
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, Latest, io
 
@@ -37,7 +36,7 @@ class StepSource(Flow[None, StepIn]):
         return StepIn(step=self.step)
 
 
-class EffCounter(Flow[StepIn, CounterOut]):
+class StatefulCounter(Flow[StepIn, CounterOut]):
     """Stateful counter that adjusts its increment by step parity."""
 
     def init(self) -> None:
@@ -65,12 +64,12 @@ class Printer(Flow[CounterOut, None]):
 
 
 def build_pipeline(hz: float) -> Pipeline:
-    pipe = Pipeline("eff_basics")
+    pipe = Pipeline("stateful_counter_basics")
     clock = Rate(hz=hz)
 
     with pipe:
         src = StepSource() @ clock
-        counter = EffCounter() @ clock
+        counter = StatefulCounter() @ clock
         printer = Printer() @ clock
         pipe.connect(src, counter, sync=Latest())
         pipe.connect(counter, printer, sync=Latest())
@@ -79,7 +78,7 @@ def build_pipeline(hz: float) -> Pipeline:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Eff basics inside a Flow.")
+    p = argparse.ArgumentParser(description="Stateful counter with reset behavior.")
     p.add_argument("--steps", type=int, default=6)
     p.add_argument("--dt", type=float, default=0.1)
     return p.parse_args()
