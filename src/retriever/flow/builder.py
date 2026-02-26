@@ -255,22 +255,24 @@ class PipelineBuilder:
         final_ports = {}
 
         # Cache field types using classmethod (with fallback for older types)
+        alias_type_map = IOView.resolve_alias_types(types_list)
         type_cache = {}
         for t in types_list:
             if t is not type(None) and is_flow_io(t):
                 # Use _field_types if available, otherwise fall back to dataclass fields
                 if hasattr(t, "_field_types") and callable(t._field_types):
-                    type_cache[t.__name__] = t._field_types()
+                    type_cache[t] = t._field_types()
                 elif is_dataclass(t):
                     from dataclasses import fields as dc_fields
 
-                    type_cache[t.__name__] = {f.name: f.type for f in dc_fields(t)}
+                    type_cache[t] = {f.name: f.type for f in dc_fields(t)}
                 else:
-                    type_cache[t.__name__] = {}
+                    type_cache[t] = {}
 
-        for port_name, (t_name, field_name) in port_map.items():
-            if t_name in type_cache:
-                final_ports[port_name] = type_cache[t_name].get(field_name, Any)
+        for port_name, (alias_name, field_name) in port_map.items():
+            typ = alias_type_map.get(alias_name)
+            if typ in type_cache:
+                final_ports[port_name] = type_cache[typ].get(field_name, Any)
 
         return final_ports
 
