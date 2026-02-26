@@ -244,7 +244,12 @@ class PipelineStepper:
             if not should_execute:
                 continue
 
-            signal = IOStep(self._inputs[node_id], fields_filter=fields, now=step_now)
+            signal = IOStep(
+                self._inputs[node_id],
+                fields_filter=fields,
+                output_types=handle.flow.output_types,
+                now=step_now,
+            )
             signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
             inputs_snapshot[node_id] = signal.instance
 

@@ -434,7 +434,12 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
     def _start_flow(self, fields_to_sample: Optional[List[str]], *, now: Optional[float]) -> None:
         """Start flow execution, handle generator or direct return."""
-        IOStep(self.inputs, fields_to_sample, now=now) \
+        IOStep(
+            self.inputs,
+            fields_to_sample,
+            output_types=self.flow.output_types,
+            now=now,
+        ) \
             .sample(self.flow.input_types, self.adapters, now=now) \
             .transform(self.flow.run) \
             .fold(on=self._start_generator) \
@@ -456,7 +461,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 raise RTError(ErrCode.RT_INVALID_YIELD, f"got {type(yielded).__name__}")
 
         except StopIteration as e:
-            IOStep(instance=e.value, now=time.time()).publish(self.outputs)
+            IOStep(
+                instance=e.value,
+                output_types=self.flow.output_types,
+                now=time.time(),
+            ).publish(self.outputs)
             self._gen = None
             self._srv_uuid = None
 
@@ -473,7 +482,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
         try:
             self._gen.throw(exc)
         except StopIteration as e:
-            IOStep(instance=e.value, now=time.time()).publish(self.outputs)
+            IOStep(
+                instance=e.value,
+                output_types=self.flow.output_types,
+                now=time.time(),
+            ).publish(self.outputs)
         except Exception as e:
             logger.error(f"[{self.node_id}] Exception in generator: {e}", exc_info=True)
         finally:

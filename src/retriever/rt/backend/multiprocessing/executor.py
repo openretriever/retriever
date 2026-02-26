@@ -357,7 +357,12 @@ class MPExecutor(multiprocessing.Process, Executor):
                             'node_id': self.node_id,
                             'fields': result.fields_to_sample,
                         })
-                    IOStep(self.inputs, result.fields_to_sample, now=result.now) \
+                    IOStep(
+                        self.inputs,
+                        result.fields_to_sample,
+                        output_types=self.flow.output_types,
+                        now=result.now,
+                    ) \
                         .sample(self.flow.input_types, self.adapters, now=result.now) \
                         .transform(self.flow.run) \
                         .publish(self.outputs)

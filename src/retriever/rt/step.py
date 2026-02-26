@@ -197,8 +197,6 @@ class IOView:
         1. If a field name is unique across all types, use it (e.g. 'data').
         2. If a field name collides, qualify it (e.g. 'Image.timestamp').
         """
-        from retriever.flow.io import is_flow_io
-
         # Map field_name -> list of aliases
         field_map: Dict[str, List[str]] = {}
         for alias, typ in IOView._build_aliases(types):
@@ -237,6 +235,7 @@ class IOStep:
         subscribers: Dict[str, "Subscriber"] = None,
         fields_filter: List[str] = None,
         instance: Any = None,
+        output_types: Optional[Union[Type, Tuple[Type, ...]]] = None,
         now: Optional[float] = None,
     ):
         """
@@ -250,6 +249,7 @@ class IOStep:
         self.subscribers = subscribers or {}
         self.fields_filter = fields_filter or []
         self.instance = instance
+        self.output_types = output_types
         self.now = now
 
 
@@ -372,7 +372,89 @@ class IOStep:
             self.instance = None
         return self
 
+    def _normalized_output_types(self) -> Tuple[Type, ...]:
+        if self.output_types is None:
+            return ()
+        if isinstance(self.output_types, tuple):
+            candidates = self.output_types
+        else:
+            candidates = (self.output_types,)
+        return tuple(t for t in candidates if t is not type(None))
 
+    def _normalize_output_instance(self) -> None:
+        expected_types = self._normalized_output_types()
+        if not expected_types:
+            return
+
+        if len(expected_types) == 1:
+            if isinstance(self.instance, tuple):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    "Single-output flow returned tuple output",
+                )
+            expected = expected_types[0]
+            if self.instance is not None and not isinstance(self.instance, expected):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    f"Output type mismatch: expected {expected.__name__}, got {type(self.instance).__name__}",
+                )
+            return
+
+        if not isinstance(self.instance, tuple):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_INVALID,
+                "Composite output flow must return tuple output",
+            )
+        if len(self.instance) != len(expected_types):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_INVALID,
+                f"Output tuple arity mismatch: expected {len(expected_types)}, got {len(self.instance)}",
+            )
+
+        alias_items = IOView._build_aliases(list(expected_types))
+        instances: Dict[str, Any] = {}
+        for idx, ((alias, expected), value) in enumerate(zip(alias_items, self.instance)):
+            if value is None:
+                instances[alias] = expected()
+                continue
+            if not isinstance(value, expected):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    f"Output tuple[{idx}] type mismatch: expected {expected.__name__}, got {type(value).__name__}",
+                )
+            instances[alias] = value
+
+        self.instance = IOView(list(expected_types), instances)
+
+    def _resolve_timestamp_for_port(self, field_name: str, default: float) -> float:
+        timestamp = default
+        if not hasattr(self.instance, "_has_signal"):
+            return timestamp
+
+        keys = []
+        if field_name == "timestamp" or field_name.endswith(".timestamp"):
+            keys.append(field_name)
+        if "." in field_name:
+            alias = field_name.split(".", 1)[0]
+            keys.append(f"{alias}.timestamp")
+        else:
+            if isinstance(self.instance, IOView):
+                try:
+                    alias, _ = self.instance._resolve_field_route(field_name)
+                    keys.append(f"{alias}.timestamp")
+                except Exception:
+                    pass
+            keys.append("timestamp")
+
+        for key in keys:
+            try:
+                if self.instance._has_signal(key):
+                    val = self.instance._get_signal(key)
+                    if val is not None:
+                        return float(val)
+            except Exception:
+                continue
+        return timestamp
 
     def publish(self, output_publishers: Dict[str, List["Publisher"]]) -> "IOStep":
         """
@@ -392,47 +474,21 @@ class IOStep:
             # Sink flow - no output
             return self
 
+        self._normalize_output_instance()
+
         # Default to execution time
         timestamp = self.now if self.now is not None else time.time()
-
-        # If data has explicit timestamp, propagate it (Critical for synchronization)
-        # Check standard 'timestamp' field first
-        found_ts = False
-        if hasattr(self.instance, "timestamp") and self.instance.timestamp is not None:
-            try:
-                timestamp = float(self.instance.timestamp)
-                found_ts = True
-            except (ValueError, TypeError):
-                pass
-
-        if not found_ts:
-            # Check for 'ts_val' (fallback/rename)
-            if hasattr(self.instance, "ts_val") and self.instance.ts_val is not None:
-                try:
-                    timestamp = float(self.instance.ts_val)
-                    found_ts = True
-                except (ValueError, TypeError):
-                    pass
-
-        if not found_ts and hasattr(self.instance, "_has_signal"):
-            # For FlowIO wrapped objects, try _get_signal but handle errors
-            try:
-                if self.instance._has_signal("timestamp"):
-                    val = self.instance._get_signal("timestamp")
-                    if val is not None:
-                        timestamp = float(val)
-            except Exception:
-                pass
 
         # Publish each output field to all its publishers
         for field_name, publisher_list in output_publishers.items():
             if self.instance._has_signal(field_name):
                 value = self.instance._get_signal(field_name)
+                port_timestamp = self._resolve_timestamp_for_port(field_name, timestamp)
 
                 # Broadcast to all publishers for this port
                 for publisher in publisher_list:
                     try:
-                        publisher.put_one(value, timestamp, block=False)
+                        publisher.put_one(value, port_timestamp, block=False)
                         # logger.debug(f"Published {field_name}={value}")
                     except Exception as e:
                         # HACK: queue.Full is common in MP during startup/heavy load.
