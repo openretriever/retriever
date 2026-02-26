@@ -4,8 +4,7 @@
 Key idea: the replanner keeps *internal* state (current plan + failure count),
 but only emits a plan update when a new obstacle is detected or cleared.
 
-This is a runtime-aligned extraction of the legacy idea in:
-`examples/legacy/06_feedback_loops/04_stateful_replanning.py`.
+This is the canonical stateful-replanning tutorial for the current runtime.
 
 Graph:
   ReplanScenario @ Rate ──▶ StatefulReplanner @ Rate ──▶ PlanPrinter @ Trigger("plan")

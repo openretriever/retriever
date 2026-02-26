@@ -152,6 +152,7 @@ demo-dora-simple = "python -m examples.tutorial.b_ir_and_execution.05_dora_simpl
 demo-backend-parity = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark"
 demo-functional-fanin-fanout = "python -m examples.tutorial.e_resource_and_sync.06_functional_fanin_fanout --steps 6 --dt 0.1"
 demo-deadline-mode-switch = "python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1"
+demo-advanced-time-patterns = "python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns --steps 20 --dt 0.2"
 demo-mcap-session-inspection = "python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap"
 demo-trace-contract = "python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics"
 demo-manifest-lineage = "python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo"

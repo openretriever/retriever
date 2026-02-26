@@ -2,7 +2,7 @@
 State basics (mutable state pitfalls).
 
 Run:
-  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.92_legacy_state_intro
+  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.16_mutable_state_pitfalls
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def demo_hidden_changes() -> None:
 def main() -> None:
     demo_mutable_state()
     demo_hidden_changes()
-    print("\nNext: 04_immutable_state.py")
+    print("\nNext: 17_immutable_state_transitions.py")
 
 
 if __name__ == "__main__":

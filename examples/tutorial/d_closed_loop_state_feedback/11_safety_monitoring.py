@@ -4,8 +4,7 @@
 Key idea: run a fast safety monitor continuously, but only emit an action when
 the safety status changes. This keeps safety logic simple and deterministic.
 
-This is a runtime-aligned extraction of the legacy idea in:
-`examples/legacy/06_feedback_loops/03_safety_monitoring.py`.
+This is the canonical safety-monitoring tutorial for the current runtime.
 
 Graph:
   SafetyScenario @ Rate ──▶ SafetyMonitor @ Rate ──▶ SafetyAction @ Trigger("level")

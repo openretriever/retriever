@@ -2,7 +2,7 @@
 Immutable state (pure state transitions).
 
 Run:
-  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.93_legacy_immutable_state
+  pixi run python -m examples.tutorial.d_closed_loop_state_feedback.17_immutable_state_transitions
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ def demo_benefits() -> None:
 def main() -> None:
     demo_immutable_state()
     demo_benefits()
-    print("\nNext: 05_eff_composition.py")
+    print("\nNext: 18_advanced_time_patterns.py")
 
 
 if __name__ == "__main__":
