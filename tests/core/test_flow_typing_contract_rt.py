@@ -5,7 +5,10 @@ from dataclasses import dataclass
 import pytest
 
 from retriever.error import ErrCode, FlowError
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, flow_io, gui_flow
+from retriever.ir.core import IRNode
+from retriever.rt.backend.multiprocessing.engine import MPEngine
+from retriever.rt.backend.multiprocessing.executor import MPExecutor
 from retriever.rt.step import IOStep
 
 
@@ -112,6 +115,41 @@ class CapturePublisher:
 
     def put_one(self, value, timestamp, block=False):
         self.items.append((value, timestamp))
+
+
+class LifecycleProbeFlow(Flow[None, C]):
+    INIT_COUNT = 0
+
+    def __init__(self):
+        type(self).INIT_COUNT += 1
+        self.events = []
+
+    def __lazy_init__(self):
+        self.events.append("lazy")
+
+    def init(self):
+        self.events.append("init")
+
+    def step(self, _):
+        return C(c=11, timestamp=11.0)
+
+
+@gui_flow
+class GuiLifecycleProbeFlow(Flow[None, C]):
+    INIT_COUNT = 0
+
+    def __init__(self):
+        type(self).INIT_COUNT += 1
+        self.events = []
+
+    def __lazy_init__(self):
+        self.events.append("lazy")
+
+    def init(self):
+        self.events.append("init")
+
+    def step(self, _):
+        return C(c=1, timestamp=1.0)
 
 
 def test_tuple_literal_input_signature_declares() -> None:
@@ -241,3 +279,113 @@ def test_generator_completion_tuple_output_publish() -> None:
 
     assert c_pub.items == [(9, 9.5)]
     assert d_pub.items == [(10, 10.5)]
+
+
+def _build_single_flow_ir(flow_handle_name: str = "probe"):
+    pipe = Pipeline(f"{flow_handle_name}_pipeline")
+    with pipe:
+        src = LifecycleProbeFlow() @ Rate(hz=100)
+        sink = SinkC() @ Trigger("c")
+        src.then(sink, sync=Latest())
+    return pipe.validate()
+
+
+def test_lazy_lifecycle_parity_stepper() -> None:
+    LifecycleProbeFlow.INIT_COUNT = 0
+    pipe = Pipeline("stepper_lifecycle")
+    with pipe:
+        src = LifecycleProbeFlow() @ Rate(hz=100)
+        sink = SinkC() @ Trigger("c")
+        src.then(sink, sync=Latest())
+    pipe.step(dt=0.01)
+
+    assert LifecycleProbeFlow.INIT_COUNT == 1
+    assert src.flow.events[:2] == ["lazy", "init"]
+
+
+def test_lazy_init_then_init_order_mp() -> None:
+    ir = _build_single_flow_ir("mp_lifecycle")
+    node = next(n for n in ir.nodes if n.type == "LifecycleProbeFlow")
+    executor = MPExecutor(
+        node_id=node.id,
+        clock=IRNode.instantiate_clock(node.config),
+        flow_node=node,
+    )
+    executor._ensure_runtime_flow_initialized()
+
+    assert isinstance(executor.flow, LifecycleProbeFlow)
+    assert executor.flow.events[:2] == ["lazy", "init"]
+
+
+def test_mp_runtime_instantiates_from_ir_in_worker() -> None:
+    LifecycleProbeFlow.INIT_COUNT = 0
+    ir = _build_single_flow_ir("mp_worker_inst")
+    LifecycleProbeFlow.INIT_COUNT = 0
+    engine = MPEngine(ir)
+    engine.build()
+    try:
+        assert engine.executors, "Expected at least one MP executor"
+        assert all(ex.flow is None for ex in engine.executors)
+        assert all(ex.flow_node is not None for ex in engine.executors)
+        assert LifecycleProbeFlow.INIT_COUNT == 0
+    finally:
+        engine.stop()
+
+
+def test_lazy_init_then_init_order_dora() -> None:
+    pytest.importorskip("dora")
+    from retriever.rt.backend.dora.executor import DoraExecutor
+
+    ir = _build_single_flow_ir("dora_lifecycle")
+    node = next(n for n in ir.nodes if n.type == "LifecycleProbeFlow")
+    executor = DoraExecutor(
+        node_id=node.id,
+        clock=IRNode.instantiate_clock(node.config),
+        flow_node=node,
+    )
+    executor._ensure_runtime_flow_initialized()
+
+    assert isinstance(executor.flow, LifecycleProbeFlow)
+    assert executor.flow.events[:2] == ["lazy", "init"]
+
+
+def test_dora_runtime_instantiates_from_ir_in_executor_context() -> None:
+    pytest.importorskip("dora")
+    from retriever.rt.backend.dora.engine import DoraEngine
+
+    LifecycleProbeFlow.INIT_COUNT = 0
+    ir = _build_single_flow_ir("dora_worker_inst")
+    LifecycleProbeFlow.INIT_COUNT = 0
+    engine = DoraEngine(ir)
+    engine.build()
+    try:
+        assert engine.executors, "Expected at least one Dora executor"
+        assert all(ex.flow is None for ex in engine.executors)
+        assert all(ex.flow_node is not None for ex in engine.executors)
+        assert LifecycleProbeFlow.INIT_COUNT == 0
+    finally:
+        engine.stop()
+
+
+def test_gui_route_detected_from_class_marker_without_parent_heavy_init() -> None:
+    pytest.importorskip("dora")
+    from retriever.rt.backend.dora.engine import DoraEngine
+
+    GuiLifecycleProbeFlow.INIT_COUNT = 0
+    pipe = Pipeline("dora_gui_marker")
+    with pipe:
+        src = GuiLifecycleProbeFlow() @ Rate(hz=30)
+        sink = SinkC() @ Trigger("c")
+        src.then(sink, sync=Latest())
+    ir = pipe.validate()
+
+    # Reset after authoring-time instance creation so this assertion only tracks dora build.
+    GuiLifecycleProbeFlow.INIT_COUNT = 0
+
+    engine = DoraEngine(ir)
+    engine.build()
+    try:
+        assert engine.main_thread_runners, "Expected GUI node to run on main thread"
+        assert GuiLifecycleProbeFlow.INIT_COUNT == 0
+    finally:
+        engine.stop()

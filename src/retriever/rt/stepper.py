@@ -31,7 +31,7 @@ from retriever.flow.builder import PipelineBuilder
 from retriever.flow.temporal import TemporalFlow
 from retriever.ir.core import IR, IREdge
 from retriever.rt.step import IOStep
-from retriever.rt.step import IOStep
+from retriever.rt.lifecycle import initialize_flow_runtime
 
 T = TypeVar("T")
 
@@ -143,7 +143,7 @@ class PipelineStepper:
         # Important for debugging: do not wrap exceptions raised by user code
         # so debuggers can break at the original source location inside Flow.init().
         for handle in self._flows.values():
-            handle.flow.init()
+            initialize_flow_runtime(handle.flow)
         self._initialized = True
 
     def _build_io(self) -> None:

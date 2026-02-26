@@ -19,6 +19,7 @@ from retriever.ir.core import IR, IRNode, IREdge
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.backend.interface import ExecutionEngine
+from retriever.rt.lifecycle import is_main_thread_flow_node
 from retriever.rt.logging.manager import LogManager
 
 logger = logging.getLogger(__name__)
@@ -136,8 +137,8 @@ class DoraEngine(ExecutionEngine):
                 continue
             executor = self._create_executor(node)
 
-            # Check if flow is marked as main-thread (@gui_flow)
-            if getattr(executor.flow, "_main_thread", False):
+            # Check class-level marker without forcing runtime-heavy instantiation.
+            if is_main_thread_flow_node(node):
                 self.main_thread_runners.append(executor)
                 self._main_thread_nodes.append(node.id)
                 logger.info(f"Main-thread flow detected: {node.id}")
@@ -150,9 +151,6 @@ class DoraEngine(ExecutionEngine):
 
     def _create_executor(self, node) -> DoraExecutor:
         """Create DoraExecutor for each node."""
-        # Load flow instance
-        flow = node.instantiate()
-
         # Load clock from config
         clock = IRNode.instantiate_clock(node.config)
 
@@ -231,7 +229,7 @@ class DoraEngine(ExecutionEngine):
 
         executor = DoraExecutor(
             node_id=node.id,
-            flow=flow,
+            flow_node=node,
             clock=clock,
             input_ports=input_ports,
             output_ports=output_ports,
