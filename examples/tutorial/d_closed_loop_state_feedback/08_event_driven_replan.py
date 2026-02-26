@@ -5,8 +5,7 @@ Key idea: in Retriever, "event-driven" can be expressed by only publishing an
 output field when an event occurs. Downstream `Trigger("field")` clocks then
 only fire on those event messages.
 
-This is a runtime-aligned extraction of the idea in legacy:
-`examples/legacy/06_feedback_loops/01_simple_event_replanning.py`.
+This is the canonical minimal event-driven replanning tutorial.
 
 Graph:
   RobotSim @ Rate ──▶ ObstacleMonitor @ Trigger("obstacle") ──▶ Replanner @ Trigger("reason") ──▶ PrintPlan
@@ -128,4 +127,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

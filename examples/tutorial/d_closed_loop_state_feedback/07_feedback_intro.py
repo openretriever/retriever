@@ -6,8 +6,7 @@ Goal: show the essential feedback loop pattern with the refactored runtime:
   Plant @ Rate  ──obs──▶  Controller @ Trigger  ──action──▶  Plant
        └───────────────────────────────(cycle)───────────────────────────────┘
 
-This is a runtime-aligned extraction of the idea in legacy:
-`examples/legacy/06_feedback_loops/00_simple_feedback_intro.py`.
+This is the canonical minimal feedback-loop tutorial in the current runtime.
 
 Run:
   pixi run python -m examples.tutorial.d_closed_loop_state_feedback.07_feedback_intro --backend multiprocessing --duration 3

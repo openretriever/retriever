@@ -4,8 +4,7 @@
 Key idea: a monitor can run continuously (or on every state update) and only emit
 an *event* when something goes wrong.
 
-This is a runtime-aligned extraction of the idea in legacy:
-`examples/legacy/06_feedback_loops/02_execution_monitoring.py`.
+This is the canonical minimal execution-monitoring tutorial.
 
 Graph:
   RobotSim @ Rate ──▶ ExecutionMonitor @ Rate ──▶ PrintAlert @ Trigger("alert")

@@ -1,8 +1,7 @@
 """
 Registry ecosystem demo (types + flows + pipeline factories).
 
-This is a modernized, runtime-aligned rewrite of the legacy
-`examples/legacy/01_core_concepts/04_complete_registry_ecosystem.py`.
+This is the canonical registry ecosystem tutorial in the current runtime.
 
 What this demonstrates:
   - Type registry:      `register_type`, `get_type`, `list_types`, `find_types`
