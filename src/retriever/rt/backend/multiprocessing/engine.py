@@ -94,9 +94,6 @@ class MPEngine(ExecutionEngine):
     def _create_executors(self):
         """Create MPExecutor for each node."""
         for node in self.ir.nodes:
-            # Load flow instance
-            flow = node.instantiate()
-
             # Load clock from config
             clock = IRNode.instantiate_clock(node.config)
 
@@ -168,7 +165,7 @@ class MPEngine(ExecutionEngine):
 
             executor = MPExecutor(
                 node_id=node.id,
-                flow=flow,
+                flow_node=node,
                 clock=clock,
                 inputs=inputs,
                 outputs=outputs,

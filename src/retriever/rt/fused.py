@@ -10,6 +10,7 @@ from typing import Any, List, Dict, Tuple
 from retriever.flow.base import Flow
 from retriever.flow.io import io
 from retriever.error import FlowError, ErrCode
+from retriever.rt.lifecycle import initialize_flow_runtime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ class FusedFlow(Flow[FusedAny, FusedAny]):
         """Initialize all sub-flows in order"""
         for i, flow in enumerate(self.sub_flows):
             try:
-                flow.init()
+                initialize_flow_runtime(flow)
                 logger.debug(f"Initialized sub-flow [{i}]: {self.node_ids[i]}")
             except Exception as e:
                 raise FlowError(

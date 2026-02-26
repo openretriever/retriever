@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Any, Generator
 
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock
+from retriever.ir.core import IRNode
 from retriever.rt.step import IOStep
 from retriever.flow.adapter import Adapter
 from retriever.flow.service import ServiceCall, parse_service_id
@@ -22,6 +23,7 @@ from retriever.rt.backend.dora.channel import DoraSubscriber, DoraPublisher
 from retriever.rt.backend.dora.scheduler import DoraScheduler
 from retriever.rt.backend.dora.serde import serialize_arrow, deserialize_arrow
 from retriever.error import FlowError, RTError, ErrCode
+from retriever.rt.lifecycle import instantiate_flow_from_node, initialize_flow_runtime
 from retriever.rt.logging.worker import configure_worker
 from retriever.rt.logging.handlers.otel import shutdown_otel
 
@@ -51,12 +53,13 @@ class DoraExecutor(multiprocessing.Process, Executor):
     def __init__(
         self,
         node_id: str,
-        flow: Flow,
         clock: Clock,
-        input_ports: List[str],
-        output_ports: List[str],
-        adapters: Dict[str, Adapter],
-        fan_in_map: Dict[str, str] = None,
+        input_ports: Optional[List[str]] = None,
+        output_ports: Optional[List[str]] = None,
+        adapters: Optional[Dict[str, Adapter]] = None,
+        flow: Optional[Flow] = None,
+        flow_node: Optional[IRNode] = None,
+        fan_in_map: Optional[Dict[str, str]] = None,
         buffer_engine: str = "python",
         log_params: Optional[Dict[str, Any]] = None,
         control_channel: Optional[Any] = None,
@@ -69,11 +72,12 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
         Args:
             node_id: Unique node identifier
-            flow: Flow instance to execute
             clock: Clock for scheduling
             input_ports: List of logical input port names
             output_ports: List of output port names
             adapters: Dict mapping logical port names to Adapters
+            flow: Optional pre-instantiated Flow (primarily for tests/compat)
+            flow_node: Optional IR node spec for runtime-side instantiation
             fan_in_map: Dict mapping actual fan-in port names to logical port names
             log_params: Logging params (queue, config, log_dir)
             control_channel: Optional ControlChannel (deprecated, use queues instead)
@@ -84,10 +88,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
         super().__init__(name=node_id)
         self.node_id = node_id
         self.flow = flow
+        self.flow_node = flow_node
         self.clock = clock
-        self.input_ports = input_ports
-        self.output_ports = output_ports
-        self.adapters = adapters
+        self.input_ports = input_ports or []
+        self.output_ports = output_ports or []
+        self.adapters = adapters or {}
         self.fan_in_map = fan_in_map or {}
         self.buffer_engine = buffer_engine
         self.log_params = log_params
@@ -98,7 +103,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         self._control_log_queue = control_log_queue
         self._control_channel = control_channel  # May be set lazily in run() from queues
 
-        self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
+        self._is_controllable = False
         self._stop_flag = multiprocessing.Event()
 
         # Process-local resources (created in run())
@@ -116,6 +121,21 @@ class DoraExecutor(multiprocessing.Process, Executor):
     def name(self) -> str:
         """Executor name/identifier."""
         return self.node_id
+
+    def _ensure_runtime_flow_initialized(self) -> None:
+        if self.flow is None:
+            if self.flow_node is None:
+                raise RuntimeError(
+                    f"[{self.node_id}] No flow instance or flow node spec was provided"
+                )
+            self.flow = instantiate_flow_from_node(self.flow_node)
+
+        if CONTROL_AVAILABLE:
+            self._is_controllable = isinstance(self.flow, Controllable)
+        else:
+            self._is_controllable = False
+
+        initialize_flow_runtime(self.flow)
 
     def _handle_control_messages(self) -> bool:
         """
@@ -255,9 +275,14 @@ class DoraExecutor(multiprocessing.Process, Executor):
         """
         # Configure logging for this worker process
         if self.log_params:
+            flow_type_name = (
+                type(self.flow).__name__
+                if self.flow is not None
+                else (self.flow_node.type if self.flow_node is not None else "UnknownFlow")
+            )
             configure_worker(
                 self.node_id,
-                type(self.flow).__name__,
+                flow_type_name,
                 self.log_params['queue'],
                 self.log_params['config'],
                 self.log_params['log_dir'],
@@ -288,8 +313,8 @@ class DoraExecutor(multiprocessing.Process, Executor):
         self._init_rerun()
 
         try:
-            # Initialize flow
-            self.flow.init()
+            # Instantiate flow in runtime context and run lazy/init lifecycle.
+            self._ensure_runtime_flow_initialized()
             logger.info(f"[{self.node_id}] Flow initialized")
 
             # Create dora node
@@ -354,7 +379,8 @@ class DoraExecutor(multiprocessing.Process, Executor):
         finally:
             if self._gen:
                 self._gen.close()
-            self.flow.finalize()
+            if self.flow is not None:
+                self.flow.finalize()
             logger.info(f"[{self.node_id}] DoraExecutor terminated")
             # Flush OTel before exit only if it was enabled/configured for this worker.
             if self.log_params and getattr(self.log_params.get("config"), "otel_enabled", False):
