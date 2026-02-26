@@ -5,7 +5,8 @@ from dataclasses import dataclass
 import pytest
 
 from retriever.error import ErrCode, FlowError
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, flow_io
+from retriever.rt.step import IOStep
 
 
 @flow_io
@@ -24,12 +25,14 @@ class B:
 @dataclass
 class C:
     c: int | None = None
+    timestamp: float | None = None
 
 
 @flow_io
 @dataclass
 class D:
     d: int | None = None
+    timestamp: float | None = None
 
 
 class TupleLiteralInputFlow(Flow[(A, B), C]):
@@ -65,6 +68,50 @@ class SinkFlow(Flow[A, None]):
 class NoIOFlow(Flow[None, None]):
     def step(self, _):
         return None
+
+
+class SourceA(Flow[None, A]):
+    def step(self, _):
+        return A(a=2)
+
+
+class SourceB(Flow[None, B]):
+    def step(self, _):
+        return B(b=3)
+
+
+class SplitAFlow(Flow[A, (C, D)]):
+    def step(self, input):
+        return (
+            C(c=(input.a or 0) + 1, timestamp=1.5),
+            D(d=(input.a or 0) + 2, timestamp=2.5),
+        )
+
+
+class SinkC(Flow[C, None]):
+    def init(self):
+        self.values = []
+
+    def step(self, input):
+        self.values.append(input.c)
+        return None
+
+
+class SinkD(Flow[D, None]):
+    def init(self):
+        self.values = []
+
+    def step(self, input):
+        self.values.append(input.d)
+        return None
+
+
+class CapturePublisher:
+    def __init__(self):
+        self.items = []
+
+    def put_one(self, value, timestamp, block=False):
+        self.items.append((value, timestamp))
 
 
 def test_tuple_literal_input_signature_declares() -> None:
@@ -104,3 +151,93 @@ def test_mixed_tuple_none_element_is_rejected() -> None:
 
     assert exc_info.value.code == int(ErrCode.FLOW_TYPE_INVALID)
 
+
+def test_tuple_output_publishes_in_stepper() -> None:
+    pipe = Pipeline("tuple_output_stepper")
+    with pipe:
+        src = SourceA() @ Rate(hz=100)
+        split = SplitAFlow() @ Trigger("a")
+        sink_c = SinkC() @ Trigger("c")
+        sink_d = SinkD() @ Trigger("d")
+        src.then(split, sync=Latest())
+        split.then(sink_c, sync=Latest())
+        split.then(sink_d, sync=Latest())
+
+    pipe.step(dt=0.01)
+    assert sink_c.flow.values == [3]
+    assert sink_d.flow.values == [4]
+
+
+def test_full_composite_in_out_end_to_end_routing() -> None:
+    pipe = Pipeline("tuple_in_out_stepper")
+    with pipe:
+        src_a = SourceA() @ Rate(hz=100)
+        src_b = SourceB() @ Rate(hz=100)
+        split = TupleInOutFlow() @ Trigger("a")
+        sink_c = SinkC() @ Trigger("c")
+        sink_d = SinkD() @ Trigger("d")
+        src_a.then(split, sync=Latest())
+        src_b.then(split, sync=Latest())
+        split.then(sink_c, sync=Latest())
+        split.then(sink_d, sync=Latest())
+
+    pipe.step(dt=0.01)
+    assert sink_c.flow.values == [2]
+    assert sink_d.flow.values == [3]
+
+
+def test_tuple_output_publishes_in_mp_backend() -> None:
+    c_pub = CapturePublisher()
+    d_pub = CapturePublisher()
+
+    IOStep(
+        instance=(C(c=5, timestamp=1.0), D(d=6, timestamp=2.0)),
+        output_types=(C, D),
+        now=50.0,
+    ).publish(
+        {
+            "c": [c_pub],
+            "d": [d_pub],
+        }
+    )
+
+    assert c_pub.items == [(5, 1.0)]
+    assert d_pub.items == [(6, 2.0)]
+
+
+def test_tuple_output_publishes_in_dora_backend() -> None:
+    c_pub = CapturePublisher()
+    d_pub = CapturePublisher()
+
+    IOStep(
+        instance=(C(c=7, timestamp=3.0), D(d=8, timestamp=4.0)),
+        output_types=(C, D),
+        now=60.0,
+    ).publish(
+        {
+            "c": [c_pub],
+            "d": [d_pub],
+        }
+    )
+
+    assert c_pub.items == [(7, 3.0)]
+    assert d_pub.items == [(8, 4.0)]
+
+
+def test_generator_completion_tuple_output_publish() -> None:
+    c_pub = CapturePublisher()
+    d_pub = CapturePublisher()
+
+    IOStep(
+        instance=(C(c=9, timestamp=9.5), D(d=10, timestamp=10.5)),
+        output_types=(C, D),
+        now=99.0,
+    ).publish(
+        {
+            "c": [c_pub],
+            "d": [d_pub],
+        }
+    )
+
+    assert c_pub.items == [(9, 9.5)]
+    assert d_pub.items == [(10, 10.5)]
