@@ -67,9 +67,28 @@ class Flow(ABC, Generic[I, O]):
                 return ()
             if arg is type(None):
                 return ()
-            # Handle Tuple[A, B]
-            if get_origin(arg) is tuple:
-                return get_args(arg)
+
+            tuple_args = None
+            # Support Flow[(A, B), C] parenthesized tuple-literal syntax.
+            if isinstance(arg, tuple):
+                tuple_args = arg
+            # Support Flow[tuple[A, B], C] typing tuple syntax.
+            elif get_origin(arg) is tuple:
+                tuple_args = get_args(arg)
+
+            if tuple_args is not None:
+                extracted = []
+                for item in tuple_args:
+                    if isinstance(item, TypeVar):
+                        continue
+                    if item is type(None) or item is None:
+                        raise FlowError(
+                            ErrCode.FLOW_TYPE_INVALID,
+                            "Mixed tuple signatures with None elements are invalid",
+                        )
+                    extracted.append(item)
+                return tuple(extracted)
+
             return (arg,)
 
         cls._input_types = _extract_types(args[0])
