@@ -21,6 +21,7 @@ from retriever.rt.backend.interface import Executor
 from retriever.rt.backend.dora.channel import DoraSubscriber, DoraPublisher
 from retriever.rt.backend.dora.scheduler import DoraScheduler
 from retriever.rt.backend.dora.serde import serialize_arrow, deserialize_arrow
+from retriever.rt.backend.dora.telemetry import DoraTelemetryWriter
 from retriever.error import FlowError, RTError, ErrCode
 from retriever.rt.logging.worker import configure_worker
 from retriever.rt.logging.handlers.otel import shutdown_otel
@@ -100,6 +101,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
         self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
         self._stop_flag = multiprocessing.Event()
+        self._telemetry = DoraTelemetryWriter()
 
         # Process-local resources (created in run())
         self.node: Optional[Any] = None
@@ -283,6 +285,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 logger.warning(f"[{self.node_id}] Failed to enable output capture: {e}")
 
         logger.info(f"[{self.node_id}] Starting DoraExecutor")
+        self._telemetry.emit(
+            event="Dora.ExecutorState",
+            node_id=self.node_id,
+            payload={"state": "starting"},
+        )
 
         # Initialize Rerun if configured (automatic connection)
         self._init_rerun()
@@ -344,11 +351,21 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
         except KeyboardInterrupt:
             logger.info(f"[{self.node_id}] Interrupted by user")
+            self._telemetry.emit(
+                event="Dora.ExecutorState",
+                node_id=self.node_id,
+                payload={"state": "interrupted"},
+            )
 
         except Exception as e:
             logger.error(
                 f"[{self.node_id}] Fatal error in executor: {e}",
                 exc_info=True
+            )
+            self._telemetry.emit(
+                event="Dora.ExecutorState",
+                node_id=self.node_id,
+                payload={"state": "failed", "error": str(e)},
             )
 
         finally:
@@ -356,6 +373,11 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 self._gen.close()
             self.flow.finalize()
             logger.info(f"[{self.node_id}] DoraExecutor terminated")
+            self._telemetry.emit(
+                event="Dora.ExecutorState",
+                node_id=self.node_id,
+                payload={"state": "stopped"},
+            )
             # Flush OTel before exit only if it was enabled/configured for this worker.
             if self.log_params and getattr(self.log_params.get("config"), "otel_enabled", False):
                 shutdown_otel()
@@ -367,6 +389,22 @@ class DoraExecutor(multiprocessing.Process, Executor):
     def _dispatch_event(self, event: Dict[str, Any]) -> None:
         """Route event to appropriate handler."""
         event_type = event.get('type')
+        input_name = event.get('id', event.get('name'))
+        metadata = event.get("metadata") if isinstance(event.get("metadata"), dict) else {}
+
+        if event_type == "INPUT" and input_name is not None:
+            self._telemetry.emit(
+                event="Dora.Input",
+                node_id=self.node_id,
+                payload={
+                    "event_type": str(event_type),
+                    "input": str(input_name),
+                    "value_type": type(event.get("value")).__name__,
+                    "metadata_keys": sorted([str(k) for k in metadata.keys()])[:16],
+                    "service_id": metadata.get("_srv_id"),
+                    "service_uuid": metadata.get("_srv_uuid"),
+                },
+            )
 
         if event_type == 'STOP':
             logger.info(f"[{self.node_id}] Received STOP signal")
@@ -377,8 +415,6 @@ class DoraExecutor(multiprocessing.Process, Executor):
             logger.debug(f"[{self.node_id}] Skipped non-INPUT signal")
             return
 
-        input_name = event.get('id', event.get('name'))
-        
         if input_name is None:
             logger.warning(f"[{self.node_id}] Event missing 'id'/'name': {event.keys()}")
             return
@@ -541,6 +577,18 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
     def _send_output(self, port: str, arrow: Any, metadata: Dict[str, Any]) -> None:
         """Send output via dora node."""
+        md = metadata if isinstance(metadata, dict) else {}
+        self._telemetry.emit(
+            event="Dora.Output",
+            node_id=self.node_id,
+            payload={
+                "port": str(port),
+                "value_type": type(arrow).__name__,
+                "metadata_keys": sorted([str(k) for k in md.keys()])[:16],
+                "service_id": md.get("_srv_id"),
+                "service_uuid": md.get("_srv_uuid"),
+            },
+        )
         self.node.send_output(port, arrow, metadata=metadata)
 
     def stop(self) -> None:
