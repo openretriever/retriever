@@ -37,6 +37,25 @@ class Flow(ABC, Generic[I, O]):
     # Set this to a FlowRateConfig instance to configure rate behavior
     rate_config: ClassVar[Optional['FlowRateConfig']] = None
 
+    @classmethod
+    def __class_getitem__(cls, params):
+        """
+        Normalize tuple-literal generic parameters before Generic validates them.
+
+        Python 3.9 rejects `Flow[(A, B), C]` at the Generic layer unless the
+        raw tuple literal is first converted into `tuple[A, B]`.
+        """
+        if not isinstance(params, tuple):
+            params = (params,)
+
+        def _normalize(arg):
+            if isinstance(arg, tuple):
+                items = tuple(type(None) if item is None else item for item in arg)
+                return tuple.__class_getitem__(items)
+            return arg
+
+        return super().__class_getitem__(tuple(_normalize(arg) for arg in params))
+
     def __init_subclass__(cls, **kwargs):
         """Extract type parameters from Flow[I, O] at class definition time."""
         super().__init_subclass__(**kwargs)
