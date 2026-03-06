@@ -69,6 +69,9 @@ Expected output for P1:
 - `examples/tutorial/expected_outputs/034_functional_fanin_fanout.md`
 - `examples/tutorial/expected_outputs/035_deadline_aware_mode_switch.md`
 - `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`
+- `examples/tutorial/expected_outputs/037_robotics_typing_boundaries.md`
+- `examples/tutorial/expected_outputs/038_data_spec_multistream_join.md`
+- `examples/tutorial/expected_outputs/039_dataset_manifest_and_lerobot_mapping.md`
 
 ## Notebook-Ready Artifacts
 
