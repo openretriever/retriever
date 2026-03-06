@@ -73,6 +73,9 @@ from retriever.types_registry import (
     find_types,
 )
 
+# Import built-in robotics typing so registry lookups are stable after plain `import retriever`.
+from retriever import robotics_typing as _robotics_typing  # noqa: F401
+
 __all__ = [
     "Flow",
     "Rate",
