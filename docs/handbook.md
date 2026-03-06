@@ -302,8 +302,9 @@ pipe.run(backend="in-process")
 
 At runtime, each port behaves like an event stream:
 
-- `EventBuffer[T] = list[(timestamp, value)]` (finite history)
+- `retriever.flow.types.EventBuffer[T] = list[(timestamp, value)]` (finite runtime history)
 - Adapters sample buffers at time `now` to produce a value for the `Flow` input.
+- For collection/replay/export contracts, use `retriever.data_spec.EventBuffer` instead of the runtime buffer directly.
 
 Important distinction:
 

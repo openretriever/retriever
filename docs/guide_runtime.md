@@ -203,9 +203,10 @@ See `examples/tutorial/c_debug_and_replay/05_buffer_engine_demo.py` for a minima
 
 Each input port maintains a finite **timestamped buffer**:
 
-`EventBuffer[T] = list[tuple[float, T]]`
+`retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
 
 This is what `Subscriber.get_all()` returns and what Adapters sample.
+For collection/replay/export contracts, use `retriever.data_spec.EventBuffer` instead of the runtime tuple buffer.
 
 ### `EventStream`
 

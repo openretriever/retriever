@@ -4,24 +4,23 @@ title: "Retriever Documentation"
 
 # Retriever Documentation
 
-These docs are being updated to match the **refactored runtime**.
+These docs track the current runtime, tutorial, and typing surfaces.
 
-**Single canonical note:** `docs/handbook.md`
+**Single canonical entrypoint:** `docs/handbook.md`
 
 If you only read one page, read `docs/handbook.md` top-to-bottom.
 
 ## Start Here
 
-- `docs/handbook.md` — install → author → run → debug → record/replay → `on_lag` → examples
+- `docs/handbook.md` — install → author → run → debug → record/replay → typing → examples
 
-Optional deep dives (may be merged into the handbook over time):
+Key references:
 - `docs/getting_started/install.md`
 - `docs/getting_started/tutorials.md`
 - `docs/tutorials/index.md`
-- `docs/guide_runtime.md`
-- `docs/guide_flow.md`
-- `docs/guide_temporal.md`
-- `docs/guide_execution.md`
-- `docs/guides/debugging.md`
+- `docs/guides/flow_typing_standard.md`
+- `docs/guides/robotics_typing.md`
+- `docs/guides/data_spec_eventstream.md`
+- `docs/guides/robotics_typing_carryback_status.md`
 
-For runtime/core work, prefer `docs/handbook.md`. The other guides are optional references and may lag behind.
+For runtime/core work, prefer `docs/handbook.md`. The other guides are focused references, not draft placeholders.

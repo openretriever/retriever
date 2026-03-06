@@ -78,7 +78,9 @@ Backend boundary note:
 
 Each input port is represented at runtime as a finite timestamped history:
 
-- `EventBuffer[T] = list[tuple[float, T]]`
+- `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
+
+For collection/replay/export contracts, `retriever.data_spec.EventBuffer` is a separate layer with explicit lineage and nanosecond event time.
 
 This is what `Subscriber.get_all()` returns.
 
