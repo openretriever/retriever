@@ -1,3 +1,7 @@
+---
+title: Flow Typing Contract for Retriever
+---
+
 # Flow Typing Contract for Retriever
 
 ## Purpose

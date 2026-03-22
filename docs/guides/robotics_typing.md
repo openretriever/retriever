@@ -1,3 +1,7 @@
+---
+title: Robotics Typing v1
+---
+
 # Robotics Typing v1
 
 ## Purpose

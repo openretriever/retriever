@@ -1,3 +1,7 @@
+---
+title: Data Spec and EventStream v1
+---
+
 # Data Spec and EventStream v1
 
 ## Purpose
