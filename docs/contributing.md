@@ -8,7 +8,7 @@ This repo is early-stage and moves fast. Keep PRs small, include tests when it m
 
 ## Prerequisites
 
-- Python 3.10–3.12 (avoid 3.14; some deps lack wheels)
+- Python 3.11 (current tested baseline for the runtime repo)
 - Pixi (recommended) or uv/pip
 - Git
 
@@ -36,7 +36,7 @@ pixi run python -m pytest tests/core -q
 ## Workflow
 
 - Branch naming: `<type>/<short-description>-<YYYY-MM-DD>` (e.g. `bugfix/dora-yaml-2025-12-15`)
-- Before pushing: run `pixi run ruff check .`, `pixi run black .`, `pixi run mypy retriever`, `pixi run python -m pytest`
+- Before pushing: run `pixi run ruff check .`, `pixi run black .`, `pixi run mypy src/retriever`, `pixi run python -m pytest`
 - Open a PR with: what/why/how-tested, and any follow-ups
 
 ## Documentation

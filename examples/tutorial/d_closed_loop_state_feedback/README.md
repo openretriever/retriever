@@ -19,6 +19,9 @@
 - `15_robot_state_task_script.py`
 - `16_mutable_state_pitfalls.py`
 - `17_immutable_state_transitions.py`
+
+## Advanced
+
 - `18_advanced_time_patterns.py`
 
 ## What To Expect

@@ -6,10 +6,10 @@ title: "Retriever Runtime Architecture (Canonical)"
 
 This document describes the **refactored runtime** architecture:
 
-`Pipeline (or FlowContext) → validate() → IRStruct → build_execution() → ExecutionGraph → execute_ir()`
+`Pipeline / TemporalFlow → Pipeline.validate() → IR → Pipeline.build_execution() → ExecutionGraph → execute_ir()`
 
-If you are looking for the older “Flow.from_module / LocalExecutor / ExecutionEngine” material, see
-`docs/architecture_legacy.md`.
+Older pre-runtime architecture notes are not part of the public release docs in this repo.
+Use this page plus `docs/guide_execution.md` for the supported architecture surface.
 
 ---
 
@@ -20,10 +20,10 @@ If you are looking for the older “Flow.from_module / LocalExecutor / Execution
 Code lives in `retriever/flow/`:
 
 - `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
-- `@flow_io` dataclasses: typed ports (each field is a port)
+- `@io` classes: typed ports (each field is a port)
 - `Pipeline`: explicit graph builder (no context manager)
-- `FlowContext`: context manager that collects nodes + edges (still supported)
-- `FlowHandle`: result of `flow @ clock`, used to connect nodes (`then`, `>>`)
+- `PipelineBuilder`: lower-level validator/builder used by the registry and tooling
+- `TemporalFlow`: result of `flow @ clock`, used to connect nodes (`then`, `>>`)
 - Clocks: `Rate`, `Tick`, `Trigger`, `Hybrid`
 - Adapters: sampling policies for input queues (`Latest`, `Hold`, `Window`, `Events`)
 
@@ -31,10 +31,10 @@ Code lives in `retriever/flow/`:
 
 Code lives in `retriever/ir/`:
 
-- `validate(ctx: FlowContext | Pipeline) -> IRStruct`
-- `build_execution(ir: IRStruct) -> ExecutionGraph` (optional, but recommended)
+- `Pipeline.validate() -> IR`
+- `Pipeline.build_execution() -> ExecutionGraph` (optional, but recommended)
 
-`IRStruct` is the stable logical boundary. It contains:
+`IR` is the stable logical boundary. It contains:
 
 - nodes (flow class/module identity + clock config + metadata)
 - edges (port mappings + queue policy + queue sizes)
@@ -63,8 +63,8 @@ Backends are responsible for:
 - scheduling execution (clocks)
 - process lifecycle (start/wait/stop)
 
-Note: `execute_ir(...)` accepts either an `IRStruct` (logical graph) or an `ExecutionGraph`
-(physical plan). When given an execution graph, it is lowered to a backend-friendly IRStruct for execution.
+Note: `execute_ir(...)` accepts either an `IR` (logical graph) or an `ExecutionGraph`
+(physical plan). When given an execution graph, it is lowered to a backend-friendly IR for execution.
 
 Backend boundary note:
 - Dora integration + Rust migration candidates: `docs/temp_notes/2025-12-17_dora_rust_boundary.md`
@@ -113,10 +113,10 @@ Clocks decide **when** a node runs and (for input ports) **which fields** should
 
 Key defaults:
 
-- `Rate(hz=...)` samples **all input fields** by default.
+- `Rate(hz=...)` samples **all connected inputs** on each periodic tick.
 - `Tick(hz=...)` is the explicit “tick-only” clock (samples no inputs).
-- `Trigger("field")` / `Trigger(on=[...])` samples only the triggering fields.
-- `Hybrid(..., sample=[...], trigger=[...])` mixes both behaviors.
+- `Trigger("field", ...)` samples the triggering input fields.
+- `Hybrid(hz=..., trigger=[...])` mixes periodic execution with trigger-driven execution.
 
 Backends attach a concrete “execution time” to a step:
 
@@ -132,8 +132,8 @@ To support “system packages” (and the future split into runtime vs golden sy
 
 `retriever/pipeline_registry.py` registers **pipeline factories** that return:
 
-- `IRStruct` (preferred), or
-- `Pipeline` / `FlowContext` (validated to IRStruct automatically)
+- `IR` (preferred), or
+- `PipelineBuilder` / `Pipeline` (validated to IR automatically)
 
 ### 4.2 Plugin discovery (entry points)
 
@@ -148,5 +148,5 @@ Entry point group:
 ## 5) “What to read next”
 
 - User guide: `docs/guide_runtime.md`
-- Installation: `docs/install.md`
-- Legacy architecture reference: `docs/architecture_legacy.md`
+- Installation: `docs/getting_started/install.md`
+- Execution build details: `docs/guide_execution.md`

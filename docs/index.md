@@ -15,19 +15,15 @@ Retriever is a type-safe, composable runtime for building robotics dataflow pipe
 ## Quick Start
 
 ```python
-from dataclasses import dataclass
-
-from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, io
 
 
-@flow_io
-@dataclass
+@io
 class SrcOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class AddOut:
     value: int
 
@@ -49,6 +45,10 @@ pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
+
+Preferred public API note:
+- Use `@io` for new code.
+- `@flow_io` remains available as a backward-compatible alias.
 
 ### Debugging
 

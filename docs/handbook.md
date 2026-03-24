@@ -30,7 +30,7 @@ Known caveat:
 
 ## 0) Quick Start (Pixi)
 
-Supported Python: **3.10–3.12** (avoid 3.14; some deps lack wheels).
+Supported Python: **3.11** for the pinned runtime environments in this repo.
 
 ```bash
 # Install pixi (if needed)
@@ -70,7 +70,7 @@ Two execution surfaces exist on purpose:
 
 Canonical workflow:
 
-`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
+`Pipeline / TemporalFlow → Pipeline.validate() → IR → (optional) Pipeline.build_execution() → execute_ir()`
 
 But **user code should usually just call**:
 
@@ -81,29 +81,27 @@ But **user code should usually just call**:
 
 ## 2) Authoring: define ports and flows
 
-### 2.1 Define typed ports with `@flow_io`
+### 2.1 Define typed ports with `@io`
 
-Flows communicate using dataclasses decorated with `@flow_io`. Each field becomes a **port**.
+Flows communicate using `@io` classes. Each annotated field becomes a **port**.
 
 ```py
-from dataclasses import dataclass
-from retriever.flow import flow_io
+from retriever.flow import io
 
 
-@flow_io
-@dataclass
+@io
 class SrcOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class AddOut:
     value: int
 ```
 
 Notes:
-- `@flow_io` makes fields `Optional[...]` and adds runtime metadata (signals).
+- `@io` makes fields `Optional[...]` and adds runtime metadata (signals).
+- `@flow_io` remains available as a backward-compatible alias for older examples.
 
 ### 2.2 Implement a `Flow[I, O]`
 
@@ -140,10 +138,10 @@ event_driven = AddOne() @ Trigger("value")
 ```
 
 Clock cheat-sheet:
-- `Rate(hz=..., sample=...)` (alias: `fields=`): periodic.
+- `Rate(hz=...)`: periodic, sampling all connected inputs.
 - `Tick(hz=...)`: periodic tick-only.
 - `Trigger("field")`: runs when a new arrival happens on that input field.
-- `Hybrid(...)`: periodic + event-driven combined.
+- `Hybrid(hz=..., trigger=[...])`: periodic + event-driven combined.
 
 ### 3.2 Connect nodes with a `Pipeline` (recommended)
 
@@ -174,7 +172,7 @@ more = AddOne() @ Rate(hz=10)
 add >> more
 ```
 
-`FlowContext` is still supported for `a.then(b)` / `a >> b`, but `Pipeline` is the canonical surface.
+`Pipeline` is the canonical public authoring surface. Use `pipe.connect(...)` or `with pipe:` when chaining `a.then(b)` / `a >> b`.
 
 ---
 
@@ -236,7 +234,7 @@ Topic-focused tutorials (legacy extractions):
 - Execution monitoring: `examples/tutorial/06_feedback_loops/02_execution_monitoring.py`
 
 Advanced examples:
-- VLM Planning (Symbolic + LLM): `examples/advanced/vlm_planning.py`
+- See `examples/advanced/` for currently supported runtime examples. Prefer the tutorial tracks for public release material.
 
 ---
 
@@ -264,7 +262,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 ```
 
 Notes:
-- `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
+- `retriever.connect(...)` respects an active `with Pipeline(...):` context.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---
@@ -403,13 +401,14 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop
 
 Runtime/core “source of truth”:
 
-- `retriever/flow/*` — typed graph authoring
-- `retriever/ir/*` — validation + IR structs
-- `retriever/rt/*` — execution, backends, stepper/debugging helpers
+- `src/retriever/flow/*` — typed graph authoring
+- `src/retriever/ir/*` — validation + IR structs
+- `src/retriever/rt/*` — execution, backends, stepper/debugging helpers
 
 System/legacy folders still present (to move to golden repo):
 
-- `retriever/models`, `retriever/robots`, `retriever/envs`, `retriever/mappers`, `retriever/skills`, etc.
+- `src/golden_retriever/models`, `src/golden_retriever/robots`, `src/golden_retriever/envs`,
+  `src/golden_retriever/mappers`, `src/golden_retriever/skills`, etc.
 
 Golden split templates in this repo:
 
@@ -420,13 +419,13 @@ Golden split templates in this repo:
 
 ## 11) Where to look in code
 
-- Pipeline authoring: `retriever/flow/pipeline.py`
-- Clocks: `retriever/flow/clock.py`
-- Adapters: `retriever/flow/adapter.py`
-- Validator: `retriever/ir/validator.py`
-- MP backend: `retriever/rt/backend/multiprocessing/*`
-- Dora backend: `retriever/rt/backend/dora/*`
-- Stepper/debugger: `retriever/rt/stepper.py`
+- Pipeline authoring: `src/retriever/flow/pipeline.py`
+- Clocks: `src/retriever/flow/clock.py`
+- Adapters: `src/retriever/flow/adapter.py`
+- Builder/validation: `src/retriever/flow/builder.py`
+- MP backend: `src/retriever/rt/backend/multiprocessing/*`
+- Dora backend: `src/retriever/rt/backend/dora/*`
+- Stepper/debugger: `src/retriever/rt/stepper.py`
 
 ---
 
@@ -441,7 +440,7 @@ Golden split templates in this repo:
 ## 13) Development (optional)
 
 - Contributing / QA: `docs/contributing.md`
-- Developer guide: `docs/guide_dev.md`
+- Developer guide: `docs/guides/development.md`
 
 Recommended validation loop:
 
