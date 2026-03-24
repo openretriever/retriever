@@ -38,6 +38,29 @@ All of these are valid:
 4. Ambiguous unqualified read, write, and `has` access must raise.
 5. Qualified access is always valid for collisions.
 
+For new runtime code, define envelopes with `@io`:
+
+```py
+from retriever.flow import Flow, io
+
+
+@io
+class Observation:
+    value: float
+
+
+@io
+class Command:
+    action: float
+
+
+class Controller(Flow[Observation, Command]):
+    def run(self, input: Observation) -> Command:
+        return Command(action=input.value * 0.1)
+```
+
+`@flow_io` is still accepted as a legacy alias, but `@io` is the canonical public decorator.
+
 Examples:
 - `inp.value`
 - `inp.A.value`

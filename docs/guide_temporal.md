@@ -23,7 +23,7 @@ graph LR
 ## 1. TL;DR Mental Model
 
 - Every **port** behaves like a timestamped **event stream**.
-- The runtime stores a finite **event buffer** per port: `retriever.flow.types.EventBuffer[T] = list[(ts, value)]`.
+- The runtime stores a finite **event buffer** per port: `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`.
 - Dataset/export contracts use the separate `retriever.data_spec.EventBuffer` layer.
 - An **executor step** happens at a specific wall-clock time `now`.
 - An **Adapter** samples the buffer at `now` (e.g., pick latest, interpolate, aggregate).
@@ -109,7 +109,7 @@ pipe.connect(sensor, ctrl, sync=Hold(debounce=0.05))
 ### `Window`
 Aggregates values over a time window `[now - duration, now]`.
 - **Use case**: Smoothing, filtering, computing statistics.
-- **Parameters**: `duration` (seconds), `agg` ("start", "end", "max", "min", "mean").
+- **Parameters**: `duration` (seconds), `agg` (`"first"`, `"last"`, `"max"`, `"min"`, `"mean"`).
 
 ```python
 # Average of last 0.5s
@@ -166,13 +166,13 @@ Periodic execution.
 controller = RobotController() @ Rate(hz=200)
 ```
 
-### `Trigger(ports=[...])`
+### `Trigger("field", ...)`
 Event-driven execution. Runs whenever data arrives on the specified ports.
 - **Use case**: Data processing, event handlers.
 
 ```python
 # Runs when 'image' arrives
-detector = ObjectDetector() @ Trigger(ports=["image"])
+detector = ObjectDetector() @ Trigger("image")
 ```
 
 ### `Hybrid`
@@ -180,7 +180,7 @@ Combines Rate and Trigger. Runs on clock tick OR on event.
 
 ```python
 # Runs at 10Hz, BUT also runs immediately if 'emergency' signal arrives
-node = SafetyNode() @ Rate(hz=10) @ Trigger(ports=["emergency"])
+node = SafetyNode() @ Hybrid(hz=10, trigger=["emergency"])
 ```
 
 ---

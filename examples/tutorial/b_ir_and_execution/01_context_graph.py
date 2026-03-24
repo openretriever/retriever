@@ -1,7 +1,7 @@
 """
-FlowGraph (via Pipeline / FlowContext)
+FlowGraph (via Pipeline)
 
-`Pipeline` is the preferred authoring surface and is FlowContext-compatible.
+`Pipeline` is the preferred authoring surface for graph construction.
 It builds a FlowGraph from flow connections.
 
 The FlowGraph represents the dataflow structure and is used for IR validation.

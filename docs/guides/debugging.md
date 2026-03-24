@@ -17,7 +17,7 @@ This note explains the design, semantics, and limitations so the behavior is pre
 
 `Pipeline.run(...)` is the production-facing API:
 
-- validates the authored graph to `IRStruct` internally (no explicit `validate(...)` needed in user code)
+- validates the authored graph to `IR` internally (no explicit `validate(...)` needed in user code)
 - starts a backend `ExecutionEngine`
 
 ### Blocking run
@@ -58,7 +58,7 @@ pipe.close_stepper()
 
 The in-process stepper:
 
-1. Validates the pipeline to `IRStruct` (same validator as `Pipeline.run`).
+1. Validates the pipeline to `IR` (same validator as `Pipeline.run`).
 2. Builds **in-memory channels** for each data edge.
 3. Loads per-edge adapters from IR (so buffer sizes match runtime).
 4. Uses the **same Flow instances** you authored (no re-import/re-instantiation).
@@ -87,17 +87,18 @@ For each node:
 ### `Rate(hz=...)` / `Tick(hz=...)`
 
 - executes once per `step()`
-- samples the configured `Rate.fields` (default: `["..."]` = sample all inputs)
+- `Rate(hz=...)` samples all connected inputs
+- `Tick(hz=...)` samples no inputs
 
 ### `Trigger(...)`
 
 - executes **only if** a new arrival is observed on one of its trigger fields
 - if multiple trigger fields have new arrivals, the first one in `Trigger.fields` wins for that step
 
-### `Hybrid(hz=..., trigger=..., sample=...)`
+### `Hybrid(hz=..., trigger=[...])`
 
-- if a trigger field has a new arrival: executes as a trigger step (samples that field)
-- otherwise executes once per step and samples `rate_fields`
+- if a trigger field has a new arrival: executes as a trigger step (sampling that field)
+- otherwise executes once per step and samples all connected inputs
 
 Time parameters:
 

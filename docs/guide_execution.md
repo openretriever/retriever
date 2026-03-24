@@ -14,11 +14,11 @@ pipeline semantics, we are producing a *separate execution graph* that describes
 
 ## 1) The two graphs
 
-### 1.1 Logical graph: `IRStruct`
+### 1.1 Logical graph: `IR`
 
-`IRStruct` is produced by validation:
+`IR` is produced by validation:
 
-`Pipeline (or FlowContext) → validate() → IRStruct`
+`Pipeline.validate() → IR`
 
 It describes:
 
@@ -31,7 +31,7 @@ This is the stable “FRP intent” boundary.
 
 `ExecutionGraph` is produced by execution build/compilation:
 
-`IRStruct → build_execution() → ExecutionGraph`
+`IR → build_execution() → ExecutionGraph`
 
 It describes:
 
@@ -66,22 +66,20 @@ pipe.run(backend="dora", duration=10.0)
 
 ```py
 from retriever.flow import Pipeline
-from retriever.ir import validate, build_execution
 from retriever.rt import execute_ir
 
 pipe = Pipeline("demo")
 ...
 
-ir = validate(pipe)                # logical graph
-graph = build_execution(ir)        # physical graph (partitions + placement)
+ir = pipe.validate()               # logical graph
+graph = pipe.build_execution()     # physical graph (partitions + placement)
 execute_ir(graph, backend="dora")  # runs the compiled graph
 ```
 
 Notes:
 
-- `execute_ir(...)` accepts either `IRStruct` or `ExecutionGraph`.
-- If you pass an `IRStruct` directly, you’re implicitly choosing “one executor per flow node”.
-- `compile_execution(...)` remains as a compatibility alias for `build_execution(...)`.
+- `execute_ir(...)` accepts either `IR` or `ExecutionGraph`.
+- If you pass an `IR` directly, you’re implicitly choosing “one executor per flow node”.
 
 ### 2.3 Unified Recording & Replay
 
@@ -145,20 +143,20 @@ retriever.step(dt=0.1)
 
 ---
 
-## 4) Lowering to an executable IR (implementation detail)
+## 5) Lowering to an executable IR (implementation detail)
 
-Current backends still consume an `IRStruct` where each node is a runnable executor. To bridge this,
+Current backends still consume an `IR` where each node is a runnable executor. To bridge this,
 `ExecutionGraph.to_execution_ir()` materializes a backend-friendly IR by lowering each grouped partition into a
 single node.
 
 Implementation notes:
 
 - The lowered node type is currently named `FusedFlow` (legacy naming).
-- Provenance is stored in `IRStruct.optimization` (legacy name; it records the grouping map).
+- Provenance is stored in the IR optimization metadata (legacy field naming preserved internally).
 
 ---
 
-## 5) Where this goes next
+## 6) Where this goes next
 
 This split (logical IR vs physical execution graph) is the foundation for:
 
@@ -168,7 +166,7 @@ This split (logical IR vs physical execution graph) is the foundation for:
 
 See also: `docs/temp_notes/2025-12-16_outline_design_alignment.md`.
 
-## 6) Distributed Execution (Multi-Machine)
+## 7) Distributed Execution (Multi-Machine)
 
 Retriever supports distributing pipelines across multiple computers using the **Dora** backend. This is useful for splitting lighter controller logic (low latency) from heavy compute (GPU).
 
@@ -214,7 +212,7 @@ Retriever compiles the Python deployment tags into Dora's node constraints (`_un
 
 ---
 
-## 7) Native Node Performance
+## 8) Native Node Performance
 
 Retriever supports native backends (Rust/C++) via `native_overrides`. When benchmarking:
 
@@ -223,5 +221,3 @@ Retriever supports native backends (Rust/C++) via `native_overrides`. When bench
    - Compute load is high (e.g., heavy math, computer vision).
    - Throughput requirements exceed Python's GIL limitations (e.g., >1000 Hz).
 3. **Rate Limiting**: Ensure your pipeline `Rate` does not artificially cap performance. A `Rate(hz=50)` will limit all backends to 50 Hz, masking any performance differences.
-
-

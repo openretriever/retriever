@@ -1,12 +1,12 @@
 ---
-title: "Retriever Framework Developer Guide"
+title: "Retriever Runtime Developer Guide"
 ---
 
-# Retriever Framework Developer Guide
+# Retriever Runtime Developer Guide
 
-**Comprehensive guide for contributing to and developing with Retriever**
+**Comprehensive guide for contributing to the core Retriever runtime**
 
-> **New Contributors**: Start with [contributing.md](contributing.md) for setup and workflow basics, then return here for advanced development topics.
+> **New Contributors**: Start with [contributing.md](../contributing.md) for setup and workflow basics, then return here for advanced development topics.
 
 ---
 
@@ -26,7 +26,7 @@ title: "Retriever Framework Developer Guide"
 
 ### Prerequisites
 
-- **Python 3.10–3.12** (avoid 3.14; some deps lack wheels)
+- **Python 3.11** (current pinned runtime baseline)
 - **Pixi** (recommended) or **uv**/**pip** for dependency management
 - **VS Code** (recommended) with Python extension
 - **Git** with pre-commit hooks
@@ -36,7 +36,7 @@ title: "Retriever Framework Developer Guide"
 ```bash
 # Clone and install
 git clone <repository-url>
-cd Retriever
+cd <repo-root>
 
 # Option A: Pixi (quick demo env defined in pixi.toml)
 pixi run demo-webcam-detection
@@ -58,7 +58,7 @@ Command conventions:
   - Tests: `python -m pytest`
   - Lint: `ruff check .`
   - Format: `black .`
-  - Types: `mypy retriever`
+  - Types: `mypy src/retriever`
 
 ### Development Dependencies
 
@@ -95,7 +95,7 @@ pixi run pre-commit run --all-files
 # Common QA commands
 pixi run ruff check .
 pixi run black .
-pixi run mypy retriever
+pixi run mypy src/retriever
 pixi run python -m pytest
 ```
 
@@ -113,7 +113,7 @@ Current repo note:
 # Development configuration
 export RETRIEVER_ENV=development
 export RETRIEVER_LOG_LEVEL=DEBUG
-export RETRIEVER_BACKEND=local  # local, dora, distributed
+export RETRIEVER_BACKEND=multiprocessing  # multiprocessing, dora, in-process
 
 # Testing configuration
 export RETRIEVER_TEST_DATA=/path/to/test/data
@@ -122,7 +122,7 @@ export RETRIEVER_SKIP_SLOW_TESTS=true
 
 ## Architecture Overview
 
-Retriever follows a **type-safe, composable architecture** inspired by PyTorch's success in deep learning:
+Retriever runtime follows a **type-safe, composable architecture** for typed dataflow execution:
 
 ### Core Design Principles
 
@@ -131,35 +131,43 @@ Retriever follows a **type-safe, composable architecture** inspired by PyTorch's
 3. **Execution Flexibility**: Same code works across different backends
 4. **Declarative Pipelines**: Describe what to do, not how to execute it
 
-### Three-Layer Hierarchy
+### Runtime Authoring Hierarchy
 
 ```python
-# Layer 1: Module[I, O] - Atomic functions (Protocol)
-class DetectObjects(Module[RGBImage, List[Detection]]):
-    def __call__(self, image: RGBImage) -> List[Detection]:
-        return yolo_model.predict(image)
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
-# Layer 2: Flow[X, Y] - Runtime Node
-class DetectionFlow(Flow[RGBImage, List[Detection]]):
-    def run(self, image: RGBImage) -> List[Detection]:
-        # Implementation
-        return detections
 
-# Layer 3: Pipeline - Complete workflows
-pipe = Pipeline("manipulation")
+@io
+class CameraFrame:
+    image: "np.ndarray"
+
+
+@io
+class Detections:
+    boxes: list
+
+
+class DetectionFlow(Flow[CameraFrame, Detections]):
+    def run(self, image: CameraFrame) -> Detections:
+        return Detections(boxes=[])
+
+
+pipe = Pipeline("perception")
 with pipe:
-    cam >> detection >> planning >> execution
+    camera = CameraSource() @ Rate(hz=20)
+    detect = DetectionFlow() @ Trigger("image")
+    camera >> detect
 
 ```
 
 ### Framework Components
 
-- **`retriever/`**: Flow system, execution engines, type system
-- **`retriever/perception/`**: Object detection, tracking, grounding
-- **`retriever/planning/`**: Task planning, VLM integration, DSPy optimization  
-- **`retriever/robots/`**: Platform integrations (Spot, UR5, simulation)
-- **`retriever/skills/`**: Reusable robot capabilities and learned behaviors
-- **`retriever/integrations/`**: External system integrations (dora, Ray, etc.)
+- **`src/retriever/flow/`**: authoring surface, clocks, adapters, pipeline wiring
+- **`src/retriever/ir/`**: logical IR and execution graph structures
+- **`src/retriever/rt/`**: runtime execution, stepper, multiprocessing, dora
+- **`src/retriever/data_spec/`**: explicit dataset/event/export contracts
+- **`src/retriever/robotics_typing/`**: typed robotics boundary payloads
+- **`examples/tutorial/`**: public runnable examples for the runtime release
 
 ## Development Workflow
 
@@ -176,7 +184,7 @@ with pipe:
    touch tests/test_new_capability.py
    
    # Implement feature
-   touch retriever/new_module.py
+   touch src/retriever/new_module.py
    
    # Run tests continuously
    pixi run python -m pytest --maxfail=1 --lf
@@ -187,7 +195,7 @@ with pipe:
    # Common checks
    pixi run ruff check .
    pixi run black .
-   pixi run mypy retriever
+   pixi run mypy src/retriever
    pixi run python -m pytest
    ```
 
@@ -208,13 +216,10 @@ with pipe:
 
 **Type Annotations Required**:
 ```python
-from typing import List, Dict, Optional, Protocol
-from retriever.types.core import Module
 from retriever.flow import Flow
 
-class MyComponent(Module[InputType, OutputType]):
-    def __call__(self, input_data: InputType) -> OutputType:
-        # Implementation with full type coverage
+class MyFlow(Flow[InputType, OutputType]):
+    def run(self, input_data: InputType) -> OutputType:
         return output
 ```
 
@@ -254,76 +259,60 @@ def process_sensor_data(data: SensorData) -> ProcessedData:
 ## Core Framework Components
 
 ### Flow System
-from retriever.flow import Flow, Pipeline
 
-# Create reusable components
-class PerceptionFlow(Flow[RGBImage, List[Detection]]):
-    def run(self, image: RGBImage) -> List[Detection]:
-        # Implementation
-        return detections
+The canonical runtime loop is:
 
-# Compose with other flows
-pipe = Pipeline("system")
-with pipe:
-    perception >> planning >> execution
-
-# Execute
-pipe.run(backend="multiprocessing")
-
-
-### Stateful Operations with Eff
-
-For robot operations that modify state:
+1. define typed envelopes with `@io`
+2. implement `Flow[I, O]`
+3. wire a `Pipeline`
+4. run with `pipe.run(...)` or debug with `pipe.step(...)`
 
 ```python
-from retriever.types import Eff
-from dataclasses import dataclass
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
-@dataclass(frozen=True)
-class RobotState:
-    position: Pose3D
-    battery_level: float
-    objects_held: List[str]
 
-def move_robot_eff(target: Pose3D) -> Eff[RobotState, bool]:
-    def run(state: RobotState) -> tuple[bool, RobotState]:
-        # Check preconditions
-        if state.battery_level < 0.1:
-            return False, state._replace(last_error="Low battery")
-        
-        # Execute movement
-        success = robot_controller.move_to(target)
-        new_state = state._replace(
-            position=target if success else state.position,
-            battery_level=max(0, state.battery_level - 0.05)
-        )
-        return success, new_state
-    return Eff(run)
+@io
+class Observation:
+    value: float
 
-# Compose stateful operations
-mission = move_robot_eff >> pick_object_eff >> place_object_eff
 
-# Execute with state tracking
-initial_state = RobotState(position=home_pose, battery_level=1.0, objects_held=[])
-success, final_state = executor.execute_eff(mission, target_data, initial_state)
+@io
+class Command:
+    action: float
+
+
+class Controller(Flow[Observation, Command]):
+    def run(self, input: Observation) -> Command:
+        return Command(action=input.value * 0.1)
+
+
+pipe = Pipeline("control")
+sensor = SensorFlow() @ Rate(hz=50)
+controller = Controller() @ Trigger("value")
+pipe.connect(sensor, controller, sync=Latest())
+pipe.run(backend="multiprocessing", duration=2.0)
 ```
+
+### Stateful Flows
+
+For public runtime examples, keep state either:
+
+- inside the `Flow` instance (`self.counter`, cached models, controller state), or
+- explicit in typed input/output envelopes when state must cross node boundaries.
+
+Historical Eff-style examples still exist in the repo for migration context, but they are not the canonical runtime API.
 
 ### Multi-Backend Execution
 
-Design for flexibility across execution environments:
+Use the same authored pipeline across the supported execution surfaces:
 
 ```python
-# Development: Pure Python sequential execution
-retriever.init(backend="sequential")
+pipe.run(backend="multiprocessing", duration=2.0)
+pipe.run(backend="dora", duration=2.0)
 
-# Testing: Parallel execution on single machine
-retriever.init(backend="local_parallel")
-
-# Production: Distributed execution
-retriever.init(backend="dora", config="cluster_config.yaml")
-
-# Same pipeline code works across all backends
-result = pipeline.execute(input_data)
+# In-process debugging
+pipe.step(dt=0.1)
+pipe.close_stepper()
 ```
 
 ## Testing & Quality Assurance
@@ -349,41 +338,20 @@ tests/
 ```python
 def test_flow_composition():
     """Test basic flow composition and type safety."""
-    double = Flow.from_module(lambda x: x * 2)
-    add_one = Flow.from_module(lambda x: x + 1)
-    pipeline = double >> add_one  # Using operator syntax
-    
-    executor = LocalExecutor()
-    result = executor.execute_sync(pipeline, 5)
-    assert result == 11  # (5 * 2) + 1
-
-def test_stateful_operation():
-    """Test Eff monad for stateful operations."""
-    initial_state = RobotState(battery_level=0.5, position=Pose3D(0, 0, 0))
-    
-    move_eff = move_robot_eff(Pose3D(1, 0, 0))
-    success, final_state = move_eff.run(initial_state)
-    
-    assert success == True
-    assert final_state.position == Pose3D(1, 0, 0)
-    assert final_state.battery_level < initial_state.battery_level
+    pipe = build_demo_pipeline()
+    step = pipe.step(dt=0.1)
+    assert "AddOne" in step.executed
+    pipe.close_stepper()
 ```
 
 **Integration Tests**:
 ```python
 @pytest.mark.integration
 def test_complete_manipulation_pipeline():
-    """Test end-to-end manipulation pipeline."""
-    pipeline = build_manipulation_pipeline()
-    executor = LocalExecutor()
-    
-    # Test with realistic data
-    test_image = load_test_image("manipulation_scene.jpg")
-    result = executor.execute_sync(pipeline, test_image)
-    
-    assert isinstance(result, ManipulationResult)
-    assert result.success == True
-    assert len(result.executed_actions) > 0
+    """Test a real pipeline on the multiprocessing backend."""
+    pipe = build_demo_pipeline()
+    engine = pipe.run(backend="multiprocessing", duration=0.5, blocking=False)
+    engine.stop()
 ```
 
 **Performance Tests**:
@@ -391,20 +359,10 @@ def test_complete_manipulation_pipeline():
 @pytest.mark.performance
 def test_pipeline_throughput():
     """Test system performance under load."""
-    pipeline = build_perception_pipeline()
-    executor = LocalExecutor()
-    
-    start_time = time.time()
-    results = []
-    
-    for i in range(100):
-        result = executor.execute_sync(pipeline, test_data)
-        results.append(result)
-    
-    total_time = time.time() - start_time
-    throughput = len(results) / total_time
-    
-    assert throughput >= 10.0, f"Expected ≥10 Hz, got {throughput:.1f} Hz"
+    pipe = build_demo_pipeline()
+    for _ in range(100):
+        pipe.step(dt=0.02)
+    pipe.close_stepper()
 ```
 
 ### Continuous Integration
@@ -427,7 +385,7 @@ jobs:
         run: |
           pixi run ruff check .
           pixi run black .
-          pixi run mypy retriever
+          pixi run mypy src/retriever
           pixi run python -m pytest
       - name: Run performance tests
         run: pixi run python -m pytest --performance
@@ -435,18 +393,25 @@ jobs:
 
 ## Contributing Guidelines
 
-> **Quick Start**: See [contributing.md](contributing.md) for complete contribution workflow, setup, and standards.
+> **Quick Start**: See [contributing.md](../contributing.md) for complete contribution workflow, setup, and standards.
 
 ### Adding New Components
 
-1. **Follow Module Protocol**:
+1. **Follow the public runtime surface**:
    ```python
-   from retriever.types.core import Module
+   from retriever.flow import Flow, io
 
-   class NewComponent(Module[InputType, OutputType]):
-       def __call__(self, input_data: InputType) -> OutputType:
-           # Implementation
-           return output
+   @io
+   class Input:
+       value: float
+
+   @io
+   class Output:
+       result: float
+
+   class NewComponent(Flow[Input, Output]):
+       def run(self, input_data: Input) -> Output:
+           return Output(result=input_data.value)
    ```
 
 2. **Add Comprehensive Tests**:
@@ -464,12 +429,15 @@ jobs:
 
 4. **Ensure Type Safety**:
    ```bash
-   pixi run mypy retriever  # Must pass mypy
+   pixi run mypy src/retriever  # Must pass mypy
    ```
 
 ### Adding Robot Integrations
 
-1. **Create Robot Package**: `retriever/robots/new_robot/`
+System-layer robot integrations belong under `src/golden_retriever/` or in an external package.
+Only runtime-agnostic interfaces and backend hooks should live in the core runtime repo.
+
+1. **Create Robot Package**: `src/golden_retriever/robots/new_robot/`
 2. **Implement Robot Interface**:
    ```python
    class NewRobotInterface:
@@ -481,15 +449,15 @@ jobs:
            # Implementation
            pass
    ```
-3. **Add Skills**: `retriever/skills/new_robot/`
-4. **Create Tests**: `tests/robots/test_new_robot.py`
+3. **Add Skills**: `src/golden_retriever/skills/new_robot/`
+4. **Create Tests**: `src/golden_retriever/tests/test_new_robot.py`
 5. **Update Configuration**: Add to robot registry
 
 ### Adding Execution Backends
 
 1. **Implement Executor Function**:
    ```python
-   def execute_my_backend(ir: IRStruct, **kwargs):
+   def execute_my_backend(ir: IR, **kwargs):
        # Compile IR to backend-specific graph
        graph = compile_to_my_backend(ir)
        # Execute
@@ -499,7 +467,7 @@ jobs:
 2. **Add Performance Benchmarks**:
    ```python
    def benchmark_new_executor():
-       # Compare against LocalExecutor baseline
+       # Compare against multiprocessing / dora baselines
        pass
    ```
 
@@ -517,9 +485,10 @@ import pstats
 def profile_pipeline():
     profiler = cProfile.Profile()
     profiler.enable()
-    
-    result = executor.execute_sync(pipeline, test_data)
-    
+
+    for _ in range(100):
+        pipe.step(dt=0.02)
+
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats('cumulative').print_stats(20)
@@ -534,40 +503,18 @@ pixi run python -m pytest --memray
 python -m memray run --live examples/memory_test.py
 ```
 
-### Custom Flow Operations
+### Extending the Runtime
 
-**Creating New Composition Operations**:
-```python
-def conditional_then(self, condition_func, true_flow, false_flow):
-    """Conditional composition based on runtime data."""
-    def conditional_module(input_data):
-        if condition_func(input_data):
-            return true_flow.execute(input_data)
-        else:
-            return false_flow.execute(input_data)
-    
-    return Flow.from_module(conditional_module)
+For core runtime work, prefer explicit extension points over monkey-patching:
 
-# Add to Flow class
-Flow.conditional_then = conditional_then
-```
+- add adapters in `src/retriever/flow/adapter.py`
+- add clocks in `src/retriever/flow/clock.py`
+- add builder/validation behavior in `src/retriever/flow/builder.py`
+- add runtime backends under `src/retriever/rt/backend/`
 
-### Integration with External Systems
-
-**Ray Integration for Distributed Models**:
-```python
-import ray
-from retriever.integrations.ray import RayModelServer
-
-@ray.remote
-class DistributedYOLO:
-    def predict(self, image: RGBImage) -> List[Detection]:
-        return self.model.predict(image)
-
-# Integrate with Flow system
-ray_yolo = RayModelServer(DistributedYOLO)
-detection_flow = Flow.from_module(ray_yolo.predict)
-```
+External systems such as Ray, hardware SDKs, or model-serving stacks should usually live in
+`src/golden_retriever/` or external packages and integrate with the runtime through normal `Flow`
+wrappers and typed `@io` envelopes.
 
 ## Troubleshooting
 
@@ -590,13 +537,13 @@ python -c "import retriever; print(retriever.__version__)"
 # Common mypy issues and fixes
 
 # Issue: Type mismatch in flow composition
-# Flow[Image, Detection].then(Flow[String, Result])  # ERROR
+# Flow[Image, Detection] -> Flow[String, Result]  # ERROR
 
 # Fix: Ensure output type matches input type
-# Flow[Image, Detection].then(Flow[Detection, Result])  # OK
+# Flow[Image, Detection] -> Flow[Detection, Result]  # OK
 
-# Use explicit type annotations
-detection_flow: Flow[RGBImage, List[Detection]] = Flow.from_module(detect_objects)
+# Use explicit IO envelopes and Flow type parameters
+# class Detect(Flow[Image, Detection]): ...
 ```
 
 **Performance Issues**:
@@ -634,32 +581,29 @@ logging.basicConfig(level=logging.DEBUG)
 # Component-specific logging
 logger = logging.getLogger("retriever.flow")
 logger.setLevel(logging.DEBUG)
-
-# Enable flow execution tracing
-from retriever.debug import enable_flow_tracing
-enable_flow_tracing()
 ```
 
 ### Getting Help
 
 1. **Check Documentation**: Start with relevant guide sections
 2. **Search Issues**: Look through GitHub issues for similar problems
-3. **Run Diagnostics**: Try `ruff check .`, `mypy retriever`, and `python -m pytest`
+3. **Run Diagnostics**: Try `ruff check .`, `mypy src/retriever`, and `python -m pytest`
 4. **Check Examples**: Look at working examples in `examples/` directory
 5. **Ask for Help**: Create detailed GitHub issue with reproduction steps
 
 ## Resources
 
 ### Documentation
-- [Flow System Guide](guide_flow.md) - Complete Flow architecture reference
-- [Architecture Guide](architecture.md) - Complete technical architecture
-- [API Reference](API.md) - Complete API documentation
-- [Spot Setup](robots/spot_setup.md) - Spot configuration
+- [Flow System Guide](../guide_flow.md) - Complete Flow architecture reference
+- [Runtime Guide](../guide_runtime.md) - End-to-end runtime workflow
+- [Architecture Guide](../architecture.md) - Complete technical architecture
+- [API Reference](../API.md) - Complete API documentation
+- [Handbook](../handbook.md) - Single canonical runtime note
 
 ### Examples
-- `examples/simple_flow.py` - Basic flow composition
-- `examples/stateful_robot.py` - Robot state management
-- `examples/distributed_execution.py` - Multi-backend deployment
+- `examples/tutorial/a_flow_fundamentals/01_basic_flow.py` - Basic flow composition
+- `examples/tutorial/b_ir_and_execution/03_execution_build.py` - IR and execution graph build
+- `examples/tutorial/c_debug_and_replay/01_debug_stepper.py` - In-process debugging
 
 ### External Resources
 - [Python Type Hints](https://docs.python.org/3/library/typing.html)
@@ -672,8 +616,6 @@ After reading this guide:
 
 1. **Set up your environment**: follow `docs/getting_started/install.md`
 2. **Run the test suite**: `python -m pytest`
-3. **Try the examples**: Start with `examples/simple_flow.py`
-4. **Read the architecture guide**: [architecture.md](architecture.md) for technical details
+3. **Try the examples**: start with `examples/tutorial/a_flow_fundamentals/01_basic_flow.py`
+4. **Read the architecture guide**: [architecture.md](../architecture.md) for technical details
 5. **Start contributing**: Pick an issue and follow the contribution workflow
-
-The Retriever framework is designed to make robotics development faster, safer, and more composable. We welcome contributions from the community! 🤖

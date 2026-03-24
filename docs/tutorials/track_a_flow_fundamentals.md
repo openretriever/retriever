@@ -18,6 +18,6 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics
 
 ## What To Observe
 
-- How `@flow_io` typing catches wiring mistakes early.
+- How `@io` typing catches wiring mistakes early.
 - Clock choice impact (`Rate`, `Trigger`, and adapter semantics).
 - Equivalent pipeline authoring styles and tradeoffs.
