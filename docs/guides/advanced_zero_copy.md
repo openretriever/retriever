@@ -79,11 +79,9 @@ if isinstance(value, torch.Tensor):
 
 ## 4. Performance Verification
 
-To verify that your setup is truly Zero-Copy, run the included benchmark.
-
-```bash
-pixi run python examples/advanced/pytorch_cuda_async/benchmark.py --plot benchmark_plot.png
-```
+The public runtime repo does not currently ship a dedicated zero-copy benchmark script under `examples/`.
+To verify behavior, inspect the serializer path in `src/retriever/rt/backend/dora/serde.py` and benchmark
+your own tensor-producing pipeline under the `dora` backend.
 
 **Expected Results:**
 - **Throughput**: Should be extremely high (> 10 GB/s, often >> 100 GB/s for large payloads).

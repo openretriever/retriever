@@ -120,13 +120,10 @@ Docs live in `docs/`:
 - Architecture: `docs/architecture.md`
 - Tutorials: `docs/tutorials/index.md`
 - Install: `docs/getting_started/install.md`
-- Advanced Examples: `examples/advanced/`
-  - **Skill Switching**: Dynamic behavior switching pattern with **Fan-in** support (`examples/advanced/skill_switching/`)
-  - **Native Controller**: Rust/C++ native extension bindings (`examples/advanced/native_controller/`)
-  - **TWIST2 Simulation**: MuJoCo humanoid robot at 1000Hz physics + 50Hz policy (`examples/advanced/twist2_simulation/`)
+- Runnable examples: `examples/tutorial/` and `examples/control_demo.py`
 
 ## Roadmap
 
 Recent features:
 - **Main Thread Flow** (`@gui_flow`): Run flows in main thread for native GUI support (MuJoCo viewers, Qt, etc.)
-  - See: `examples/advanced/twist2_simulation/` for usage example
+  - Public examples in this repo currently focus on the tutorial/runtime surface.

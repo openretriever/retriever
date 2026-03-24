@@ -18,17 +18,17 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 from retriever.flow.adapter import Window
 
 
-@flow_io
+@io
 @dataclass
 class SrcOut:
     x: float
 
 
-@flow_io
+@io
 @dataclass
 class SinkIn:
     x: float

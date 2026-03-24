@@ -21,11 +21,11 @@ from __future__ import annotations
 import argparse
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 from dataclasses import dataclass
 
 
-@flow_io
+@io
 @dataclass
 class Value:
     value: int

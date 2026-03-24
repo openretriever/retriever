@@ -5,10 +5,10 @@ import threading
 from pynput import keyboard
 from typing import Optional
 from dataclasses import dataclass
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
-@flow_io
+@io
 @dataclass
 class KeyboardText:
     text: Optional[str] = None

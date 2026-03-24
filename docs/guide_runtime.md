@@ -178,7 +178,7 @@ pipe.run(
 )
 ```
 
-Design plan: `docs/temp_notes/2025-12-17_native_acceleration_plan.md`.
+Design details for native overrides are tracked in internal design notes rather than the public docs surface.
 
 ### Backend config: buffer engine (Tier B.3)
 

@@ -14,11 +14,11 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-from retriever.flow import Flow, Pipeline, Rate, flow_io, Latest
+from retriever.flow import Flow, Pipeline, Rate, io, Latest
 from retriever.rt.control import ControlConfig, Controllable
 
 
-@flow_io
+@io
 @dataclass
 class SensorReading:
     """Sensor reading output."""
@@ -27,7 +27,7 @@ class SensorReading:
     timestamp: float
 
 
-@flow_io
+@io
 @dataclass
 class ProcessedData:
     """Processed data output."""
