@@ -56,17 +56,18 @@ Retriever is a graph of typed transformations.
 A `Flow` is the smallest unit. It takes a typed input object and returns a typed output object.
 Those types are not decoration; they are the contract used by clocks, adapters, and validation.
 
-In this repo you will see `@flow_io` and sometimes `@io` on dataclasses. Treat both as:
+In this repo you may still see both `@io` and the older `@flow_io` alias on envelope classes. Treat both as:
 "this dataclass is part of the message contract".
 
 ```python
-@flow_io
-@dataclass
+from retriever.flow import Flow, io
+
+
+@io
 class In:
     value: int
 
-@flow_io
-@dataclass
+@io
 class Out:
     result: int
 

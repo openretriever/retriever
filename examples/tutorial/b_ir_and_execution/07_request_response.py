@@ -5,7 +5,7 @@ Demonstrates @handle_service and @call_service decorators for
 synchronous request/response communication between flows.
 
 Run:
-  pixi run demo-request-dora
+  pixi run demo-request-response
   # or:
   pixi run python -m examples.tutorial.b_ir_and_execution.07_request_response --backend dora --duration 5
 """

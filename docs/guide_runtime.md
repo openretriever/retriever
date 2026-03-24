@@ -6,26 +6,22 @@ title: "Refactored Runtime Guide (Canonical)"
 
 This guide documents the **canonical** Retriever runtime workflow:
 
-`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
+`Pipeline / TemporalFlow → Pipeline.validate() → IR → (optional) Pipeline.build_execution() → execute_ir()`
 
 It intentionally avoids the legacy `Flow.from_module`/`LocalExecutor` API.
 
 ## 1) Quickstart: build + run a tiny pipeline
 
 ```py
-from dataclasses import dataclass
-
-from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, io
 
 
-@flow_io
-@dataclass
+@io
 class SrcOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class AddOut:
     value: int
 
@@ -87,9 +83,10 @@ pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 
 ## 2) Core concepts
 
-### `@flow_io` types (ports)
+### `@io` types (ports)
 
-Flows communicate with typed, `@flow_io`-decorated dataclasses. Each field becomes a port.
+Flows communicate with typed `@io` classes. Each annotated field becomes a port.
+`@flow_io` remains as a backward-compatible alias, but new docs and examples should prefer `@io`.
 
 ### `Flow[I, O]` (node logic)
 
@@ -103,29 +100,22 @@ A `Flow` is a node that implements:
 
 Attach a clock using `flow @ clock`:
 
-- `Rate(hz=..., sample=[...])`: periodic execution (`fields=` is a supported alias)
-- `Trigger("field")` / `Trigger(on=[...])`: event-driven execution
-- `Hybrid(hz=..., trigger=[...], sample=[...])`: mixed mode (`trigger_fields=`/`rate_fields=` also work)
+- `Rate(hz=...)`: periodic execution, sampling all connected inputs on each tick
+- `Tick(hz=...)`: periodic tick-only execution, sampling no inputs
+- `Trigger("field", ...)`: event-driven execution on one or more named input fields
+- `Hybrid(hz=..., trigger=[...])`: periodic execution plus immediate trigger-driven execution
 
 Defaults:
-- `Rate(hz=...)` and `Hybrid(..., sample=...)` sample **all inputs** by default (`["..."]`).
-- Use `sample=[]` (or `Tick(hz=...)`) for tick-only nodes.
+- `Rate(hz=...)` and the periodic path of `Hybrid(...)` sample all connected inputs.
+- `Tick(hz=...)` is the explicit tick-only clock.
+- `Trigger(...)` samples only the triggering input fields.
 
 ### Wiring (edges)
 
-Connect nodes either:
+Connect nodes either with explicit `Pipeline.connect(...)` calls or with `TemporalFlow.then(...)` / `>>`
+while a `Pipeline` is active as the owner.
 
-- inside an active `FlowContext`, or
-- by attaching connections to an explicit `Pipeline` (no context manager).
-
-**Option A — FlowContext**
-
-- `a.then(b, sync=Latest(), map={"*": "*"})`
-- `a >> b` (shorthand for `.then(...)` with defaults)
-
-`sync` is an Adapter that defines how the downstream samples its input queue.
-
-**Option B — Pipeline**
+**Option A — explicit `Pipeline.connect(...)`**
 
 ```py
 pipe = Pipeline("my_pipeline")
@@ -134,16 +124,28 @@ b = B() @ Rate(hz=10)
 pipe.connect(a, b, sync=Latest())
 ```
 
+**Option B — `with pipe:` + handle chaining**
+
+```py
+pipe = Pipeline("my_pipeline")
+with pipe:
+    a = A() @ Rate(hz=10)
+    b = B() @ Rate(hz=10)
+    a >> b
+```
+
+`sync` is an Adapter that defines how the downstream samples its input queue.
+
 ## 3) Execution model
 
 ### Validate to IR
 
-`validate(ctx)` turns the `Pipeline`/`FlowContext` graph into an `IRStruct`. This happens automatically during `Pipeline.run(...)`,
-but you can call it directly for debugging/inspection.
+`pipe.validate()` turns the authored graph into an `IR`. This happens automatically during `Pipeline.run(...)`,
+but you can call it directly for debugging or inspection.
 
 ### Build execution graph (partitioning + placement)
 
-`build_execution(ir)` creates an `ExecutionGraph`, a *physical* graph used to decide:
+`pipe.build_execution()` creates an `ExecutionGraph`, a *physical* graph used to decide:
 
 - which flows should run together (co-location / fusion)
 - where a partition should run (placement hints; currently informational)
@@ -156,9 +158,7 @@ but you can call it directly for debugging/inspection.
 - `dora`: dora-rs backend (requires compatible dora CLI + deps)
 - `in-process`: single-process wrapper for debugging/recording
 
-`execute_ir(...)` accepts either an `IRStruct` or an `ExecutionGraph`.
-
-Note: `compile_execution(...)` remains as a compatibility alias for `build_execution(...)`.
+`execute_ir(...)` accepts either an `IR` or an `ExecutionGraph`.
 
 ### Dora backend config: native node overrides (Tier A.1)
 
@@ -239,8 +239,8 @@ Adapters decide how to interpret an `EventBuffer` at time `now`:
 
 Use `retriever.pipeline_registry.register_pipeline` to register a pipeline builder that returns:
 
-- an `IRStruct`, or
-- a `Pipeline` / `FlowContext` (it will be validated automatically)
+- an `IR`, or
+- a `PipelineBuilder` / `Pipeline` (it will be validated automatically)
 
 ### Plugin discovery
 
@@ -249,7 +249,6 @@ living in the runtime repo.
 
 ## 6) Notes
 
-- This guide uses `retriever.flow.Pipeline`. The top-level `retriever.Pipeline` is legacy/FRP-engine code
-  and is not part of the refactored runtime surface.
+- This guide uses `retriever.flow.Pipeline`. The top-level `retriever.Pipeline` re-exports the same class.
 - `retriever.rt.signal.Signal` is an internal per-step helper used by executors (sample → transform → publish).
   It is not an `EventStream`.

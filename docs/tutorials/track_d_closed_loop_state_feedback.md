@@ -22,6 +22,7 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.10_time_trigge
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.11_safety_monitoring
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.12_stateful_replanning
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns
 ```
 
 ## What To Observe
