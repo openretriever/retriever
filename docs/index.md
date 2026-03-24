@@ -65,7 +65,7 @@ pipe.close_stepper()
 ## 📚 Documentation
 
 ### Getting Started
-- **[Quickstart](getting_started/quickstart.md)** - The shortest path to `@io`, `Flow`, clocks, `connect`, `run`, and `step`
+- **[Quickstart](quickstart.md)** - The shortest path to `@io`, `Flow`, clocks, `connect`, `run`, and `step`
 - **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
     - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
@@ -80,7 +80,7 @@ pipe.close_stepper()
 - **[API](API.md)** - API reference
 
 ### Quick Navigation
-- **Getting Started**: [Quickstart](getting_started/quickstart.md), [Install](getting_started/install.md)
+- **Getting Started**: [Quickstart](quickstart.md), [Install](getting_started/install.md)
 - **Tutorials**: [getting_started/tutorials.md](getting_started/tutorials.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)

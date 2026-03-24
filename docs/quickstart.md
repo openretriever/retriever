@@ -92,8 +92,8 @@ pipe.close_stepper()
 
 ## What To Read Next
 
-- [Install](install.md)
-- [Flow Guide](../guide_flow.md)
-- [Runtime Guide](../guide_runtime.md)
-- [Debugging](../guides/debugging.md)
-- [Track A: Flow Fundamentals](../tutorials/track_a_flow_fundamentals.md)
+- [Install](getting_started/install.md)
+- [Flow Guide](guide_flow.md)
+- [Runtime Guide](guide_runtime.md)
+- [Debugging](guides/debugging.md)
+- [Track A: Flow Fundamentals](tutorials/track_a_flow_fundamentals.md)
