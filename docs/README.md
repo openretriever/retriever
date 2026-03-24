@@ -12,9 +12,11 @@ If you only read one page, read `docs/handbook.md` top-to-bottom.
 
 ## Start Here
 
+- `docs/getting_started/quickstart.md` — 5-minute runtime mental model and first runnable graph
 - `docs/handbook.md` — install → author → run → debug → record/replay → typing → examples
 
 Key references:
+- `docs/getting_started/quickstart.md`
 - `docs/getting_started/install.md`
 - `docs/getting_started/tutorials.md`
 - `docs/tutorials/index.md`
