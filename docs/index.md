@@ -65,6 +65,7 @@ pipe.close_stepper()
 ## 📚 Documentation
 
 ### Getting Started
+- **[Quickstart](getting_started/quickstart.md)** - The shortest path to `@io`, `Flow`, clocks, `connect`, `run`, and `step`
 - **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
 - **[Tutorial Tracks](tutorials/index.md)** - Runnable tutorial curriculum (Tracks A-H)
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
@@ -82,7 +83,7 @@ pipe.close_stepper()
 - **[API](API.md)** - API reference
 
 ### Quick Navigation
-- **Getting Started**: [Install](getting_started/install.md)
+- **Getting Started**: [Quickstart](getting_started/quickstart.md), [Install](getting_started/install.md)
 - **Tutorial Curriculum**: [tutorials/index.md](tutorials/index.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)

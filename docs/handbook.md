@@ -13,6 +13,8 @@ Retriever is being split into:
 
 If you only read one document, read this one.
 
+If you want the shorter version first, start with `docs/getting_started/quickstart.md`.
+
 ---
 
 ## What’s New (2025-12-17)
