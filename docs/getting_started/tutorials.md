@@ -8,7 +8,7 @@ Canonical tutorials are grouped into one-level topic tracks under `examples/tuto
 
 ## Start Here
 
-0. Read the runtime quickstart first: [quickstart.md](quickstart.md)
+0. Read the runtime quickstart first: [../quickstart.md](../quickstart.md)
 1. Read the track index: [../tutorials/index.md](../tutorials/index.md)
 2. Pick a track page:
 - [Track A: Flow Fundamentals](../tutorials/track_a_flow_fundamentals.md)
