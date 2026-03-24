@@ -21,10 +21,10 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
-@flow_io
+@io
 @dataclass
 class RobotState:
     position: float
@@ -32,13 +32,13 @@ class RobotState:
     obstacle: bool
 
 
-@flow_io
+@io
 @dataclass
 class ReplanRequest:
     reason: str
 
 
-@flow_io
+@io
 @dataclass
 class Plan:
     command: str

@@ -27,22 +27,22 @@ from pathlib import Path
 from typing import Any
 
 from examples.tutorial._p0_utils import ensure_parent, format_table, percentile, utc_now_iso, write_json
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
-@flow_io
+@io
 @dataclass
 class SourceOut:
     sample: "SourceSample | None" = None
 
 
-@flow_io
+@io
 @dataclass
 class Stage1Out:
     sample: "Stage1Sample | None" = None
 
 
-@flow_io
+@io
 @dataclass
 class Stage2Out:
     sample: "Stage2Sample | None" = None

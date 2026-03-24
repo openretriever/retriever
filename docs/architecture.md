@@ -67,8 +67,7 @@ Note: `execute_ir(...)` accepts either an `IR` (logical graph) or an `ExecutionG
 (physical plan). When given an execution graph, it is lowered to a backend-friendly IR for execution.
 
 Backend boundary note:
-- Dora integration + Rust migration candidates: `docs/temp_notes/2025-12-17_dora_rust_boundary.md`
-- Native acceleration plan (Tier A/B): `docs/temp_notes/2025-12-17_native_acceleration_plan.md`
+- Dora integration and native acceleration details are tracked in internal design notes, not in the public docs surface.
 
 ---
 

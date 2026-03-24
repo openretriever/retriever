@@ -12,10 +12,10 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, flow_io, Rate, Trigger
+from retriever.flow import Flow, Pipeline, io, Rate, Trigger
 
 
-@flow_io
+@io
 @dataclass
 class CounterOutput:
     count: int
@@ -27,7 +27,7 @@ class Result:
     doubled: int
 
 
-@flow_io
+@io
 @dataclass
 class ProcessedOutput:
     result: Result

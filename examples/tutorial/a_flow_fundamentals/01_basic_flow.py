@@ -8,16 +8,16 @@ Run:
 """
 
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 
-@flow_io
+@io
 @dataclass
 class NumberInput:
     value: int
 
 
-@flow_io
+@io
 @dataclass
 class NumberOutput:
     result: int

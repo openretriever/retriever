@@ -103,7 +103,7 @@ class AddOut:
 
 Notes:
 - `@io` makes fields `Optional[...]` and adds runtime metadata (signals).
-- `@flow_io` remains available as a backward-compatible alias for older examples.
+- `@flow_io` remains available as a backward-compatible alias for older code.
 
 ### 2.2 Implement a `Flow[I, O]`
 
@@ -236,7 +236,7 @@ Track-aligned tutorials:
 - Execution monitoring: `examples/tutorial/d_closed_loop_state_feedback/09_execution_monitoring.py`
 
 Advanced examples:
-- See `examples/advanced/` for currently supported runtime examples. Prefer the tutorial tracks for public release material.
+- Prefer the tutorial tracks and `examples/control_demo.py` for the public runtime surface in this repo.
 
 ---
 

@@ -21,7 +21,7 @@ import math
 from dataclasses import dataclass
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 # =============================================================================
@@ -29,7 +29,7 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 # =============================================================================
 
 @retriever.register_type("Frame", category="vision", description="Mock camera frame summary", tags=["mock"])
-@flow_io
+@io
 @dataclass
 class Frame:
     frame_id: int
@@ -37,7 +37,7 @@ class Frame:
 
 
 @retriever.register_type("Pose2D", category="geometry", description="Tiny 2D pose type", tags=["robotics", "spatial"])
-@flow_io
+@io
 @dataclass
 class Pose2D:
     x: float
@@ -45,7 +45,7 @@ class Pose2D:
 
 
 @retriever.register_type("RobotStatus", category="robotics", description="Toy robot status", tags=["status", "monitoring"])
-@flow_io
+@io
 @dataclass
 class RobotStatus:
     battery: float

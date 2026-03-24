@@ -39,7 +39,7 @@ class DetectionsOut:
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
-- `@flow_io` remains available as a deprecated alias for older examples.
+- `@flow_io` remains available as a deprecated alias for older code.
 
 ---
 

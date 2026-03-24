@@ -24,22 +24,22 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, io
 
-@flow_io
+@io
 @dataclass
 class CameraData:
     frame: np.ndarray
     frame_id: int
 
 
-@flow_io
+@io
 @dataclass
 class DetectionCount:
     count: float
 
 
-@flow_io
+@io
 @dataclass
 class WindowMeanCount:
     mean_count: float

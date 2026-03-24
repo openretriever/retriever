@@ -19,11 +19,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 @retriever.register_type("CounterValue", category="examples", description="Tiny demo type")
-@flow_io
+@io
 @dataclass
 class CounterValue:
     value: int
