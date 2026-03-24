@@ -13,8 +13,11 @@ If you only read one page, read `docs/handbook.md` top-to-bottom.
 ## Start Here
 
 - `docs/handbook.md` — install → author → run → debug → record/replay → `on_lag` → examples
+- `docs/getting_started/quickstart.md` — 5-minute runtime mental model and first runnable graph
+- `docs/handbook.md` — install → author → run → debug → record/replay → `on_lag` → examples
 
-Optional deep dives (may be merged into the handbook over time):
+Key references:
+- `docs/getting_started/quickstart.md`
 - `docs/getting_started/install.md`
 - `docs/guide_runtime.md`
 - `docs/guide_flow.md`
