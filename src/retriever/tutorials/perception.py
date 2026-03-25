@@ -51,9 +51,10 @@ def _send_perception_blueprint(rr_module: Any) -> None:
             rr_module.TextDocument(
                 (
                     "# Perception Demo\n\n"
-                    "- Main view: camera frames with detector boxes overlaid.\n"
-                    "- `CameraSource/.../output/image`: raw camera stream.\n"
-                    "- `ColorDetector/.../output/image` + `bbox`: detection result.\n"
+                    "- Main view: annotated detector overlay image.\n"
+                    "- `.../output/overlay`: RGB frame with boxes already rendered.\n"
+                    "- `.../output/image`: raw camera stream.\n"
+                    "- `.../output/bbox`: raw box geometry.\n"
                     "- `ColorDetector/.../output/count`: number of detections.\n"
                     "- `.../mode`: `real` camera vs `mock` fallback.\n"
                 ),
@@ -63,15 +64,23 @@ def _send_perception_blueprint(rr_module: Any) -> None:
         )
         blueprint = rrb.Blueprint(
             rrb.Horizontal(
-                rrb.Spatial2DView(
-                    origin="/flows",
-                    contents=["/flows/**/output/image", "/flows/**/output/bbox"],
-                    name="Camera + Detections",
+                rrb.Tabs(
+                    rrb.TensorView(
+                        origin="/flows",
+                        contents="+ /flows/**/output/overlay",
+                        name="Detections",
+                    ),
+                    rrb.TensorView(
+                        origin="/flows",
+                        contents="+ /flows/**/output/image",
+                        name="Raw Camera",
+                    ),
+                    active_tab="Detections",
                 ),
                 rrb.Vertical(
                     rrb.TimeSeriesView(
                         origin="/flows",
-                        contents=["/flows/**/output/count"],
+                        contents="+ /flows/**/output/count",
                         name="Detection Count",
                     ),
                     rrb.TextDocumentView(
@@ -88,6 +97,29 @@ def _send_perception_blueprint(rr_module: Any) -> None:
         _PERCEPTION_BLUEPRINT_SENT = True
     except Exception as exc:
         print(f"[Perception Demo] Failed to send Rerun blueprint: {exc}")
+
+
+def _render_detection_overlay(frame_rgb: Any, detections: List["Detection"]) -> Any:
+    if cv2 is None or frame_rgb is None:
+        return frame_rgb
+
+    overlay_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR).copy()
+    for det in detections:
+        bbox = det.bbox
+        x, y = int(bbox.x), int(bbox.y)
+        w, h = int(bbox.width), int(bbox.height)
+        color = (0, 0, 255) if "red" in det.label else (255, 0, 0)
+        cv2.rectangle(overlay_bgr, (x, y), (x + w, y + h), color, 2)
+        cv2.putText(
+            overlay_bgr,
+            f"{det.label} {det.confidence:.2f}",
+            (x, max(20, y - 8)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            color,
+            2,
+        )
+    return cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
 
 
 def _stream_path() -> Optional[Path]:
@@ -188,6 +220,7 @@ class DetectionResults:
             return
 
         rr.log(f"{path}/image", rr.Image(self.image.frame))
+        rr.log(f"{path}/overlay", rr.Image(_render_detection_overlay(self.image.frame, self.detections)))
         rr.log(f"{path}/count", rr.Scalars([len(self.detections)]))
         rr.log(f"{path}/mode", rr.TextLog(self.mode))
         if not self.detections:
