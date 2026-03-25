@@ -12,6 +12,7 @@ from retriever.flow.types import EventBuffer
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
 from retriever.rt.backend.dora.serde import serialize_arrow
 from retriever.rt.backend.dora.serde import deserialize_arrow
+from retriever.lib.rerun import log_value_from_env
 from retriever.error import backend_error, ErrCode
 
 import logging
@@ -76,12 +77,16 @@ class DoraPublisher:
     Implements Publisher protocol.
     """
 
-    def __init__(self, send_fn: callable, port_name: str):
+    def __init__(self, send_fn: callable, port_name: str, *, rerun_path: Optional[str] = None):
         self._send_fn = send_fn
         self.port_name = port_name
+        self.rerun_path = rerun_path
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:
         """Publish message with timestamp."""
+        if self.rerun_path:
+            log_value_from_env(self.rerun_path, value, time_seconds=timestamp)
+
         arrow, metadata = serialize_arrow(value)
         metadata['_timestamp'] = str(timestamp)
 

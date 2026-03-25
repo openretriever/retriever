@@ -332,7 +332,13 @@ class DoraExecutor(multiprocessing.Process, Executor):
 
             # Create output publishers
             self.outputs = {
-                port: [DoraPublisher(self._send_output, port)]
+                port: [
+                    DoraPublisher(
+                        self._send_output,
+                        port,
+                        rerun_path=f"flows/{self.node_id}/output/{port}",
+                    )
+                ]
                 for port in self.output_ports
             }
 

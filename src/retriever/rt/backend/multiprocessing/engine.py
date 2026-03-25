@@ -126,11 +126,15 @@ class MPEngine(ExecutionEngine):
             for edge in self.ir.edges:
                 if edge.source.node == node.id:
                     port_name = edge.source.port
+                    channel = self.channels[edge.id]
 
                     # Support broadcasting
                     if port_name not in outputs:
                         outputs[port_name] = []
-                    outputs[port_name].append(self.channels[edge.id])
+                        channel.rerun_path = f"flows/{node.id}/output/{port_name}"
+                    else:
+                        channel.rerun_path = None
+                    outputs[port_name].append(channel)
 
             # Create executor with logging params
             log_params = None
