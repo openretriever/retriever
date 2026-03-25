@@ -90,6 +90,44 @@ pipe.close_stepper()
 2. Always provide `sync=...` on `pipe.connect(...)`, or set a global default with `retriever.init(default_sync=Latest())`.
 3. Start with `Rate` and `Trigger`; reach for more advanced clocks or adapters only when you have a concrete need.
 
+## Try The Camera Path
+
+If you want something visual right away, use the perception tutorial series.
+
+### 1. Run the Dora camera demo
+
+```bash
+pixi run demo-webcam-detection
+```
+
+This runs `camera -> detector -> display` with a real camera when available and falls back to a mock pattern otherwise.
+
+If Dora reports a stale coordinator or schema/version mismatch, restart Dora and retry:
+
+```bash
+pkill -9 dora || true
+pixi run demo-webcam-detection
+```
+
+### 2. Debug the same workflow in-process
+
+Use this when you want breakpoints inside `Flow.run(...)` without Dora or multiprocessing getting in the way:
+
+```bash
+pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 20 --sleep 0.05
+```
+
+Add `--show-window` if you want the OpenCV display window.
+
+### 3. Record and replay a short session
+
+```bash
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
+```
+
+This is the shortest path from live sensing to deterministic replay.
+
 ## What To Read Next
 
 - [Install](getting_started/install.md)
