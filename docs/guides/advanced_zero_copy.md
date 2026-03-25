@@ -4,85 +4,56 @@ title: "Zero-Copy PyTorch Transfer Guide"
 
 # Zero-Copy PyTorch Transfer Guide
 
-This guide explains how `retriever` achieves ultra-high performance zero-copy tensor transfer between PyTorch processes.
+Zero-copy transport matters only when tensors cross a process boundary. In Retriever, that is a backend concern,
+not something you manually implement inside `Flow.run(...)`.
 
-## 1. The Challenge
+For the dora runtime path, Retriever uses serializer helpers in
+`src/retriever/rt/backend/dora/serde.py` to avoid unnecessary copies when the payload type and environment support it.
 
-Transferring large neural network tensors (hundreds of MBs or GBs) between processes typically incurs massive overhead due to:
-1.  **Serialization**: Copying data into a buffer (pickling).
-2.  **Transport**: Sending bytes over a socket or pipe.
-3.  **Deserialization**: Reconstructing the tensor in the receiver.
+## What Users Need To Know
 
-For real-time (robotics) or high-throughput (training) applications, this latency is unacceptable.
+1. Return tensors normally from `@io` envelopes.
+2. CPU tensors and CUDA tensors use different transport paths.
+3. Zero-copy is best-effort across supported backends, not a blanket guarantee for every tensor layout.
+4. If transport cost matters, benchmark the backend you actually plan to run.
 
-## 2. The Solution: "Zero-Copy" Protocol
+## CPU Tensors
 
-"Zero-Copy" means the receiving process accesses the **exact same physical memory** as the sender, with no data duplication.
+For CPU tensors, Retriever follows the standard shared-memory path:
 
-### Architecture
+`torch.Tensor -> NumPy view -> Arrow/shared memory -> NumPy view -> torch.Tensor`
 
-The `retriever` framework (via its `dora` backend) natively handles this for you using `src/retriever/rt/backend/dora/serde.py`.
+This can stay zero-copy when the tensor layout is compatible with the conversion path.
 
-#### A. CPU Tensors (Shared Memory)
+## CUDA Tensors
 
-We rely on the standard integration path for the Python data ecosystem:
-**PyTorch** ↔ **NumPy** ↔ **PyArrow** ↔ **Shared Memory**
+For CUDA tensors, Retriever uses CUDA IPC handles instead of copying device memory back to CPU.
+That keeps the payload on the GPU, but it depends on backend support, driver setup, and device visibility in the worker processes.
 
-1.  **Sender**:
-    - `tensor.numpy()`: Returns a Numpy view of the tensor. This is **Zero-Copy** (pointer passing).
-    - `pa.array(numpy_array)`: Creates an Arrow array from the Numpy view. This is **Zero-Copy** (if memory is contiguous).
-    - **Transmission**: The Arrow array is placed in Shared Memory (RAM mapped to multiple processes).
-2.  **Receiver**:
-    - **Reception**: Maps the Shared Memory block.
-    - `arrow_array.to_numpy()`: Returns a Numpy view of the shared memory.
-    - `torch.from_numpy(numpy_array)`: Creates a PyTorch tensor wrapping that memory.
+## What Your Code Looks Like
 
-**Why not pass PyTorch directly to PyArrow?**
-PyArrow does not natively accept PyTorch Tensors (`pa.array(tensor)` fails). The `numpy()` bridge is the standard, efficient, and zero-overhead way to expose the memory buffer to Arrow.
-
-#### B. CUDA Tensors (IPC Handles)
-
-For GPU tensors, we cannot use system RAM. We use **CUDA IPC (Inter-Process Communication)**.
-
-1.  **Sender**:
-    - Captures a **CUDA IPC Handle** (a small descriptor pointing to the GPU memory address).
-    - Sends this highly lightweight handle (~bytes) via shared memory.
-2.  **Receiver**:
-    - Opens the IPC Handle.
-    - Maps the remote GPU memory directly into its own virtual address space.
-
-This allows different processes to operate on the same GPU memory buffer without ever moving data to the CPU.
-
-## 3. Implementation Details
-
-You do **not** need to handle this manually. The framework's serializer detects `torch.Tensor` objects automatically.
-
-**Your Code (app.py):**
 ```python
-# Sending
-return SourceOutput(hidden_state=my_tensor)
+from retriever.flow import Flow, io
 
-# Receiving
-my_tensor = input.hidden_state.to(device)
+
+@io
+class PolicyOut:
+    hidden_state: "torch.Tensor"
+
+
+class Policy(Flow[None, PolicyOut]):
+    def run(self, _):  # type: ignore[override]
+        return PolicyOut(hidden_state=self.model_state)
 ```
 
-**Framework Logic (serde.py):**
-```python
-if isinstance(value, torch.Tensor):
-    if value.device.type == "cuda":
-        # Create IPC Handle
-        return serialize_cuda_handle(value)
-    else:
-        # Create Numpy View -> Arrow
-        return pa.array(value.numpy()) 
-```
+You return the tensor normally. Retriever decides how to serialize it for the selected backend.
 
-## 4. Performance Verification
+## Caveats
 
-The public runtime repo does not currently ship a dedicated zero-copy benchmark script under `examples/`.
-To verify behavior, inspect the serializer path in `src/retriever/rt/backend/dora/serde.py` and benchmark
-your own tensor-producing pipeline under the `dora` backend.
+- `Pipeline.step(...)` runs in-process, so transport overhead is usually irrelevant there.
+- Non-contiguous tensors or unsupported environments may fall back to a copy.
+- Claims about throughput depend on payload size, backend, and device placement.
 
-**Expected Results:**
-- **Throughput**: Should be extremely high (> 10 GB/s, often >> 100 GB/s for large payloads).
-- **Explanation**: Since we only send a "pointer" (handle or offset), the transfer time is constant regardless of tensor size (O(1)), leading to effectively infinite MB/s for large tensors.
+## Validation
+
+If you need to verify behavior, inspect `src/retriever/rt/backend/dora/serde.py` and benchmark a real pipeline on the target backend rather than relying on a synthetic claim in the abstract.

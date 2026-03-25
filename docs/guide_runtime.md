@@ -86,7 +86,6 @@ pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ### `@io` types (ports)
 
 Flows communicate with typed `@io` classes. Each annotated field becomes a port.
-`@flow_io` remains as a backward-compatible alias, but new docs and examples should prefer `@io`.
 
 ### `Flow[I, O]` (node logic)
 

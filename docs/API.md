@@ -27,7 +27,7 @@ Import path:
 ```py
 from retriever.flow import (
     Flow, Pipeline, PipelineBuilder, TemporalFlow,
-    io, flow_io, is_flow_io,
+    io,
     Rate, Tick, Trigger, Hybrid,
     Latest, Hold, Window, Events,
     handle_service, call_service,

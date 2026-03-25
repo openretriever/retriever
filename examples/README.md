@@ -37,7 +37,7 @@ See also:
 - `docs/tutorials/index.md`
 - `docs/handbook.md`
 
-## Legacy Examples
+## Advanced Examples
 
-`examples/legacy/` is kept as an archive/reference surface.
-It is not the recommended starting point for public runtime users.
+Larger system-style demos live under `examples/advanced/`.
+Use them after the tutorial tracks, not as your first entrypoint.
