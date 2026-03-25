@@ -19,7 +19,7 @@ Pixi is the default environment manager for this repo.
 # Install pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run a tutorial demo (auto-resolves env)
+# Run a tutorial demo (auto-resolves env, streams to Rerun)
 pixi run demo-webcam-detection
 ```
 

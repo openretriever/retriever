@@ -9,7 +9,7 @@ Demonstrates perception pipeline with real camera input:
 Run:
   pixi run demo-webcam-detection
   # or:
-  pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --duration 10
+  pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --duration 10 --visualize rerun
 """
 
 from __future__ import annotations
@@ -29,12 +29,12 @@ from retriever.tutorials.perception import (
 )
 
 
-def build_perception_pipeline():
+def build_perception_pipeline(*, show_window: bool):
     print("Building perception pipeline:")
     print("  Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate\n")
     pipe = build_tutorial_perception_pipeline(
         use_real_camera=True,
-        show_window=True,
+        show_window=show_window,
         min_confidence=0.6,
         camera_width=640,
         camera_height=480,
@@ -48,6 +48,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Perception demo (camera -> detection -> display)")
     parser.add_argument("--backend", default="dora", choices=["dora", "multiprocessing"])
     parser.add_argument("--duration", type=float, default=20.0)
+    parser.add_argument(
+        "--visualize",
+        default="auto",
+        choices=["auto", "stdout", "window", "rerun", "both"],
+        help="Visualization mode. 'auto' uses Rerun for Dora and OpenCV window otherwise.",
+    )
     parser.add_argument(
         "--fresh-dora",
         dest="fresh_dora",
@@ -64,17 +70,39 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
+    mode = args.visualize
+    if mode == "auto":
+        mode = "rerun" if args.backend == "dora" else "window"
+
+    show_window = mode in {"window", "both"}
+    use_rerun = mode in {"rerun", "both"}
+
+    # OpenCV GUI windows from a Dora worker process are unreliable on macOS.
+    if args.backend == "dora" and show_window:
+        print(
+            "[Perception Demo] OpenCV windows are unreliable from Dora worker processes.\n"
+            "[Perception Demo] Disabling the window and using Rerun or the in-process stepper is recommended."
+        )
+        show_window = False
+    return show_window, use_rerun
+
+
 def main() -> None:
     args = parse_args()
 
     print("=" * 60)
     print("Perception Demo - Real Camera to Detection\n")
 
-    pipe = build_perception_pipeline()
+    show_window, use_rerun = _resolve_visualization(args)
+
+    pipe = build_perception_pipeline(show_window=show_window)
     backend_config = {}
     if args.backend == "dora" and args.fresh_dora:
         backend_config = {"dora_fresh": True}
         print("Using a fresh Dora runtime for this demo.\n")
+    if use_rerun:
+        print("Streaming typed outputs to Rerun.\n")
 
     print(f"Running for {args.duration:.1f} seconds...")
     print("Tip: Show colored objects (red/blue) to your camera!")
@@ -84,6 +112,7 @@ def main() -> None:
         duration=args.duration,
         blocking=True,
         backend_config=backend_config,
+        visualize="rerun" if use_rerun else None,
     )
     print("-" * 60)
 

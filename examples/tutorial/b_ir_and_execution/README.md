@@ -27,7 +27,7 @@ pixi run python -m examples.tutorial.b_ir_and_execution.02_ir_validation
 pixi run python -m examples.tutorial.b_ir_and_execution.03_execution_build
 pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
 pixi run python -m examples.tutorial.b_ir_and_execution.05_dora_simple
-pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception
+pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --visualize rerun
 pixi run python -m examples.tutorial.b_ir_and_execution.07_request_response
 pixi run python -m examples.tutorial.b_ir_and_execution.08_detection_window_stats --backend multiprocessing --duration 3
 pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark

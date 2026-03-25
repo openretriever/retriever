@@ -100,7 +100,7 @@ If you want something visual right away, use the perception tutorial series.
 pixi run demo-webcam-detection
 ```
 
-This runs `camera -> detector -> display` with a real camera when available and falls back to a mock pattern otherwise.
+This runs `camera -> detector -> display` with a real camera when available and falls back to a mock pattern otherwise. The default quickstart path streams typed outputs to a Rerun viewer.
 
 If Dora reports a stale coordinator or schema/version mismatch, restart Dora and retry:
 
@@ -118,6 +118,12 @@ pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_step
 ```
 
 Add `--show-window` if you want the OpenCV display window.
+
+If you want the shortest OpenCV window demo directly:
+
+```bash
+pixi run demo-webcam-window
+```
 
 ### 3. Record and replay a short session
 
