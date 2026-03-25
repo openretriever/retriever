@@ -25,6 +25,8 @@ except Exception:  # pragma: no cover - optional dependency
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 from retriever.pipeline_registry import register_pipeline
 
+_PERCEPTION_BLUEPRINT_SENT = False
+
 
 def _require_demo_deps() -> None:
     if cv2 is None or np is None:
@@ -32,6 +34,60 @@ def _require_demo_deps() -> None:
             "tutorial.perception requires demo dependencies (numpy, opencv-python). "
             "Install retriever with the demo extras to use this pipeline."
         )
+
+
+def _send_perception_blueprint(rr_module: Any) -> None:
+    global _PERCEPTION_BLUEPRINT_SENT
+
+    if _PERCEPTION_BLUEPRINT_SENT:
+        return
+    if not hasattr(rr_module, "send_blueprint") or not hasattr(rr_module, "blueprint"):
+        return
+
+    try:
+        rrb = rr_module.blueprint
+        rr_module.log(
+            "docs/perception",
+            rr_module.TextDocument(
+                (
+                    "# Perception Demo\n\n"
+                    "- Main view: camera frames with detector boxes overlaid.\n"
+                    "- `CameraSource/.../output/image`: raw camera stream.\n"
+                    "- `ColorDetector/.../output/image` + `bbox`: detection result.\n"
+                    "- `ColorDetector/.../output/count`: number of detections.\n"
+                    "- `.../mode`: `real` camera vs `mock` fallback.\n"
+                ),
+                media_type=rr_module.MediaType.MARKDOWN,
+            ),
+            static=True,
+        )
+        blueprint = rrb.Blueprint(
+            rrb.Horizontal(
+                rrb.Spatial2DView(
+                    origin="/flows",
+                    contents=["/flows/**/output/image", "/flows/**/output/bbox"],
+                    name="Camera + Detections",
+                ),
+                rrb.Vertical(
+                    rrb.TimeSeriesView(
+                        origin="/flows",
+                        contents=["/flows/**/output/count"],
+                        name="Detection Count",
+                    ),
+                    rrb.TextDocumentView(
+                        origin="docs/perception",
+                        name="Legend",
+                    ),
+                    row_shares=[0.55, 0.45],
+                ),
+                column_shares=[0.72, 0.28],
+            ),
+            collapse_panels=True,
+        )
+        rr_module.send_blueprint(blueprint)
+        _PERCEPTION_BLUEPRINT_SENT = True
+    except Exception as exc:
+        print(f"[Perception Demo] Failed to send Rerun blueprint: {exc}")
 
 
 def _stream_path() -> Optional[Path]:
@@ -116,6 +172,8 @@ class CameraData:
         if rr is None:
             return
         rr.log(f"{path}/image", rr.Image(self.image.frame))
+        rr.log(f"{path}/frame_id", rr.TextLog(str(self.image.frame_id)))
+        rr.log(f"{path}/mode", rr.TextLog(self.mode))
 
 
 @io
@@ -130,6 +188,8 @@ class DetectionResults:
             return
 
         rr.log(f"{path}/image", rr.Image(self.image.frame))
+        rr.log(f"{path}/count", rr.Scalars([len(self.detections)]))
+        rr.log(f"{path}/mode", rr.TextLog(self.mode))
         if not self.detections:
             rr.log(f"{path}/bbox", rr.Boxes2D([], labels=[]))
             return
@@ -177,6 +237,8 @@ class CameraSource(Flow[None, CameraData]):
 
     def init(self) -> None:
         _require_demo_deps()
+        if self.rr is not None:
+            _send_perception_blueprint(self.rr)
         self._initialized = True
         self.mode = "mock"
         if self.use_real_camera and cv2 is not None:

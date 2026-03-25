@@ -456,6 +456,48 @@ class IOStep:
                 continue
         return timestamp
 
+    def _log_composite_output_to_rerun(
+        self,
+        output_publishers: Dict[str, List["Publisher"]],
+        timestamp: float,
+    ) -> None:
+        """
+        Log the full typed output once before it is split into per-port publishers.
+
+        This preserves richer Rerun visualizations for composite @io outputs like
+        perception packets that know how to render images and overlays.
+        """
+        try:
+            from retriever.lib.rerun import log_value_from_env
+        except Exception:
+            return
+
+        base_paths = set()
+        for publisher_list in output_publishers.values():
+            for publisher in publisher_list:
+                rerun_path = getattr(publisher, "rerun_path", None)
+                if isinstance(rerun_path, str) and "/" in rerun_path:
+                    base_paths.add(rerun_path.rsplit("/", 1)[0])
+
+        if not base_paths:
+            return
+
+        def _is_rerun_loggable(value: Any) -> bool:
+            return callable(getattr(value, "log_to_rerun", None))
+
+        if isinstance(self.instance, IOView):
+            alias_instances = getattr(self.instance, "_instances", {})
+            for alias, value in alias_instances.items():
+                if not _is_rerun_loggable(value):
+                    continue
+                for base_path in base_paths:
+                    log_value_from_env(f"{base_path}/{alias}", value, time_seconds=timestamp)
+            return
+
+        if _is_rerun_loggable(self.instance):
+            for base_path in base_paths:
+                log_value_from_env(base_path, self.instance, time_seconds=timestamp)
+
     def publish(self, output_publishers: Dict[str, List["Publisher"]]) -> "IOStep":
         """
         Publish output signals to publishers.
@@ -478,6 +520,7 @@ class IOStep:
 
         # Default to execution time
         timestamp = self.now if self.now is not None else time.time()
+        self._log_composite_output_to_rerun(output_publishers, timestamp)
 
         # Publish each output field to all its publishers
         for field_name, publisher_list in output_publishers.items():
