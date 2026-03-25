@@ -1,5 +1,6 @@
 ---
 title: "🐕 Retriever Framework"
+slug: "intro"
 ---
 
 # 🐕 Retriever Framework
