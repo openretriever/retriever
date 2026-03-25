@@ -306,16 +306,18 @@ class DoraEngine(ExecutionEngine):
                 logger.info("Dora runtime started")
             else:
                 if fresh_runtime:
-                    raise RuntimeError(
-                        f"dora up failed while requesting a fresh runtime:\n"
+                    logger.warning(
+                        "dora up returned a non-zero exit code while requesting a fresh "
+                        "runtime; waiting for readiness anyway.\n"
                         f"stdout: {result.stdout}\n"
                         f"stderr: {result.stderr}"
                     )
                 # Runtime may already be running
-                logger.warning(
-                    f"dora up returned {result.returncode} "
-                    f"(may already be running): {result.stderr}"
-                )
+                else:
+                    logger.warning(
+                        f"dora up returned {result.returncode} "
+                        f"(may already be running): {result.stderr}"
+                    )
 
         # except FileNotFoundError:
         #     raise FileNotFoundError(
