@@ -48,6 +48,19 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Perception demo (camera -> detection -> display)")
     parser.add_argument("--backend", default="dora", choices=["dora", "multiprocessing"])
     parser.add_argument("--duration", type=float, default=20.0)
+    parser.add_argument(
+        "--fresh-dora",
+        dest="fresh_dora",
+        action="store_true",
+        default=True,
+        help="Destroy/restart the dora runtime before launch (default for this demo).",
+    )
+    parser.add_argument(
+        "--no-fresh-dora",
+        dest="fresh_dora",
+        action="store_false",
+        help="Reuse an existing dora runtime instead of forcing a clean one.",
+    )
     return parser.parse_args()
 
 
@@ -58,11 +71,20 @@ def main() -> None:
     print("Perception Demo - Real Camera to Detection\n")
 
     pipe = build_perception_pipeline()
+    backend_config = {}
+    if args.backend == "dora" and args.fresh_dora:
+        backend_config = {"dora_fresh": True}
+        print("Using a fresh Dora runtime for this demo.\n")
 
     print(f"Running for {args.duration:.1f} seconds...")
     print("Tip: Show colored objects (red/blue) to your camera!")
     print("-" * 60)
-    pipe.run(backend=args.backend, duration=args.duration, blocking=True)
+    pipe.run(
+        backend=args.backend,
+        duration=args.duration,
+        blocking=True,
+        backend_config=backend_config,
+    )
     print("-" * 60)
 
     print("\n" + "=" * 60)

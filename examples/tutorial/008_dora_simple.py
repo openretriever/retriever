@@ -79,6 +79,19 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--backend", default="dora", choices=["multiprocessing", "dora"])
     p.add_argument("--duration", type=float, default=3.0)
     p.add_argument("--print-ir", action="store_true", help="Print built IR (optional).")
+    p.add_argument(
+        "--fresh-dora",
+        dest="fresh_dora",
+        action="store_true",
+        default=True,
+        help="Destroy/restart the dora runtime before launch (default for this demo).",
+    )
+    p.add_argument(
+        "--no-fresh-dora",
+        dest="fresh_dora",
+        action="store_false",
+        help="Reuse an existing dora runtime instead of forcing a clean one.",
+    )
     return p.parse_args()
 
 
@@ -95,7 +108,13 @@ def main() -> None:
         print(ir.to_json())
         print(f"✓ IR created: {len(ir.nodes)} nodes, {len(ir.edges)} edges\n")
 
-    pipe.run(backend=args.backend, duration=args.duration, blocking=True)
+    backend_config = {"dora_fresh": True} if args.backend == "dora" and args.fresh_dora else None
+    pipe.run(
+        backend=args.backend,
+        duration=args.duration,
+        blocking=True,
+        backend_config=backend_config,
+    )
 
 
 if __name__ == "__main__":
