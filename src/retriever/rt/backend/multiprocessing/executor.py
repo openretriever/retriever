@@ -289,12 +289,12 @@ class MPExecutor(multiprocessing.Process, Executor):
 
         Lifecycle:
         1. Configure logging for this worker
-        2. Initialize flow (flow.init())
+        2. Initialize flow runtime (flow.reset())
         3. Reset scheduler
         4. Main execution loop:
            - Advance to next execution point (scheduler.next)
            - Sample inputs using adapters (Signal.sample)
-           - Transform via flow.run() (Signal.transform)
+           - Transform via flow.step() (Signal.transform)
            - Publish outputs (Signal.publish)
         5. Finalize flow (flow.finalize())
         6. Shutdown OTel
@@ -389,7 +389,7 @@ class MPExecutor(multiprocessing.Process, Executor):
                         now=result.now,
                     ) \
                         .sample(self.flow.input_types, self.adapters, now=result.now) \
-                        .transform(self.flow.run) \
+                        .transform(self.flow.step) \
                         .publish(self.outputs)
 
                 if self._is_controllable:

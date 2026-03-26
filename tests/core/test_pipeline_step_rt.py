@@ -12,24 +12,24 @@ class Value:
 
 
 class Counter(Flow[None, Value]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return Value(value=self.count)
 
 
 class Passthrough(Flow[Value, Value]):
-    def run(self, input: Value) -> Value:
+    def step(self, input: Value) -> Value:
         return Value(value=input.value)
 
 
 class Recorder(Flow[Value, None]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.seen = []
 
-    def run(self, input: Value) -> None:
+    def step(self, input: Value) -> None:
         self.seen.append(input.value)
         return None
 

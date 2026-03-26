@@ -58,12 +58,11 @@ def is_main_thread_flow_node(node: IRNode) -> bool:
 
 def initialize_flow_runtime(flow: Flow) -> None:
     """
-    Execute runtime init contract:
+    Execute runtime lifecycle bootstrap:
     1) optional __lazy_init__()
-    2) init()
+    2) reset()
     """
     lazy_init = getattr(flow, "__lazy_init__", None)
     if callable(lazy_init):
         lazy_init()
-    flow.init()
-
+    flow.reset()

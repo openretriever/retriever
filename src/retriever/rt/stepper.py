@@ -6,7 +6,7 @@ For interactive debugging, it's often useful to execute a pipeline *in-process* 
 advance it one discrete step at a time. This module provides that capability.
 
 The stepper intentionally models the same per-execution semantics as the backends:
-  sample → run → publish
+  sample → step → publish
 
 It is **not** a production backend; it is a lightweight debugging tool.
 """
@@ -141,7 +141,7 @@ class PipelineStepper:
         if self._initialized:
             return
         # Important for debugging: do not wrap exceptions raised by user code
-        # so debuggers can break at the original source location inside Flow.init().
+        # so debuggers can break at the original source location inside Flow.reset().
         for handle in self._flows.values():
             initialize_flow_runtime(handle.flow)
         self._initialized = True
@@ -253,13 +253,13 @@ class PipelineStepper:
             signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
             inputs_snapshot[node_id] = signal.instance
 
-            signal.transform(handle.flow.run)
+            signal.transform(handle.flow.step)
 
             # Basic support for generator-returning flows (services not supported here)
             if isinstance(signal.instance, types.GeneratorType):
                 raise RTError(
                     ErrCode.RT_INVALID_YIELD,
-                    "Pipeline.step() does not support generator-based flows (service calls) yet",
+                    "Pipeline.step() does not support generator-based Flow.step() service calls yet",
                     node=node_id,
                 )
 
@@ -331,15 +331,11 @@ def replay_flow(buffer: EventBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     Base = Flow[None, output_type]  # type: ignore[misc]
 
     class _ReplayFlow(Base):
-        def init(self) -> None:
-            self._i = 0
-            self.done = False
-
         def reset(self) -> None:
             self._i = 0
             self.done = False
 
-        def run(self, _):  # type: ignore[override]
+        def step(self, _):  # type: ignore[override]
             if self._i >= len(items):
                 self.done = True
                 return output_type()
@@ -387,7 +383,7 @@ class EventStreamRecorder(Generic[T]):
         self.buffer.append((res.now, out))
         return res
 
-    def run(
+    def step(
         self,
         *,
         steps: int,

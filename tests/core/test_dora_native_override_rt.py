@@ -16,12 +16,12 @@ class Val:
 
 
 class Src(Flow[None, Val]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return Val(x=1)
 
 
 class Add(Flow[Val, Val]):
-    def run(self, input: Val) -> Val:
+    def step(self, input: Val) -> Val:
         return Val(x=input.x + 1)
 
 
