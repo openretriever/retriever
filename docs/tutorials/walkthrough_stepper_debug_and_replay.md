@@ -37,10 +37,11 @@ Use this phase before trying multiprocessing/dora backend debugging.
 Goal: capture one real session that can be replayed repeatedly.
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
 ```
 
 Artifact:
+- `logs/perception.rrd`
 - `logs/perception.mcap`
 
 ## Phase 4: Replay the Same Session

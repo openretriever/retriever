@@ -83,13 +83,24 @@ Notes:
 
 ### 2.3 Unified Recording & Replay
 
-To record execution to an MCAP file, simply pass `record="..."`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
+To record execution, pass `record="..."` or a `RecordConfig(...)`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
 
 ```python
 pipe.run(
     duration=5.0,
-    record="session.mcap",
+    record="session.rrd",
     visualize="rerun"  # Optional: stream to Rerun live
+)
+```
+
+`.rrd` is the native Rerun inspection artifact. `.mcap` remains the replay/interchange artifact:
+
+```python
+from retriever import RecordConfig
+
+pipe.run(
+    duration=5.0,
+    record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
 )
 ```
 

@@ -155,18 +155,20 @@ convenient to store in `logs/` or attach to an issue.
 Record a short perception session:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
 ```
 
 Notes:
 
 - This tutorial tries to use a real camera and falls back to a synthetic stream if none is available.
-- The concrete thing you care about is that you now have `logs/perception.mcap`.
+- The concrete thing you care about is that you now have:
+  - `logs/perception.rrd` for Rerun inspection
+  - `logs/perception.mcap` for replay
 
 If you want to view the recording immediately, you can use the library helper:
 
 ```bash
-pixi run python -c "import retriever; retriever.view('logs/perception.mcap')"
+pixi run python -c "import retriever; retriever.view('logs/perception.rrd')"
 ```
 
 If you want to load it programmatically (for example, to build a notebook later), you can iterate the step stream:

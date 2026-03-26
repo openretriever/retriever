@@ -128,11 +128,13 @@ pixi run demo-webcam-window
 ### 3. Record and replay a short session
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
 ```
 
-This is the shortest path from live sensing to deterministic replay.
+This is the shortest path from live sensing to deterministic replay:
+- `logs/perception.rrd` is the inspection artifact for Rerun
+- `logs/perception.mcap` is the replay artifact
 
 ## What To Read Next
 
