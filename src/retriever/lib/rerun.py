@@ -90,6 +90,22 @@ def _connect_rerun(rr_module, address: str) -> None:
         raise AttributeError("rerun has no connect or connect_grpc")
 
 
+def _set_time_seconds_compat(rr_module, time_seconds: float) -> None:
+    """
+    Mirror Retriever's wall-clock timeline onto both Retriever's own timeline and
+    Rerun's default `log_time` timeline.
+
+    The viewer often defaults to `log_time`; mirroring here keeps image/tensor views
+    populated even when the user hasn't switched timelines manually.
+    """
+    if hasattr(rr_module, "set_time_seconds"):
+        rr_module.set_time_seconds("retriever_time", time_seconds)
+        rr_module.set_time_seconds("log_time", time_seconds)
+    else:
+        rr_module.set_time("retriever_time", timestamp=time_seconds)
+        rr_module.set_time("log_time", timestamp=time_seconds)
+
+
 def _ensure_rerun_from_env(default_app_id: str = "retriever_worker"):
     """
     Lazily connect to Rerun using Retriever's runtime environment variables.
@@ -144,10 +160,7 @@ def log_value_from_env(
                 rr_module.set_time("step", sequence=sequence)
 
         if time_seconds is not None:
-            if hasattr(rr_module, "set_time_seconds"):
-                rr_module.set_time_seconds("retriever_time", time_seconds)
-            else:
-                rr_module.set_time("retriever_time", timestamp=time_seconds)
+            _set_time_seconds_compat(rr_module, time_seconds)
 
         if isinstance(value, RerunLoggable):
             value.log_to_rerun(path)
@@ -401,10 +414,7 @@ class RerunManager:
         rr = _ensure_rerun()
 
         if time_seconds is not None:
-            if hasattr(rr, "set_time_seconds"):
-                rr.set_time_seconds("retriever_time", time_seconds)
-            else:
-                rr.set_time("retriever_time", timestamp=time_seconds)
+            _set_time_seconds_compat(rr, time_seconds)
 
         # Use protocol if available
         if isinstance(value, RerunLoggable):
@@ -477,10 +487,7 @@ class RerunManager:
             rr.set_time("step", sequence=step_idx)
 
         if hasattr(result, "now") and result.now is not None:
-            if hasattr(rr, "set_time_seconds"):
-                rr.set_time_seconds("retriever_time", result.now)
-            else:
-                rr.set_time("retriever_time", timestamp=result.now)
+            _set_time_seconds_compat(rr, result.now)
 
         # Log executed flows
         if hasattr(result, "executed") and result.executed:
@@ -504,10 +511,7 @@ class RerunManager:
             return
 
         rr = _ensure_rerun()
-        if hasattr(rr, "set_time_seconds"):
-            rr.set_time_seconds("retriever_time", time_seconds)
-        else:
-            rr.set_time("retriever_time", timestamp=time_seconds) # Rerun 0.28+
+        _set_time_seconds_compat(rr, time_seconds)
 
         if step is not None:
             if hasattr(rr, "set_time_sequence"):
@@ -688,7 +692,4 @@ def jump_to_time(time_seconds: float) -> None:
     Jump Rerun viewer to a specific timestamp.
     """
     rr = _ensure_rerun()
-    if hasattr(rr, "set_time_seconds"):
-        rr.set_time_seconds("retriever_time", time_seconds)
-    else:
-        rr.set_time("retriever_time", timestamp=time_seconds)
+    _set_time_seconds_compat(rr, time_seconds)
