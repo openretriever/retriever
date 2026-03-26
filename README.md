@@ -53,13 +53,13 @@ class Source(Flow[None, Number]):
         super().__init__()
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return Number(value=self.count)
 
 
 class Double(Flow[Number, Doubled]):
-    def run(self, input: Number) -> Doubled:
+    def step(self, input: Number) -> Doubled:
         return Doubled(value=input.value * 2)
 
 

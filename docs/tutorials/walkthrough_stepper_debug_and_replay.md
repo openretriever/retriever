@@ -23,7 +23,7 @@ What to look for:
 - deterministic step-by-step output
 - clear failing step if you inject failure (`--fail-at 3`)
 
-## Phase 2: Debug Inside `Flow.run()`
+## Phase 2: Debug Inside `Flow.step()`
 Goal: inspect intermediate values while stepping.
 
 1. Open the flow file used by the tutorial.

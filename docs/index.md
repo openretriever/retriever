@@ -30,12 +30,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
 
@@ -95,7 +95,7 @@ pipe.close_stepper()
 - **Type-Safe Composition**: Catch errors at development time, not runtime
 - **Multi-Backend Execution**: Local multiprocessing + dora-rs backend
 - **Registry + Plugins**: Entry-point based pipeline discovery (`retriever.plugins`)
-- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.run(...)`
+- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.step(...)`
 - **Record/Replay**: Stepper-first “rosbag-like” debug workflow
 
 ### 🎯 Framework Benefits

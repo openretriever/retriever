@@ -15,7 +15,7 @@ It is written as a single narrative because the workflow matters more than any s
 5. You turn the artifacts into a release decision (GO / NO-GO).
 
 Along the way you will see the actual interfaces you will use in real projects:
-`Flow.run(...)`, `Pipeline.connect(...)`, clocks (`Rate`, `Trigger`), adapters (`Latest`, `Hold`, `Window`),
+`Flow.step(...)`, `Pipeline.connect(...)`, clocks (`Rate`, `Trigger`), adapters (`Latest`, `Hold`, `Window`),
 and the stepper-first tools around recording and replay.
 
 ## Setup (One-Time) and How to Run These Examples
@@ -69,7 +69,7 @@ class Out:
     result: int
 
 class Double(Flow[In, Out]):
-    def run(self, input: In) -> Out:
+    def step(self, input: In) -> Out:
         return Out(result=input.value * 2)
 ```
 
@@ -82,14 +82,14 @@ Two pieces of vocabulary show up everywhere:
 Finally, there is a practical rule that drives the rest of this article:
 
 If you want to use a debugger, start with in-process stepping.
-Backends like `multiprocessing` and `dora` run flows in worker processes, so your editor breakpoint inside `Flow.run()`
+Backends like `multiprocessing` and `dora` run flows in worker processes, so your editor breakpoint inside `Flow.step()`
 often will not hit unless you attach to the worker.
 
 ## Part 1: Debug Logic With the Stepper (Breakpoints That Actually Hit)
 
 We will start with the smallest pipeline that still has the real shape: a source, a transformation, and a sink.
 
-Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py` and find this line in `DebugFlow.run(...)`:
+Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py` and find this line in `DebugFlow.step(...)`:
 
 ```python
 x = input.value  # put a breakpoint here
@@ -191,7 +191,7 @@ Run the replay mode:
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --show-window
 ```
 
-This replay is intentionally in-process. That is the point: it keeps the "set a breakpoint in `Flow.run()`" workflow
+This replay is intentionally in-process. That is the point: it keeps the "set a breakpoint in `Flow.step()`" workflow
 alive even when the original input came from hardware.
 
 If you prefer a headless run (no OpenCV window), drop `--show-window`.
@@ -315,7 +315,7 @@ pixi run verify-incident-replay
 
 If you worked through the tutorial in order, you now have a complete, end-to-end loop:
 
-- You can step through `Flow.run()` with a breakpoint and inspect typed payloads.
+- You can step through `Flow.step()` with a breakpoint and inspect typed payloads.
 - You can record and replay sessions so bugs are reproducible.
 - You can generate evidence artifacts under `logs/` that can be checked automatically.
 - You can run parity and incident gates and treat failures as release blockers.

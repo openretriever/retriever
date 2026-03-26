@@ -207,7 +207,7 @@ class ActionChunking(Chunking):
 
 ## 6. Runtime Details
 
-### Execution Step (`sample → run → publish`)
+### Execution Step (`sample → step → publish`)
 
 At each step `now`:
 1.  **Scheduler** (Dora/MP) triggers the node.

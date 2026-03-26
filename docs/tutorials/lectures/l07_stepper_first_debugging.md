@@ -18,7 +18,7 @@ title: "L07 Stepper-First Debugging"
 
 ## Core Concept
 - Mental model: debug logic in-process first, then validate behavior on runtime backends.
-- Key pitfall: trying to debug `Flow.run()` logic directly in multiprocessing mode.
+- Key pitfall: trying to debug `Flow.step()` logic directly in multiprocessing mode.
 
 ## Live Demo Mapping
 - Primary runnable file: `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`

@@ -5,7 +5,7 @@ title: "Zero-Copy PyTorch Transfer Guide"
 # Zero-Copy PyTorch Transfer Guide
 
 Zero-copy transport matters only when tensors cross a process boundary. In Retriever, that is a backend concern,
-not something you manually implement inside `Flow.run(...)`.
+not something you manually implement inside `Flow.step(...)`.
 
 For the dora runtime path, Retriever uses serializer helpers in
 `src/retriever/rt/backend/dora/serde.py` to avoid unnecessary copies when the payload type and environment support it.
@@ -42,7 +42,7 @@ class PolicyOut:
 
 
 class Policy(Flow[None, PolicyOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return PolicyOut(hidden_state=self.model_state)
 ```
 

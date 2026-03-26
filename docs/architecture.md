@@ -101,7 +101,7 @@ High-level user combinators (switch, until_event) live in `retriever/flow/frp.py
 It is the executor’s per-step helper:
 
 - sample (read per-port EventBuffers and apply Adapters at time `now`)
-- transform (call `flow.run(...)`)
+- transform (call `flow.step(...)`)
 - publish (emit output values with the step timestamp)
 
 To avoid duplicating event-stream logic, `Signal` delegates per-port sampling to `EventStream`.

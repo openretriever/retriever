@@ -148,7 +148,7 @@ class Detections:
 
 
 class DetectionFlow(Flow[CameraFrame, Detections]):
-    def run(self, image: CameraFrame) -> Detections:
+    def step(self, image: CameraFrame) -> Detections:
         return Detections(boxes=[])
 
 
@@ -219,7 +219,7 @@ with pipe:
 from retriever.flow import Flow
 
 class MyFlow(Flow[InputType, OutputType]):
-    def run(self, input_data: InputType) -> OutputType:
+    def step(self, input_data: InputType) -> OutputType:
         return output
 ```
 
@@ -282,7 +282,7 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def run(self, input: Observation) -> Command:
+    def step(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 
 
@@ -410,7 +410,7 @@ jobs:
        result: float
 
    class NewComponent(Flow[Input, Output]):
-       def run(self, input_data: Input) -> Output:
+       def step(self, input_data: Input) -> Output:
            return Output(result=input_data.value)
    ```
 

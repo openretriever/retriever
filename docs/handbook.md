@@ -111,17 +111,17 @@ from retriever.flow import Flow
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
 Lifecycle hooks:
-- `init()` / `finalize()` (optional) for resources
+- `reset()` / `finalize()` (optional) for resources and state
 - `reset()` (optional) for gym-like state (mainly for stepper workflows)
 
 ---
@@ -208,7 +208,7 @@ engine.stop()
 ## 5) Debugging: single-step execution (`Pipeline.step`)
 
 `Pipeline.step()` runs the pipeline **in the current Python process** and advances one discrete step.
-This is the recommended way to use the VS Code debugger inside `Flow.run()` logic.
+This is the recommended way to use the VS Code debugger inside `Flow.step(...)` logic.
 
 ```py
 res = pipe.step(dt=0.1)

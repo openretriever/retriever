@@ -35,13 +35,13 @@ class Source(Flow[None, Number]):
         super().__init__()
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return Number(value=self.count)
 
 
 class Double(Flow[Number, Doubled]):
-    def run(self, input: Number) -> Doubled:
+    def step(self, input: Number) -> Doubled:
         return Doubled(value=input.value * 2)
 
 
@@ -74,7 +74,7 @@ pipe.run(backend="dora", duration=1.0)
 
 ### Debugging
 
-Use `step(...)` when you want breakpoints inside `Flow.run(...)`:
+Use `step(...)` when you want breakpoints inside `Flow.step(...)`:
 
 ```python
 result = pipe.step(dt=0.5)
@@ -111,7 +111,7 @@ pixi run demo-webcam-detection
 
 ### 2. Debug the same workflow in-process
 
-Use this when you want breakpoints inside `Flow.run(...)` without Dora or multiprocessing getting in the way:
+Use this when you want breakpoints inside `Flow.step(...)` without Dora or multiprocessing getting in the way:
 
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 20 --sleep 0.05

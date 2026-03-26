@@ -55,7 +55,7 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def run(self, input: Observation) -> Command:
+    def step(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 ```
 

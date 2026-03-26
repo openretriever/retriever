@@ -4,7 +4,7 @@ Declarative service layer for inter-flow RPC.
 Yield-based model:
 - @handle_service: marks method as service provider
 - @call_service: declares service dependencies on a Flow class
-- ServiceCall: yield from Flow.run() to make service call
+- ServiceCall: yield from Flow.step() to make service call
 """
 
 import inspect
@@ -17,7 +17,7 @@ F = TypeVar('F')
 @dataclass(frozen=True)
 class ServiceCall:
     """
-    Yield from Flow.run() to make a service call.
+    Yield from Flow.step() to make a service call.
 
     Usage:
         response = yield ServiceCall(Provider.method, request)
