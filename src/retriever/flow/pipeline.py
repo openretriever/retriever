@@ -23,7 +23,7 @@ class Pipeline:
     `Pipeline` intentionally provides a small ergonomic surface:
     - connect flows with `handle.then(...)` (outside of FlowContext)
     - or connect explicitly with `pipeline.connect(a, b, ...)`
-    - build artifacts: `pipeline.build_ir()`, `pipeline.build_execution()`
+    - build artifacts: `pipeline.validate()`, `pipeline.build_execution()`
     - run on a backend: `pipeline.run(...)`
     """
 
@@ -44,7 +44,7 @@ class Pipeline:
         """
         Set a pipeline-level default for Rate/Hybrid lag handling.
 
-        The default is applied at `build_ir()` time to any node whose clock is still
+        The default is applied at `validate()` time to any node whose clock is still
         using the library default (`on_lag="warn"`).
 
         Per-node overrides are still possible by explicitly setting `Rate(on_lag=...)`
@@ -309,6 +309,44 @@ class Pipeline:
             self._stepper = PipelineStepper(self)
 
         return self._stepper.step(now=now, dt=dt)
+
+    def inject_input(
+        self,
+        node: Union[str, TemporalFlow],
+        port: str,
+        value: Any,
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """
+        Inject one external input value into a node for the next in-process step.
+
+        This is intended for composite/debugging workflows where a pipeline has
+        surfaced but unconnected input ports.
+        """
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+
+        node_id = node if isinstance(node, str) else self.get_node_id(node)
+        self._stepper.inject_input(node_id, port, value, timestamp=timestamp)
+        return self
+
+    def inject_inputs(
+        self,
+        values: Dict[str, Dict[str, Any]],
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """Inject a batch of external input values into surfaced pipeline ports."""
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+
+        self._stepper.inject_inputs(values, timestamp=timestamp)
+        return self
 
     def reset(self) -> None:
         """

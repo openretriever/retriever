@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 import pytest
 
 from retriever.config import RecordConfig
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.lib.mcap import _deserialize_value
 from retriever.recording import build_recording_sink, read_node_stream_from_recording
 from retriever.rt.stepper import EventStreamRecorder, StepResult
 
@@ -14,6 +16,12 @@ from retriever.rt.stepper import EventStreamRecorder, StepResult
 @dataclass
 class Value:
     value: int
+
+
+@flow_io
+@dataclass
+class Bias:
+    bias: int
 
 
 class Counter(Flow[None, Value]):
@@ -37,6 +45,15 @@ class Recorder(Flow[Value, None]):
     def step(self, input: Value) -> None:
         self.seen.append(input.value)
         return None
+
+
+class UnsupportedValue:
+    pass
+
+
+class BiasTrigger(Flow[Bias, Value]):
+    def step(self, input: Bias) -> Value:
+        return Value(value=input.bias + 1)
 
 
 def test_pipeline_step_propagates_values_in_process():
@@ -201,5 +218,65 @@ def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
     finally:
         sink.close()
 
-    buffer = read_node_stream_from_recording(record_path, "MaybeValue", output_type=Value | None)
+    buffer = read_node_stream_from_recording(record_path, "MaybeValue", output_type=Optional[Value])
     assert [None if value is None else value.value for _ts, value in buffer] == [None, 2]
+
+
+def test_mcap_recording_rejects_unsupported_values(tmp_path):
+    record_path = tmp_path / "unsupported_session.mcap"
+    sink = build_recording_sink(RecordConfig(path=record_path), app_id="unsupported_demo")
+    sink.open()
+    try:
+        with pytest.raises(TypeError, match="Unsupported value for stable MCAP recording"):
+            sink.write_step(
+                StepResult(
+                    now=0.1,
+                    executed=["BadNode"],
+                    inputs={},
+                    outputs={"BadNode": UnsupportedValue()},
+                ),
+                0,
+            )
+    finally:
+        sink.close()
+
+
+def test_mcap_reader_rejects_legacy_pickled_payloads():
+    import pickle
+
+    payload = pickle.dumps({"legacy": True})
+    with pytest.raises(RuntimeError, match="Legacy pickled MCAP payload"):
+        _deserialize_value(payload, "retriever.LegacyThing")
+
+
+def test_pipeline_can_inject_unconnected_trigger_input():
+    pipe = Pipeline("inject_demo")
+    triggered = BiasTrigger() @ Trigger("bias")
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(triggered, sink, sync=Latest())
+
+    try:
+        pipe.inject_input(triggered, "bias", 4)
+        res = pipe.step(dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert sink.flow.seen == [5]
+
+
+def test_pipeline_injected_inputs_are_cleared_on_reset():
+    pipe = Pipeline("inject_reset_demo")
+    triggered = BiasTrigger() @ Trigger("bias")
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(triggered, sink, sync=Latest())
+
+    try:
+        pipe.inject_inputs({pipe.get_node_id(triggered): {"bias": 7}})
+        pipe.reset()
+        res = pipe.step(dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert not any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert sink.flow.seen == []
