@@ -19,17 +19,17 @@ class ProcOut:
 
 
 class Source(Flow[None, SourceOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SourceOut(value=1)
 
 
 class Proc(Flow[SourceOut, ProcOut]):
-    def run(self, input: SourceOut) -> ProcOut:
+    def step(self, input: SourceOut) -> ProcOut:
         return ProcOut(value=input.value + 1)
 
 
 class Sink(Flow[ProcOut, None]):
-    def run(self, input: ProcOut) -> None:
+    def step(self, input: ProcOut) -> None:
         return None
 
 

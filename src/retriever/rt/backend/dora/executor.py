@@ -2,7 +2,7 @@
 DoraExecutor - Dora-based executor for flows.
 
 Wraps a Flow for execution in a separate process using dora.Node for communication.
-Flow.run() may yield ServiceCall for async RPC - executor drives the generator.
+Flow.step() may yield ServiceCall for async RPC - executor drives the generator.
 """
 
 import time
@@ -262,7 +262,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
         Lifecycle:
         1. Configure logging for this worker
         2. Create dora.Node(node_id)
-        3. Initialize flow (flow.init())
+        3. Initialize flow runtime (flow.reset())
         4. Create subscribers, publishers, scheduler
         5. Main event loop:
            - Route tick events to scheduler
@@ -473,7 +473,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
             now=now,
         ) \
             .sample(self.flow.input_types, self.adapters, now=now) \
-            .transform(self.flow.run) \
+            .transform(self.flow.step) \
             .fold(on=self._start_generator) \
             .publish(self.outputs)
 

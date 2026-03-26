@@ -170,7 +170,7 @@ ERROR_MSGS: Dict[ErrCode, str] = {
 
     # RT layer - General (3000-3099)
     ErrCode.RT_UNKNOWN: "Unknown runtime error",
-    ErrCode.RT_INVALID_YIELD: "Flow.run() yielded unexpected value",
+    ErrCode.RT_INVALID_YIELD: "Flow.step() yielded unexpected value",
     ErrCode.RT_SCHEDULER_LAG: "Runtime scheduler cannot keep up with requested rate",
 
     # RT layer - Serialization/Deserialization (3100-3199)

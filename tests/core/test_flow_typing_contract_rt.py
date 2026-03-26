@@ -92,7 +92,7 @@ class SplitAFlow(Flow[A, (C, D)]):
 
 
 class SinkC(Flow[C, None]):
-    def init(self):
+    def reset(self):
         self.values = []
 
     def step(self, input):
@@ -101,7 +101,7 @@ class SinkC(Flow[C, None]):
 
 
 class SinkD(Flow[D, None]):
-    def init(self):
+    def reset(self):
         self.values = []
 
     def step(self, input):
@@ -127,8 +127,8 @@ class LifecycleProbeFlow(Flow[None, C]):
     def __lazy_init__(self):
         self.events.append("lazy")
 
-    def init(self):
-        self.events.append("init")
+    def reset(self):
+        self.events.append("reset")
 
     def step(self, _):
         return C(c=11, timestamp=11.0)
@@ -145,8 +145,8 @@ class GuiLifecycleProbeFlow(Flow[None, C]):
     def __lazy_init__(self):
         self.events.append("lazy")
 
-    def init(self):
-        self.events.append("init")
+    def reset(self):
+        self.events.append("reset")
 
     def step(self, _):
         return C(c=1, timestamp=1.0)
@@ -300,10 +300,10 @@ def test_lazy_lifecycle_parity_stepper() -> None:
     pipe.step(dt=0.01)
 
     assert LifecycleProbeFlow.INIT_COUNT == 1
-    assert src.flow.events[:2] == ["lazy", "init"]
+    assert src.flow.events[:2] == ["lazy", "reset"]
 
 
-def test_lazy_init_then_init_order_mp() -> None:
+def test_lazy_init_then_reset_order_mp() -> None:
     ir = _build_single_flow_ir("mp_lifecycle")
     node = next(n for n in ir.nodes if n.type == "LifecycleProbeFlow")
     executor = MPExecutor(
@@ -314,7 +314,7 @@ def test_lazy_init_then_init_order_mp() -> None:
     executor._ensure_runtime_flow_initialized()
 
     assert isinstance(executor.flow, LifecycleProbeFlow)
-    assert executor.flow.events[:2] == ["lazy", "init"]
+    assert executor.flow.events[:2] == ["lazy", "reset"]
 
 
 def test_mp_runtime_instantiates_from_ir_in_worker() -> None:
@@ -332,7 +332,7 @@ def test_mp_runtime_instantiates_from_ir_in_worker() -> None:
         engine.stop()
 
 
-def test_lazy_init_then_init_order_dora() -> None:
+def test_lazy_init_then_reset_order_dora() -> None:
     pytest.importorskip("dora")
     from retriever.rt.backend.dora.executor import DoraExecutor
 
@@ -346,7 +346,7 @@ def test_lazy_init_then_init_order_dora() -> None:
     executor._ensure_runtime_flow_initialized()
 
     assert isinstance(executor.flow, LifecycleProbeFlow)
-    assert executor.flow.events[:2] == ["lazy", "init"]
+    assert executor.flow.events[:2] == ["lazy", "reset"]
 
 
 def test_dora_runtime_instantiates_from_ir_in_executor_context() -> None:

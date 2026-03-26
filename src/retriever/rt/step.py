@@ -226,7 +226,7 @@ class IOStep:
     Usage:
         IOStep(input_subscribers, fields_filter) \\
             .sample(input_type, adapters) \\
-            .transform(flow.run) \\
+            .transform(flow.step) \\
             .publish(output_publishers)
     """
 
@@ -331,7 +331,7 @@ class IOStep:
         """
         Transform signal by applying function.
 
-        Typically: fn = flow.run
+        Typically: fn = flow.step
         Transforms: input instance → output instance
 
         Args:

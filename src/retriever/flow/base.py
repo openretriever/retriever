@@ -5,6 +5,7 @@ A Flow is a signal function that transforms inputs to outputs.
 """
 
 from abc import ABC, abstractmethod
+import warnings
 from typing import get_origin, get_args
 from typing import ClassVar, Tuple, TypeVar, Generic, Optional, Type, TYPE_CHECKING
 from retriever.error import FlowError, ErrCode
@@ -213,12 +214,17 @@ class Flow(ABC, Generic[I, O]):
 
     def init(self) -> None:
         """
-        Initialize flow resources.
+        Deprecated alias for `reset()`.
 
-        Called once when flow process starts.
-        Override to load models, open connections, etc.
+        Runtime startup now calls `reset()` directly. This alias remains so older
+        flows and external callers that still invoke `init()` continue to work.
         """
-        pass
+        warnings.warn(
+            f"{type(self).__name__}.init() is deprecated. Override reset() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.reset()
 
     def init_config(self) -> dict:
         """
@@ -272,12 +278,27 @@ class Flow(ABC, Generic[I, O]):
 
     def reset(self) -> None:
         """
-        Reset internal state (optional).
+        Reset or initialize internal runtime state.
 
-        Retriever's long-term direction is to support "gym-like" stateful flows.
-        Today, most flows are stateless and can ignore this hook.
+        This is the primary lifecycle hook to override for flow-local state and
+        runtime resources. It is called:
+        - once when runtime execution starts
+        - again when `Pipeline.reset()` is requested
+
+        Backwards compatibility:
+        - If a subclass overrides `init()` but not `reset()`, `reset()` will call
+          that legacy `init()` implementation and emit a deprecation warning.
         """
+        if self._uses_deprecated_init():
+            warnings.warn(
+                f"{type(self).__name__} overrides init() instead of reset(). "
+                "Override reset() instead; init() is deprecated.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            self.init()
         return None
+
     def step(self, input: I) -> O:
         """
         Execute one step of flow computation.
@@ -307,7 +328,6 @@ class Flow(ABC, Generic[I, O]):
         """
         # Check if subclass overrides run() but not step() - backwards compat
         if self._uses_deprecated_run():
-            import warnings
             warnings.warn(
                 f"{type(self).__name__} overrides run() instead of step(). "
                 "Override step() instead; run() is deprecated.",
@@ -318,6 +338,19 @@ class Flow(ABC, Generic[I, O]):
         raise NotImplementedError(
             f"{type(self).__name__} must implement step()"
         )
+
+    def _uses_deprecated_init(self) -> bool:
+        """Check if subclass overrides init() but not reset()."""
+        reset_cls = None
+        init_cls = None
+        for cls in type(self).__mro__:
+            if "reset" in cls.__dict__ and reset_cls is None:
+                reset_cls = cls
+            if "init" in cls.__dict__ and init_cls is None:
+                init_cls = cls
+            if reset_cls and init_cls:
+                break
+        return init_cls is not Flow and reset_cls is Flow
 
     def _uses_deprecated_run(self) -> bool:
         """Check if subclass overrides run() but not step()."""
@@ -336,10 +369,16 @@ class Flow(ABC, Generic[I, O]):
 
     def run(self, input: I) -> O:
         """
-        Alias for step().
+        Deprecated alias for step().
 
-        Deprecated: Override step() in subclasses instead.
+        Runtime execution now calls `step()` directly. This alias remains for
+        backwards compatibility with older flows and direct call sites.
         """
+        warnings.warn(
+            f"{type(self).__name__}.run() is deprecated. Call or override step() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.step(input)
 
     def forward(self, input: I) -> O:
@@ -407,7 +446,7 @@ class Flow(ABC, Generic[I, O]):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        # Runtime objects must be re-initialized in init()
+        # Runtime objects must be re-initialized in reset().
         pass
 
 

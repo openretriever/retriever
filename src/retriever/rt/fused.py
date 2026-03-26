@@ -108,21 +108,21 @@ class FusedFlow(Flow[FusedAny, FusedAny]):
                 f"{edge['src_port']} → {edge['dst_port']}"
             )
 
-    def init(self):
-        """Initialize all sub-flows in order"""
+    def reset(self):
+        """Reset all sub-flows in order."""
         for i, flow in enumerate(self.sub_flows):
             try:
                 initialize_flow_runtime(flow)
-                logger.debug(f"Initialized sub-flow [{i}]: {self.node_ids[i]}")
+                logger.debug(f"Reset sub-flow [{i}]: {self.node_ids[i]}")
             except Exception as e:
                 raise FlowError(
                     ErrCode.FLOW_INIT_FAILED,
-                    f"Sub-flow {self.node_ids[i]} init failed: {e}",
+                    f"Sub-flow {self.node_ids[i]} reset failed: {e}",
                     node_id=self.node_ids[i],
                     index=i
                 )
 
-    def run(self, input: Any) -> Any:
+    def step(self, input: Any) -> Any:
         """
         Chain execution through all sub-flows with port mapping.
 
@@ -133,7 +133,7 @@ class FusedFlow(Flow[FusedAny, FusedAny]):
             Output from last sub-flow
         """
         try:
-            data = self.sub_flows[0].run(input)
+            data = self.sub_flows[0].step(input)
         except Exception as e:
             raise FlowError(
                 ErrCode.FLOW_EXECUTION_FAILED,
@@ -153,7 +153,7 @@ class FusedFlow(Flow[FusedAny, FusedAny]):
             )
 
             try:
-                data = self.sub_flows[i].run(next_input)
+                data = self.sub_flows[i].step(next_input)
             except Exception as e:
                 raise FlowError(
                     ErrCode.FLOW_EXECUTION_FAILED,
