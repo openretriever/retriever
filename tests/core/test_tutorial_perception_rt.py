@@ -9,6 +9,7 @@ from retriever.tutorials.perception import (
     ColorDetector,
     emit_replay_finished,
     emit_replay_started,
+    load_camera_buffer_from_recording,
 )
 
 
@@ -88,3 +89,32 @@ def test_tutorial_perception_replay_helpers_emit_semantic_events(
     assert events == ["Perception.ReplayStarted", "Perception.ReplayFinished"]
     assert str((rows[0].get("payload") or {}).get("recording_path")) == "logs/perception.mcap"
     assert int((rows[1].get("payload") or {}).get("steps_completed", 0) or 0) == 7
+
+
+def test_tutorial_perception_loads_camera_buffer_from_rrd(tmp_path: Path) -> None:
+    import numpy as np
+    import pytest
+
+    rr = pytest.importorskip("rerun")
+
+    path = tmp_path / "perception.rrd"
+    rr.init("perception_test", spawn=False)
+    rr.save(str(path))
+    rr.set_time_sequence("step", 0)
+
+    frame = np.zeros((3, 4, 3), dtype=np.uint8)
+    frame[:, :, 0] = 10
+    frame[:, :, 1] = 20
+    frame[:, :, 2] = 30
+    rr.log("flows/CameraSource_test/output/image", rr.Image(frame))
+    rr.log("flows/CameraSource_test/output/frame_id", rr.TextLog("11"))
+    rr.log("flows/CameraSource_test/output/mode", rr.TextLog("mock"))
+    rr.disconnect()
+
+    buffer = load_camera_buffer_from_recording(path)
+    assert len(buffer) == 1
+    _ts, camera = buffer[0]
+    assert camera.image.frame_id == 11
+    assert camera.mode == "mock"
+    assert camera.image.frame.shape == (3, 4, 3)
+    assert int(camera.image.frame[0, 0, 1]) == 20
