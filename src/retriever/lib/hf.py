@@ -47,7 +47,7 @@ class HFFlow(Flow[TransformerInput, TransformerOutput]):
         self.kwargs = kwargs
         self.is_pipeline = False
         
-    def init(self):
+    def reset(self):
         if torch is None:
             raise ImportError("PyTorch/Transformers not installed.")
             
@@ -64,7 +64,7 @@ class HFFlow(Flow[TransformerInput, TransformerOutput]):
                 self.target.to(self.device)
             logger.info(f"[HF] Wrapped Module: {type(self.target).__name__}")
             
-    def run(self, inputs: TransformerInput) -> TransformerOutput:
+    def step(self, inputs: TransformerInput) -> TransformerOutput:
         # If inputs is TransformerInput, unpack it
         if hasattr(inputs, "text") and hasattr(inputs, "image"):
              # It's likely TransformerInput

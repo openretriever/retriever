@@ -83,7 +83,7 @@ class JaxFlow(Flow[JaxIO, JaxIO]):
             
         return config
 
-    def init(self):
+    def reset(self):
         if self._module_def is None:
             raise RuntimeError("JaxFlow has no module definition.")
             
@@ -103,7 +103,7 @@ class JaxFlow(Flow[JaxIO, JaxIO]):
         # JIT compile the apply function for performance
         self._apply_fn = jax.jit(self.module.apply)
 
-    def run(self, input_data: JaxIO) -> Optional[JaxIO]:
+    def step(self, input_data: JaxIO) -> Optional[JaxIO]:
         if input_data.inp is None:
             return None
         

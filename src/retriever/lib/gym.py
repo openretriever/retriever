@@ -47,7 +47,7 @@ class GymEnvFlow(Flow[GymIO, GymObservation]):
         pickled = codecs.encode(pickle.dumps(self._env_spec), "base64").decode()
         return {"_pickled_spec": pickled}
 
-    def init(self):
+    def reset(self):
         env_spec = self._env_spec
         self.env = None
         self.env_name = "Unknown"
@@ -68,7 +68,7 @@ class GymEnvFlow(Flow[GymIO, GymObservation]):
         logger.info(f"[{self.env_name}] Gym Wrapper initialized")
         self._obs, _ = self.env.reset()
 
-    def run(self, input_data: GymIO) -> Optional[GymObservation]:
+    def step(self, input_data: GymIO) -> Optional[GymObservation]:
         if input_data.action is None:
             return None
             
