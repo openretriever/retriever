@@ -268,10 +268,14 @@ class CameraSource(Flow[None, CameraData]):
         self.mode = "unknown"
         self._initialized = False
 
-    def init(self) -> None:
+    def reset(self) -> None:
         _require_demo_deps()
+        if self.cap is not None:
+            self.cap.release()
+            self.cap = None
         if self.rr is not None:
             _send_perception_blueprint(self.rr)
+        self.frame_count = 0
         self._initialized = True
         self.mode = "mock"
         if self.use_real_camera and cv2 is not None:
@@ -307,9 +311,9 @@ class CameraSource(Flow[None, CameraData]):
             self.cap = None
             print("[CameraSource] Camera released")
 
-    def run(self, _) -> CameraData:
+    def step(self, _) -> CameraData:
         if not self._initialized:
-            self.init()
+            self.reset()
         _require_demo_deps()
         self.frame_count += 1
 
@@ -346,7 +350,7 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
         super().__init__()
         self.min_confidence = float(min_confidence)
 
-    def run(self, input: CameraData) -> DetectionResults:
+    def step(self, input: CameraData) -> DetectionResults:
         _require_demo_deps()
         detections: List[Detection] = []
         frame = input.image.frame
@@ -406,7 +410,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
         super().__init__()
         self.show_window = bool(show_window)
 
-    def init(self) -> None:
+    def reset(self) -> None:
         if self.show_window and cv2 is not None:
             try:
                 cv2.namedWindow("Perception Demo", cv2.WINDOW_NORMAL)
@@ -419,7 +423,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
         if self.show_window and cv2 is not None:
             cv2.destroyAllWindows()
 
-    def run(self, input: DetectionResults) -> None:
+    def step(self, input: DetectionResults) -> None:
         if not input.image:
             return None
 
@@ -465,7 +469,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
 
 
 class Drain(Flow[CameraData, None]):
-    def run(self, _input: CameraData) -> None:
+    def step(self, _input: CameraData) -> None:
         return None
 
 
