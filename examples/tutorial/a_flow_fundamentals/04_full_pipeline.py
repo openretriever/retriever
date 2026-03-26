@@ -54,7 +54,7 @@ class SensorFlow(Flow[None, SensorData]):
         super().__init__()
         self.counter = 0
 
-    def run(self, _):
+    def step(self, _):
         self.counter += 1
         result = SensorData(value=float(self.counter), status=1)
         print(f"  [Sensor] value={result.value}, status={result.status}")
@@ -63,7 +63,7 @@ class SensorFlow(Flow[None, SensorData]):
 
 class ProcessorFlow(Flow[SensorData, ProcessedData]):
     """Processes sensor data"""
-    def run(self, input: SensorData):
+    def step(self, input: SensorData):
         result = ProcessedData(result=input.value * 2)
         print(f"  [Processor] {input.value} × 2 = {result.result}")
         return result
@@ -76,7 +76,7 @@ class AggregatorFlow(Flow[ProcessedData, ProcessedData]):
         self.feedback_adjustment = 0.0
         self.last_result = 0.0
 
-    def run(self, input: ProcessedData):
+    def step(self, input: ProcessedData):
         # Update state from signals
         if input._has_signal('adjustment'):
             self.feedback_adjustment = input._get_signal('adjustment')
@@ -95,7 +95,7 @@ class AggregatorFlow(Flow[ProcessedData, ProcessedData]):
 
 class FeedbackFlow(Flow[ProcessedData, FeedbackData]):
     """Computes feedback adjustment"""
-    def run(self, input: ProcessedData):
+    def step(self, input: ProcessedData):
         # Calculate 10% feedback
         adjustment = input.result * 0.1
         result = FeedbackData(adjustment=adjustment)
@@ -105,7 +105,7 @@ class FeedbackFlow(Flow[ProcessedData, FeedbackData]):
 
 class OutputFlow(Flow[ProcessedData, None]):
     """Final output sink"""
-    def run(self, input: ProcessedData):
+    def step(self, input: ProcessedData):
         print(f"  [Output] ✓ Final={input.result:.2f}\n")
         return None
 

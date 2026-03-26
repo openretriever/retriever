@@ -70,10 +70,10 @@ class Stage2Sample:
 
 
 class DeterministicSource(Flow[None, SourceOut]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.seq = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.seq += 1
         source_ts = time.time()
         signal = math.sin(self.seq * 0.17) + math.cos(self.seq * 0.11)
@@ -81,7 +81,7 @@ class DeterministicSource(Flow[None, SourceOut]):
 
 
 class StageOne(Flow[SourceOut, Stage1Out]):
-    def run(self, input: SourceOut) -> Stage1Out:
+    def step(self, input: SourceOut) -> Stage1Out:
         if input.sample is None:
             return Stage1Out()
         value = (input.sample.signal * 1.35) + 0.42
@@ -95,7 +95,7 @@ class StageOne(Flow[SourceOut, Stage1Out]):
 
 
 class StageTwo(Flow[Stage1Out, Stage2Out]):
-    def run(self, input: Stage1Out) -> Stage2Out:
+    def step(self, input: Stage1Out) -> Stage2Out:
         if input.sample is None:
             return Stage2Out()
         value = math.tanh(input.sample.signal) * 2.5
@@ -109,14 +109,14 @@ class StageTwo(Flow[Stage1Out, Stage2Out]):
 
 
 class MetricsSink(Flow[Stage2Out, None]):
-    def init(self) -> None:
+    def reset(self) -> None:
         out_jsonl = os.environ.get("TUT032_OUTPUT_JSONL")
         if not out_jsonl:
             raise RuntimeError("TUT032_OUTPUT_JSONL is not set")
         self._out_jsonl = Path(out_jsonl)
         ensure_parent(self._out_jsonl)
 
-    def run(self, input: Stage2Out) -> None:
+    def step(self, input: Stage2Out) -> None:
         if input.sample is None:
             return None
         sink_ts = time.time()

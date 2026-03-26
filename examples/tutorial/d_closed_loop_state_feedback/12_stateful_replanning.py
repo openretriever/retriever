@@ -44,13 +44,10 @@ class ReplanScenario(Flow[None, WorldState]):
     def init_config(self) -> dict:
         return {"dt": self.dt}
 
-    def init(self) -> None:
-        self._step = 0
-
     def reset(self) -> None:
         self._step = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._step += 1
         t_sim = self._step * self.dt
 
@@ -62,16 +59,13 @@ class ReplanScenario(Flow[None, WorldState]):
 class StatefulReplanner(Flow[WorldState, PlanEvent]):
     """Replanner with internal state; emits only when the plan changes."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._current_plan = "direct_v0"
         self._failure_count = 0
         self._last_obstacle = False
         self._started = False
 
-    def reset(self) -> None:
-        self.init()
-
-    def run(self, input: WorldState) -> PlanEvent:
+    def step(self, input: WorldState) -> PlanEvent:
         if input.obstacle is None or input.t_sim is None:
             return PlanEvent()
 
@@ -115,7 +109,7 @@ class StatefulReplanner(Flow[WorldState, PlanEvent]):
 
 
 class PlanPrinter(Flow[PlanEvent, None]):
-    def run(self, input: PlanEvent) -> None:
+    def step(self, input: PlanEvent) -> None:
         if input.plan is None or input.t_sim is None:
             return None
         print(

@@ -19,7 +19,7 @@ class Data:
 
 
 class SimpleFlow(Flow[Data, Data]):
-    def run(self, input: Data):
+    def step(self, input: Data):
         return Data(value=input.value * 2)
 
 

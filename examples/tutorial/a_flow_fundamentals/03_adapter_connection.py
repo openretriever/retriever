@@ -35,12 +35,12 @@ class ProcessedResult:
 
 
 class SensorFlow(Flow[None, SensorData]):
-    def run(self, _):
+    def step(self, _):
         return SensorData(temperature=25.5)
 
 
 class ProcessFlow(Flow[ProcessInput, ProcessedResult]):
-    def run(self, input: ProcessInput):
+    def step(self, input: ProcessInput):
         return ProcessedResult(value=input.temp * 2)
 
 

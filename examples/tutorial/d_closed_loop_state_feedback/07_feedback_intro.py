@@ -56,11 +56,11 @@ class IntegratorPlant(Flow[Action, Observation]):
     DONE_TOL = 0.05
     ENV_DELAY_S = 0.0
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.x = 0.0
         self.step_count = 0
 
-    def run(self, input: Action) -> Observation:
+    def step(self, input: Action) -> Observation:
         if self.ENV_DELAY_S > 0:
             time.sleep(self.ENV_DELAY_S)
 
@@ -85,7 +85,7 @@ class PController(Flow[Observation, Action]):
     K_P = 1.5
     CTRL_DELAY_S = 0.0
 
-    def run(self, input: Observation) -> Action:
+    def step(self, input: Observation) -> Action:
         if self.CTRL_DELAY_S > 0:
             time.sleep(self.CTRL_DELAY_S)
 
@@ -96,10 +96,10 @@ class PController(Flow[Observation, Action]):
 
 
 class PrintStep(Flow[Observation, None]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self._i = 0
 
-    def run(self, input: Observation) -> None:
+    def step(self, input: Observation) -> None:
         self._i += 1
         tr = input.transition
         print(

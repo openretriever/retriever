@@ -33,10 +33,10 @@ class PoseEnvelope:
 
 
 class PoseSource(Flow[None, PoseEnvelope]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self._seq = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._seq += 1
         stamp_ns = self._seq * 100_000_000
         msg = PoseStamped(
@@ -50,7 +50,7 @@ class PoseSource(Flow[None, PoseEnvelope]):
 
 
 class CameraToBase(Flow[PoseEnvelope, PoseEnvelope]):
-    def run(self, input: PoseEnvelope) -> PoseEnvelope:
+    def step(self, input: PoseEnvelope) -> PoseEnvelope:
         if input.pose is None:
             return PoseEnvelope()
 

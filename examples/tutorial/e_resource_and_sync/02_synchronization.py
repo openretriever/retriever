@@ -52,20 +52,20 @@ class Frame:
     timestamp: float
 
 class Camera(Flow[None, Frame]):
-    def init(self):
+    def reset(self):
         self.idx = 0
-    def run(self, _):
+    def step(self, _):
         self.idx += 1
         now = time.time()
         return Frame(self.idx, now)
 
 class Detector(Flow[Frame, Detection]):
-    def run(self, frame: Frame):
+    def step(self, frame: Frame):
         # Fast processing
         return Detection(f"obj_{frame.id}", [0,0,0,0], timestamp=frame.timestamp)
 
 class Segmenter(Flow[Frame, Segmentation]):
-    def run(self, frame: Frame):
+    def step(self, frame: Frame):
         # Slow processing delay
         time.sleep(0.05) 
         return Segmentation(f"mask_{frame.id}", timestamp=frame.timestamp)
@@ -91,7 +91,7 @@ class SyncBundler(Flow[SyncInput, NativeResult]):
     Because we use @Synchronized and Exact adapters, 
     input.det and input.seg are guaranteed to be from the same timestamp (approx).
     """
-    def run(self, input: SyncInput) -> NativeResult:
+    def step(self, input: SyncInput) -> NativeResult:
         # print(f"DEBUG: SyncBundler.run t={input.det_timestamp}")
         
         # We can trust they are present and aligned!
@@ -148,7 +148,7 @@ def main():
     pipe.run(duration=3.0)
 
 class Printer(Flow[NativeResult, None]):
-    def run(self, res: NativeResult):
+    def step(self, res: NativeResult):
         print(f"[Native] Bundled! TS={res.det.timestamp:.3f}", flush=True)
 
 if __name__ == "__main__":

@@ -43,10 +43,10 @@ class SmoothedOut:
 class Sensor(Flow[None, SensorOut]):
     """Fast 30Hz source producing a noisy-ish sinusoid."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         # Deterministic "noise" so the example is stable.
         base = math.sin(self.i * 0.2)
@@ -57,7 +57,7 @@ class Sensor(Flow[None, SensorOut]):
 class Smoother(Flow[SensorOut, SmoothedOut]):
     """10Hz consumer that samples a 0.5s window mean from the upstream buffer."""
 
-    def run(self, input: SensorOut) -> SmoothedOut:
+    def step(self, input: SensorOut) -> SmoothedOut:
         if input.x is None:
             return SmoothedOut()
         return SmoothedOut(x_mean=float(input.x))
@@ -66,11 +66,11 @@ class Smoother(Flow[SensorOut, SmoothedOut]):
 class Printer(Flow[SmoothedOut, None]):
     """1Hz observer that prints the current smoothed value."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.t0 = time.time()
         self.k = 0
 
-    def run(self, input: SmoothedOut) -> None:
+    def step(self, input: SmoothedOut) -> None:
         if input.x_mean is None:
             return None
         self.k += 1

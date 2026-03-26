@@ -52,7 +52,7 @@ class SummaryOut:
 
 
 class CommandSource(Flow[None, CommandIn]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.commands = [
             CommandIn(action="move", dx=1.0, dy=0.0),
             CommandIn(action="move", dx=1.0, dy=1.0),
@@ -61,10 +61,7 @@ class CommandSource(Flow[None, CommandIn]):
         ]
         self.idx = 0
 
-    def reset(self) -> None:
-        self.idx = 0
-
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         if self.idx >= len(self.commands):
             return CommandIn()
         cmd = self.commands[self.idx]
@@ -73,15 +70,11 @@ class CommandSource(Flow[None, CommandIn]):
 
 
 class Navigator(Flow[CommandIn, PoseOut]):
-    def init(self) -> None:
-        self.x = 0.0
-        self.y = 0.0
-
     def reset(self) -> None:
         self.x = 0.0
         self.y = 0.0
 
-    def run(self, input: CommandIn) -> PoseOut:
+    def step(self, input: CommandIn) -> PoseOut:
         if input.action is None:
             return PoseOut()
         moved = False
@@ -93,13 +86,10 @@ class Navigator(Flow[CommandIn, PoseOut]):
 
 
 class BatteryManager(Flow[CommandIn, EnergyOut]):
-    def init(self) -> None:
-        self.energy = 50.0
-
     def reset(self) -> None:
         self.energy = 50.0
 
-    def run(self, input: CommandIn) -> EnergyOut:
+    def step(self, input: CommandIn) -> EnergyOut:
         if input.action is None:
             return EnergyOut()
         status = "idle"
@@ -117,7 +107,7 @@ class BatteryManager(Flow[CommandIn, EnergyOut]):
 
 
 class Merger(Flow[MergeIn, SummaryOut]):
-    def run(self, input: MergeIn) -> SummaryOut:
+    def step(self, input: MergeIn) -> SummaryOut:
         if input.x is None or input.y is None or input.energy is None:
             return SummaryOut()
         note = input.status or "ok"
@@ -127,7 +117,7 @@ class Merger(Flow[MergeIn, SummaryOut]):
 
 
 class Printer(Flow[SummaryOut, None]):
-    def run(self, input: SummaryOut) -> None:
+    def step(self, input: SummaryOut) -> None:
         if input.x is None or input.y is None or input.energy is None:
             return None
         print(

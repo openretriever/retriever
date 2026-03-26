@@ -2,7 +2,7 @@
 Perception debugging with `Pipeline.step()` (in-process).
 
 This is the simplest way to use the VS Code debugger to step into Flow logic:
-set breakpoints inside `ColorDetector.run()` or `_detect_from_mask()` and run this file.
+set breakpoints inside `ColorDetector.step()` or `_detect_from_mask()` and run this file.
 
 Unlike `Pipeline.run(backend=...)`, this does *not* spawn child processes.
 
@@ -35,12 +35,12 @@ ColorDetector = _perception.ColorDetector
 class SyntheticCamera(Flow[None, CameraData]):
     """Generates a synthetic RGB frame with alternating red/blue blocks."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.frame_id = 0
         self.h = 240
         self.w = 320
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.frame_id += 1
         frame = np.zeros((self.h, self.w, 3), dtype=np.uint8)
 
@@ -53,7 +53,7 @@ class SyntheticCamera(Flow[None, CameraData]):
         return CameraData(image=Image(frame=frame, frame_id=self.frame_id))
 
 class PrintDetections(Flow[DetectionResults, None]):
-    def run(self, input: DetectionResults) -> None:
+    def step(self, input: DetectionResults) -> None:
         labels = [d.label for d in (input.detections or [])]
         print(f"[PrintDetections] frame={input.image.frame_id} labels={labels}")
         return None

@@ -49,11 +49,11 @@ class RobotSim(Flow[None, RobotState]):
     STUCK_AT_STEP = 5
     STUCK_STEPS = 3
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._step = 0
         self._pos = 1.0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._step += 1
 
         # Default: move forward.
@@ -79,10 +79,10 @@ class ExecutionMonitor(Flow[RobotState, MonitorEvent]):
     STUCK_VEL = 0.1
     FAR_DIST = 0.5
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._alerts = 0
 
-    def run(self, input: RobotState) -> MonitorEvent:
+    def step(self, input: RobotState) -> MonitorEvent:
         # On multi-process backends, periodic (Rate) nodes may execute before any upstream
         # data has arrived. Treat missing signals as "no event".
         if (
@@ -106,7 +106,7 @@ class ExecutionMonitor(Flow[RobotState, MonitorEvent]):
 
 
 class PrintAlert(Flow[MonitorEvent, None]):
-    def run(self, input: MonitorEvent) -> None:
+    def step(self, input: MonitorEvent) -> None:
         print(f"[monitor] {input.alert}")
         return None
 

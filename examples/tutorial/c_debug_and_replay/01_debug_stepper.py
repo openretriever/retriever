@@ -3,12 +3,12 @@ Minimal in-process debugging demo for Retriever.
 
 Why this exists:
   - Backends like `multiprocessing` and `dora` run each Flow in a separate process.
-    VS Code breakpoints inside `Flow.run()` won't hit in your main Python process.
-  - `Pipeline.step()` executes the pipeline **in-process** (sample → run → publish),
+    VS Code breakpoints inside `Flow.step()` won't hit in your main Python process.
+  - `Pipeline.step()` executes the pipeline **in-process** (sample → step → publish),
     so you can set breakpoints directly inside Flow logic and step through.
 
 How to use:
-  1) Set a breakpoint inside `DebugFlow.run()` (or enable "break on exception").
+  1) Set a breakpoint inside `DebugFlow.step()` (or enable "break on exception").
   2) Run this file under the VS Code debugger (F5), or:
      pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --fail-at 3
 """
@@ -28,10 +28,10 @@ class Value:
 
 
 class Counter(Flow[None, Value]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return Value(value=self.count)
 
@@ -41,7 +41,7 @@ class DebugFlow(Flow[Value, Value]):
         super().__init__()
         self.fail_at = fail_at
 
-    def run(self, input: Value) -> Value:
+    def step(self, input: Value) -> Value:
         x = input.value  # put a breakpoint here
         if self.fail_at and x == self.fail_at:
             raise RuntimeError(f"Debug demo: value reached {self.fail_at}")
@@ -49,7 +49,7 @@ class DebugFlow(Flow[Value, Value]):
 
 
 class Sink(Flow[Value, None]):
-    def run(self, input: Value) -> None:
+    def step(self, input: Value) -> None:
         print(f"[Sink] got value={input.value}")
         return None
 

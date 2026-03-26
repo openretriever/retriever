@@ -24,7 +24,7 @@ class KeyboardInputFlow(Flow[None, KeyboardText]):
         self._result: Optional[str] = None
         self._lock = None  # Created in init() - can't pickle locks
 
-    def init(self):
+    def reset(self):
         self._lock = threading.Lock()  # Create after process spawn
         self._running = True
         self.keyboard_thread = threading.Thread(
@@ -51,7 +51,7 @@ class KeyboardInputFlow(Flow[None, KeyboardText]):
             while self._running:
                 listener.join(0.1)
 
-    def run(self, _: None) -> KeyboardText:
+    def step(self, _: None) -> KeyboardText:
         with self._lock:
             if self._result is not None:
                 text = self._result
@@ -65,7 +65,7 @@ class KeyboardInputFlow(Flow[None, KeyboardText]):
             self.keyboard_thread.join(timeout=1.0)
 
 class EchoFlow(Flow[KeyboardText, None]):                                                                                                                                                                                                
-    def run(self, input: KeyboardText) -> None:                                                                                                                                                                                         
+    def step(self, input: KeyboardText) -> None:                                                                                                                                                                                         
         if input.text is not None:                                                                                                                                                                                                       
             print(f"You typed: {input.text}")
 

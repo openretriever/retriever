@@ -36,16 +36,16 @@ class SafetyOut:
 
 
 class SensorFlow(Flow[None, SensorOut]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.step = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.step += 1
         return SensorOut(value=float(self.step))
 
 
 class VisionFlow(Flow[SensorOut, VisionOut]):
-    def run(self, input: SensorOut) -> VisionOut:
+    def step(self, input: SensorOut) -> VisionOut:
         if input.value is None:
             return VisionOut()
         features = int(input.value) * 4
@@ -53,14 +53,14 @@ class VisionFlow(Flow[SensorOut, VisionOut]):
 
 
 class PlannerFlow(Flow[VisionOut, PlanOut]):
-    def run(self, input: VisionOut) -> PlanOut:
+    def step(self, input: VisionOut) -> PlanOut:
         if input.features is None:
             return PlanOut()
         return PlanOut(plan=f"plan_for_{input.features}_features")
 
 
 class SafetyFlow(Flow[SensorOut, SafetyOut]):
-    def run(self, input: SensorOut) -> SafetyOut:
+    def step(self, input: SensorOut) -> SafetyOut:
         if input.value is None:
             return SafetyOut()
         status = "ok" if input.value < 3 else "warn"
@@ -68,7 +68,7 @@ class SafetyFlow(Flow[SensorOut, SafetyOut]):
 
 
 class Printer(Flow[PlanOut, None]):
-    def run(self, input: PlanOut) -> None:
+    def step(self, input: PlanOut) -> None:
         if input.plan is None:
             return None
         print(f"[plan] {input.plan}")
@@ -76,7 +76,7 @@ class Printer(Flow[PlanOut, None]):
 
 
 class SafetyPrinter(Flow[SafetyOut, None]):
-    def run(self, input: SafetyOut) -> None:
+    def step(self, input: SafetyOut) -> None:
         if input.status is None:
             return None
         print(f"[safety] {input.status}")

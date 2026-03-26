@@ -31,17 +31,17 @@ class CounterValue:
 
 @retriever.register_flow("counter", category="examples", description="Counts up each tick")
 class Counter(Flow[None, CounterValue]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         return CounterValue(value=self.i)
 
 
 @retriever.register_flow("printer", category="examples", description="Prints values")
 class Printer(Flow[CounterValue, None]):
-    def run(self, input: CounterValue) -> None:
+    def step(self, input: CounterValue) -> None:
         print(f"[printer] value={input.value}")
         return None
 

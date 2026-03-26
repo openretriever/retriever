@@ -79,13 +79,10 @@ class TickSource(Flow[None, Tick]):
     def init_config(self) -> dict:
         return {"dt": self.dt}
 
-    def init(self) -> None:
-        self._step = 0
-
     def reset(self) -> None:
         self._step = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._step += 1
         return Tick(step_idx=self._step, t_sim=self._step * self.dt)
 
@@ -108,7 +105,7 @@ class SyntheticWorkload(Flow[Tick, WorkReport]):
             "heavy_every": self.heavy_every,
         }
 
-    def run(self, input: Tick) -> WorkReport:
+    def step(self, input: Tick) -> WorkReport:
         if input.step_idx is None or input.t_sim is None:
             return WorkReport()
 
@@ -125,15 +122,11 @@ class DeadlineMonitor(Flow[WorkReport, DeadlineStatus]):
     def init_config(self) -> dict:
         return {"deadline_ms": self.deadline_ms}
 
-    def init(self) -> None:
-        self._miss_streak = 0
-        self._miss_total = 0
-
     def reset(self) -> None:
         self._miss_streak = 0
         self._miss_total = 0
 
-    def run(self, input: WorkReport) -> DeadlineStatus:
+    def step(self, input: WorkReport) -> DeadlineStatus:
         if input.step_idx is None or input.t_sim is None or input.work_ms is None:
             return DeadlineStatus()
 
@@ -173,15 +166,11 @@ class ModeManager(Flow[DeadlineStatus, ModeState]):
             "recover_ok_streak": self.recover_ok_streak,
         }
 
-    def init(self) -> None:
-        self._mode = "NOMINAL"
-        self._ok_streak = 0
-
     def reset(self) -> None:
         self._mode = "NOMINAL"
         self._ok_streak = 0
 
-    def run(self, input: DeadlineStatus) -> ModeState:
+    def step(self, input: DeadlineStatus) -> ModeState:
         if input.step_idx is None or input.t_sim is None:
             return ModeState()
 
@@ -212,7 +201,7 @@ class ModeManager(Flow[DeadlineStatus, ModeState]):
 
 
 class ActionPolicy(Flow[ModeState, ControlAction]):
-    def run(self, input: ModeState) -> ControlAction:
+    def step(self, input: ModeState) -> ControlAction:
         if input.step_idx is None or input.t_sim is None or input.mode is None:
             return ControlAction()
 
@@ -226,7 +215,7 @@ class ActionPolicy(Flow[ModeState, ControlAction]):
 
 
 class ActionPrinter(Flow[ControlAction, None]):
-    def run(self, input: ControlAction) -> None:
+    def step(self, input: ControlAction) -> None:
         if input.step_idx is None or input.t_sim is None or input.action is None or input.mode is None:
             return None
         print(

@@ -5,7 +5,7 @@ This is the runtime-aligned replacement for the legacy "state management" demos.
 It demonstrates:
   - A flow that holds internal state (a counter).
   - `Flow.reset()` resetting that state.
-  - The in-process stepper executing deterministically so VS Code can break inside `Flow.run()`.
+  - The in-process stepper executing deterministically so VS Code can break inside `Flow.step()`.
 
 Run:
   pixi run python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset --steps 5 --dt 0.1
@@ -26,19 +26,16 @@ class CountOut:
 
 
 class Counter(Flow[None, CountOut]):
-    def init(self) -> None:
-        self.count = 0
-
     def reset(self) -> None:
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return CountOut(count=self.count)
 
 
 class Printer(Flow[CountOut, None]):
-    def run(self, input: CountOut) -> None:
+    def step(self, input: CountOut) -> None:
         print(f"[Printer] count={input.count}")
         return None
 

@@ -32,7 +32,7 @@ class CounterSource(Flow[None, Data]):
         super().__init__()
         self.counter = 0
 
-    def run(self, _):
+    def step(self, _):
         self.counter += 1
         result = Data(value=self.counter)
         print(f"  [Source] generated: {result.value}")
@@ -41,7 +41,7 @@ class CounterSource(Flow[None, Data]):
 
 class MultiplyFlow(Flow[Data, Data]):
     """Multiply input by 2"""
-    def run(self, input: Data):
+    def step(self, input: Data):
         result = Data(value=input.value * 2)
         print(f"  [Multiply] {input.value} × 2 = {result.value}")
         time.sleep(0.1)  # Simulate processing
@@ -50,7 +50,7 @@ class MultiplyFlow(Flow[Data, Data]):
 
 class AddFlow(Flow[Data, Data]):
     """Add 10 to input"""
-    def run(self, input: Data):
+    def step(self, input: Data):
         result = Data(value=input.value + 10)
         print(f"  [Add] {input.value} + 10 = {result.value}")
         time.sleep(0.1)  # Simulate processing
@@ -59,7 +59,7 @@ class AddFlow(Flow[Data, Data]):
 
 class PrintSink(Flow[Data, None]):
     """Print final result"""
-    def run(self, input: Data):
+    def step(self, input: Data):
         print(f"  [Sink] ✓ Final result: {input.value}\n")
         return None
 

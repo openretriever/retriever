@@ -25,13 +25,10 @@ class CounterOut:
 
 
 class StepSource(Flow[None, StepIn]):
-    def init(self) -> None:
-        self.step = 0
-
     def reset(self) -> None:
         self.step = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.step += 1
         return StepIn(step=self.step)
 
@@ -39,13 +36,10 @@ class StepSource(Flow[None, StepIn]):
 class StatefulCounter(Flow[StepIn, CounterOut]):
     """Stateful counter that adjusts its increment by step parity."""
 
-    def init(self) -> None:
-        self.value = 0
-
     def reset(self) -> None:
         self.value = 0
 
-    def run(self, input: StepIn) -> CounterOut:
+    def step(self, input: StepIn) -> CounterOut:
         if input.step is None:
             return CounterOut()
 
@@ -56,7 +50,7 @@ class StatefulCounter(Flow[StepIn, CounterOut]):
 
 
 class Printer(Flow[CounterOut, None]):
-    def run(self, input: CounterOut) -> None:
+    def step(self, input: CounterOut) -> None:
         if input.step is None or input.value is None or input.note is None:
             return None
         print(f"[step {input.step}] value={input.value} ({input.note})")

@@ -39,7 +39,7 @@ class CounterSource(Flow[None, CounterOutput]):
         super().__init__()
         self.counter = 0
 
-    def run(self, _):
+    def step(self, _):
         self.counter += 1
         result = CounterOutput(count=self.counter)
         print(f"  [Counter] Generated: {result.count}")
@@ -48,7 +48,7 @@ class CounterSource(Flow[None, CounterOutput]):
 
 class DoublerFlow(Flow[CounterOutput, ProcessedOutput]):
     """Double the input value"""
-    def run(self, input: CounterOutput):
+    def step(self, input: CounterOutput):
         result = Result(original=input.count, doubled=input.count * 2)
         output = ProcessedOutput(result=result)
         print(f"  [Doubler] {input.count} → {result.doubled}")
@@ -57,7 +57,7 @@ class DoublerFlow(Flow[CounterOutput, ProcessedOutput]):
 
 class PrinterSink(Flow[ProcessedOutput, None]):
     """Print the final result"""
-    def run(self, input: ProcessedOutput):
+    def step(self, input: ProcessedOutput):
         r = input.result
         print(f"  [Printer] Result: {r.original} × 2 = {r.doubled}\n")
         return None

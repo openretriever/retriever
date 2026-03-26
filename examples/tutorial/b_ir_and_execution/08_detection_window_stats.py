@@ -50,10 +50,10 @@ class SyntheticCameraSource(Flow[None, CameraData]):
     changes (useful for demonstrating `Window(..., agg="mean")`).
     """
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._frame_id = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._frame_id += 1
         height, width = 240, 320
         frame = np.zeros((height, width, 3), dtype=np.uint8)
@@ -80,7 +80,7 @@ class ColorBlobDetector(Flow[CameraData, DetectionCount]):
 
     MIN_PIXELS = 50
 
-    def run(self, input: CameraData) -> DetectionCount:
+    def step(self, input: CameraData) -> DetectionCount:
         frame = input.frame
 
         red_mask = (frame[:, :, 0] > 180) & (frame[:, :, 1] < 120) & (frame[:, :, 2] < 120)
@@ -96,10 +96,10 @@ class ColorBlobDetector(Flow[CameraData, DetectionCount]):
 
 
 class PrintWindowMean(Flow[WindowMeanCount, None]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self._step = 0
 
-    def run(self, input: WindowMeanCount) -> None:
+    def step(self, input: WindowMeanCount) -> None:
         self._step += 1
         print(f"[mean] step={self._step} mean_detections={input.mean_count:.2f}")
         return None

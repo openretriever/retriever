@@ -48,13 +48,10 @@ class CounterSource(Flow[None, NumericSample]):
     def init_config(self) -> dict:
         return {"source": self.source, "start": self.start, "step": self.step}
 
-    def init(self) -> None:
-        self._value = self.start
-
     def reset(self) -> None:
         self._value = self.start
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         out = NumericSample(source=self.source, value=self._value)
         self._value += self.step
         return out
@@ -69,7 +66,7 @@ class ConstantSource(Flow[None, NumericSample]):
     def init_config(self) -> dict:
         return {"source": self.source, "value": self.value}
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return NumericSample(source=self.source, value=self.value)
 
 
@@ -82,7 +79,7 @@ class ScaleBranch(Flow[NumericSample, BranchOutput]):
     def init_config(self) -> dict:
         return {"branch": self.branch, "gain": self.gain}
 
-    def run(self, input: NumericSample) -> BranchOutput:
+    def step(self, input: NumericSample) -> BranchOutput:
         if input.value is None:
             return BranchOutput()
         return BranchOutput(branch=self.branch, value=float(input.value) * self.gain)
@@ -94,14 +91,14 @@ class MeanFusion(Flow[NumericSample, MeanOutput]):
     With Window(mean), `input.value` is the adapter result over the shared buffer.
     """
 
-    def run(self, input: NumericSample) -> MeanOutput:
+    def step(self, input: NumericSample) -> MeanOutput:
         if input.value is None:
             return MeanOutput()
         return MeanOutput(mean=float(input.value))
 
 
 class BranchPrinter(Flow[BranchOutput, None]):
-    def run(self, input: BranchOutput) -> None:
+    def step(self, input: BranchOutput) -> None:
         if input.branch is None or input.value is None:
             return None
         print(f"[fan-out] branch={input.branch:>4} value={input.value:6.2f}")
@@ -109,7 +106,7 @@ class BranchPrinter(Flow[BranchOutput, None]):
 
 
 class MeanPrinter(Flow[MeanOutput, None]):
-    def run(self, input: MeanOutput) -> None:
+    def step(self, input: MeanOutput) -> None:
         if input.mean is None:
             return None
         print(f"[fan-in] shared_window_mean={input.mean:6.2f}")

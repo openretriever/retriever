@@ -57,10 +57,10 @@ class RobotStatus:
 
 @retriever.register_flow("mock_camera", category="vision", description="Deterministic mock camera", tags=["mock", "input"])
 class MockCamera(Flow[None, Frame]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.frame_id = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.frame_id += 1
         b = 0.5 + 0.5 * math.sin(self.frame_id * 0.2)
         return Frame(frame_id=self.frame_id, brightness=b)
@@ -77,10 +77,10 @@ class NoisyCamera(Flow[None, Frame]):
         super().__init__()
         self.noise_amp = float(noise_amp)
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.frame_id = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.frame_id += 1
         base = 0.5 + 0.5 * math.sin(self.frame_id * 0.2)
         noise = self.noise_amp * math.sin(self.frame_id * 3.7)
@@ -90,7 +90,7 @@ class NoisyCamera(Flow[None, Frame]):
 
 @retriever.register_flow("pose_estimator", category="perception", description="Estimate Pose2D from Frame", tags=["pose"])
 class PoseEstimator(Flow[Frame, Pose2D]):
-    def run(self, input: Frame) -> Pose2D:
+    def step(self, input: Frame) -> Pose2D:
         if input.brightness is None:
             return Pose2D()
         x = (float(input.brightness) - 0.5) * 2.0
@@ -100,10 +100,10 @@ class PoseEstimator(Flow[Frame, Pose2D]):
 
 @retriever.register_flow("robot_monitor", category="system", description="Battery drain + mode from pose", tags=["status"])
 class RobotMonitor(Flow[Pose2D, RobotStatus]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.battery = 100.0
 
-    def run(self, input: Pose2D) -> RobotStatus:
+    def step(self, input: Pose2D) -> RobotStatus:
         if input.x is None or input.y is None:
             return RobotStatus()
 
@@ -122,7 +122,7 @@ class RobotMonitor(Flow[Pose2D, RobotStatus]):
 
 @retriever.register_flow("status_printer", category="examples", description="Prints RobotStatus", tags=["output"])
 class StatusPrinter(Flow[RobotStatus, None]):
-    def run(self, input: RobotStatus) -> None:
+    def step(self, input: RobotStatus) -> None:
         if input.battery is None or input.mode is None:
             return None
         print(f"[status] battery={input.battery:5.1f}% mode={input.mode}")
@@ -196,7 +196,7 @@ def main() -> None:
     ir = retriever.build_ir("robot_localization", camera=args.camera)
     print(f"\n[IR] name={ir.metadata.name!r} nodes={len(ir.nodes)} edges={len(ir.edges)} camera={args.camera!r}")
 
-    # Debug-friendly execution: run in-process so breakpoints inside Flow.run() work.
+    # Debug-friendly execution: run in-process so breakpoints inside Flow.step() work.
     factory = retriever.get_pipeline_factory("robot_localization")
     pipe = factory(camera=args.camera)  # type: ignore[call-arg]
 

@@ -32,21 +32,21 @@ class Value:
 
 
 class Source(Flow[None, Value]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         return Value(value=self.i)
 
 
 class Double(Flow[Value, Value]):
-    def run(self, input: Value) -> Value:
+    def step(self, input: Value) -> Value:
         return Value(value=input.value * 2)
 
 
 class Sink(Flow[Value, None]):
-    def run(self, input: Value) -> None:
+    def step(self, input: Value) -> None:
         print(f"[Sink] got value={input.value}")
         return None
 
