@@ -273,25 +273,34 @@ Notes:
 Retriever supports a unified API to run and debug pipelines.
 
 ### 6.1 Recording execution
-You can record any execution to an MCAP file (or Rerun log) by passing `record=...`.
+You can record any execution to a Rerun `.rrd` file (optionally mirrored to `.mcap`) by passing `record=...`.
 This automatically switches to the **in-process** backend to ensure deterministic recording.
 
 ```py
 pipe.run(
     duration=5.0,
-    record="session.mcap",
+    record="session.rrd",
     visualize="rerun"  # Optional: stream to viewer live
 )
 ```
 
-This generates `session.mcap` containing all flow I/O.
+This generates `session.rrd` containing all flow I/O. If you also want an interchange artifact, mirror to `.mcap`:
+
+```py
+from retriever import RecordConfig
+
+pipe.run(
+    duration=5.0,
+    record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
+)
+```
 
 ### 6.2 Replay
 To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 
 ```py
 # Inject recorded data into 'camera' flow
-pipe.replay(camera, path="session.mcap")
+pipe.replay(camera, path="session.rrd")  # `.mcap` works too
 pipe.run(backend="in-process")
 ```
 
