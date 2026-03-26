@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
+from retriever.config import RecordConfig
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 
 
@@ -85,3 +88,27 @@ def test_pipeline_record_to_and_replay_helpers(tmp_path):
         pipe2.close_stepper()
 
     assert sink2.flow.seen == [1, 2, 3]
+
+
+def test_pipeline_record_config_can_emit_rrd_and_mcap(tmp_path):
+    pytest.importorskip("rerun")
+
+    rrd_path = tmp_path / "session.rrd"
+    mcap_path = tmp_path / "session.mcap"
+
+    pipe = Pipeline("record_both_demo")
+    src = Counter() @ Rate(hz=10)
+    drain = Recorder() @ Trigger("value")
+    pipe.connect(src, drain, sync=Latest())
+
+    cfg = RecordConfig(path=rrd_path, mirrors=(mcap_path,))
+
+    try:
+        pipe.record(cfg, steps=3, dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert rrd_path.exists()
+    assert rrd_path.stat().st_size > 0
+    assert mcap_path.exists()
+    assert mcap_path.stat().st_size > 0

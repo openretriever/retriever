@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Union
 from pathlib import Path
 
@@ -8,21 +8,35 @@ class RecordConfig:
     Configuration for session recording.
     
     Attributes:
-        path: Output path for the recording (e.g. "session.mcap")
+        path: Primary output path for the recording (e.g. "session.mcap")
+        mirrors: Additional persisted artifacts to write from the same run.
         visualize: Whether to stream to Rerun live during recording (default False)
-        format: Recording format ("mcap" or "pickle", auto-detected from path if None)
+        format: Primary recording format ("mcap", "rrd", or "pickle"),
+                auto-detected from the primary path if None.
+        auto_open: Whether a `.rrd` recording should auto-open in Rerun on cleanup.
     """
     path: Union[str, Path]
+    mirrors: tuple[Union[str, Path], ...] = field(default_factory=tuple)
     visualize: bool = False
     format: Optional[str] = None
+    auto_open: bool = False
     
     def __post_init__(self):
         self.path = Path(self.path)
+        self.mirrors = tuple(Path(p) for p in self.mirrors)
         if self.format is None:
-            if self.path.suffix.lower() == ".mcap":
+            suffix = self.path.suffix.lower()
+            if suffix == ".mcap":
                 self.format = "mcap"
+            elif suffix == ".rrd":
+                self.format = "rrd"
+            elif suffix == ".gz" and self.path.name.endswith(".pkl.gz"):
+                self.format = "pickle"
             else:
                 self.format = "mcap" # Default to mcap
+
+    def artifact_paths(self) -> tuple[Path, ...]:
+        return (self.path, *self.mirrors)
 
 _global_config = {
     "record": None,       # Optional[RecordConfig]
