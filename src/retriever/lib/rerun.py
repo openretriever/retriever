@@ -529,6 +529,14 @@ class RerunManager:
         if not self._initialized:
             return
 
+        rr_module = _ensure_rerun()
+
+        # `.rrd` files are not reliably queryable until the recording stream is
+        # explicitly finalized. This matters for tutorial replay-from-rrd.
+        if self.config.mode == "record" and hasattr(rr_module, "disconnect"):
+            rr_module.disconnect()
+        self._initialized = False
+
         if (
             self.config.mode == "record"
             and self._recording_path

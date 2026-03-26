@@ -52,7 +52,7 @@ def main() -> None:
 
     camera = CameraSource(use_real_camera=True) @ Rate(hz=20)
     detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
-    display = DisplayFlow(show_window=show_window) @ Rate(hz=20)
+    display = DisplayFlow(display="cv2" if show_window else "stdout") @ Rate(hz=20)
 
     pipe.connect(camera, detector, sync=Latest())
     pipe.connect(detector, display, sync=Latest())
