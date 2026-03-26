@@ -92,7 +92,7 @@ def main() -> None:
     if not args.recording.exists():
         raise FileNotFoundError(
             f"Recording not found: {args.recording}. "
-            "Create one first with 'pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10'."
+            "Create one first with 'pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10'."
         )
 
     with MCAPReader(args.recording) as reader:
@@ -211,4 +211,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

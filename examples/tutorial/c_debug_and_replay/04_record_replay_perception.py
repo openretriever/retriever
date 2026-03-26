@@ -2,7 +2,7 @@
 Record + replay a perception camera stream (in-process stepper) for debugging.
 
 Run:
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
 """
 
@@ -12,6 +12,7 @@ import argparse
 import time
 from pathlib import Path
 
+from retriever.config import RecordConfig
 from retriever.tutorials.perception import (
     build_record_pipeline,
     build_replay_pipeline,
@@ -26,7 +27,18 @@ def parse_args() -> argparse.Namespace:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     record = sub.add_parser("record", help="Record a short stream from the real camera")
-    record.add_argument("--out", type=Path, default=Path("logs/perception.mcap"), help="Output recording path (.mcap)")
+    record.add_argument(
+        "--out",
+        type=Path,
+        default=Path("logs/perception.rrd"),
+        help="Primary output artifact (.rrd recommended for inspection).",
+    )
+    record.add_argument(
+        "--replay-out",
+        type=Path,
+        default=Path("logs/perception.mcap"),
+        help="Replay artifact path (.mcap).",
+    )
     record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
     record.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
@@ -45,9 +57,10 @@ def parse_args() -> argparse.Namespace:
 
 def cmd_record(args: argparse.Namespace) -> None:
     pipe, camera = build_record_pipeline()
+    cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
         pipe.record(
-            args.out,
+            cfg,
             steps=args.steps,
             dt=args.dt,
             sleep_s=args.sleep,
@@ -56,7 +69,8 @@ def cmd_record(args: argparse.Namespace) -> None:
         )
     finally:
         pipe.close_stepper()
-    print(f"[Recording] saved {args.steps} steps to {args.out}")
+    outputs = ", ".join(str(path) for path in cfg.artifact_paths())
+    print(f"[Recording] saved {args.steps} steps to {outputs}")
 
 
 def _resolve_recording_path(path: Path) -> Path:
