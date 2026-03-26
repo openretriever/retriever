@@ -65,7 +65,7 @@ class MathService(Flow[None, NumberOutput]):
         print(f"  [MathService] triple({request.value}) → {request.value * 3}")
         return MathResponse(result=request.value * 3)
 
-    def run(self, _input) -> NumberOutput:
+    def step(self, _input) -> NumberOutput:
         self.counter += 1
         print(f"  [MathService] Emitting: {self.counter}")
         return NumberOutput(value=self.counter)
@@ -75,7 +75,7 @@ class MathService(Flow[None, NumberOutput]):
 class Calculator(Flow[NumberInput, None]):
     """Receives values and calls MathService.double."""
 
-    def run(self, input: NumberInput):
+    def step(self, input: NumberInput):
         value = input.value
         print(f"  [Calculator] Received {value}, calling double")
         response2 = yield ServiceCall(MathService.double, MathRequest(value=value))

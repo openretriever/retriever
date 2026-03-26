@@ -4,7 +4,7 @@ Perception debugging with `Pipeline.step()` (in-process) using a real camera.
 Goal:
   - Demonstrate that the stepper can debug the *actual* perception workflow
     (camera → detector → display/print), while still allowing VS Code breakpoints
-    inside `Flow.run()` because everything runs in the current process.
+    inside `Flow.step()` because everything runs in the current process.
 
 Notes:
   - This does NOT use the dora backend; it uses the in-process stepper.

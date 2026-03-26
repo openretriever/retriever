@@ -75,11 +75,11 @@ class CmdOut:
 class SensorFlow(Flow[None, SensorsOut]):
     """30Hz sensor source with deterministic pseudo-noise."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
         self.t0 = time.time()
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         t = time.time() - self.t0
         encoder = 0.1 + 0.02 * math.sin(self.i * 0.3)
@@ -90,13 +90,13 @@ class SensorFlow(Flow[None, SensorsOut]):
 class LocalizationFlow(Flow[SensorsOut, PoseOut]):
     """10Hz localization: integrate encoder + gyro into a pose estimate."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.x = 0.0
         self.theta = 0.0
         self.uncertainty = 0.1
         self.last_t = None
 
-    def run(self, input: SensorsOut) -> PoseOut:
+    def step(self, input: SensorsOut) -> PoseOut:
         if input.encoder is None or input.gyro_z is None or input.t is None:
             return PoseOut()
 
@@ -122,7 +122,7 @@ class LocalizationFlow(Flow[SensorsOut, PoseOut]):
 class PlanningFlow(Flow[PoseOut, PlanOut]):
     """1Hz planning: fixed goal with confidence based on localization uncertainty."""
 
-    def run(self, input: PoseOut) -> PlanOut:
+    def step(self, input: PoseOut) -> PlanOut:
         if input.x is None or input.uncertainty is None:
             return PlanOut()
 
@@ -133,7 +133,7 @@ class PlanningFlow(Flow[PoseOut, PlanOut]):
 class ControlFlow(Flow[ControlIn, CmdOut]):
     """20Hz controller: P-control in x and damping in theta."""
 
-    def run(self, input: ControlIn) -> CmdOut:
+    def step(self, input: ControlIn) -> CmdOut:
         missing = (
             input.x is None
             or input.theta is None
@@ -161,11 +161,11 @@ class ControlFlow(Flow[ControlIn, CmdOut]):
 class Printer(Flow[CmdOut, None]):
     """2Hz observer printing control signal and error."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.t0 = time.time()
         self.k = 0
 
-    def run(self, input: CmdOut) -> None:
+    def step(self, input: CmdOut) -> None:
         if input.v is None or input.w is None or input.err_x is None or input.confidence is None:
             return None
         self.k += 1

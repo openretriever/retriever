@@ -19,17 +19,17 @@ class Data:
 
 
 class SourceFlow(Flow[None, Data]):
-    def run(self, _):
+    def step(self, _):
         return Data(value=42)
 
 
 class ProcessFlow(Flow[Data, Data]):
-    def run(self, input: Data):
+    def step(self, input: Data):
         return Data(value=input.value * 2)
 
 
 class SinkFlow(Flow[Data, None]):
-    def run(self, input: Data):
+    def step(self, input: Data):
         print(f"Received: {input.value}")
         return None
 

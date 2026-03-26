@@ -46,15 +46,11 @@ class SimClock(Flow[None, ClockOut]):
     def init_config(self) -> dict:
         return {"dt": self.dt}
 
-    def init(self) -> None:
-        self.t = 0.0
-        self.step_idx = 0
-
     def reset(self) -> None:
         self.t = 0.0
         self.step_idx = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.step_idx += 1
         self.t += self.dt
         return ClockOut(t_sim=self.t, step=self.step_idx)
@@ -71,15 +67,11 @@ class OneShotTimer(Flow[ClockOut, TimerEvent]):
     def init_config(self) -> dict:
         return {"delay_s": self.delay_s, "event_name": self.event_name}
 
-    def init(self) -> None:
-        self._start = None
-        self._fired = False
-
     def reset(self) -> None:
         self._start = None
         self._fired = False
 
-    def run(self, input: ClockOut) -> TimerEvent:
+    def step(self, input: ClockOut) -> TimerEvent:
         if input.t_sim is None:
             return TimerEvent()
 
@@ -101,7 +93,7 @@ class OneShotTimer(Flow[ClockOut, TimerEvent]):
 class DelayedAction(Flow[TimerEvent, ActionOut]):
     """Convert a timer event into a one-shot action."""
 
-    def run(self, input: TimerEvent) -> ActionOut:
+    def step(self, input: TimerEvent) -> ActionOut:
         if input.event is None or input.t_sim is None:
             return ActionOut()
         return ActionOut(
@@ -111,7 +103,7 @@ class DelayedAction(Flow[TimerEvent, ActionOut]):
 
 
 class Printer(Flow[ActionOut, None]):
-    def run(self, input: ActionOut) -> None:
+    def step(self, input: ActionOut) -> None:
         if input.action is None or input.t_sim is None:
             return None
         print(f"[action] t={input.t_sim:4.2f}s {input.action}")

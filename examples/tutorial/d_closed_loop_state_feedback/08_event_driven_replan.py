@@ -49,11 +49,11 @@ class RobotSim(Flow[None, RobotState]):
     GOAL = 10.0
     OBSTACLE_AT_STEP = 5
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._step = 0
         self._pos = 0.0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._step += 1
 
         # Move forward unless we are "blocked".
@@ -72,10 +72,10 @@ class ObstacleMonitor(Flow[RobotState, ReplanRequest]):
     and therefore publishes *no message* on `reason`.
     """
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._events = 0
 
-    def run(self, input: RobotState) -> ReplanRequest:
+    def step(self, input: RobotState) -> ReplanRequest:
         if input.obstacle:
             self._events += 1
             return ReplanRequest(reason=f"obstacle_detected event={self._events}")
@@ -85,16 +85,16 @@ class ObstacleMonitor(Flow[RobotState, ReplanRequest]):
 class Replanner(Flow[ReplanRequest, Plan]):
     """Build a new plan when asked."""
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._replans = 0
 
-    def run(self, input: ReplanRequest) -> Plan:
+    def step(self, input: ReplanRequest) -> Plan:
         self._replans += 1
         return Plan(command=f"REPLAN[{self._replans}] because={input.reason}")
 
 
 class PrintPlan(Flow[Plan, None]):
-    def run(self, input: Plan) -> None:
+    def step(self, input: Plan) -> None:
         print(f"[plan] {input.command}")
         return None
 

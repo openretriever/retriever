@@ -72,10 +72,10 @@ class ToyEnv(Flow[Action, Observation]):
     DELAY_S = 0.10
     JITTER_S = 0.0
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self.x = 0
 
-    def run(self, input: Action) -> Observation:
+    def step(self, input: Action) -> Observation:
         _sleep_with_jitter(self.DELAY_S, self.JITTER_S)
 
         u = 0.0 if input.action is None else float(input.action)
@@ -102,7 +102,7 @@ class ToyMPCController(Flow[Observation, Action]):
     DELAY_S = 0.10
     JITTER_S = 0.0
 
-    def run(self, input: Observation) -> Action:
+    def step(self, input: Observation) -> Action:
         _sleep_with_jitter(self.DELAY_S, self.JITTER_S)
 
         tr = input.transition
@@ -142,7 +142,7 @@ class PendulumEnv(Flow[Action, Observation]):
     DELAY_S = 0.10
     JITTER_S = 0.0
 
-    def init(self) -> None:
+    def reset(self) -> None:
         gym = _import_gym()
         self._env = gym.make(self.ENV_ID)  # type: ignore[attr-defined]
         self._needs_reset = True
@@ -154,7 +154,7 @@ class PendulumEnv(Flow[Action, Observation]):
         except Exception:
             pass
 
-    def run(self, input: Action) -> Observation:
+    def step(self, input: Action) -> Observation:
         _sleep_with_jitter(self.DELAY_S, self.JITTER_S)
 
         if self._needs_reset:
@@ -220,10 +220,10 @@ class PendulumMPCController(Flow[Observation, Action]):
     DELAY_S = 0.10
     JITTER_S = 0.0
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._k_theta, self._k_theta_dot = self._compute_lqr_gains()
 
-    def run(self, input: Observation) -> Action:
+    def step(self, input: Observation) -> Action:
         _sleep_with_jitter(self.DELAY_S, self.JITTER_S)
 
         tr = input.transition
@@ -303,7 +303,7 @@ class PendulumMPCController(Flow[Observation, Action]):
 class PrintObs(Flow[Observation, None]):
     """Sink: print reward (gym-style) and a readable angle."""
 
-    def run(self, input: Observation) -> None:
+    def step(self, input: Observation) -> None:
         tr = input.transition
         angle_deg = float("nan")
         if len(tr.obs) >= 2:

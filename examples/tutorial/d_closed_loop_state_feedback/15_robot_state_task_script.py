@@ -43,7 +43,7 @@ class RobotState:
 
 
 class TaskSource(Flow[None, TaskIn]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.tasks = [
             TaskIn(kind="move", x=1.0, y=0.0),
             TaskIn(kind="scan"),
@@ -54,10 +54,7 @@ class TaskSource(Flow[None, TaskIn]):
         ]
         self.index = 0
 
-    def reset(self) -> None:
-        self.index = 0
-
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         if self.index >= len(self.tasks):
             return TaskIn()
         task = self.tasks[self.index]
@@ -66,13 +63,10 @@ class TaskSource(Flow[None, TaskIn]):
 
 
 class RobotController(Flow[TaskIn, RobotOut]):
-    def init(self) -> None:
-        self.state = RobotState()
-
     def reset(self) -> None:
         self.state = RobotState()
 
-    def run(self, input: TaskIn) -> RobotOut:
+    def step(self, input: TaskIn) -> RobotOut:
         if input.kind is None:
             return RobotOut()
 
@@ -145,7 +139,7 @@ class RobotController(Flow[TaskIn, RobotOut]):
 
 
 class Printer(Flow[RobotOut, None]):
-    def run(self, input: RobotOut) -> None:
+    def step(self, input: RobotOut) -> None:
         if input.kind is None or input.status is None:
             return None
         print(

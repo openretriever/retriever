@@ -27,23 +27,23 @@ class Val:
 
 
 class Source(Flow[None, Val]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         return Val(x=float(self.i))
 
 
 class Scale(Flow[Val, Val]):
-    def run(self, input: Val) -> Val:
+    def step(self, input: Val) -> Val:
         if input.x is None:
             return Val()
         return Val(x=float(input.x) * 2.0)
 
 
 class Sink(Flow[Val, None]):
-    def run(self, input: Val) -> None:
+    def step(self, input: Val) -> None:
         return None
 
 

@@ -38,13 +38,13 @@ class Counter(Flow[None, SrcOut]):
     def __init__(self):
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         return SrcOut(x=float(self.i))
 
 
 class Printer(Flow[SinkIn, None]):
-    def run(self, input: SinkIn) -> None:
+    def step(self, input: SinkIn) -> None:
         print(f"[Printer] x={input.x}")
         return None
 

@@ -50,13 +50,10 @@ class SafetyScenario(Flow[None, SafetySample]):
     def init_config(self) -> dict:
         return {"dt": self.dt}
 
-    def init(self) -> None:
-        self._step = 0
-
     def reset(self) -> None:
         self._step = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self._step += 1
         t_sim = self._step * self.dt
 
@@ -79,13 +76,10 @@ class SafetyMonitor(Flow[SafetySample, SafetyEvent]):
     FORCE_LIMIT = 80.0
     SPEED_LIMIT = 2.0
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._last_level: str | None = None
 
-    def reset(self) -> None:
-        self._last_level = None
-
-    def run(self, input: SafetySample) -> SafetyEvent:
+    def step(self, input: SafetySample) -> SafetyEvent:
         # Rate flows can run before upstream data arrives; treat missing fields as no-op.
         if input.velocity is None or input.force is None or input.t_sim is None:
             return SafetyEvent()
@@ -110,7 +104,7 @@ class SafetyMonitor(Flow[SafetySample, SafetyEvent]):
 class SafetyActionMapper(Flow[SafetyEvent, SafetyAction]):
     """Map a safety event to an action command."""
 
-    def run(self, input: SafetyEvent) -> SafetyAction:
+    def step(self, input: SafetyEvent) -> SafetyAction:
         if input.level is None or input.t_sim is None:
             return SafetyAction()
 
@@ -125,7 +119,7 @@ class SafetyActionMapper(Flow[SafetyEvent, SafetyAction]):
 
 
 class ActionPrinter(Flow[SafetyAction, None]):
-    def run(self, input: SafetyAction) -> None:
+    def step(self, input: SafetyAction) -> None:
         if input.action is None or input.t_sim is None:
             return None
         print(f"[safety] t={input.t_sim:4.2f}s action={input.action}")

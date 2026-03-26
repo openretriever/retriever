@@ -33,16 +33,16 @@ class CounterOut:
 
 
 class Counter(Flow[None, CounterOut]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.i = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.i += 1
         return CounterOut(value=self.i)
 
 
 class Sink(Flow[CounterOut, None]):
-    def run(self, _input: CounterOut) -> None:
+    def step(self, _input: CounterOut) -> None:
         return None
 
 
