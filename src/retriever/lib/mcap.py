@@ -253,9 +253,6 @@ class MCAPWriter:
 
         # Write each flow's outputs
         for flow_name, output in (result.outputs or {}).items():
-            if output is None:
-                continue
-
             # Look for image in dataclass fields
             if is_dataclass(output) and not isinstance(output, type):
                 for field_name in output.__dataclass_fields__:

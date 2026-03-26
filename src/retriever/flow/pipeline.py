@@ -421,7 +421,7 @@ class Pipeline:
 
         The format is auto-detected from the file extension:
         - `.mcap`: Records ALL pipeline outputs (session recording, replayable).
-        - `.rrd`: Records ALL pipeline outputs as a native Rerun recording (view artifact).
+        - `.rrd`: Records ALL pipeline outputs as a native Rerun recording (inspectable and replayable).
         - `.pkl.gz`: Records ONLY the specified handle (stream recording).
 
         Usage:
@@ -564,34 +564,16 @@ class Pipeline:
 
         Provide exactly one of:
         - `buffer`: an `EventBuffer[T] = list[(ts, value)]`
-        - `path`: path to a recording (.mcap or .pkl.gz)
+        - `path`: path to a recording (.mcap, .rrd, or .pkl.gz)
 
         The format is auto-detected from the file extension.
-        `.mcap` is replayable today; `.rrd` is view-only.
+        `.mcap` and `.rrd` are replayable when they contain Retriever replay payloads.
         By default, the replay node reuses the replaced handle's clock and output type.
         """
         from retriever.rt.stepper import load_event_buffer, replay_flow
 
         if (buffer is None) == (path is None):
             raise ValueError("Provide exactly one of `buffer=` or `path=`.")
-
-        if buffer is None:
-            path = Path(path)  # type: ignore[arg-type]
-            if path.suffix.lower() == ".mcap":
-                # Load from MCAP format
-                from retriever.lib.mcap import MCAPReader
-
-                # Use systematic node_id lookup
-                node_id = self.get_node_id(handle)
-                with MCAPReader(path) as reader:
-                    buffer = reader.read_node_stream(node_id)
-            elif path.suffix.lower() == ".rrd":
-                raise ValueError(
-                    "Rerun `.rrd` recordings are view-only today. "
-                    "Use an `.mcap` artifact for replay."
-                )
-            else:
-                buffer = load_event_buffer(path)
 
         if clock is None:
             clock = handle.config.clock
@@ -602,6 +584,17 @@ class Pipeline:
                 raise TypeError(
                     "Handle output type is not available; add Flow type parameters [I, O]."
                 )
+
+        if buffer is None:
+            path = Path(path)  # type: ignore[arg-type]
+            node_id = self.get_node_id(handle)
+            suffix = path.suffix.lower()
+            if suffix in {".mcap", ".rrd"}:
+                from retriever.recording import read_node_stream_from_recording
+
+                buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
+            else:
+                buffer = load_event_buffer(path)
 
         replay = replay_flow(buffer, output_type=output_type) @ clock  # type: ignore[arg-type]
         self.replace(handle, replay)
@@ -614,11 +607,11 @@ class Pipeline:
         This is a convenience wrapper that calls `replay()` for each handle in `inputs`.
 
         Args:
-            path: Path to the recording (.mcap)
+            path: Path to the recording (.mcap or .rrd)
             inputs: List of source handles to replace with recorded data
 
         Example:
-            pipe.replay_from("session.mcap", inputs=[camera, lidar])
+            pipe.replay_from("session.rrd", inputs=[camera, lidar])
         """
         for handle in inputs:
             self.replay(handle, path=path)

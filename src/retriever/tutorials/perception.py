@@ -23,7 +23,7 @@ except Exception:  # pragma: no cover - optional dependency
     rr = None
 
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
-from retriever.recording import detect_recording_format
+from retriever.recording import detect_recording_format, open_recording_reader
 from retriever.pipeline_registry import register_pipeline
 
 _PERCEPTION_BLUEPRINT_SENT = False
@@ -591,200 +591,54 @@ def _as_camera_data(obj: object) -> CameraData | None:
     )
 
 
-def load_camera_buffer_from_mcap(path: Path) -> list[tuple[float, CameraData]]:
-    from retriever.lib.mcap import MCAPReader
+def _load_camera_buffer_generic(path: Path) -> list[tuple[float, CameraData]]:
+    reader = open_recording_reader(path)
+    candidates: list[tuple[tuple[int, int, str], list[tuple[float, CameraData]]]] = []
 
-    with MCAPReader(path) as reader:
-        steps = list(reader)
-    if not steps:
-        raise RuntimeError(f"MCAP recording is empty: {path}")
-
-    camera_key: str | None = None
-    for step in steps:
-        outputs = step.get("outputs", {}) or {}
-        if not isinstance(outputs, dict):
+    for node_id in reader.list_node_ids():
+        try:
+            raw_buffer = reader.read_node_stream(node_id)
+        except Exception:
             continue
-        for key, val in outputs.items():
-            if _as_camera_data(val) is not None:
-                camera_key = str(key)
+
+        camera_buffer: list[tuple[float, CameraData]] = []
+        for ts, value in raw_buffer:
+            camera = _as_camera_data(value)
+            if camera is None:
+                camera_buffer = []
                 break
-        if camera_key is not None:
-            break
+            camera_buffer.append((float(ts), camera))
 
-    if camera_key is None:
-        raise RuntimeError(f"Could not locate a CameraData-like stream in MCAP: {path}")
-
-    buffer: list[tuple[float, CameraData]] = []
-    for step in steps:
-        now = step.get("now", 0.0) or 0.0
-        try:
-            ts = float(now)
-        except Exception:
-            ts = 0.0
-        outputs = step.get("outputs", {}) or {}
-        if not isinstance(outputs, dict):
+        if not camera_buffer:
             continue
-        cam = _as_camera_data(outputs.get(camera_key))
-        if cam is None:
-            continue
-        buffer.append((ts, cam))
 
-    if not buffer:
-        raise RuntimeError(f"Camera stream extracted but contained no frames: {path}")
-    return buffer
+        score = (
+            10 if "CameraSource" in node_id else 0,
+            len(camera_buffer),
+            node_id,
+        )
+        candidates.append((score, camera_buffer))
 
-
-def _unwrap_rrd_cell(value: Any) -> Any:
-    current = value
-    while isinstance(current, list) and len(current) == 1:
-        current = current[0]
-    return current
-
-
-def _coerce_rrd_time(value: Any, default: float) -> float:
-    if value is None:
-        return default
-    if hasattr(value, "timestamp"):
-        try:
-            return float(value.timestamp())
-        except Exception:
-            pass
-    try:
-        return float(value)
-    except Exception:
-        return default
-
-
-def _choose_rrd_camera_prefix(columns: dict[str, Any]) -> str:
-    candidates = [key[: -len(":ImageBuffer")] for key in columns if key.endswith("/output/image:ImageBuffer")]
     if not candidates:
         raise RuntimeError(
-            "No camera-like image stream found in Rerun recording. "
-            "Re-record with the current perception tutorial to generate replayable `.rrd` output."
+            f"Could not locate a CameraData-like stream in recording: {path}. "
+            "Re-record with the current build to generate replayable session payloads."
         )
+    return max(candidates, key=lambda item: item[0])[1]
 
-    def score(prefix: str) -> tuple[int, str]:
-        parent = prefix.rsplit("/", 1)[0]
-        total = 0
-        if "CameraSource" in prefix:
-            total += 10
-        if f"{parent}/frame_id:Text" in columns:
-            total += 5
-        if f"{parent}/mode:Text" in columns:
-            total += 2
-        return (total, prefix)
 
-    return max(candidates, key=score)
+def load_camera_buffer_from_mcap(path: Path) -> list[tuple[float, CameraData]]:
+    return _load_camera_buffer_generic(path)
 
 
 def load_camera_buffer_from_rrd(path: Path) -> list[tuple[float, CameraData]]:
-    if rr is None:
-        raise RuntimeError("Rerun is required to replay from `.rrd` recordings.")
-    if np is None:
-        raise RuntimeError("NumPy is required to replay from `.rrd` recordings.")
-
-    recording = rr.dataframe.load_recording(str(path))
-    table = recording.view(
-        index="log_tick",
-        contents="/**",
-        include_semantically_empty_columns=True,
-        include_indicator_columns=True,
-    ).select().read_all()
-    columns = table.to_pydict()
-    if not columns:
-        raise RuntimeError(
-            f"Rerun recording contained no readable data: {path}. "
-            "Re-record with the current build so the `.rrd` is finalized on close."
-        )
-
-    prefix = _choose_rrd_camera_prefix(columns)
-    parent = prefix.rsplit("/", 1)[0]
-    image_buffer_key = f"{prefix}:ImageBuffer"
-    image_format_key = f"{prefix}:ImageFormat"
-    frame_id_key = f"{parent}/frame_id:Text"
-    mode_key = f"{parent}/mode:Text"
-
-    raw_buffers = columns.get(image_buffer_key) or []
-    raw_formats = columns.get(image_format_key) or []
-    raw_frame_ids = columns.get(frame_id_key) or []
-    raw_modes = columns.get(mode_key) or []
-    raw_times = columns.get("log_time") or columns.get("step") or []
-    raw_steps = columns.get("step") or []
-
-    row_count = max((len(col) for col in columns.values() if isinstance(col, list)), default=0)
-    grouped: dict[Any, dict[str, Any]] = {}
-
-    for idx in range(row_count):
-        step_value = raw_steps[idx] if idx < len(raw_steps) else idx
-        group = grouped.setdefault(
-            step_value,
-            {"time": None, "image": None, "format": None, "frame_id": None, "mode": None},
-        )
-        if group["time"] is None and idx < len(raw_times):
-            group["time"] = raw_times[idx]
-
-        frame_text = _unwrap_rrd_cell(raw_frame_ids[idx]) if idx < len(raw_frame_ids) else None
-        if frame_text not in (None, []):
-            group["frame_id"] = frame_text
-
-        mode_text = _unwrap_rrd_cell(raw_modes[idx]) if idx < len(raw_modes) else None
-        if mode_text not in (None, []):
-            group["mode"] = mode_text
-
-        flat = _unwrap_rrd_cell(raw_buffers[idx]) if idx < len(raw_buffers) else None
-        if flat not in (None, []):
-            group["image"] = flat
-
-        fmt = _unwrap_rrd_cell(raw_formats[idx]) if idx < len(raw_formats) else None
-        if fmt not in (None, []):
-            group["format"] = fmt
-
-    buffer: list[tuple[float, CameraData]] = []
-    for step_idx, group in grouped.items():
-        flat = group["image"]
-        fmt = group["format"] or {}
-        if flat in (None, []):
-            continue
-        width = int(fmt.get("width") or 0)
-        height = int(fmt.get("height") or 0)
-        if width <= 0 or height <= 0:
-            continue
-
-        values = np.asarray(flat, dtype=np.uint8)
-        pixels = width * height
-        if pixels <= 0 or values.size % pixels != 0:
-            raise RuntimeError(
-                f"Unsupported image payload in `{path}`: width={width}, height={height}, payload={values.size} bytes."
-            )
-        channels = int(values.size // pixels) if pixels else 0
-        if channels not in (1, 3, 4):
-            raise RuntimeError(
-                f"Unsupported image shape in `{path}`: width={width}, height={height}, channels={channels}."
-            )
-        frame = values.reshape((height, width, channels)) if channels > 1 else values.reshape((height, width))
-
-        try:
-            frame_id = int(group["frame_id"])
-        except Exception:
-            try:
-                frame_id = int(step_idx) + 1
-            except Exception:
-                frame_id = len(buffer) + 1
-        mode = str(group["mode"] or "unknown")
-        ts = _coerce_rrd_time(group["time"], float(len(buffer)))
-        buffer.append((ts, CameraData(image=Image(frame=frame, frame_id=frame_id), mode=mode)))
-
-    if not buffer:
-        raise RuntimeError(f"Camera stream extracted but contained no frames: {path}")
-    return buffer
+    return _load_camera_buffer_generic(path)
 
 
 def load_camera_buffer_from_recording(path: Path) -> list[tuple[float, CameraData]]:
     fmt = detect_recording_format(path)
-    if fmt == "mcap":
-        return load_camera_buffer_from_mcap(path)
-    if fmt == "rrd":
-        return load_camera_buffer_from_rrd(path)
+    if fmt in {"mcap", "rrd"}:
+        return _load_camera_buffer_generic(path)
     raise ValueError(f"Unsupported recording path for perception replay: {path}")
 
 

@@ -95,10 +95,24 @@ pipe.run(
 )
 ```
 
+<<<<<<< HEAD
+=======
+`.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
+
+```python
+from retriever import RecordConfig
+
+pipe.run(
+    duration=5.0,
+    record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
+)
+```
+
+>>>>>>> 8052397 (feat(recording): add generic rrd session replay)
 To replay:
 ```python
 # Inject recorded data into a flow source
-pipe.replay(camera, path="session.mcap")
+pipe.replay(camera, path="session.rrd")  # `.mcap` works too
 pipe.run(backend="in-process")
 ```
 

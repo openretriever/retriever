@@ -3,10 +3,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from retriever.config import RecordConfig
 from retriever.pipeline_registry import build_ir, list_pipelines
+from retriever.recording import build_recording_sink
+from retriever.rt.stepper import StepResult
 from retriever.tutorials.perception import (
     CameraSource,
     ColorDetector,
+    CameraData,
+    Image,
     emit_replay_finished,
     emit_replay_started,
     load_camera_buffer_from_recording,
@@ -95,21 +100,33 @@ def test_tutorial_perception_loads_camera_buffer_from_rrd(tmp_path: Path) -> Non
     import numpy as np
     import pytest
 
-    rr = pytest.importorskip("rerun")
+    pytest.importorskip("rerun")
 
     path = tmp_path / "perception.rrd"
-    rr.init("perception_test", spawn=False)
-    rr.save(str(path))
-    rr.set_time_sequence("step", 0)
-
     frame = np.zeros((3, 4, 3), dtype=np.uint8)
     frame[:, :, 0] = 10
     frame[:, :, 1] = 20
     frame[:, :, 2] = 30
-    rr.log("flows/CameraSource_test/output/image", rr.Image(frame))
-    rr.log("flows/CameraSource_test/output/frame_id", rr.TextLog("11"))
-    rr.log("flows/CameraSource_test/output/mode", rr.TextLog("mock"))
-    rr.disconnect()
+
+    sink = build_recording_sink(RecordConfig(path=path), app_id="perception_test")
+    sink.open()
+    try:
+        sink.write_step(
+            StepResult(
+                now=1.25,
+                executed=["CameraSource_test"],
+                inputs={},
+                outputs={
+                    "CameraSource_test": CameraData(
+                        image=Image(frame=frame, frame_id=11),
+                        mode="mock",
+                    )
+                },
+            ),
+            0,
+        )
+    finally:
+        sink.close()
 
     buffer = load_camera_buffer_from_recording(path)
     assert len(buffer) == 1
