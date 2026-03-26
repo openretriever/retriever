@@ -40,7 +40,7 @@ class MCPToolFlow(Flow[MCPRequest, MCPResponse]):
     def init_config(self) -> dict:
         return {"server_name": self.server_name, "config_path": self.config_path}
 
-    def init(self):
+    def reset(self):
         """Initialize connection in a background thread."""
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
@@ -103,13 +103,11 @@ class MCPToolFlow(Flow[MCPRequest, MCPResponse]):
         self._thread = None
 
     # Backward compatibility helpers for manual asyncio usage (like 02_reactive_flow.py was doing)
-    # We map setup/teardown to init/finalize, but keep them async-compatible conceptually? 
-    # Actually, if we use them in asyncio.run(), they are just methods.
-    # But since init/finalize are sync, we can just alias them if needed or user should update code.
+    # We map setup/teardown to reset/finalize, but keep them async-compatible conceptually.
     # For compatibility with 02 example code structure:
     async def setup(self):
-        # Allow async setup for manual scripts, but just call init
-        self.init()
+        # Allow async setup for manual scripts, but just call reset.
+        self.reset()
 
     async def teardown(self):
         self.finalize()

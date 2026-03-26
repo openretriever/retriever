@@ -48,7 +48,7 @@ class TorchModuleFlow(Flow[TorchIO, TorchIO]):
         pickled = codecs.encode(pickle.dumps(self._module_ref), "base64").decode()
         return {"_pickled_module": pickled}
 
-    def init(self):
+    def reset(self):
         if self._module_ref is None:
             raise RuntimeError("TorchModuleFlow has no module properly initialized.")
             
@@ -65,7 +65,7 @@ class TorchModuleFlow(Flow[TorchIO, TorchIO]):
         
         logger.info(f"[{self.model.__class__.__name__}] Wrapper initialized on {self.device}")
 
-    def run(self, input_data: TorchIO) -> Optional[TorchIO]:
+    def step(self, input_data: TorchIO) -> Optional[TorchIO]:
         if input_data.inp is None:
             return None
         

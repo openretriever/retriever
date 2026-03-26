@@ -37,7 +37,7 @@ class Synchronizer(Flow[In, Out]):
         self.stream_fields = stream_fields
         self.tolerance = tolerance
         
-    def init(self):
+    def reset(self):
         # field_name -> {timestamp: value}
         self.buffers: Dict[str, Dict[float, Any]] = {}
         
@@ -58,7 +58,7 @@ class Synchronizer(Flow[In, Out]):
             return float(value.timestamp)
         return None
 
-    def run(self, input: In) -> Optional[Out]:
+    def step(self, input: In) -> Optional[Out]:
         # 1. Ingest
         for field in self.stream_fields:
             val = getattr(input, field, None)
