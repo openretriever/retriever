@@ -33,7 +33,7 @@ Goal: inspect intermediate values while stepping.
 
 Use this phase before trying multiprocessing/dora backend debugging.
 
-## Phase 3: Record Real Data to MCAP
+## Phase 3: Record Real Data
 Goal: capture one real session that can be replayed repeatedly.
 
 ```bash
@@ -48,12 +48,13 @@ Artifact:
 Goal: reproduce behavior exactly and iterate quickly.
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 ```
 
 What to look for:
 - stable, repeatable output across runs
 - debugging changes affect logic, not input randomness
+- the same replay works from either `logs/perception.rrd` or `logs/perception.mcap`
 
 ## Phase 5: Incident Drill and Diagnosis Consistency
 Goal: verify your incident diagnosis survives replay.

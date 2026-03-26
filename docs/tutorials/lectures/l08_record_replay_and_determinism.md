@@ -31,7 +31,7 @@ Run from repository root:
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 4
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 4
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 4 --visualize cv2
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 ```
 

@@ -163,7 +163,7 @@ Notes:
 - This tutorial tries to use a real camera and falls back to a synthetic stream if none is available.
 - The concrete thing you care about is that you now have:
   - `logs/perception.rrd` for Rerun inspection
-  - `logs/perception.mcap` for replay
+  - `logs/perception.mcap` as a mirrored interchange artifact
 
 If you want to view the recording immediately, you can use the library helper:
 
@@ -190,14 +190,16 @@ Replay is the bridge between "debuggable" and "reproducible": you run the same s
 Run the replay mode:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --show-window
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 ```
 
 This replay is intentionally in-process. That is the point: it keeps the "set a breakpoint in `Flow.step()`" workflow
 alive even when the original input came from hardware.
 
-If you prefer a headless run (no OpenCV window), drop `--show-window`.
-If you want to stream live to Rerun while replaying, add `--stream`.
+Replay accepts either `.rrd` or `.mcap`.
+If you prefer a headless run, use `--visualize stdout`.
+If you want to stream live to Rerun while replaying, use `--visualize rerun`.
+If you want both the cv2 window and Rerun, use `--visualize both`.
 
 ## Part 5: Turn Runs Into Evidence (Run Manifests and Lineage)
 

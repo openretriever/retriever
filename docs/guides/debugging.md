@@ -215,6 +215,7 @@ Library helpers (stepper-first):
 Perception example:
 - `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
-  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay ...`
+  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize cv2`
 
-These examples store a gzip+pickle file by default at `logs/perception_recording.pkl.gz`.
+The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
+Replay accepts either artifact.

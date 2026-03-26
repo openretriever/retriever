@@ -129,12 +129,13 @@ pixi run demo-webcam-window
 
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 ```
 
 This is the shortest path from live sensing to deterministic replay:
 - `logs/perception.rrd` is the inspection artifact for Rerun
-- `logs/perception.mcap` is the replay artifact
+- `logs/perception.mcap` is the interchange/mirror artifact
+- replay accepts either `.rrd` or `.mcap`
 
 ## What To Read Next
 
