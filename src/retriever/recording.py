@@ -4,7 +4,7 @@ This module defines a small recording abstraction above `Pipeline.step()`
 results and below concrete containers like MCAP and Rerun `.rrd`.
 
 The intent is:
-- keep `retriever.data_spec` as the canonical typed/event model
+- keep `retriever.types` as the shared schema/stream identity surface
 - keep runtime `StepResult` / tuple-buffer semantics unchanged
 - make persisted recording targets pluggable
 
@@ -28,7 +28,7 @@ from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_
 
 import numpy as np
 
-from retriever.data_spec import ClockDomain, SchemaRef, StreamId
+from retriever.types import ClockDomain, SchemaRef, StreamId
 from retriever.types_registry import resolve_schema_ref
 
 RecordingFormat = Literal["mcap", "rrd"]
