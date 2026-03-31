@@ -37,13 +37,13 @@ class SensorSim(Flow[None, SensorOut]):
         return {"dt": self.dt}
 
     def reset(self) -> None:
-        self.step = 0
+        self._step_idx = 0
         self.t_sim = 0.0
 
     def step(self, _):  # type: ignore[override]
-        self.step += 1
+        self._step_idx += 1
         self.t_sim += self.dt
-        reading = 0.8 + 0.2 * ((self.step % 6) - 3)
+        reading = 0.8 + 0.2 * ((self._step_idx % 6) - 3)
         return SensorOut(t_sim=self.t_sim, reading=reading)
 
 

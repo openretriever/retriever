@@ -43,17 +43,17 @@ class CounterSource(Flow[None, NumericSample]):
         super().__init__()
         self.source = source
         self.start = float(start)
-        self.step = float(step)
+        self.step_size = float(step)
 
     def init_config(self) -> dict:
-        return {"source": self.source, "start": self.start, "step": self.step}
+        return {"source": self.source, "start": self.start, "step": self.step_size}
 
     def reset(self) -> None:
         self._value = self.start
 
     def step(self, _):  # type: ignore[override]
         out = NumericSample(source=self.source, value=self._value)
-        self._value += self.step
+        self._value += self.step_size
         return out
 
 

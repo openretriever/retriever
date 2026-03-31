@@ -26,11 +26,11 @@ class CounterOut:
 
 class StepSource(Flow[None, StepIn]):
     def reset(self) -> None:
-        self.step = 0
+        self._step_idx = 0
 
     def step(self, _):  # type: ignore[override]
-        self.step += 1
-        return StepIn(step=self.step)
+        self._step_idx += 1
+        return StepIn(step=self._step_idx)
 
 
 class StatefulCounter(Flow[StepIn, CounterOut]):
