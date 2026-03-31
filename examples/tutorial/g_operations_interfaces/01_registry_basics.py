@@ -2,9 +2,10 @@
 Registry basics (types / flows / pipelines).
 
 This is a lightweight demo of Retriever's "PyTorch-ish" registries:
-  - Type registry:   `register_type`, `get_type`, `list_types`
+  - Type registry:   `register_type`, `get_type`, `get_type_info`, `list_types`
   - Flow registry:   `register_flow`, `get_flow`, `list_flows`
-  - Pipeline registry (IR-first): `register_pipeline`, `list_pipelines`, `build_ir`
+  - Pipeline registry (IR-first): `register_pipeline`, `list_pipelines`, `build_ir`,
+    `build_pipeline_surface`
 
 Why this matters:
   - Examples and plugins can register components without deep imports.
@@ -63,6 +64,7 @@ def main() -> None:
     print("registered type names:", sorted(retriever.list_types().keys())[:10], "...")
     T = retriever.get_type("CounterValue")
     print("get_type('CounterValue'):", T)
+    print("get_type_info('CounterValue'):", retriever.get_type_info("CounterValue"))
 
     print("\n=== Flows ===")
     flows = retriever.list_flows(category="examples")
@@ -74,6 +76,13 @@ def main() -> None:
 
     ir = retriever.build_ir("registry_demo")
     print(f"[IR] name={ir.metadata.name!r} nodes={len(ir.nodes)} edges={len(ir.edges)}")
+    surface = retriever.build_pipeline_surface("registry_demo")
+    print(
+        "[surface] inputs=",
+        [(port.node_type, port.port) for port in surface.inputs],
+        "outputs=",
+        [(port.node_type, port.port) for port in surface.outputs],
+    )
 
     print("\n=== Run (in-process stepper, 3 steps) ===")
     pipe = Pipeline("registry_demo_stepper")

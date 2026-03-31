@@ -195,6 +195,13 @@ def main() -> None:
     # Build IR via pipeline registry (factory → Pipeline.validate → IR)
     ir = retriever.build_ir("robot_localization", camera=args.camera)
     print(f"\n[IR] name={ir.metadata.name!r} nodes={len(ir.nodes)} edges={len(ir.edges)} camera={args.camera!r}")
+    surface = retriever.build_pipeline_surface("robot_localization", camera=args.camera)
+    print(
+        "[surface] inputs=",
+        [(port.node_type, port.port) for port in surface.inputs],
+        "outputs=",
+        [(port.node_type, port.port) for port in surface.outputs],
+    )
 
     # Debug-friendly execution: run in-process so breakpoints inside Flow.step() work.
     factory = retriever.get_pipeline_factory("robot_localization")

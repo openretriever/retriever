@@ -11,12 +11,13 @@ It registers *pipeline factories* (callables) that return either:
 This enables:
   - Discoverable pipelines (for a future `retriever` CLI)
   - Plugin-based extensibility via entry points (see `retriever.plugins`)
+  - Flow-like pipeline surfaces inferred from unused external ports
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple
+from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple, Literal
 
 from retriever.flow.builder import PipelineBuilder
 from retriever.ir import IR
@@ -43,6 +44,28 @@ class PipelineInfo:
     category: str = "general"
     description: str = ""
     tags: Tuple[str, ...] = field(default_factory=tuple)
+    surface_policy: Literal["auto_unused", "explicit", "none"] = "auto_unused"
+    input_ports: Tuple[str, ...] = field(default_factory=tuple)
+    output_ports: Tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class PipelineSurfacePort:
+    """One externally visible port on a registered pipeline surface."""
+
+    node_id: str
+    node_type: str
+    port: str
+    type: str
+    direction: Literal["input", "output"]
+
+
+@dataclass(frozen=True)
+class PipelineSurface:
+    """Flow-like external port surface for a registered pipeline."""
+
+    inputs: Tuple[PipelineSurfacePort, ...] = field(default_factory=tuple)
+    outputs: Tuple[PipelineSurfacePort, ...] = field(default_factory=tuple)
 
 
 class PipelineRegistry:
@@ -59,6 +82,9 @@ class PipelineRegistry:
         category: str = "general",
         description: str = "",
         tags: Optional[Iterable[str]] = None,
+        surface_policy: Literal["auto_unused", "explicit", "none"] = "auto_unused",
+        input_ports: Optional[Iterable[str]] = None,
+        output_ports: Optional[Iterable[str]] = None,
         overwrite: bool = False,
     ) -> None:
         if name in self._pipelines and not overwrite:
@@ -70,6 +96,9 @@ class PipelineRegistry:
             category=category,
             description=description,
             tags=tuple(tags or ()),
+            surface_policy=surface_policy,
+            input_ports=tuple(input_ports or ()),
+            output_ports=tuple(output_ports or ()),
         )
         self._pipelines[name] = info
 
@@ -106,6 +135,17 @@ class PipelineRegistry:
             "(expected IR, PipelineBuilder, or Pipeline)"
         )
 
+    def build_surface(self, name: str, **kwargs: Any) -> PipelineSurface:
+        """Build a flow-like surface from a registered pipeline."""
+        info = self.get(name)
+        ir = self.build_ir(name, **kwargs)
+        return _build_pipeline_surface_from_ir(
+            ir,
+            surface_policy=info.surface_policy,
+            input_selectors=info.input_ports,
+            output_selectors=info.output_ports,
+        )
+
 
 _global_pipeline_registry = PipelineRegistry()
 
@@ -116,10 +156,19 @@ def register_pipeline(
     category: str = "general",
     description: str = "",
     tags: Optional[Iterable[str]] = None,
+    surface_policy: Literal["auto_unused", "explicit", "none"] = "auto_unused",
+    input_ports: Optional[Iterable[str]] = None,
+    output_ports: Optional[Iterable[str]] = None,
     overwrite: bool = False,
 ) -> Callable[[PipelineFactory], PipelineFactory]:
     """
     Decorator to register a pipeline factory.
+
+    Surface controls:
+      - `surface_policy="auto_unused"`: expose unconnected non-internal ports
+      - `surface_policy="explicit"`: expose only selectors from `input_ports`
+        / `output_ports`, using `FlowClass.port`
+      - `surface_policy="none"`: do not expose a flow-like surface
 
     Example:
         @register_pipeline("perception_demo", category="examples")
@@ -136,6 +185,9 @@ def register_pipeline(
             category=category,
             description=description,
             tags=tags,
+            surface_policy=surface_policy,
+            input_ports=input_ports,
+            output_ports=output_ports,
             overwrite=overwrite,
         )
         return factory
@@ -156,6 +208,11 @@ def list_pipelines(category: Optional[str] = None) -> Dict[str, PipelineInfo]:
 def build_ir(name: str, **kwargs: Any) -> IR:
     """Build a pipeline IR by name."""
     return _global_pipeline_registry.build_ir(name, **kwargs)
+
+
+def build_pipeline_surface(name: str, **kwargs: Any) -> PipelineSurface:
+    """Infer the external flow-like surface for a registered pipeline."""
+    return _global_pipeline_registry.build_surface(name, **kwargs)
 
 
 def get_pipeline(name: str, **kwargs: Any) -> IR:
@@ -211,3 +268,97 @@ def run_pipeline(
 
 def get_global_pipeline_registry() -> PipelineRegistry:
     return _global_pipeline_registry
+
+
+def _build_pipeline_surface_from_ir(
+    ir: IR,
+    *,
+    surface_policy: Literal["auto_unused", "explicit", "none"],
+    input_selectors: Tuple[str, ...],
+    output_selectors: Tuple[str, ...],
+) -> PipelineSurface:
+    if surface_policy == "none":
+        return PipelineSurface()
+
+    if surface_policy == "explicit":
+        return PipelineSurface(
+            inputs=tuple(_resolve_surface_selector(ir, selector, direction="input") for selector in input_selectors),
+            outputs=tuple(_resolve_surface_selector(ir, selector, direction="output") for selector in output_selectors),
+        )
+
+    incoming = {
+        (edge.destination.node, IR.get_logical_port(edge.destination.port))
+        for edge in ir.edges
+        if not IR.get_logical_port(edge.destination.port).startswith("_")
+    }
+    outgoing = {
+        (edge.source.node, IR.get_logical_port(edge.source.port))
+        for edge in ir.edges
+        if not IR.get_logical_port(edge.source.port).startswith("_")
+    }
+
+    inputs: list[PipelineSurfacePort] = []
+    outputs: list[PipelineSurfacePort] = []
+    for node in ir.nodes:
+        for port, port_type in node.inputs.items():
+            if port.startswith("_"):
+                continue
+            if (node.id, port) not in incoming:
+                inputs.append(
+                    PipelineSurfacePort(
+                        node_id=node.id,
+                        node_type=node.type,
+                        port=port,
+                        type=port_type,
+                        direction="input",
+                    )
+                )
+        for port, port_type in node.outputs.items():
+            if port.startswith("_"):
+                continue
+            if (node.id, port) not in outgoing:
+                outputs.append(
+                    PipelineSurfacePort(
+                        node_id=node.id,
+                        node_type=node.type,
+                        port=port,
+                        type=port_type,
+                        direction="output",
+                    )
+                )
+    return PipelineSurface(inputs=tuple(inputs), outputs=tuple(outputs))
+
+
+def _resolve_surface_selector(
+    ir: IR,
+    selector: str,
+    *,
+    direction: Literal["input", "output"],
+) -> PipelineSurfacePort:
+    if "." not in selector:
+        raise ValueError(
+            f"Invalid pipeline surface selector '{selector}'. "
+            "Expected 'FlowClass.port'."
+        )
+    node_type, port = selector.split(".", 1)
+    matches = []
+    for node in ir.nodes:
+        port_map = node.inputs if direction == "input" else node.outputs
+        if node.type == node_type and port in port_map:
+            matches.append(
+                PipelineSurfacePort(
+                    node_id=node.id,
+                    node_type=node.type,
+                    port=port,
+                    type=port_map[port],
+                    direction=direction,
+                )
+            )
+    if len(matches) == 1:
+        return matches[0]
+    if not matches:
+        raise ValueError(f"Pipeline surface selector '{selector}' did not match any {direction} port.")
+    raise ValueError(
+        f"Pipeline surface selector '{selector}' is ambiguous. "
+        f"Matches: {[match.node_id for match in matches]}"
+    )

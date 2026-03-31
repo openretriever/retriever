@@ -279,6 +279,49 @@ class MCAPWriter:
                 publish_time=timestamp_ns,
             )
 
+    def write_stream_spec(self, spec: Any, *, timestamp_ns: int = 0) -> None:
+        """Write one shared stream-spec manifest message."""
+        topic = f"/retriever/streams/{spec.node_id}/spec"
+        schema_data = json.dumps(
+            {
+                "type": "object",
+                "properties": {
+                    "stream_id": {"type": "string"},
+                    "node_id": {"type": "string"},
+                    "io_kind": {"type": "string"},
+                    "clock_domain": {"type": "string"},
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "version": {"type": "string"},
+                            "encoding": {"type": "string"},
+                        },
+                    },
+                },
+            }
+        ).encode("utf-8")
+        channel_id = self._get_channel_id(topic, "retriever.StreamSpec", schema_data)
+        payload = json.dumps(
+            {
+                "stream_id": str(spec.stream_id),
+                "node_id": spec.node_id,
+                "io_kind": spec.io_kind,
+                "clock_domain": spec.clock_domain.name,
+                "schema": {
+                    "name": spec.schema.name,
+                    "version": spec.schema.version,
+                    "encoding": spec.schema.encoding,
+                },
+            }
+        ).encode("utf-8")
+        self._writer.add_message(
+            channel_id=channel_id,
+            log_time=timestamp_ns,
+            data=payload,
+            publish_time=timestamp_ns,
+        )
+
     def _write_image(
         self, flow_name: str, field_name: str, image: np.ndarray, timestamp_ns: int
     ) -> None:

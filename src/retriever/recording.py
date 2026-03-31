@@ -26,6 +26,7 @@ from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_
 import numpy as np
 
 from retriever.data_spec import ClockDomain, SchemaRef, StreamId
+from retriever.types_registry import resolve_schema_ref
 
 RecordingFormat = Literal["mcap", "rrd"]
 _RRD_REPLAY_CODEC = "retriever.json-zlib-v1"
@@ -67,6 +68,9 @@ class RecordingStreamSpec:
 
 def schema_ref_for_value(value: Any) -> SchemaRef:
     """Infer a stable schema identity hook for a runtime value."""
+    registered = resolve_schema_ref(value)
+    if registered is not None:
+        return registered
     type_name = getattr(type(value), "__name__", "Unknown") or "Unknown"
     return SchemaRef(name=type_name, version="v1", encoding="python")
 
@@ -117,6 +121,9 @@ class RecordingReader(Protocol):
     ) -> list[tuple[float, Any]]:
         ...
 
+    def get_stream_spec(self, node_id: str) -> Optional["RecordingStreamSpec"]:
+        ...
+
 
 class CompositeRecordingSink:
     """Fan out one step stream into multiple persisted recording targets."""
@@ -148,6 +155,7 @@ class McapRecordingSink:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self._writer = None
+        self._written_specs: set[str] = set()
 
     def open(self) -> None:
         from retriever.lib.mcap import MCAPWriter
@@ -160,6 +168,12 @@ class McapRecordingSink:
     def write_step(self, result: Any, step_idx: int) -> None:
         if self._writer is None:
             raise RuntimeError("MCAP recording sink is not open")
+        timestamp_ns = int(float(getattr(result, "now", 0.0) or 0.0) * 1e9)
+        for spec in infer_output_stream_specs(result):
+            if spec.node_id in self._written_specs:
+                continue
+            self._writer.write_stream_spec(spec, timestamp_ns=timestamp_ns)
+            self._written_specs.add(spec.node_id)
         self._writer.write_step(result, step_idx)
 
     def close(self) -> None:
@@ -167,6 +181,7 @@ class McapRecordingSink:
             return
         self._writer.__exit__(None, None, None)
         self._writer = None
+        self._written_specs.clear()
 
 
 class RrdRecordingSink:
@@ -183,6 +198,7 @@ class RrdRecordingSink:
         self.app_id = app_id
         self.auto_open = auto_open
         self._manager = None
+        self._written_specs: set[str] = set()
 
     def open(self) -> None:
         from retriever.lib.rerun import RerunConfig, RerunManager
@@ -203,6 +219,12 @@ class RrdRecordingSink:
             raise RuntimeError("RRD recording sink is not open")
         self._manager.log_step_result(result, step_idx)
         self._manager.set_time(float(getattr(result, "now", 0.0) or 0.0), step_idx)
+        for spec in infer_output_stream_specs(result):
+            if spec.node_id in self._written_specs:
+                continue
+            payload = np.frombuffer(_serialize_rrd_stream_spec(spec), dtype=np.uint8).copy()
+            self._manager.log(_rrd_replay_spec_path(str(spec.node_id)), payload)
+            self._written_specs.add(spec.node_id)
         for node_id, output in (getattr(result, "outputs", None) or {}).items():
             payload = np.frombuffer(_serialize_rrd_replay_value(output), dtype=np.uint8).copy()
             self._manager.log(_rrd_replay_payload_path(str(node_id)), payload)
@@ -212,6 +234,7 @@ class RrdRecordingSink:
             return
         self._manager.cleanup()
         self._manager = None
+        self._written_specs.clear()
 
 
 class McapRecordingReader:
@@ -246,6 +269,16 @@ class McapRecordingReader:
             return buffer
         return [(ts, _hydrate_recorded_value(value, output_type)) for ts, value in buffer]
 
+    def get_stream_spec(self, node_id: str) -> Optional[RecordingStreamSpec]:
+        from retriever.lib.mcap import MCAPReader
+
+        recorded_node_id = _resolve_recorded_node_id(node_id, self.list_node_ids())
+        topic = f"/retriever/streams/{recorded_node_id}/spec"
+        with MCAPReader(self.path) as reader:
+            for _schema, _channel, message in reader._reader.iter_messages(topics=[topic]):
+                return _stream_spec_from_json(json.loads(message.data.decode("utf-8")))
+        return None
+
 
 class RrdRecordingReader:
     """Read node streams from Rerun `.rrd` recordings."""
@@ -268,11 +301,14 @@ class RrdRecordingReader:
         ).select().read_all()
         columns = table.to_pydict()
         prefix = f"/{_RRD_REPLAY_ROOT}/flows/"
-        suffix = "/output/payload:TensorData"
+        payload_suffix = "/output/payload:TensorData"
+        spec_suffix = "/spec:TensorData"
         node_ids = []
         for key in columns:
-            if key.startswith(prefix) and key.endswith(suffix):
-                node_ids.append(key[len(prefix) : -len(suffix)])
+            if key.startswith(prefix) and key.endswith(payload_suffix):
+                node_ids.append(key[len(prefix) : -len(payload_suffix)])
+            if key.startswith(prefix) and key.endswith(spec_suffix):
+                node_ids.append(key[len(prefix) : -len(spec_suffix)])
         return sorted(set(node_ids))
 
     def read_node_stream(
@@ -338,6 +374,34 @@ class RrdRecordingReader:
                 f"Replay payload for node `{recorded_node_id}` in `{self.path}` contained no steps."
             )
         return buffer
+
+    def get_stream_spec(self, node_id: str) -> Optional[RecordingStreamSpec]:
+        try:
+            import rerun as rr
+        except ImportError:
+            raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
+
+        available = self.list_node_ids()
+        recorded_node_id = _resolve_recorded_node_id(node_id, available)
+
+        recording = rr.dataframe.load_recording(str(self.path))
+        table = recording.view(
+            index="log_time",
+            contents="/**",
+            include_semantically_empty_columns=True,
+            include_indicator_columns=True,
+        ).select().read_all()
+        columns = table.to_pydict()
+        spec_key = f"/{_rrd_replay_spec_path(recorded_node_id)}:TensorData"
+        raw_specs = columns.get(spec_key) or []
+        for cell in raw_specs:
+            payload_cell = _unwrap_rrd_cell(cell)
+            if payload_cell in (None, []):
+                continue
+            if not isinstance(payload_cell, dict) or "buffer" not in payload_cell:
+                continue
+            return _deserialize_rrd_stream_spec(bytes(payload_cell["buffer"]))
+        return None
 
 
 def build_recording_artifacts(record_config: Any) -> tuple[RecordingArtifactSpec, ...]:
@@ -429,6 +493,10 @@ def _rrd_replay_payload_path(node_id: str) -> str:
     return f"{_RRD_REPLAY_ROOT}/flows/{node_id}/output/payload"
 
 
+def _rrd_replay_spec_path(node_id: str) -> str:
+    return f"{_RRD_REPLAY_ROOT}/flows/{node_id}/spec"
+
+
 def _serialize_rrd_replay_value(value: Any) -> bytes:
     envelope = {
         "codec": _RRD_REPLAY_CODEC,
@@ -436,6 +504,48 @@ def _serialize_rrd_replay_value(value: Any) -> bytes:
     }
     raw = json.dumps(envelope, separators=(",", ":")).encode("utf-8")
     return zlib.compress(raw, level=3)
+
+
+def _serialize_rrd_stream_spec(spec: RecordingStreamSpec) -> bytes:
+    raw = json.dumps(_stream_spec_to_json(spec), separators=(",", ":")).encode("utf-8")
+    return zlib.compress(raw, level=3)
+
+
+def _deserialize_rrd_stream_spec(payload: bytes) -> RecordingStreamSpec:
+    try:
+        data = json.loads(zlib.decompress(payload).decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError("Could not decode Retriever stream spec from `.rrd`.") from exc
+    return _stream_spec_from_json(data)
+
+
+def _stream_spec_to_json(spec: RecordingStreamSpec) -> dict[str, Any]:
+    return {
+        "stream_id": str(spec.stream_id),
+        "node_id": spec.node_id,
+        "io_kind": spec.io_kind,
+        "clock_domain": spec.clock_domain.name,
+        "schema": {
+            "name": spec.schema.name,
+            "version": spec.schema.version,
+            "encoding": spec.schema.encoding,
+        },
+    }
+
+
+def _stream_spec_from_json(data: dict[str, Any]) -> RecordingStreamSpec:
+    schema_data = data.get("schema") or {}
+    return RecordingStreamSpec(
+        stream_id=StreamId(str(data["stream_id"])),
+        node_id=str(data["node_id"]),
+        io_kind=str(data.get("io_kind", "output")),
+        clock_domain=ClockDomain(str(data.get("clock_domain", "retriever_time"))),
+        schema=SchemaRef(
+            name=str(schema_data.get("name", "Unknown")),
+            version=str(schema_data.get("version", "v1")),
+            encoding=str(schema_data.get("encoding", "python")),
+        ),
+    )
 
 
 def _deserialize_rrd_replay_value(payload: bytes) -> Any:
