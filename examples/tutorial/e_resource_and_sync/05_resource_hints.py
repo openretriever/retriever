@@ -37,11 +37,11 @@ class SafetyOut:
 
 class SensorFlow(Flow[None, SensorOut]):
     def reset(self) -> None:
-        self.step = 0
+        self._step_idx = 0
 
     def step(self, _):  # type: ignore[override]
-        self.step += 1
-        return SensorOut(value=float(self.step))
+        self._step_idx += 1
+        return SensorOut(value=float(self._step_idx))
 
 
 class VisionFlow(Flow[SensorOut, VisionOut]):
