@@ -263,7 +263,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 ```
 
 Notes:
-- `retriever.connect(...)` respects an active `with Pipeline(...):` context.
+- `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---

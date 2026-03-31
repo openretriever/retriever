@@ -383,7 +383,7 @@ class EventStreamRecorder(Generic[T]):
         self.buffer.append((res.now, out))
         return res
 
-    def step(
+    def record(
         self,
         *,
         steps: int,

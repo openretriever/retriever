@@ -7,7 +7,7 @@ import pytest
 from retriever.config import RecordConfig
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 from retriever.recording import build_recording_sink, read_node_stream_from_recording
-from retriever.rt.stepper import StepResult
+from retriever.rt.stepper import EventStreamRecorder, StepResult
 
 
 @flow_io
@@ -90,6 +90,27 @@ def test_pipeline_record_to_and_replay_helpers(tmp_path):
         pipe2.close_stepper()
 
     assert sink2.flow.seen == [1, 2, 3]
+
+
+def test_event_stream_recorder_supports_single_step_and_multi_step_recording():
+    pipe = Pipeline("recorder_demo")
+    src = Counter() @ Rate(hz=10)
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(src, sink, sync=Latest())
+
+    recorder = EventStreamRecorder(pipe, src, name="counter")
+    try:
+        first = recorder.step(dt=0.1)
+        second = recorder.step(dt=0.1)
+        assert [out.value for _ts, out in recorder.buffer] == [1, 2]
+        assert second.now > first.now
+
+        recorder.buffer.clear()
+        recorder.record(steps=3, dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert [out.value for _ts, out in recorder.buffer] == [3, 4, 5]
 
 
 def test_pipeline_record_config_can_emit_rrd_and_mcap(tmp_path):

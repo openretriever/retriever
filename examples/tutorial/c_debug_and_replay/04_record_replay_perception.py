@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 from retriever.config import RecordConfig
-from retriever.tutorials.perception import (
+from examples.shared.perception_runtime import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,
@@ -65,7 +65,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def cmd_record(args: argparse.Namespace) -> None:
-    pipe, camera = build_record_pipeline()
+    pipe, _camera = build_record_pipeline()
     cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
         pipe.record(
@@ -83,21 +83,24 @@ def cmd_record(args: argparse.Namespace) -> None:
 
 
 def _resolve_recording_path(path: Path) -> Path:
-    if not path.exists():
+    resolved = path.expanduser()
+    if not resolved.exists():
         raise FileNotFoundError(
-            f"Recording not found: {path}. Run 'record' first to create a perception recording (.rrd or .mcap)."
+            f"Recording not found: {resolved}. Run 'record' first to create a perception recording (.rrd or .mcap)."
         )
-    return path
+    return resolved
 
 
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
+    camera_buffer = load_camera_buffer_from_recording(recording)
+    max_steps = len(camera_buffer) if args.steps <= 0 else min(args.steps, len(camera_buffer))
+    replay_buffer = camera_buffer[:max_steps]
+
     display = "cv2" if args.visualize in {"cv2", "both"} else "stdout" if args.visualize == "stdout" else "none"
     pipe, camera = build_replay_pipeline(display=display)
-
-    camera_buffer = load_camera_buffer_from_recording(recording)
-    emit_replay_started(recording_path=str(recording), frame_count_estimate=len(camera_buffer))
-    pipe.replay(camera, buffer=camera_buffer)
+    emit_replay_started(recording_path=str(recording), frame_count_estimate=max_steps)
+    pipe.replay(camera, buffer=replay_buffer)
 
     rerun_manager = None
     if args.visualize in {"rerun", "both"}:
@@ -109,7 +112,7 @@ def cmd_replay(args: argparse.Namespace) -> None:
 
     completed = 0
     try:
-        for i in range(args.steps):
+        for i in range(max_steps):
             result = pipe.step(dt=args.dt)
             completed = i + 1
             if rerun_manager is not None:
