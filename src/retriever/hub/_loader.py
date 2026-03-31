@@ -1,0 +1,220 @@
+"""Isolated importlib loader and ModuleProxy."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import types
+from pathlib import Path
+from typing import Any, Dict
+
+from retriever.error import ErrCode, HubError
+from retriever.hub._ref import ModuleRef
+
+_HUB_NS = "_retriever_hub"
+
+
+def _ensure_namespace() -> None:
+    """Ensure the _retriever_hub namespace package exists in sys.modules."""
+    if _HUB_NS not in sys.modules:
+        ns = types.ModuleType(_HUB_NS)
+        ns.__path__ = []  # type: ignore[attr-defined]
+        ns.__package__ = _HUB_NS
+        sys.modules[_HUB_NS] = ns
+
+
+def _load_package(module_root: Path, module_name: str) -> types.ModuleType:
+    """Load a Python package from module_root without modifying sys.path.
+
+    The package is registered under '_retriever_hub.{module_name}' in sys.modules
+    to avoid collisions. It is also registered under the bare '{module_name}' so
+    that intra-package absolute imports work.
+    """
+    _ensure_namespace()
+
+    pkg_dir = module_root / module_name
+    init_path = pkg_dir / "__init__.py"
+
+    if not pkg_dir.is_dir():
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Package directory '{module_name}' not found at {module_root}",
+        )
+
+    # A package without __init__.py — treat as namespace package
+    qualified = f"{_HUB_NS}.{module_name}"
+
+    if qualified in sys.modules:
+        return sys.modules[qualified]
+
+    if init_path.exists():
+        spec = importlib.util.spec_from_file_location(
+            qualified,
+            str(init_path),
+            submodule_search_locations=[str(pkg_dir)],
+        )
+    else:
+        # Namespace package (no __init__.py)
+        spec = importlib.util.spec_from_file_location(
+            qualified,
+            None,
+            submodule_search_locations=[str(pkg_dir)],
+        )
+
+    if spec is None:
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Could not create import spec for '{module_name}'",
+        )
+
+    module = importlib.util.module_from_spec(spec)
+    module.__package__ = qualified
+    module.__path__ = [str(pkg_dir)]  # type: ignore[attr-defined]
+
+    # Register before exec so relative imports inside __init__.py work
+    sys.modules[qualified] = module
+    sys.modules[module_name] = module
+
+    if spec.loader is not None:
+        try:
+            spec.loader.exec_module(module)
+        except Exception as exc:
+            # Clean up on failure
+            sys.modules.pop(qualified, None)
+            sys.modules.pop(module_name, None)
+            raise HubError(
+                ErrCode.HUB_IMPORT_FAILED,
+                f"Failed to import '{module_name}': {exc}",
+            ) from exc
+
+    return module
+
+
+def _import_submodule(module_root: Path, dotted_path: str) -> types.ModuleType:
+    """Import a submodule like 'lidar_slam.flow'."""
+    _ensure_namespace()
+
+    qualified = f"{_HUB_NS}.{dotted_path}"
+    if qualified in sys.modules:
+        return sys.modules[qualified]
+
+    parts = dotted_path.split(".")
+
+    # Build file path
+    rel_path = Path(*parts)
+    file_path = module_root / (str(rel_path) + ".py")
+    if not file_path.exists():
+        # Try as sub-package
+        file_path = module_root / rel_path / "__init__.py"
+
+    if not file_path.exists():
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Cannot find module file for '{dotted_path}' at {module_root}",
+        )
+
+    spec = importlib.util.spec_from_file_location(qualified, str(file_path))
+    if spec is None or spec.loader is None:
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Could not create import spec for '{dotted_path}'",
+        )
+
+    submod = importlib.util.module_from_spec(spec)
+    parent_dotted = ".".join(parts[:-1])
+    submod.__package__ = f"{_HUB_NS}.{parent_dotted}" if parent_dotted else _HUB_NS
+
+    sys.modules[qualified] = submod
+    sys.modules[dotted_path] = submod
+
+    # Wire into parent module
+    if parent_dotted:
+        parent_qualified = f"{_HUB_NS}.{parent_dotted}"
+        parent = sys.modules.get(parent_qualified)
+        if parent is not None:
+            setattr(parent, parts[-1], submod)
+
+    try:
+        spec.loader.exec_module(submod)
+    except Exception as exc:
+        sys.modules.pop(qualified, None)
+        sys.modules.pop(dotted_path, None)
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Failed to import '{dotted_path}': {exc}",
+        ) from exc
+
+    return submod
+
+
+def _resolve_export(module_root: Path, export_path: str) -> Any:
+    """Resolve an export path like 'lidar_slam.flow:LidarSlamFlow'."""
+    module_path, _, attr_name = export_path.partition(":")
+    if not attr_name:
+        raise HubError(
+            ErrCode.HUB_PYPROJECT_INVALID,
+            f"Export path '{export_path}' must contain ':' separator "
+            "(e.g. 'pkg.module:ClassName')",
+        )
+
+    submod = _import_submodule(module_root, module_path)
+    try:
+        return getattr(submod, attr_name)
+    except AttributeError:
+        raise HubError(
+            ErrCode.HUB_EXPORT_NOT_FOUND,
+            f"Module '{module_path}' has no attribute '{attr_name}'",
+        )
+
+
+def load_exports(
+    module_root: Path, module_name: str, exports: Dict[str, str]
+) -> Dict[str, Any]:
+    """Load all declared exports from a module.
+
+    Args:
+        module_root: Path containing the package.
+        module_name: Python package name (e.g. 'lidar_slam').
+        exports: {export_name: 'dotted.module:Attribute'} from pyproject.toml.
+
+    Returns:
+        {export_name: actual_object}
+    """
+    # Ensure the top-level package is loaded first
+    _load_package(module_root, module_name)
+
+    result: Dict[str, Any] = {}
+    for export_name, export_path in exports.items():
+        result[export_name] = _resolve_export(module_root, export_path)
+    return result
+
+
+class ModuleProxy:
+    """Namespace proxy for whole-package hub.use() (no :attribute).
+
+    Provides attribute access to the module's declared exports.
+    """
+
+    def __init__(self, exports: Dict[str, Any], ref: ModuleRef) -> None:
+        self._exports = exports
+        self._ref = ref
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        try:
+            return self._exports[name]
+        except KeyError:
+            raise AttributeError(
+                f"Module '{self._ref.org}/{self._ref.name}' has no export '{name}'. "
+                f"Available exports: {list(self._exports.keys())}"
+            )
+
+    def __dir__(self) -> list[str]:
+        return list(self._exports.keys())
+
+    def __repr__(self) -> str:
+        return (
+            f"<HubModule '{self._ref.org}/{self._ref.name}' "
+            f"exports={list(self._exports.keys())}>"
+        )

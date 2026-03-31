@@ -109,6 +109,27 @@ class ErrCode(IntEnum):
     DORA_GET_INPUT_FAILED = 4202
     DORA_SET_OUTPUT_FAILED = 4203
 
+    # ========================================================================
+    # Hub Layer Errors (5000-5999)
+    # ========================================================================
+
+    # General Hub errors (5000-5099)
+    HUB_UNKNOWN = 5000
+    HUB_INVALID_REF = 5001
+    HUB_MODULE_NOT_FOUND = 5002
+    HUB_REPO_NOT_ACCESSIBLE = 5003
+    HUB_NO_SEMVER_TAGS = 5004
+    HUB_VERSION_NOT_FOUND = 5005
+    HUB_FETCH_FAILED = 5006
+    HUB_EXTRACT_FAILED = 5007
+    HUB_PYPROJECT_MISSING = 5008
+    HUB_PYPROJECT_INVALID = 5009
+    HUB_MIN_VERSION_MISMATCH = 5010
+    HUB_DEPENDENCY_MISSING = 5011
+    HUB_DEPENDENCY_VERSION = 5012
+    HUB_IMPORT_FAILED = 5013
+    HUB_EXPORT_NOT_FOUND = 5014
+
 
 
 # Built-in error messages
@@ -191,6 +212,23 @@ ERROR_MSGS: Dict[ErrCode, str] = {
     ErrCode.DORA_EVENT_INVALID: "Invalid dora event structure or missing required fields",
     ErrCode.DORA_GET_INPUT_FAILED: "Failed to receive input from dora node",
     ErrCode.DORA_SET_OUTPUT_FAILED: "Failed to send output via dora node",
+
+    # Hub layer (5000-5099)
+    ErrCode.HUB_UNKNOWN: "Unknown hub error",
+    ErrCode.HUB_INVALID_REF: "Invalid module reference format",
+    ErrCode.HUB_MODULE_NOT_FOUND: "Module not found in hub index",
+    ErrCode.HUB_REPO_NOT_ACCESSIBLE: "Module repository is not accessible",
+    ErrCode.HUB_NO_SEMVER_TAGS: "No semver tags found in module repository",
+    ErrCode.HUB_VERSION_NOT_FOUND: "Requested version not found",
+    ErrCode.HUB_FETCH_FAILED: "Failed to download module",
+    ErrCode.HUB_EXTRACT_FAILED: "Failed to extract module archive",
+    ErrCode.HUB_PYPROJECT_MISSING: "Module is missing pyproject.toml",
+    ErrCode.HUB_PYPROJECT_INVALID: "Module pyproject.toml is missing [tool.retriever.module]",
+    ErrCode.HUB_MIN_VERSION_MISMATCH: "Module requires a newer version of retriever",
+    ErrCode.HUB_DEPENDENCY_MISSING: "Required dependency is not installed",
+    ErrCode.HUB_DEPENDENCY_VERSION: "Installed dependency version does not satisfy requirement",
+    ErrCode.HUB_IMPORT_FAILED: "Failed to import module",
+    ErrCode.HUB_EXPORT_NOT_FOUND: "Requested export not found in module",
 }
 
 
@@ -259,6 +297,8 @@ class RetrieverError(Exception):
             return "RT"
         elif 4000 <= code_val < 5000:
             return "Backend"
+        elif 5000 <= code_val < 6000:
+            return "Hub"
         else:
             return "Custom"
 
@@ -317,6 +357,16 @@ class BackendError(RetrieverError):
         super().__init__(code, message, data)
 
 
+class HubError(RetrieverError):
+    """Hub layer errors (5000-5999)"""
+
+    def __init__(self, code: Union[int, ErrCode], message: Optional[str] = None, **data):
+        code_val = int(code)
+        if not (5000 <= code_val < 6000):
+            code = ErrCode.HUB_UNKNOWN
+        super().__init__(code, message, data)
+
+
 # ============================================================================
 # Convenience Error Functions
 # ============================================================================
@@ -339,3 +389,8 @@ def rt_error(code: ErrCode, message: Optional[str] = None, **data) -> RTError:
 def backend_error(code: ErrCode, message: Optional[str] = None, **data) -> BackendError:
     """Create a BackendError with optional data"""
     return BackendError(code, message, **data)
+
+
+def hub_error(code: ErrCode, message: Optional[str] = None, **data) -> HubError:
+    """Create a HubError with optional data"""
+    return HubError(code, message, **data)
