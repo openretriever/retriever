@@ -1,3 +1,5 @@
+"""Shared perception runtime helpers for example pipelines."""
+
 from __future__ import annotations
 
 import json
@@ -359,8 +361,11 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
 
     def step(self, input: CameraData) -> DetectionResults:
         _require_demo_deps()
+        camera = _as_camera_data(input)
+        if camera is None:
+            return DetectionResults()
         detections: List[Detection] = []
-        frame = input.image.frame
+        frame = camera.image.frame
 
         red_mask = (
             (frame[:, :, 0] > 180) & (frame[:, :, 1] < 120) & (frame[:, :, 2] < 120)
@@ -379,14 +384,14 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
             node="detector",
             event="Perception.Detections",
             payload={
-                "frame_id": int(input.image.frame_id),
+                "frame_id": int(camera.image.frame_id),
                 "count": len(filtered),
                 "labels": labels,
                 "max_confidence": float(max_confidence) if filtered else 0.0,
                 "empty": len(filtered) == 0,
             },
         )
-        return DetectionResults(image=input.image, detections=filtered, mode=str(input.mode or "unknown"))
+        return DetectionResults(image=camera.image, detections=filtered, mode=str(camera.mode or "unknown"))
 
     def _detect_from_mask(self, mask: Any, label: str) -> List[Detection]:
         y_coords, x_coords = np.where(mask)
