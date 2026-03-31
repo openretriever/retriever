@@ -132,8 +132,8 @@ build = "python -m build"
 package = "python scripts/package_dist.py"
 
 # Test tasks
-test = "pytest tests/ -v"
-test-control = "pytest tests/test_control.py tests/test_adapter_reset.py tests/test_output_capture.py -v"
+test = "python -m pytest tests/ -v"
+test-control = "python -m pytest tests/test_control.py tests/test_adapter_reset.py tests/test_output_capture.py -v"
 
 # Control System Demos
 demo-control = "python examples/control_demo.py --web-port 8080 --keyboard"
