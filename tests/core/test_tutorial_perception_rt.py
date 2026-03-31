@@ -7,7 +7,7 @@ from retriever.config import RecordConfig
 from retriever.pipeline_registry import build_ir, list_pipelines
 from retriever.recording import build_recording_sink
 from retriever.rt.stepper import StepResult
-from retriever.tutorials.perception import (
+from examples.tutorial._perception_runtime import (
     CameraSource,
     ColorDetector,
     CameraData,

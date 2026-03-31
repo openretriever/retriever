@@ -4,8 +4,8 @@ This module defines a small recording abstraction above `Pipeline.step()`
 results and below concrete containers like MCAP and Rerun `.rrd`.
 
 The intent is:
-- keep `retriever.data_spec` as the canonical typed/event model
 - keep runtime `StepResult` / tuple-buffer semantics unchanged
+- keep lightweight schema hooks local until a broader sharing contract settles
 - make persisted recording targets pluggable
 
 `.mcap` remains the mirror/interchange format. `.rrd` is the native Rerun
@@ -25,11 +25,49 @@ from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_
 
 import numpy as np
 
-from retriever.data_spec import ClockDomain, SchemaRef, StreamId
-
 RecordingFormat = Literal["mcap", "rrd"]
 _RRD_REPLAY_CODEC = "retriever.json-zlib-v1"
 _RRD_REPLAY_ROOT = "retriever_recording"
+
+
+@dataclass(frozen=True, order=True)
+class StreamId:
+    """Stable runtime stream identifier for persisted recordings."""
+
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.value:
+            raise ValueError("stream id must be non-empty")
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True)
+class ClockDomain:
+    """Clock-domain label attached to recorded runtime streams."""
+
+    name: str = "retriever_time"
+
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("clock domain name must be non-empty")
+
+
+@dataclass(frozen=True)
+class SchemaRef:
+    """Minimal schema identifier for recorded values."""
+
+    name: str
+    version: str = "v1"
+    encoding: str = "python"
+
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("schema name must be non-empty")
+        if not self.version:
+            raise ValueError("schema version must be non-empty")
 
 
 def detect_recording_format(path: str | Path) -> Optional[RecordingFormat]:
