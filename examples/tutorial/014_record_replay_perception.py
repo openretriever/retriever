@@ -50,7 +50,8 @@ def build_replay_pipeline(*, show_window: bool) -> tuple[Pipeline, object]:
     # Build with a placeholder camera source, then swap it to a replay source.
     camera = CameraSource(use_real_camera=False) @ Rate(hz=20)
     detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
-    display = DisplayFlow(show_window=show_window) @ Rate(hz=20)
+    display_mode = "cv2" if show_window else "stdout"
+    display = DisplayFlow(display=display_mode) @ Rate(hz=20)
 
     pipe.connect(camera, detector, sync=Latest())
     pipe.connect(detector, display, sync=Latest())
@@ -117,6 +118,7 @@ def _resolve_recording_path(path: Path) -> Path:
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
     pipe, camera = build_replay_pipeline(show_window=args.show_window)
+    pipe.replay(camera, path=recording)
 
     # Run with in-process backend (uses stepper internally)
     # visualize=True (or "rerun") auto-enables Rerun logging
