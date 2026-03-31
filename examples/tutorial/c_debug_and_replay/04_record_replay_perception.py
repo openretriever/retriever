@@ -16,45 +16,16 @@ Run:
 from __future__ import annotations
 
 import argparse
-import importlib
 import time
 from pathlib import Path
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest
-
-_perception = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
-CameraSource = _perception.CameraSource
-CameraData = _perception.CameraData
-ColorDetector = _perception.ColorDetector
-DisplayFlow = _perception.DisplayFlow
-
-
-class Drain(Flow[CameraData, None]):
-    """Minimal sink to keep the source connected inside the pipeline."""
-
-    def run(self, _input: CameraData) -> None:
-        return None
-
-
-def build_record_pipeline() -> tuple[Pipeline, object]:
-    pipe = Pipeline("perception_record")
-    camera = CameraSource(use_real_camera=True) @ Rate(hz=20)
-    drain = Drain() @ Trigger("image")
-    pipe.connect(camera, drain, sync=Latest())
-    return pipe, camera
-
-
-def build_replay_pipeline(*, show_window: bool) -> tuple[Pipeline, object]:
-    pipe = Pipeline("perception_replay")
-
-    # Build with a placeholder camera source, then swap it to a replay source.
-    camera = CameraSource(use_real_camera=False) @ Rate(hz=20)
-    detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
-    display = DisplayFlow(show_window=show_window) @ Rate(hz=20)
-
-    pipe.connect(camera, detector, sync=Latest())
-    pipe.connect(detector, display, sync=Latest())
-    return pipe, camera
+from examples.shared.perception_runtime import (
+    build_record_pipeline,
+    build_replay_pipeline,
+    emit_replay_finished,
+    emit_replay_started,
+    load_camera_buffer_from_recording,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -99,33 +70,32 @@ def cmd_record(args: argparse.Namespace) -> None:
 
 
 def _resolve_recording_path(path: Path) -> Path:
-    """
-    Resolve default recording path with a small legacy fallback.
-
-    This keeps the demo usable if you recorded using the older filename:
-      logs/perception_bag.pkl.gz
-    """
-    default = Path("logs/perception_recording.pkl.gz")
-    if path == default and not path.exists():
-        legacy = Path("logs/perception_bag.pkl.gz")
-        if legacy.exists():
-            print(f"[Replay] {path} not found; using legacy {legacy}")
-            return legacy
-    return path
+    resolved = path.expanduser()
+    if not resolved.exists():
+        raise FileNotFoundError(f"Recording not found: {resolved}")
+    return resolved
 
 
 def cmd_replay(args: argparse.Namespace) -> None:
     recording = _resolve_recording_path(args.recording)
-    pipe, camera = build_replay_pipeline(show_window=args.show_window)
+    buffer = load_camera_buffer_from_recording(recording)
+    max_steps = len(buffer) if args.steps <= 0 else min(args.steps, len(buffer))
+    replay_buffer = buffer[:max_steps]
 
-    # Run with in-process backend (uses stepper internally)
-    # visualize=True (or "rerun") auto-enables Rerun logging
-    pipe.run(
-        backend="in-process",
-        visualize=args.stream,
-        duration=args.steps * args.dt,
-        blocking=True
-    )
+    pipe, camera = build_replay_pipeline(display="cv2" if args.show_window else "stdout")
+    if args.stream:
+        print("[Replay] --stream is not supported for explicit stepper replay; proceeding without live Rerun.")
+
+    emit_replay_started(recording_path=str(recording), frame_count_estimate=max_steps)
+    try:
+        pipe.replay(camera, buffer=replay_buffer)
+        for _ in range(max_steps):
+            pipe.step(dt=args.dt)
+            if args.sleep > 0:
+                time.sleep(args.sleep)
+    finally:
+        pipe.close_stepper()
+    emit_replay_finished(recording_path=str(recording), steps_completed=max_steps)
 
 
 def main() -> None:

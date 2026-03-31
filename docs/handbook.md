@@ -20,7 +20,7 @@ If you only read one document, read this one.
 - Canonical examples live in `examples/tutorial/`.
 - New ergonomics demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
 - `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
-- Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/010_request_response.py`.
+- Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/b_ir_and_execution/07_request_response.py`.
 
 Known caveat:
 - Backend execution reconstructs Flow instances from IR, so per-instance constructor args in examples won’t survive unless they’re represented in IR/config. Prefer self-healing defaults or explicit IR-level configuration.
@@ -37,7 +37,7 @@ Supported Python: **3.10–3.12** (avoid 3.14; some deps lack wheels).
 curl -fsSL https://pixi.sh/install.sh | bash
 
 # Run the Dora perception demo (auto-installs deps)
-pixi run demo-dora
+pixi run demo-webcam-detection
 ```
 
 If `dora` complains about schema/version, kill stale processes:
@@ -224,9 +224,9 @@ Key semantics:
 
 Recommended examples:
 
-- Minimal debug + exception trace: `examples/tutorial/011_debug_stepper.py`
-- Perception debug (synthetic frames): `examples/tutorial/012_debug_perception_stepper.py`
-- Perception debug (real camera): `examples/tutorial/013_debug_perception_stepper_real_camera.py`
+- Minimal debug + exception trace: `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`
+- Perception debug (synthetic frames): `examples/tutorial/c_debug_and_replay/02_debug_perception_stepper.py`
+- Perception debug (real camera): `examples/tutorial/c_debug_and_replay/03_debug_perception_stepper_real_camera.py`
 
 Topic-focused tutorials (legacy extractions):
 
@@ -265,7 +265,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 
 Notes:
 - `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
-- Canonical demo: `examples/tutorial/017_pipeline_ergonomics.py`
+- Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---
 
@@ -349,8 +349,8 @@ pipe.set_on_lag("warn")
 Quick checks (Dora):
 
 ```bash
-pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
-pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic
 ```
 
 Why this matters on Dora:
@@ -364,37 +364,37 @@ Why this matters on Dora:
 ### 9.1 Pipeline authoring ergonomics (017)
 
 ```bash
-pixi run python -m examples.tutorial.017_pipeline_ergonomics --mode context --exec step
+pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics --mode context --exec step
 ```
 
-Module: `examples/tutorial/017_pipeline_ergonomics.py`
+Module: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ### 9.2 Dora perception demo (009)
 
 ```bash
-pixi run demo-dora
+pixi run demo-webcam-detection
 ```
 
-Module: `examples/tutorial/009_dora_perception.py`
+Module: `examples/tutorial/b_ir_and_execution/06_dora_perception.py`
 
 ### 9.3 Request/response demo (010)
 
 ```bash
-pixi run demo-request-dora
+pixi run demo-request-response
 ```
 
-Module: `examples/tutorial/010_request_response.py`
+Module: `examples/tutorial/b_ir_and_execution/07_request_response.py`
 
 ### 9.4 Closed-loop env + MPC demo (016)
 
 ```bash
-pixi run python -m examples.tutorial.016_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
 ```
 
 Optional (Pendulum, requires gymnasium/gym):
 
 ```bash
-pixi run python -m examples.tutorial.016_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env pendulum --backend dora --hz 10 --duration 5
 ```
 
 ---

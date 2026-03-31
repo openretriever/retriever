@@ -195,7 +195,7 @@ pipe.run(
 ```
 
 `"native"` is reserved for a future `retriever_native` extension.
-See `examples/tutorial/015_buffer_engine_demo.py` for a minimal runnable demo.
+See `examples/tutorial/c_debug_and_replay/05_buffer_engine_demo.py` for a minimal runnable demo.
 
 ## 4) Event/time model (FRP vocabulary)
 
