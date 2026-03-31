@@ -9,12 +9,38 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Generic, Mapping, Optional, TypeVar, Literal
 
+from retriever.types_registry import register_type
+
 T = TypeVar("T")
 
 JoinMode = Literal["exact", "latest_before", "window"]
 WindowAgg = Literal["first", "last", "max", "min", "mean"]
 
+_DATA_SPEC_CATEGORY = "data_spec"
+_DATA_SPEC_NAMESPACE = "data_spec"
+_DATA_SPEC_VERSION = "v1"
 
+
+def _register_data_contract(
+    name: str,
+    *,
+    kind: str = "contract",
+    tags: tuple[str, ...] = ("data_spec", "v1"),
+):
+    return register_type(
+        name,
+        category=_DATA_SPEC_CATEGORY,
+        namespace=_DATA_SPEC_NAMESPACE,
+        version=_DATA_SPEC_VERSION,
+        kind=kind,
+        tags=tags,
+        schema_name=f"data_spec/{name}",
+        schema_version=_DATA_SPEC_VERSION,
+        description=f"retriever.data_spec {name} contract",
+    )
+
+
+@_register_data_contract("StreamId", tags=("data_spec", "v1", "stream"))
 @dataclass(frozen=True, order=True)
 class StreamId:
     """Stable stream identifier used in event ordering and manifests."""
@@ -35,6 +61,7 @@ class StreamId:
         return StreamId(value=value)
 
 
+@_register_data_contract("ClockDomain", tags=("data_spec", "v1", "clock"))
 @dataclass(frozen=True)
 class ClockDomain:
     """Clock domain for streams and data specs."""
@@ -46,6 +73,7 @@ class ClockDomain:
             raise ValueError("clock domain name must be non-empty")
 
 
+@_register_data_contract("SchemaRef", tags=("data_spec", "v1", "schema"))
 @dataclass(frozen=True)
 class SchemaRef:
     """Schema identity for typed payloads."""
@@ -61,6 +89,7 @@ class SchemaRef:
             raise ValueError("schema version must be non-empty")
 
 
+@_register_data_contract("EventRef", tags=("data_spec", "v1", "lineage"))
 @dataclass(frozen=True)
 class EventRef:
     """Reference to a single source event for lineage tracking."""
@@ -82,6 +111,7 @@ class EventRef:
             raise ValueError("type_name must be non-empty")
 
 
+@_register_data_contract("LineageRef", tags=("data_spec", "v1", "lineage"))
 @dataclass(frozen=True)
 class LineageRef:
     """Lineage metadata attached to derived events."""
@@ -93,6 +123,7 @@ class LineageRef:
         object.__setattr__(self, "sources", tuple(self.sources))
 
 
+@_register_data_contract("Event", tags=("data_spec", "v1", "event"))
 @dataclass(frozen=True)
 class Event(Generic[T]):
     """Canonical event record in event-time space."""
@@ -136,6 +167,7 @@ class Event(Generic[T]):
         )
 
 
+@_register_data_contract("EventBuffer", tags=("data_spec", "v1", "event", "buffer"))
 @dataclass(frozen=True)
 class EventBuffer(Generic[T]):
     """Immutable event buffer."""
@@ -186,6 +218,7 @@ class EventBuffer(Generic[T]):
         return tuple(event.value for event in self.events)
 
 
+@_register_data_contract("MultiStreamBuffer", tags=("data_spec", "v1", "event", "buffer"))
 @dataclass(frozen=True)
 class MultiStreamBuffer:
     """Named collection of stream buffers."""
@@ -207,6 +240,7 @@ class MultiStreamBuffer:
         return self.streams[name]
 
 
+@_register_data_contract("JoinPolicy", kind="policy", tags=("data_spec", "v1", "policy", "join"))
 @dataclass(frozen=True)
 class JoinPolicy:
     """Policy used by event-time join operators."""
@@ -222,6 +256,7 @@ class JoinPolicy:
             raise ValueError("window_ns must be >= 0")
 
 
+@_register_data_contract("WatermarkPolicy", kind="policy", tags=("data_spec", "v1", "policy", "watermark"))
 @dataclass(frozen=True)
 class WatermarkPolicy:
     """Watermark policy for pruning old or late events."""
@@ -237,6 +272,7 @@ class WatermarkPolicy:
             raise ValueError("allowed_lateness_ns must be >= 0")
 
 
+@_register_data_contract("WindowPolicy", kind="policy", tags=("data_spec", "v1", "policy", "window"))
 @dataclass(frozen=True)
 class WindowPolicy:
     """Windowed aggregation policy."""
@@ -249,6 +285,7 @@ class WindowPolicy:
             raise ValueError("duration_ns must be > 0")
 
 
+@_register_data_contract("FieldSpec", kind="spec", tags=("data_spec", "v1", "spec", "field"))
 @dataclass(frozen=True)
 class FieldSpec:
     name: str
@@ -265,6 +302,7 @@ class FieldSpec:
             raise ValueError("field type_name must be non-empty")
 
 
+@_register_data_contract("StreamSpec", kind="spec", tags=("data_spec", "v1", "spec", "stream"))
 @dataclass(frozen=True)
 class StreamSpec:
     stream_id: StreamId
@@ -277,6 +315,7 @@ class StreamSpec:
         object.__setattr__(self, "fields", tuple(self.fields))
 
 
+@_register_data_contract("DataSpec", kind="spec", tags=("data_spec", "v1", "spec"))
 @dataclass(frozen=True)
 class DataSpec:
     name: str
@@ -295,6 +334,7 @@ class DataSpec:
         return {str(stream.stream_id): stream for stream in self.streams}
 
 
+@_register_data_contract("EpisodeManifest", kind="manifest", tags=("data_spec", "v1", "manifest", "episode"))
 @dataclass(frozen=True)
 class EpisodeManifest:
     episode_id: str
@@ -319,6 +359,7 @@ class EpisodeManifest:
         object.__setattr__(self, "metadata", tuple(self.metadata))
 
 
+@_register_data_contract("DatasetManifest", kind="manifest", tags=("data_spec", "v1", "manifest", "dataset"))
 @dataclass(frozen=True)
 class DatasetManifest:
     dataset_id: str

@@ -67,14 +67,19 @@ from retriever.pipeline_registry import (
     build_ir,
 )
 from retriever.types_registry import (
+    get_type_info,
+    get_registered_types,
     register_type,
     get_type,
     list_types,
     find_types,
+    get_type_name,
+    resolve_schema_ref,
 )
 
-# Import built-in robotics typing so registry lookups are stable after plain `import retriever`.
+# Import built-in domain typing packages so registry lookups are stable after plain `import retriever`.
 from retriever import robotics_typing as _robotics_typing  # noqa: F401
+from retriever import data_spec as _data_spec  # noqa: F401
 
 __all__ = [
     "Flow",
@@ -107,7 +112,10 @@ __all__ = [
     "build_ir",
     "register_type",
     "get_type",
+    "get_type_info",
+    "get_registered_types",
+    "get_type_name",
     "list_types",
     "find_types",
+    "resolve_schema_ref",
 ]
-

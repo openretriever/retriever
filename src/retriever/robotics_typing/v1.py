@@ -4,17 +4,37 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import sqrt
-from typing import Final
+from typing import Final, Iterable
 
 from retriever.types_registry import register_type
 
 _ROBOTICS_CATEGORY: Final[str] = "robotics"
+_ROBOTICS_NAMESPACE: Final[str] = "robotics_typing"
+_ROBOTICS_VERSION: Final[str] = "v1"
 
 
-@register_type(
+def _register_robotics_type(
+    name: str,
+    *,
+    description: str,
+    tags: Iterable[str],
+):
+    return register_type(
+        name,
+        description=description,
+        category=_ROBOTICS_CATEGORY,
+        namespace=_ROBOTICS_NAMESPACE,
+        version=_ROBOTICS_VERSION,
+        kind="payload",
+        tags=tags,
+        schema_name=f"robotics/{name}",
+        schema_version=_ROBOTICS_VERSION,
+    )
+
+
+@_register_robotics_type(
     "Header",
     description="Header for stamped robotics payloads",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "header", "metadata"],
 )
 @dataclass(frozen=True)
@@ -24,10 +44,9 @@ class Header:
     source: str = "unknown"
 
 
-@register_type(
+@_register_robotics_type(
     "Vector3",
     description="3D vector payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "geometry", "vector"],
 )
 @dataclass(frozen=True)
@@ -37,10 +56,9 @@ class Vector3:
     z: float
 
 
-@register_type(
+@_register_robotics_type(
     "Quaternion",
     description="Quaternion rotation payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "geometry", "quaternion"],
 )
 @dataclass(frozen=True)
@@ -57,10 +75,9 @@ class Quaternion:
         return abs(self.norm() - 1.0) <= tol
 
 
-@register_type(
+@_register_robotics_type(
     "SE3Pose",
     description="SE(3) pose payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "geometry", "pose"],
 )
 @dataclass(frozen=True)
@@ -69,10 +86,9 @@ class SE3Pose:
     orientation: Quaternion
 
 
-@register_type(
+@_register_robotics_type(
     "Twist",
     description="Spatial velocity payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "motion", "twist"],
 )
 @dataclass(frozen=True)
@@ -81,10 +97,9 @@ class Twist:
     angular: Vector3
 
 
-@register_type(
+@_register_robotics_type(
     "Wrench",
     description="Force and torque payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "force", "wrench"],
 )
 @dataclass(frozen=True)
@@ -93,10 +108,9 @@ class Wrench:
     torque: Vector3
 
 
-@register_type(
+@_register_robotics_type(
     "JointState",
     description="Joint state payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "joint", "state"],
 )
 @dataclass(frozen=True)
@@ -115,10 +129,9 @@ class JointState:
         )
 
 
-@register_type(
+@_register_robotics_type(
     "PoseStamped",
     description="Timestamped pose payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "pose", "stamped"],
 )
 @dataclass(frozen=True)
@@ -127,10 +140,9 @@ class PoseStamped:
     pose: SE3Pose
 
 
-@register_type(
+@_register_robotics_type(
     "TwistStamped",
     description="Timestamped twist payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "twist", "stamped"],
 )
 @dataclass(frozen=True)
@@ -139,10 +151,9 @@ class TwistStamped:
     twist: Twist
 
 
-@register_type(
+@_register_robotics_type(
     "WrenchStamped",
     description="Timestamped wrench payload",
-    category=_ROBOTICS_CATEGORY,
     tags=["robotics", "v1", "wrench", "stamped"],
 )
 @dataclass(frozen=True)
