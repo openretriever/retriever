@@ -17,19 +17,10 @@ Run:
 
 from __future__ import annotations
 
-import importlib
 import numpy as np
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest
-
-# Reuse the real detector implementation from the working dora demo.
-# Note: the `examples/tutorial/*` path is not a valid Python identifier, so we
-# import it via importlib (string-based import), not `from ... import ...`.
-_perception = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
-CameraData = _perception.CameraData
-DetectionResults = _perception.DetectionResults
-Image = _perception.Image
-ColorDetector = _perception.ColorDetector
+from examples.shared.perception_runtime import CameraData, ColorDetector, DetectionResults, Image
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger
 
 
 class SyntheticCamera(Flow[None, CameraData]):

@@ -21,10 +21,10 @@ Run:
 from __future__ import annotations
 
 import argparse
-import importlib
 import time
 
-from retriever.flow import Pipeline, Rate, Trigger, Latest
+from examples.shared.perception_runtime import CameraSource, ColorDetector, DisplayFlow
+from retriever.flow import Latest, Pipeline, Rate, Trigger
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,11 +38,6 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    perception = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
-
-    CameraSource = perception.CameraSource
-    ColorDetector = perception.ColorDetector
-    DisplayFlow = perception.DisplayFlow
 
     show_window = bool(args.show_window)
     steps = int(args.steps)
