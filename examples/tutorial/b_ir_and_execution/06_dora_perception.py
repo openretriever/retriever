@@ -17,14 +17,6 @@ from __future__ import annotations
 import argparse
 
 from examples.shared.perception_runtime import (
-    BBox,
-    CameraData,
-    CameraSource,
-    ColorDetector,
-    Detection,
-    DetectionResults,
-    DisplayFlow,
-    Image,
     build_tutorial_perception_pipeline,
 )
 
