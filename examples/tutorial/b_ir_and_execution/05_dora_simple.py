@@ -83,14 +83,14 @@ def parse_args() -> argparse.Namespace:
         "--fresh-dora",
         dest="fresh_dora",
         action="store_true",
-        default=True,
-        help="Destroy/restart the dora runtime before launch (default for this demo).",
+        default=False,
+        help="Destroy/restart the dora runtime before launch.",
     )
     p.add_argument(
         "--no-fresh-dora",
         dest="fresh_dora",
         action="store_false",
-        help="Reuse an existing dora runtime instead of forcing a clean one.",
+        help="Reuse an existing dora runtime (default).",
     )
     return p.parse_args()
 
