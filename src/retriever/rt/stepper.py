@@ -23,14 +23,14 @@ from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter
+from retriever.flow.adapter import Adapter, Latest
 from retriever.flow.types import EventBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.builder import PipelineBuilder
 from retriever.flow.temporal import TemporalFlow
 from retriever.ir.core import IR, IREdge
-from retriever.rt.step import IOStep
+from retriever.rt.step import IOStep, IOView
 from retriever.rt.lifecycle import initialize_flow_runtime
 
 T = TypeVar("T")
@@ -121,8 +121,18 @@ class PipelineStepper:
         self.reset_buffers()
 
     def reset_buffers(self) -> None:
+        seen: set[int] = set()
         for ch in self._channels.values():
+            if id(ch) in seen:
+                continue
+            seen.add(id(ch))
             ch.clear()
+        for node_inputs in self._inputs.values():
+            for ch in node_inputs.values():
+                if id(ch) in seen:
+                    continue
+                seen.add(id(ch))
+                ch.clear()
 
     def reset(self) -> None:
         """
@@ -212,6 +222,55 @@ class PipelineStepper:
 
         self._now = time.time()
         return self._now
+
+    def inject_input(
+        self,
+        node_id: str,
+        port: str,
+        value: Any,
+        *,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """Inject one external value into a node input port for the next step."""
+        if node_id not in self._flows:
+            raise ValueError(f"Unknown node `{node_id}`")
+
+        logical_port = IR.get_logical_port(port)
+        self._ensure_external_input_channel(node_id, logical_port)
+
+        ts = self._now if timestamp is None else float(timestamp)
+        if ts is None:
+            ts = time.time()
+
+        self._inputs[node_id][logical_port].put_one(value, ts)
+
+    def inject_inputs(
+        self,
+        values: Dict[str, Dict[str, Any]],
+        *,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """Inject a batch of external values keyed by node id then logical port."""
+        for node_id, ports in values.items():
+            for port, value in ports.items():
+                self.inject_input(node_id, port, value, timestamp=timestamp)
+
+    def _ensure_external_input_channel(self, node_id: str, logical_port: str) -> None:
+        if logical_port in self._inputs[node_id]:
+            return
+
+        handle = self._flows[node_id]
+        available_ports = IOView.resolve_ports(list(handle.flow.input_types))
+        if logical_port not in available_ports:
+            raise ValueError(
+                f"Node `{node_id}` has no input port `{logical_port}`. "
+                f"Available inputs: {sorted(available_ports.keys())}"
+            )
+
+        adapter = Latest()
+        channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+        self._inputs[node_id][logical_port] = channel
+        self._adapters[node_id][logical_port] = adapter
 
     def step(self, *, now: Optional[float] = None, dt: Optional[float] = None) -> StepResult:
         """
