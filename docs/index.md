@@ -1,5 +1,6 @@
 ---
 title: "🐕 Retriever Framework"
+slug: "intro"
 ---
 
 # 🐕 Retriever Framework
@@ -15,19 +16,15 @@ Retriever is a type-safe, composable runtime for building robotics dataflow pipe
 ## Quick Start
 
 ```python
-from dataclasses import dataclass
-
-from retriever.flow import Flow, Pipeline, Rate, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Latest, io
 
 
-@flow_io
-@dataclass
+@io
 class SrcOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class AddOut:
     value: int
 
@@ -50,6 +47,10 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
+Preferred public API note:
+- Use `@io` for new code.
+- `@flow_io` remains available as a backward-compatible alias.
+
 ### Debugging
 
 ```python
@@ -65,6 +66,7 @@ pipe.close_stepper()
 ## 📚 Documentation
 
 ### Getting Started
+- **[Quickstart](quickstart.md)** - The shortest path to `@io`, `Flow`, clocks, `connect`, `run`, and `step`
 - **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
 - **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
     - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
@@ -79,7 +81,8 @@ pipe.close_stepper()
 - **[API](API.md)** - API reference
 
 ### Quick Navigation
-- **Getting Started**: [Install](getting_started/install.md)
+- **Getting Started**: [Quickstart](quickstart.md), [Install](getting_started/install.md)
+- **Tutorials**: [getting_started/tutorials.md](getting_started/tutorials.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)
 - **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md), [MCP](guide_mcp.md)

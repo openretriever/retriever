@@ -4,21 +4,29 @@ title: "Tutorials"
 
 # Tutorials
 
-This page lists the available tutorials and examples included in the repository.
+Canonical tutorials are grouped into one-level topic tracks under `examples/tutorial/`.
 
-## Basic Tutorials
+## Start Here
 
-- **b_ir_and_execution/06_dora_perception**: Basic camera -> detection -> display pipeline using the Dora backend.
-- **b_ir_and_execution/07_request_response**: Demonstrates Service RPC patterns.
-- **c_debug_and_replay/02_debug_perception_stepper**: Shows how to use the stepper for frame-by-frame debugging.
-- **d_closed_loop_state_feedback/01_closed_loop_env**: Closed-loop control example (simulated environment).
+1. Read the runtime quickstart first: [../quickstart.md](../quickstart.md)
+2. Skim the tutorial entrypoint: [`examples/tutorial/README.md`](../../examples/tutorial/README.md)
+3. Pick one of the restructured topic tracks:
+   - `examples/tutorial/a_flow_fundamentals`
+   - `examples/tutorial/b_ir_and_execution`
+   - `examples/tutorial/c_debug_and_replay`
+   - `examples/tutorial/d_closed_loop_state_feedback`
+   - `examples/tutorial/e_resource_and_sync`
+   - `examples/tutorial/f_policy_backends`
+   - `examples/tutorial/g_operations_interfaces`
+   - `examples/tutorial/h_release_readiness`
 
-To run any tutorial:
+## Recommended first runs
 
-```sh
+```bash
+pixi run demo-dora-simple
 pixi run demo-webcam-detection
-# or
-python -m examples.tutorial.b_ir_and_execution.06_dora_perception
+pixi run demo-record-replay
+pixi run demo-perception-stepper
 ```
 
 ## Advanced Examples

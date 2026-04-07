@@ -12,7 +12,7 @@
 
 This repository is evolving to focus on the **Retriever core/runtime**:
 
-- Author pipelines as a typed graph (`Pipeline` / `FlowContext`)
+- Author pipelines as a typed graph (`Pipeline`)
 - Verify/compile to a backend-agnostic IR (done automatically at runtime)
 - Execute on a backend (`Pipeline.run(...)`): local multiprocessing or dora-rs
 - Debug step-by-step in-process (`Pipeline.step(...)`)
@@ -24,56 +24,70 @@ System-level pipelines, integrations (robots/sim), and heavy model stacks will l
 
 ## Canonical Runtime Workflow
 
-**Unified API (Recommended)**: `retriever.connect(...)` → `retriever.run(...)` (Implicitly handles validation/IR).
+Critical ideas:
 
-**Low-Level API**: `Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
+- `@io` defines typed message envelopes.
+- `Flow[I, O]` defines node logic.
+- `flow @ clock` decides when a node runs.
+- `Pipeline.connect(..., sync=...)` wires nodes and declares sampling behavior.
+- `pipe.run(...)` is for backend execution; `pipe.step(...)` is for in-process debugging.
 
-Minimal example (Typed Flows + Unified DSL):
+Minimal example:
 
 ```py
-from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
-import retriever
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
-@flow_io
-@dataclass
-class SrcOut:
+
+@io
+class Number:
     value: int
 
-@flow_io
-@dataclass
-class AddOut:
+
+@io
+class Doubled:
     value: int
 
-class Source(Flow[None, SrcOut]):
+
+class Source(Flow[None, Number]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.count = 0
+
     def run(self, _):  # type: ignore[override]
-        return SrcOut(value=1)
+        self.count += 1
+        return Number(value=self.count)
 
-class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
-        return AddOut(value=input.value + 1)
 
-# 1. Instantiate & Clock
-src = Source() @ retriever.Rate(hz=10)
-add = AddOne() @ retriever.Rate(hz=10)
+class Double(Flow[Number, Doubled]):
+    def run(self, input: Number) -> Doubled:
+        return Doubled(value=input.value * 2)
 
-# 2. Connect (Unified DSL)
-retriever.connect(src, add)
 
-# 3. Debug (Sync, In-Process)
-retriever.step(dt=0.1)
+pipe = Pipeline("quickstart")
+source = Source() @ Rate(hz=2)
+double = Double() @ Trigger("value")
+pipe.connect(source, double, sync=Latest())
 
-# 4. Run (Async)
-retriever.run(backend="multiprocessing", duration=1.0)
+pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-**Note**: For standard libraries (PyTorch, Gym), you can use the `retriever.lib.Wrapper` factory (see handbook).
+Debugging:
 
-More details: `docs/handbook.md`
+```py
+result = pipe.step(dt=0.5)
+print(result.executed)
+pipe.close_stepper()
+```
+
+Short docs path:
+
+- Quickstart: `docs/quickstart.md`
+- Handbook: `docs/handbook.md`
+- Runtime guide: `docs/guide_runtime.md`
 
 ## Setup (overview)
 
-Use Python 3.10–3.12 (avoid 3.14; some deps lack wheels).
+Use Python 3.11 for the pinned runtime environment in this repo.
 
 Quick start with [Pixi](https://pixi.sh):
 
@@ -102,6 +116,7 @@ Golden/system split prep:
 Docs live in `docs/` (served via MkDocs):
 
 - Runtime handbook (canonical): `docs/handbook.md`
+- Quickstart: `docs/quickstart.md`
 - Architecture: `docs/architecture.md`
 - Install: `docs/install.md`
 - Advanced Examples: `examples/advanced/`
@@ -114,5 +129,3 @@ Docs live in `docs/` (served via MkDocs):
 Recent features:
 - **Main Thread Flow** (`@gui_flow`): Run flows in main thread for native GUI support (MuJoCo viewers, Qt, etc.)
   - See: `examples/advanced/twist2_simulation/` for usage example
-
-

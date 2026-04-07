@@ -6,6 +6,13 @@ title: "Installation Guide"
 
 Environment definitions (Pixi tasks/environments) live in `pixi.toml`. Pixi is the recommended path; the conda+uv section below is an alternative if you prefer a pure Python workflow.
 
+Use Python 3.11 for the current runtime stack.
+
+Notes:
+- Pixi currently pins Python `3.11.*` for the runtime environment.
+- `pyproject.toml` also requires Python `>=3.11`.
+- Treat 3.11 as the public, tested baseline for the core runtime docs and examples.
+
 ## Supported Python
 
 Use Python 3.10–3.12 for the full stack. The runtime/core is pure-Python, but some optional “system” deps (e.g. Ray) may lag on newer Python versions.

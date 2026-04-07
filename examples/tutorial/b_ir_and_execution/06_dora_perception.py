@@ -7,7 +7,7 @@ Demonstrates perception pipeline with real camera input:
 - Backend execution (dora)
 
 Run:
-  pixi run demo-dora
+  pixi run demo-webcam-detection
   # or:
   pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --duration 10
 """

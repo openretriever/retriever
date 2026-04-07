@@ -6,10 +6,10 @@ title: "Flow Authoring Guide (Runtime/Core)"
 
 This guide describes the **refactored** Flow authoring surface used by the runtime/core:
 
-`Pipeline (or FlowContext) → validate() → IRStruct → (optional) build_execution() → execute_ir()`
+`Pipeline / TemporalFlow → Pipeline.validate() → IR → (optional) Pipeline.build_execution() → execute_ir()`
 
-If you’re looking for the older “Flow.from_module / LocalExecutor / Eff monad” material, it lives in:
-- `docs/legacy/guide_flow_legacy.md`
+Older pre-runtime-authoring material is not part of the public release docs in this repo.
+Use the tutorial tracks and `docs/handbook.md` as the supported source of truth.
 
 Quick checks (Dora lag policy):
 
@@ -18,30 +18,28 @@ Quick checks (Dora lag policy):
 
 ---
 
-## 1) Define typed ports with `@flow_io`
+## 1) Define typed ports with `@io`
 
-Flows communicate using dataclasses decorated with `@flow_io`. Each field becomes a **port**.
+Flows communicate using `@io` classes. Each annotated field becomes a **port**.
 
 ```py
-from dataclasses import dataclass
-from retriever.flow import flow_io
+from retriever.flow import io
 
 
-@flow_io
-@dataclass
+@io
 class CameraOut:
     image: "np.ndarray"
 
 
-@flow_io
-@dataclass
+@io
 class DetectionsOut:
     detections: list
 ```
 
 Notes:
-- `@flow_io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
+- `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
+- `@flow_io` remains available as a deprecated alias for older examples.
 
 ---
 
@@ -53,18 +51,15 @@ A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
 - `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
 
 ```py
-from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 
-@flow_io
-@dataclass
+@io
 class SrcOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class AddOut:
     value: int
 
@@ -87,7 +82,7 @@ class AddOne(Flow[SrcOut, AddOut]):
 For standard libraries, use `retriever.lib.Wrapper` instead of writing custom classes:
 
 ```python
-from retriever.lib import Wrapper, from_torch, from_gym
+from retriever.lib import Wrapper
 
 # PyTorch Module
 model = Wrapper(MyModule())
@@ -110,14 +105,16 @@ tick_only = Source() @ Tick(hz=10)     # periodic, samples no inputs
 event_driven = AddOne() @ Trigger("value")
 ```
 
-### Field sampling (`Rate.sample=...`)
+### Scheduling vs sampling
 
-Clocks control both scheduling and input sampling:
-- `Rate(hz=..., sample=...)` (alias: `fields=`) selects which input fields are read on a tick.
-  - default: sample all inputs (`sample="all"` / `"*"` / `...`)
-  - `sample=[]`: sample no inputs (tick-only)
-- `Trigger(...)` runs on arrivals of specified fields
-- `Hybrid(...)` combines both (see `retriever/flow/clock.py`)
+Clocks decide when a node runs; adapters decide how each connected input buffer is sampled.
+
+- `Rate(hz=...)` runs periodically and samples all connected inputs on each tick.
+- `Tick(hz=...)` is the explicit tick-only clock and samples no inputs.
+- `Trigger("field", ...)` runs on arrivals of the specified input fields.
+- `Hybrid(hz=..., trigger=[...])` combines periodic execution with immediate trigger-driven runs.
+
+For per-edge buffering and sampling behavior, configure adapters with `sync=...` and edge policies with `edge_config=...`.
 
 ### Lag handling (`Rate.on_lag=...`)
 
@@ -145,7 +142,7 @@ Pipeline-wide default:
 
 ### Global Defaults
 
-You can set global defaults for synchronization and lag policies at startup:
+You can set a global default adapter at startup:
 
 ```python
 import retriever
@@ -153,9 +150,10 @@ from retriever.flow import Latest
 
 retriever.init(
     default_sync=Latest(),
-    default_lag="warn"
 )
 ```
+
+Use `Pipeline(..., on_lag=...)` or `pipe.set_on_lag(...)` to set lag policy defaults for a graph.
 
 See also: `docs/guide_temporal.md`.
 
@@ -191,33 +189,17 @@ add = AddOne() @ Rate(hz=10)
 pipe.connect(src, add, sync=Latest())  # default adapter is Latest()
 ```
 
-### Option B: `FlowContext` (still supported)
-
-`FlowContext` collects connections made via `then(...)` / `>>` inside a `with` block.
-
-```py
-from retriever.flow import FlowContext, Rate
-from retriever.rt import execute_ir
-
-with FlowContext("demo") as ctx:
-    src = Source() @ Rate(hz=10)
-    add = AddOne() @ Rate(hz=10)
-    src >> add
-
-ir = ctx.validate()
-execute_ir(ir, backend="multiprocessing", duration=1.0)
-```
-
 ### `then(...)` and `>>`
 
-`FlowHandle.then(...)` and the `>>` operator connect nodes:
+`TemporalFlow.then(...)` and the `>>` operator connect nodes:
 
 ```py
 src.then(add, sync=Latest(), qsize=10)
 src >> add
 ```
 
-Important: you **cannot mix** an active `FlowContext` with `Pipeline`-owned handles. Pick one style per graph.
+Important: handles must belong to the same `Pipeline`. The easiest way to guarantee that is to use either
+explicit `pipe.connect(...)` calls or `with pipe:` when using `>>`.
 
 ### Port mapping (`map=...`)
 
@@ -270,7 +252,7 @@ pipe.step(dt=0.1)
 pipe.close_stepper()
 ```
 
-See: `docs/guide_debugging.md`.
+See: `docs/guides/debugging.md`.
 
 ---
 
@@ -291,7 +273,7 @@ Notes:
 
 ## 7) Closed loops (cycles)
 
-Retriever allows **feedback edges** (cycles). Cycles are represented as SCC groups in `IRStruct.topology.groups`.
+Retriever allows **feedback edges** (cycles). Cycles are represented as SCC groups in `IR.topology.groups`.
 
 Practical guidance:
 
