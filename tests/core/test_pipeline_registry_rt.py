@@ -2,8 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
 from retriever.flow import Flow, PipelineBuilder, Rate, flow_io, Latest
-from retriever.pipeline_registry import build_ir, build_pipeline_surface, register_pipeline
+from retriever.pipeline_registry import (
+    build_ir,
+    build_pipeline_flow,
+    build_pipeline_surface,
+    register_pipeline,
+)
 
 
 @flow_io
@@ -50,6 +57,15 @@ class RichIn:
 class RichSource(Flow[None, RichOut]):
     def step(self, _):  # type: ignore[override]
         return RichOut(value=1, aux=9)
+
+
+class CountingRichSource(Flow[None, RichOut]):
+    def reset(self) -> None:
+        self.count = 0
+
+    def step(self, _):  # type: ignore[override]
+        self.count += 1
+        return RichOut(value=self.count, aux=9)
 
 
 class RichProc(Flow[RichIn, ProcOut]):
@@ -110,6 +126,8 @@ def test_pipeline_registry_auto_surface_exposes_unused_ports():
         ("RichSource", "aux"),
         ("RichProc", "value"),
     }
+    assert [port.external_name for port in surface.inputs] == ["bias"]
+    assert sorted(port.external_name for port in surface.outputs) == ["aux", "value"]
 
 
 def test_pipeline_registry_explicit_surface_selectors():
@@ -132,3 +150,61 @@ def test_pipeline_registry_explicit_surface_selectors():
     assert [port.port for port in surface.inputs] == ["bias"]
     assert [port.node_type for port in surface.outputs] == ["RichSource"]
     assert [port.port for port in surface.outputs] == ["aux"]
+    assert [port.external_name for port in surface.inputs] == ["bias"]
+    assert [port.external_name for port in surface.outputs] == ["aux"]
+
+
+def test_pipeline_registry_can_build_flow_wrapper_from_surface():
+    @register_pipeline("test_pipeline_registry_flow_wrapper", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_registry_flow_wrapper") as ctx:
+            src = CountingRichSource() @ Rate(hz=10)
+            proc = RichProc() @ Rate(hz=10)
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    flow = build_pipeline_flow("test_pipeline_registry_flow_wrapper")
+    out1 = flow.step(flow.input_type(bias=4))
+    out2 = flow.step(flow.input_type(bias=4))
+    flow.finalize()
+
+    assert out1.value == 5
+    assert out1.aux == 9
+    assert out2.value == 6
+    assert out2.aux == 9
+    assert [port.external_name for port in flow.surface.inputs] == ["bias"]
+
+
+def test_pipeline_registry_flow_wrapper_respects_explicit_surface():
+    @register_pipeline(
+        "test_pipeline_registry_flow_wrapper_explicit",
+        surface_policy="explicit",
+        input_ports=["RichProc.bias"],
+        output_ports=["RichSource.aux"],
+        overwrite=True,
+    )
+    def build():
+        with PipelineBuilder("test_pipeline_registry_flow_wrapper_explicit") as ctx:
+            src = RichSource() @ Rate(hz=10)
+            proc = RichProc() @ Rate(hz=10)
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    flow = build_pipeline_flow("test_pipeline_registry_flow_wrapper_explicit")
+    out = flow.step(flow.input_type(bias=3))
+    flow.finalize()
+
+    assert set(flow.input_type.__dataclass_fields__.keys()) == {"bias"}
+    assert set(flow.output_type.__dataclass_fields__.keys()) == {"aux"}
+    assert out.aux == 9
+
+
+def test_pipeline_registry_flow_wrapper_rejects_ir_only_factories():
+    @register_pipeline("test_pipeline_registry_flow_wrapper_ir_only", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_registry_flow_wrapper_ir_only") as ctx:
+            src = RichSource() @ Rate(hz=10)
+            return ctx.validate()
+
+    with pytest.raises(TypeError, match="requires a live Pipeline or PipelineBuilder"):
+        build_pipeline_flow("test_pipeline_registry_flow_wrapper_ir_only")

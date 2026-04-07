@@ -65,6 +65,7 @@ from retriever.pipeline_registry import (
     list_pipelines,
     find_pipelines,
     build_ir,
+    build_pipeline_flow,
     build_pipeline_surface,
 )
 from retriever.types_registry import (
@@ -111,6 +112,7 @@ __all__ = [
     "list_pipelines",
     "find_pipelines",
     "build_ir",
+    "build_pipeline_flow",
     "build_pipeline_surface",
     "register_type",
     "get_type",
