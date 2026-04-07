@@ -16,8 +16,11 @@ This enables:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple, Literal
+import keyword
+import re
+import time
+from dataclasses import dataclass, field, make_dataclass, replace
+from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple, Literal, Type
 
 from retriever.flow.builder import PipelineBuilder
 from retriever.ir import IR
@@ -58,6 +61,7 @@ class PipelineSurfacePort:
     port: str
     type: str
     direction: Literal["input", "output"]
+    external_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,14 @@ class PipelineSurface:
 
     inputs: Tuple[PipelineSurfacePort, ...] = field(default_factory=tuple)
     outputs: Tuple[PipelineSurfacePort, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class PipelineSurfaceBinding:
+    """Resolved runtime binding for one surfaced port."""
+
+    surface_port: PipelineSurfacePort
+    python_type: Type[Any] | Any = Any
 
 
 class PipelineRegistry:
@@ -146,6 +158,19 @@ class PipelineRegistry:
             output_selectors=info.output_ports,
         )
 
+    def build_flow(self, name: str, **kwargs: Any):
+        """Build an in-process composite Flow wrapper from a registered pipeline."""
+        info = self.get(name)
+        live_ctx = _build_live_pipeline_context(info, **kwargs)
+        ir = live_ctx.validate()
+        surface = _build_pipeline_surface_from_ir(
+            ir,
+            surface_policy=info.surface_policy,
+            input_selectors=info.input_ports,
+            output_selectors=info.output_ports,
+        )
+        return _build_pipeline_flow_from_surface(name, live_ctx, surface)
+
 
 _global_pipeline_registry = PipelineRegistry()
 
@@ -215,6 +240,11 @@ def build_pipeline_surface(name: str, **kwargs: Any) -> PipelineSurface:
     return _global_pipeline_registry.build_surface(name, **kwargs)
 
 
+def build_pipeline_flow(name: str, **kwargs: Any):
+    """Build an in-process composite Flow from a registered pipeline surface."""
+    return _global_pipeline_registry.build_flow(name, **kwargs)
+
+
 def get_pipeline(name: str, **kwargs: Any) -> IR:
     """
     Backward-compatible alias for `build_ir`.
@@ -281,10 +311,10 @@ def _build_pipeline_surface_from_ir(
         return PipelineSurface()
 
     if surface_policy == "explicit":
-        return PipelineSurface(
+        return _with_external_names(PipelineSurface(
             inputs=tuple(_resolve_surface_selector(ir, selector, direction="input") for selector in input_selectors),
             outputs=tuple(_resolve_surface_selector(ir, selector, direction="output") for selector in output_selectors),
-        )
+        ))
 
     incoming = {
         (edge.destination.node, IR.get_logical_port(edge.destination.port))
@@ -326,7 +356,7 @@ def _build_pipeline_surface_from_ir(
                         direction="output",
                     )
                 )
-    return PipelineSurface(inputs=tuple(inputs), outputs=tuple(outputs))
+    return _with_external_names(PipelineSurface(inputs=tuple(inputs), outputs=tuple(outputs)))
 
 
 def _resolve_surface_selector(
@@ -362,3 +392,201 @@ def _resolve_surface_selector(
         f"Pipeline surface selector '{selector}' is ambiguous. "
         f"Matches: {[match.node_id for match in matches]}"
     )
+
+
+def _with_external_names(surface: PipelineSurface) -> PipelineSurface:
+    return PipelineSurface(
+        inputs=_assign_external_names(surface.inputs),
+        outputs=_assign_external_names(surface.outputs),
+    )
+
+
+def _assign_external_names(
+    ports: Tuple[PipelineSurfacePort, ...],
+) -> Tuple[PipelineSurfacePort, ...]:
+    taken: set[str] = set()
+    named: list[PipelineSurfacePort] = []
+
+    for port in ports:
+        raw = port.port.replace(".", "__")
+        candidates = [
+            _sanitize_identifier(raw),
+            _sanitize_identifier(f"{port.node_type}__{raw}"),
+            _sanitize_identifier(f"{port.node_id}__{raw}"),
+        ]
+        chosen = ""
+        for candidate in candidates:
+            if candidate and candidate not in taken:
+                chosen = candidate
+                break
+        if not chosen:
+            base = candidates[-1] or "port"
+            suffix = 2
+            chosen = base
+            while chosen in taken:
+                chosen = f"{base}__{suffix}"
+                suffix += 1
+        taken.add(chosen)
+        named.append(replace(port, external_name=chosen))
+
+    return tuple(named)
+
+
+def _sanitize_identifier(name: str) -> str:
+    candidate = re.sub(r"\W", "_", name)
+    if not candidate:
+        candidate = "port"
+    if candidate[0].isdigit():
+        candidate = f"_{candidate}"
+    if keyword.iskeyword(candidate):
+        candidate = f"{candidate}_"
+    return candidate
+
+
+def _build_live_pipeline_context(info: PipelineInfo, **kwargs: Any):
+    result = info.factory(**kwargs)
+    if isinstance(result, IR):
+        raise TypeError(
+            f"Pipeline factory '{info.name}' returned IR only. "
+            "build_pipeline_flow(...) requires a live Pipeline or PipelineBuilder."
+        )
+    if isinstance(result, PipelineBuilder):
+        return result
+    if (
+        hasattr(result, "validate")
+        and hasattr(result, "get_handle_for_node")
+        and hasattr(result, "get_node_id")
+    ):
+        return result
+    raise TypeError(
+        f"Pipeline factory '{info.name}' returned unsupported type for flow wrapping: {type(result)}. "
+        "Expected PipelineBuilder or Pipeline-like object."
+    )
+
+
+def _get_builder(ctx: Any) -> PipelineBuilder:
+    builder = getattr(ctx, "_builder", ctx)
+    if not hasattr(builder, "_extract_ports"):
+        raise TypeError("Live pipeline context does not expose builder port extraction.")
+    return builder
+
+
+def _build_surface_bindings(
+    ctx: Any,
+    surface: PipelineSurface,
+) -> Tuple[Tuple[PipelineSurfaceBinding, ...], Tuple[PipelineSurfaceBinding, ...]]:
+    builder = _get_builder(ctx)
+    input_bindings: list[PipelineSurfaceBinding] = []
+    output_bindings: list[PipelineSurfaceBinding] = []
+
+    for port in surface.inputs:
+        handle = ctx.get_handle_for_node(port.node_id)
+        port_types = builder._extract_ports(handle.flow.input_types)
+        input_bindings.append(
+            PipelineSurfaceBinding(surface_port=port, python_type=port_types.get(port.port, Any))
+        )
+
+    for port in surface.outputs:
+        handle = ctx.get_handle_for_node(port.node_id)
+        port_types = builder._extract_ports(handle.flow.output_types)
+        output_bindings.append(
+            PipelineSurfaceBinding(surface_port=port, python_type=port_types.get(port.port, Any))
+        )
+
+    return tuple(input_bindings), tuple(output_bindings)
+
+
+def _make_surface_io_type(
+    name: str,
+    bindings: Tuple[PipelineSurfaceBinding, ...],
+) -> Optional[Type[Any]]:
+    if not bindings:
+        return None
+
+    from dataclasses import field as dc_field
+    from retriever.flow import io
+
+    fields_spec = [
+        (binding.surface_port.external_name, binding.python_type, dc_field(default=None))
+        for binding in bindings
+    ]
+    return io(make_dataclass(name, fields_spec))
+
+
+def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurface):
+    from retriever.flow import Flow
+    from retriever.rt.stepper import PipelineStepper
+
+    input_bindings, output_bindings = _build_surface_bindings(ctx, surface)
+    class_stem = _sanitize_identifier(name.title())
+    input_type = _make_surface_io_type(f"{class_stem}Input", input_bindings)
+    output_type = _make_surface_io_type(f"{class_stem}Output", output_bindings)
+
+    base = Flow[input_type or None, output_type or None]  # type: ignore[misc]
+    output_cache_init = {binding.surface_port.external_name: None for binding in output_bindings}
+
+    class _PipelineFlow(base):
+        in_process_only = True
+
+        def __init__(self):
+            self.surface = surface
+            self.input_bindings = input_bindings
+            self.output_bindings = output_bindings
+            self._stepper = None
+            self._output_cache = dict(output_cache_init)
+
+        def init_config(self) -> dict:
+            raise RuntimeError(
+                "Pipeline flow wrappers built by build_pipeline_flow(...) are in-process only."
+            )
+
+        def _ensure_stepper(self) -> PipelineStepper:
+            if self._stepper is None:
+                self._stepper = PipelineStepper(ctx)
+            return self._stepper
+
+        def reset(self) -> None:
+            self._output_cache = dict(output_cache_init)
+            self._ensure_stepper().reset()
+
+        def finalize(self) -> None:
+            if self._stepper is not None:
+                self._stepper.close()
+                self._stepper = None
+
+        def step(self, input):  # type: ignore[override]
+            stepper = self._ensure_stepper()
+            step_now = time.time()
+
+            if input is not None:
+                injected: Dict[str, Dict[str, Any]] = {}
+                for binding in self.input_bindings:
+                    ext = binding.surface_port.external_name
+                    if input._has_signal(ext):
+                        injected.setdefault(binding.surface_port.node_id, {})[
+                            binding.surface_port.port
+                        ] = input._get_signal(ext)
+                if injected:
+                    stepper.inject_inputs(injected, timestamp=step_now)
+
+            result = stepper.step(now=step_now)
+
+            for binding in self.output_bindings:
+                node_output = result.outputs.get(binding.surface_port.node_id)
+                if node_output is None:
+                    continue
+                if node_output._has_signal(binding.surface_port.port):
+                    self._output_cache[binding.surface_port.external_name] = node_output._get_signal(
+                        binding.surface_port.port
+                    )
+
+            if output_type is None:
+                return None
+
+            payload = {
+                key: value for key, value in self._output_cache.items() if value is not None
+            }
+            return output_type(**payload)
+
+    _PipelineFlow.__name__ = f"{class_stem}Flow"
+    return _PipelineFlow()
