@@ -6,6 +6,7 @@ import pytest
 
 from retriever.config import RecordConfig
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.lib.mcap import _deserialize_value
 from retriever.recording import build_recording_sink, read_node_stream_from_recording
 from retriever.rt.stepper import EventStreamRecorder, StepResult
 
@@ -37,6 +38,10 @@ class Recorder(Flow[Value, None]):
     def step(self, input: Value) -> None:
         self.seen.append(input.value)
         return None
+
+
+class UnsupportedValue:
+    pass
 
 
 def test_pipeline_step_propagates_values_in_process():
@@ -203,3 +208,30 @@ def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
 
     buffer = read_node_stream_from_recording(record_path, "MaybeValue", output_type=Value | None)
     assert [None if value is None else value.value for _ts, value in buffer] == [None, 2]
+
+
+def test_mcap_recording_rejects_unsupported_values(tmp_path):
+    record_path = tmp_path / "unsupported_session.mcap"
+    sink = build_recording_sink(RecordConfig(path=record_path), app_id="unsupported_demo")
+    sink.open()
+    try:
+        with pytest.raises(TypeError, match="Unsupported value for stable MCAP recording"):
+            sink.write_step(
+                StepResult(
+                    now=0.1,
+                    executed=["BadNode"],
+                    inputs={},
+                    outputs={"BadNode": UnsupportedValue()},
+                ),
+                0,
+            )
+    finally:
+        sink.close()
+
+
+def test_mcap_reader_rejects_legacy_pickled_payloads():
+    import pickle
+
+    payload = pickle.dumps({"legacy": True})
+    with pytest.raises(RuntimeError, match="Legacy pickled MCAP payload"):
+        _deserialize_value(payload, "retriever.LegacyThing")

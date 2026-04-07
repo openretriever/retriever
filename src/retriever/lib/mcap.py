@@ -26,7 +26,6 @@ Usage:
 from __future__ import annotations
 
 import json
-import pickle
 from dataclasses import is_dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -67,9 +66,10 @@ def _serialize_value(value: Any) -> bytes:
         return _serialize_dataclass(value)
     elif isinstance(value, (dict, list, tuple, str, int, float, bool, type(None))):
         return json.dumps(value).encode("utf-8")
-    else:
-        # Fallback to pickle for complex types
-        return pickle.dumps(value)
+    raise TypeError(
+        f"Unsupported value for stable MCAP recording: {type(value)!r}. "
+        "Use @io dataclasses, numpy arrays, or JSON-like values."
+    )
 
 
 def _deserialize_value(data: bytes, schema_name: str) -> Any:
@@ -88,14 +88,20 @@ def _deserialize_value(data: bytes, schema_name: str) -> Any:
         try:
             obj = json.loads(data.decode("utf-8"))
             return _restore_numpy(obj)
-        except json.JSONDecodeError:
-            return pickle.loads(data)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise RuntimeError(
+                f"Legacy pickled MCAP payload for schema `{schema_name}` is no longer supported. "
+                "Re-record this artifact with the current Retriever build."
+            ) from exc
     else:
-        # Try JSON first, fallback to pickle
+        # Stable session artifacts should be JSON-compatible.
         try:
             return json.loads(data.decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            return pickle.loads(data)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise RuntimeError(
+                f"Unsupported non-JSON MCAP payload for schema `{schema_name}`. "
+                "Re-record this artifact with the current Retriever build."
+            ) from exc
 
 
 def _restore_numpy(obj: Any) -> Any:
@@ -401,7 +407,12 @@ class MCAPWriter:
                 return [convert(x) for x in v]
             elif isinstance(v, dict):
                 return {k: convert(val) for k, val in v.items()}
-            return v
+            elif isinstance(v, (str, int, float, bool)) or v is None:
+                return v
+            raise TypeError(
+                f"Unsupported value for stable MCAP recording: {type(v)!r}. "
+                "Use @io dataclasses, numpy arrays, or JSON-like values."
+            )
 
         return json.dumps(convert(obj)).encode("utf-8")
 
