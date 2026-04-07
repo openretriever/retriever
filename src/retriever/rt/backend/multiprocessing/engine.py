@@ -94,9 +94,6 @@ class MPEngine(ExecutionEngine):
     def _create_executors(self):
         """Create MPExecutor for each node."""
         for node in self.ir.nodes:
-            # Load flow instance
-            flow = node.instantiate()
-
             # Load clock from config
             clock = IRNode.instantiate_clock(node.config)
 
@@ -129,11 +126,15 @@ class MPEngine(ExecutionEngine):
             for edge in self.ir.edges:
                 if edge.source.node == node.id:
                     port_name = edge.source.port
+                    channel = self.channels[edge.id]
 
                     # Support broadcasting
                     if port_name not in outputs:
                         outputs[port_name] = []
-                    outputs[port_name].append(self.channels[edge.id])
+                        channel.rerun_path = f"flows/{node.id}/output/{port_name}"
+                    else:
+                        channel.rerun_path = None
+                    outputs[port_name].append(channel)
 
             # Create executor with logging params
             log_params = None
@@ -168,7 +169,7 @@ class MPEngine(ExecutionEngine):
 
             executor = MPExecutor(
                 node_id=node.id,
-                flow=flow,
+                flow_node=node,
                 clock=clock,
                 inputs=inputs,
                 outputs=outputs,

@@ -61,11 +61,11 @@ def test_flowhandle_rshift_is_then_alias():
         value: int
 
     class A(Flow[None, AOut]):
-        def run(self, _):  # type: ignore[override]
+        def step(self, _):  # type: ignore[override]
             return AOut(value=1)
 
     class B(Flow[AOut, BOut]):
-        def run(self, input: AOut) -> BOut:
+        def step(self, input: AOut) -> BOut:
             return BOut(value=input.value + 1)
 
     with PipelineBuilder("test_flowhandle_rshift_is_then_alias") as ctx:

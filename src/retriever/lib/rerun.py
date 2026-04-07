@@ -31,6 +31,7 @@ from __future__ import annotations
 import platform
 import shutil
 import subprocess
+import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,6 +46,7 @@ from typing import (
 
 # Lazy import rerun to keep it optional
 rr = None
+logger = logging.getLogger(__name__)
 
 
 def _ensure_rerun():
@@ -86,6 +88,88 @@ def _connect_rerun(rr_module, address: str) -> None:
         rr_module.connect_grpc()
     else:
         raise AttributeError("rerun has no connect or connect_grpc")
+
+
+def _set_time_seconds_compat(rr_module, time_seconds: float) -> None:
+    """
+    Mirror Retriever's wall-clock timeline onto both Retriever's own timeline and
+    Rerun's default `log_time` timeline.
+
+    The viewer often defaults to `log_time`; mirroring here keeps image/tensor views
+    populated even when the user hasn't switched timelines manually.
+    """
+    if hasattr(rr_module, "set_time_seconds"):
+        rr_module.set_time_seconds("retriever_time", time_seconds)
+        rr_module.set_time_seconds("log_time", time_seconds)
+    else:
+        rr_module.set_time("retriever_time", timestamp=time_seconds)
+        rr_module.set_time("log_time", timestamp=time_seconds)
+
+
+def _ensure_rerun_from_env(default_app_id: str = "retriever_worker"):
+    """
+    Lazily connect to Rerun using Retriever's runtime environment variables.
+
+    This is used by worker-process backends so typed payloads can log themselves
+    natively without going through the stepper-only `RerunManager`.
+    """
+    import os
+
+    connect_addr = os.environ.get("RERUN_CONNECT_ADDR")
+    if not connect_addr:
+        return None
+
+    rr_module = _ensure_rerun()
+    if getattr(rr_module, "_retriever_env_connected", False):
+        return rr_module
+
+    app_id = os.environ.get("RERUN_APP_ID", default_app_id)
+    recording_id = os.environ.get("RERUN_RECORDING_ID")
+    rr_module.init(app_id, spawn=False, recording_id=recording_id)
+    _connect_rerun(rr_module, connect_addr)
+    rr_module._retriever_env_connected = True
+    return rr_module
+
+
+def log_value_from_env(
+    path: str,
+    value: Any,
+    *,
+    time_seconds: Optional[float] = None,
+    sequence: Optional[int] = None,
+) -> bool:
+    """
+    Log a value to Rerun using worker/runtime environment variables.
+
+    Returns `True` when a log was attempted successfully, else `False`.
+    """
+    try:
+        rr_module = _ensure_rerun_from_env()
+    except Exception as exc:
+        logger.debug("Rerun env connection unavailable for %s: %s", path, exc)
+        return False
+
+    if rr_module is None:
+        return False
+
+    try:
+        if sequence is not None:
+            if hasattr(rr_module, "set_time_sequence"):
+                rr_module.set_time_sequence("step", sequence)
+            else:
+                rr_module.set_time("step", sequence=sequence)
+
+        if time_seconds is not None:
+            _set_time_seconds_compat(rr_module, time_seconds)
+
+        if isinstance(value, RerunLoggable):
+            value.log_to_rerun(path)
+        else:
+            _log_auto_detect(rr_module, path, value)
+        return True
+    except Exception as exc:
+        logger.debug("Failed to log value to Rerun at %s: %s", path, exc)
+        return False
 
 
 # =============================================================================
@@ -330,10 +414,7 @@ class RerunManager:
         rr = _ensure_rerun()
 
         if time_seconds is not None:
-            if hasattr(rr, "set_time_seconds"):
-                rr.set_time_seconds("retriever_time", time_seconds)
-            else:
-                rr.set_time("retriever_time", timestamp=time_seconds)
+            _set_time_seconds_compat(rr, time_seconds)
 
         # Use protocol if available
         if isinstance(value, RerunLoggable):
@@ -406,10 +487,7 @@ class RerunManager:
             rr.set_time("step", sequence=step_idx)
 
         if hasattr(result, "now") and result.now is not None:
-            if hasattr(rr, "set_time_seconds"):
-                rr.set_time_seconds("retriever_time", result.now)
-            else:
-                rr.set_time("retriever_time", timestamp=result.now)
+            _set_time_seconds_compat(rr, result.now)
 
         # Log executed flows
         if hasattr(result, "executed") and result.executed:
@@ -433,10 +511,7 @@ class RerunManager:
             return
 
         rr = _ensure_rerun()
-        if hasattr(rr, "set_time_seconds"):
-            rr.set_time_seconds("retriever_time", time_seconds)
-        else:
-            rr.set_time("retriever_time", timestamp=time_seconds) # Rerun 0.28+
+        _set_time_seconds_compat(rr, time_seconds)
 
         if step is not None:
             if hasattr(rr, "set_time_sequence"):
@@ -453,6 +528,14 @@ class RerunManager:
         """
         if not self._initialized:
             return
+
+        rr_module = _ensure_rerun()
+
+        # `.rrd` files are not reliably queryable until the recording stream is
+        # explicitly finalized. This matters for tutorial replay-from-rrd.
+        if self.config.mode == "record" and hasattr(rr_module, "disconnect"):
+            rr_module.disconnect()
+        self._initialized = False
 
         if (
             self.config.mode == "record"
@@ -617,7 +700,4 @@ def jump_to_time(time_seconds: float) -> None:
     Jump Rerun viewer to a specific timestamp.
     """
     rr = _ensure_rerun()
-    if hasattr(rr, "set_time_seconds"):
-        rr.set_time_seconds("retriever_time", time_seconds)
-    else:
-        rr.set_time("retriever_time", timestamp=time_seconds)
+    _set_time_seconds_compat(rr, time_seconds)

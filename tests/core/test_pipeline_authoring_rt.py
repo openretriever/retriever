@@ -12,17 +12,17 @@ class Value:
 
 
 class Source(Flow[None, Value]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return Value(value=1)
 
 
 class AddOne(Flow[Value, Value]):
-    def run(self, input: Value) -> Value:
+    def step(self, input: Value) -> Value:
         return Value(value=input.value + 1)
 
 
 class Sink(Flow[Value, None]):
-    def run(self, input: Value) -> None:
+    def step(self, input: Value) -> None:
         return None
 
 

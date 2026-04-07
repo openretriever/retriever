@@ -18,17 +18,17 @@ class Observation:
 
 
 class Env(Flow[Action, Observation]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.x = 0
 
-    def run(self, input: Action) -> Observation:
+    def step(self, input: Action) -> Observation:
         action = 0 if input.action is None else int(input.action)
         self.x += action
         return Observation(obs=self.x)
 
 
 class Controller(Flow[Observation, Action]):
-    def run(self, input: Observation) -> Action:
+    def step(self, input: Observation) -> Action:
         obs = 0 if input.obs is None else int(input.obs)
         return Action(action=1 if obs < 3 else 0)
 

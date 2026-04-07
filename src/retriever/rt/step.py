@@ -59,19 +59,89 @@ class IOView:
     """
 
     def __init__(self, types: List[Type], instances: Dict[str, Any] = None):
-        object.__setattr__(self, '_types', {t.__name__: t for t in types})
-        object.__setattr__(self, '_instances', instances or {t.__name__: t() for t in types})
-        object.__setattr__(self, '_routes', self._build_routes())
+        alias_items = self._build_aliases(types)
+        alias_types = {alias: typ for alias, typ in alias_items}
 
-    def _build_routes(self) -> Dict[str, List[str]]:
-        """Build field_name → [type_names] mapping."""
-        routes: Dict[str, List[str]] = {}
-        for name, t in self._types.items():
-            if not is_dataclass(t):
+        object.__setattr__(self, "_types", alias_types)
+        object.__setattr__(self, "_instances", self._build_instances(alias_items, instances))
+
+        unqualified_routes: Dict[str, List[str]] = {}
+        qualified_routes: Dict[str, Tuple[str, str]] = {}
+        for alias, typ in alias_items:
+            if not is_dataclass(typ):
                 continue
-            for f in fields(t):
-                routes.setdefault(f.name, []).append(name)
-        return routes
+            for f in fields(typ):
+                unqualified_routes.setdefault(f.name, []).append(alias)
+                qualified_routes[f"{alias}.{f.name}"] = (alias, f.name)
+
+        object.__setattr__(self, "_routes", unqualified_routes)
+        object.__setattr__(self, "_qualified_routes", qualified_routes)
+
+    @staticmethod
+    def _build_aliases(types: List[Type]) -> List[Tuple[str, Type]]:
+        dataclass_types = [t for t in types if t is not type(None) and is_dataclass(t)]
+        name_counts: Dict[str, int] = {}
+        for t in dataclass_types:
+            name_counts[t.__name__] = name_counts.get(t.__name__, 0) + 1
+
+        running: Dict[str, int] = {}
+        alias_items: List[Tuple[str, Type]] = []
+        for t in dataclass_types:
+            base = t.__name__
+            if name_counts[base] == 1:
+                alias = base
+            else:
+                idx = running.get(base, 0) + 1
+                running[base] = idx
+                alias = f"{base}__{idx}"
+            alias_items.append((alias, t))
+        return alias_items
+
+    @staticmethod
+    def resolve_alias_types(types: List[Type]) -> Dict[str, Type]:
+        return {alias: typ for alias, typ in IOView._build_aliases(types)}
+
+    def _build_instances(
+        self,
+        alias_items: List[Tuple[str, Type]],
+        instances: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        built: Dict[str, Any] = {}
+        instances = instances or {}
+        base_name_counts: Dict[str, int] = {}
+        for _, typ in alias_items:
+            base_name_counts[typ.__name__] = base_name_counts.get(typ.__name__, 0) + 1
+
+        for alias, typ in alias_items:
+            if alias in instances:
+                built[alias] = instances[alias]
+                continue
+            if base_name_counts.get(typ.__name__, 0) == 1 and typ.__name__ in instances:
+                built[alias] = instances[typ.__name__]
+                continue
+            built[alias] = typ()
+        return built
+
+    def _resolve_field_route(self, field_name: str) -> Tuple[str, str]:
+        if "." in field_name:
+            route = self._qualified_routes.get(field_name)
+            if route is None:
+                raise FlowError(
+                    ErrCode.FLOW_IO_FIELD_NOT_FOUND,
+                    f"Qualified field '{field_name}' not found",
+                )
+            return route
+
+        sources = self._routes.get(field_name, [])
+        if not sources:
+            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
+        if len(sources) > 1:
+            paths = [f"{s}.{field_name}" for s in sources]
+            raise FlowError(
+                ErrCode.FLOW_AMBIGUOUS_FIELD,
+                f"Ambiguous field '{field_name}'. Exists in: {', '.join(paths)}. Use qualified access.",
+            )
+        return (sources[0], field_name)
 
     def __getattr__(self, name: str) -> Any:
         # 1. Qualified: view.TypeName
@@ -79,39 +149,37 @@ class IOView:
             return self._instances[name]
 
         # 2. Direct: view.field
-        sources = self._routes.get(name, [])
-        if not sources:
+        if name not in self._routes:
             raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
 
-        if len(sources) > 1:
-            paths = [f"{s}.{name}" for s in sources]
-            raise FlowError(
-                ErrCode.FLOW_AMBIGUOUS_FIELD,
-                f"Ambiguous field '{name}'. Exists in: {', '.join(paths)}. Use qualified access."
-            )
-
-        return getattr(self._instances[sources[0]], name)
+        alias, field = self._resolve_field_route(name)
+        return self._instances[alias]._get_signal(field)
 
     def _set_signal(self, field_name: str, value: Any) -> None:
-        sources = self._routes.get(field_name, [])
-        if not sources:
-            raise FlowError(ErrCode.FLOW_IO_FIELD_NOT_FOUND, f"Field '{field_name}' not found")
-        for s in sources:
-            self._instances[s]._set_signal(field_name, value)
+        alias, field = self._resolve_field_route(field_name)
+        self._instances[alias]._set_signal(field, value)
 
     def _get_signal(self, field_name: str) -> Any:
-        return getattr(self, field_name)
+        alias, field = self._resolve_field_route(field_name)
+        return self._instances[alias]._get_signal(field)
 
     def _has_signal(self, field_name: str) -> bool:
-        sources = self._routes.get(field_name, [])
-        return any(self._instances[s]._has_signal(field_name) for s in sources)
+        alias, field = self._resolve_field_route(field_name)
+        return self._instances[alias]._has_signal(field)
 
     @property
     def _signals(self) -> List[str]:
         active = []
         for field_name, sources in self._routes.items():
-            if any(self._instances[s]._has_signal(field_name) for s in sources):
-                active.append(field_name)
+            if len(sources) == 1:
+                alias = sources[0]
+                if self._instances[alias]._has_signal(field_name):
+                    active.append(field_name)
+                continue
+
+            for alias in sources:
+                if self._instances[alias]._has_signal(field_name):
+                    active.append(f"{alias}.{field_name}")
         return active
 
     def __repr__(self) -> str:
@@ -129,26 +197,20 @@ class IOView:
         1. If a field name is unique across all types, use it (e.g. 'data').
         2. If a field name collides, qualify it (e.g. 'Image.timestamp').
         """
-        from retriever.flow.io import is_flow_io
-
-        # Map field_name -> list of type_names
+        # Map field_name -> list of aliases
         field_map: Dict[str, List[str]] = {}
-
-        for t in types:
-            if t is type(None) or not is_dataclass(t):
-                continue
-            t_name = t.__name__
-            for f in fields(t):
-                field_map.setdefault(f.name, []).append(t_name)
+        for alias, typ in IOView._build_aliases(types):
+            for f in fields(typ):
+                field_map.setdefault(f.name, []).append(alias)
 
         # Generate ports
         ports: Dict[str, Tuple[str, str]] = {}
-        for field_name, type_names in field_map.items():
-            if len(type_names) == 1:
-                ports[field_name] = (type_names[0], field_name)
+        for field_name, aliases in field_map.items():
+            if len(aliases) == 1:
+                ports[field_name] = (aliases[0], field_name)
             else:
-                for t_name in type_names:
-                    ports[f"{t_name}.{field_name}"] = (t_name, field_name)
+                for alias in aliases:
+                    ports[f"{alias}.{field_name}"] = (alias, field_name)
 
         return ports
 
@@ -164,7 +226,7 @@ class IOStep:
     Usage:
         IOStep(input_subscribers, fields_filter) \\
             .sample(input_type, adapters) \\
-            .transform(flow.run) \\
+            .transform(flow.step) \\
             .publish(output_publishers)
     """
 
@@ -173,6 +235,7 @@ class IOStep:
         subscribers: Dict[str, "Subscriber"] = None,
         fields_filter: List[str] = None,
         instance: Any = None,
+        output_types: Optional[Union[Type, Tuple[Type, ...]]] = None,
         now: Optional[float] = None,
     ):
         """
@@ -186,6 +249,7 @@ class IOStep:
         self.subscribers = subscribers or {}
         self.fields_filter = fields_filter or []
         self.instance = instance
+        self.output_types = output_types
         self.now = now
 
 
@@ -220,8 +284,7 @@ class IOStep:
         if isinstance(input_type, tuple):
              # Composite Flow - use IOView
              types_list = list(input_type)
-             instances = {t.__name__: t() for t in types_list}
-             self.instance = IOView(types_list, instances)
+             self.instance = IOView(types_list)
         else:
              # Single Flow
              self.instance = input_type()
@@ -268,7 +331,7 @@ class IOStep:
         """
         Transform signal by applying function.
 
-        Typically: fn = flow.run
+        Typically: fn = flow.step
         Transforms: input instance → output instance
 
         Args:
@@ -309,7 +372,131 @@ class IOStep:
             self.instance = None
         return self
 
+    def _normalized_output_types(self) -> Tuple[Type, ...]:
+        if self.output_types is None:
+            return ()
+        if isinstance(self.output_types, tuple):
+            candidates = self.output_types
+        else:
+            candidates = (self.output_types,)
+        return tuple(t for t in candidates if t is not type(None))
 
+    def _normalize_output_instance(self) -> None:
+        expected_types = self._normalized_output_types()
+        if not expected_types:
+            return
+
+        if len(expected_types) == 1:
+            if isinstance(self.instance, tuple):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    "Single-output flow returned tuple output",
+                )
+            expected = expected_types[0]
+            if self.instance is not None and not isinstance(self.instance, expected):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    f"Output type mismatch: expected {expected.__name__}, got {type(self.instance).__name__}",
+                )
+            return
+
+        if not isinstance(self.instance, tuple):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_INVALID,
+                "Composite output flow must return tuple output",
+            )
+        if len(self.instance) != len(expected_types):
+            raise FlowError(
+                ErrCode.FLOW_TYPE_INVALID,
+                f"Output tuple arity mismatch: expected {len(expected_types)}, got {len(self.instance)}",
+            )
+
+        alias_items = IOView._build_aliases(list(expected_types))
+        instances: Dict[str, Any] = {}
+        for idx, ((alias, expected), value) in enumerate(zip(alias_items, self.instance)):
+            if value is None:
+                instances[alias] = expected()
+                continue
+            if not isinstance(value, expected):
+                raise FlowError(
+                    ErrCode.FLOW_TYPE_INVALID,
+                    f"Output tuple[{idx}] type mismatch: expected {expected.__name__}, got {type(value).__name__}",
+                )
+            instances[alias] = value
+
+        self.instance = IOView(list(expected_types), instances)
+
+    def _resolve_timestamp_for_port(self, field_name: str, default: float) -> float:
+        timestamp = default
+        if not hasattr(self.instance, "_has_signal"):
+            return timestamp
+
+        keys = []
+        if field_name == "timestamp" or field_name.endswith(".timestamp"):
+            keys.append(field_name)
+        if "." in field_name:
+            alias = field_name.split(".", 1)[0]
+            keys.append(f"{alias}.timestamp")
+        else:
+            if isinstance(self.instance, IOView):
+                try:
+                    alias, _ = self.instance._resolve_field_route(field_name)
+                    keys.append(f"{alias}.timestamp")
+                except Exception:
+                    pass
+            keys.append("timestamp")
+
+        for key in keys:
+            try:
+                if self.instance._has_signal(key):
+                    val = self.instance._get_signal(key)
+                    if val is not None:
+                        return float(val)
+            except Exception:
+                continue
+        return timestamp
+
+    def _log_composite_output_to_rerun(
+        self,
+        output_publishers: Dict[str, List["Publisher"]],
+        timestamp: float,
+    ) -> None:
+        """
+        Log the full typed output once before it is split into per-port publishers.
+
+        This preserves richer Rerun visualizations for composite @io outputs like
+        perception packets that know how to render images and overlays.
+        """
+        try:
+            from retriever.lib.rerun import log_value_from_env
+        except Exception:
+            return
+
+        base_paths = set()
+        for publisher_list in output_publishers.values():
+            for publisher in publisher_list:
+                rerun_path = getattr(publisher, "rerun_path", None)
+                if isinstance(rerun_path, str) and "/" in rerun_path:
+                    base_paths.add(rerun_path.rsplit("/", 1)[0])
+
+        if not base_paths:
+            return
+
+        def _is_rerun_loggable(value: Any) -> bool:
+            return callable(getattr(value, "log_to_rerun", None))
+
+        if isinstance(self.instance, IOView):
+            alias_instances = getattr(self.instance, "_instances", {})
+            for alias, value in alias_instances.items():
+                if not _is_rerun_loggable(value):
+                    continue
+                for base_path in base_paths:
+                    log_value_from_env(f"{base_path}/{alias}", value, time_seconds=timestamp)
+            return
+
+        if _is_rerun_loggable(self.instance):
+            for base_path in base_paths:
+                log_value_from_env(base_path, self.instance, time_seconds=timestamp)
 
     def publish(self, output_publishers: Dict[str, List["Publisher"]]) -> "IOStep":
         """
@@ -329,47 +516,22 @@ class IOStep:
             # Sink flow - no output
             return self
 
+        self._normalize_output_instance()
+
         # Default to execution time
         timestamp = self.now if self.now is not None else time.time()
-
-        # If data has explicit timestamp, propagate it (Critical for synchronization)
-        # Check standard 'timestamp' field first
-        found_ts = False
-        if hasattr(self.instance, "timestamp") and self.instance.timestamp is not None:
-            try:
-                timestamp = float(self.instance.timestamp)
-                found_ts = True
-            except (ValueError, TypeError):
-                pass
-
-        if not found_ts:
-            # Check for 'ts_val' (fallback/rename)
-            if hasattr(self.instance, "ts_val") and self.instance.ts_val is not None:
-                try:
-                    timestamp = float(self.instance.ts_val)
-                    found_ts = True
-                except (ValueError, TypeError):
-                    pass
-
-        if not found_ts and hasattr(self.instance, "_has_signal"):
-            # For FlowIO wrapped objects, try _get_signal but handle errors
-            try:
-                if self.instance._has_signal("timestamp"):
-                    val = self.instance._get_signal("timestamp")
-                    if val is not None:
-                        timestamp = float(val)
-            except Exception:
-                pass
+        self._log_composite_output_to_rerun(output_publishers, timestamp)
 
         # Publish each output field to all its publishers
         for field_name, publisher_list in output_publishers.items():
             if self.instance._has_signal(field_name):
                 value = self.instance._get_signal(field_name)
+                port_timestamp = self._resolve_timestamp_for_port(field_name, timestamp)
 
                 # Broadcast to all publishers for this port
                 for publisher in publisher_list:
                     try:
-                        publisher.put_one(value, timestamp, block=False)
+                        publisher.put_one(value, port_timestamp, block=False)
                         # logger.debug(f"Published {field_name}={value}")
                     except Exception as e:
                         # HACK: queue.Full is common in MP during startup/heavy load.

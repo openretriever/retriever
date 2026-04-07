@@ -12,6 +12,7 @@ from typing import Any, List, Optional
 from retriever.flow.adapter import Adapter
 from retriever.flow.types import EventBuffer
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
+from retriever.lib.rerun import log_value_from_env
 
 
 class MPChannel:
@@ -38,6 +39,7 @@ class MPChannel:
         self._engine = create_buffer_engine(buffer_engine, buffer_size=buffer_size)
         self.arrival_flag = False
         self.on_full = on_full
+        self.rerun_path: Optional[str] = None
 
     @property
     def queue(self) -> Queue:
@@ -99,6 +101,9 @@ class MPChannel:
             timestamp: Sender timestamp
             block: Block until space available
         """
+        if self.rerun_path:
+            log_value_from_env(self.rerun_path, value, time_seconds=timestamp)
+
         try:
             self.queue.put((timestamp, value), block=block)
         except Exception as e:

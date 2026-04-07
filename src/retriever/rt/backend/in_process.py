@@ -42,9 +42,10 @@ class InProcessEngine(ExecutionEngine):
 
         # Setup recording
         self._recorder = None
-        self._mcap_writer = None
+        self._recording_sink = None
         self._record_config: Optional[RecordConfig] = None
         self._rerun_manager = None
+        self._pending_rerun_config = config.get("rerun_config") if config else None
         
         # Check explicit config or global config
         if config and "record" in config:
@@ -59,11 +60,11 @@ class InProcessEngine(ExecutionEngine):
              if glob.get("record"):
                   self._record_config = glob["record"]
 
-        # Setup Rerun
-        if config and config.get("rerun_config"):
+        # Setup live Rerun when not also recording through the unified sink.
+        if self._pending_rerun_config and not self._record_config:
             try:
                 from retriever.lib.rerun import RerunManager, RerunConfig
-                rr_cfg_data = config["rerun_config"]
+                rr_cfg_data = self._pending_rerun_config
                 if isinstance(rr_cfg_data, bool):
                      rr_cfg = RerunConfig(spawn=True)
                 elif isinstance(rr_cfg_data, dict):
@@ -101,16 +102,27 @@ class InProcessEngine(ExecutionEngine):
         fmt = self._record_config.format
         
         logger.info(f"Recording execution to {path} (format={fmt})")
-        
-        if fmt == "mcap":
-            from retriever.lib.mcap import MCAPWriter
-            self._mcap_writer = MCAPWriter(path)
-            self._mcap_writer.__enter__()
-        else:
-            # Legacy pickle/native recorder? 
-            # Currently Pipeline.record logic for pickle is complex wrapper.
-            # We'll stick to MCAP for unified run for now.
-            logger.warning("Only MCAP format supported for unified run() recording.")
+
+        from retriever.recording import build_recording_sink
+
+        self._recording_sink = build_recording_sink(
+            self._record_config,
+            app_id=self.ir.metadata.name,
+        )
+        self._recording_sink.open()
+
+        if self._pending_rerun_config and self._rerun_manager is None:
+            from retriever.lib.rerun import RerunManager, RerunConfig
+
+            rr_cfg_data = self._pending_rerun_config
+            if isinstance(rr_cfg_data, bool):
+                rr_cfg = RerunConfig(spawn=True)
+            elif isinstance(rr_cfg_data, dict):
+                rr_cfg = RerunConfig(**rr_cfg_data)
+            else:
+                rr_cfg = rr_cfg_data
+            self._rerun_manager = RerunManager(rr_cfg, app_id=self.ir.metadata.name)
+            self._rerun_manager.init()
 
     def wait(self, timeout: Optional[float] = None) -> None:
         """
@@ -145,8 +157,8 @@ class InProcessEngine(ExecutionEngine):
                 result = self._pipeline.step()
                 
                 # Record
-                if self._mcap_writer:
-                    self._mcap_writer.write_step(result, step_idx)
+                if self._recording_sink:
+                    self._recording_sink.write_step(result, step_idx)
 
                 # Rerun
                 if self._rerun_manager:
@@ -164,9 +176,9 @@ class InProcessEngine(ExecutionEngine):
 
     def stop(self) -> None:
         self._running = False
-        if self._mcap_writer:
-            self._mcap_writer.__exit__(None, None, None)
-            self._mcap_writer = None
+        if self._recording_sink:
+            self._recording_sink.close()
+            self._recording_sink = None
             logger.info("Recording saved.")
              
         if self._rerun_manager:

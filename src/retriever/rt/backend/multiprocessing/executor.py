@@ -10,7 +10,9 @@ from typing import Dict, List, Optional, Any
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock
 from retriever.flow.adapter import Adapter
+from retriever.ir.core import IRNode
 from retriever.rt.backend.interface import Executor, Subscriber, Publisher
+from retriever.rt.lifecycle import instantiate_flow_from_node, initialize_flow_runtime
 from retriever.rt.backend.multiprocessing.scheduler import MPScheduler
 from retriever.rt.step import IOStep
 from retriever.rt.logging.worker import configure_worker
@@ -42,11 +44,12 @@ class MPExecutor(multiprocessing.Process, Executor):
     def __init__(
         self,
         node_id: str,
-        flow: Flow,
         clock: Clock,
-        inputs: Dict[str, Subscriber],
-        outputs: Dict[str, List[Publisher]],
-        adapters: Dict[str, Adapter],
+        inputs: Optional[Dict[str, Subscriber]] = None,
+        outputs: Optional[Dict[str, List[Publisher]]] = None,
+        adapters: Optional[Dict[str, Adapter]] = None,
+        flow: Optional[Flow] = None,
+        flow_node: Optional[IRNode] = None,
         log_params: Optional[Dict[str, Any]] = None,
         control_channel: Optional[Any] = None,
         control_command_queue: Optional[Any] = None,
@@ -58,8 +61,9 @@ class MPExecutor(multiprocessing.Process, Executor):
 
         Args:
             node_id: Unique node identifier
-            flow: Flow instance to execute
             clock: Clock for scheduling
+            flow: Optional pre-instantiated Flow (primarily for tests/compat)
+            flow_node: Optional IR node spec for runtime-side instantiation
             inputs: Dict mapping input port names to Subscribers
             outputs: Dict mapping output port names to List[Publishers]
             adapters: Dict mapping input port names to Adapters
@@ -72,10 +76,11 @@ class MPExecutor(multiprocessing.Process, Executor):
         super().__init__(name=node_id)
         self.node_id = node_id
         self.flow = flow
+        self.flow_node = flow_node
         self.clock = clock
-        self.inputs = inputs
-        self.outputs = outputs
-        self.adapters = adapters
+        self.inputs = inputs or {}
+        self.outputs = outputs or {}
+        self.adapters = adapters or {}
         self.log_params = log_params
         self.scheduler = MPScheduler(clock)
         self._stop_flag = multiprocessing.Event()
@@ -86,12 +91,27 @@ class MPExecutor(multiprocessing.Process, Executor):
         self._control_log_queue = control_log_queue
         self._control_channel = control_channel  # May be set lazily in run() from queues
 
-        self._is_controllable = CONTROL_AVAILABLE and isinstance(flow, Controllable) if CONTROL_AVAILABLE else False
+        self._is_controllable = False
 
     @property
     def name(self) -> str:
         """Executor name/identifier."""
         return self.node_id
+
+    def _ensure_runtime_flow_initialized(self) -> None:
+        if self.flow is None:
+            if self.flow_node is None:
+                raise RuntimeError(
+                    f"[{self.node_id}] No flow instance or flow node spec was provided"
+                )
+            self.flow = instantiate_flow_from_node(self.flow_node)
+
+        if CONTROL_AVAILABLE:
+            self._is_controllable = isinstance(self.flow, Controllable)
+        else:
+            self._is_controllable = False
+
+        initialize_flow_runtime(self.flow)
 
     def _process_control_commands(self) -> bool:
         """
@@ -195,7 +215,7 @@ class MPExecutor(multiprocessing.Process, Executor):
                     # Non-controllable: basic info only
                     data = {
                         "node_id": self.node_id,
-                        "flow_class": self.flow.__class__.__name__,
+                        "flow_class": self.flow.__class__.__name__ if self.flow is not None else "UnknownFlow",
                         "state": "running",
                         "step_count": 0,
                         "custom_state": {},
@@ -269,21 +289,26 @@ class MPExecutor(multiprocessing.Process, Executor):
 
         Lifecycle:
         1. Configure logging for this worker
-        2. Initialize flow (flow.init())
+        2. Initialize flow runtime (flow.reset())
         3. Reset scheduler
         4. Main execution loop:
            - Advance to next execution point (scheduler.next)
            - Sample inputs using adapters (Signal.sample)
-           - Transform via flow.run() (Signal.transform)
+           - Transform via flow.step() (Signal.transform)
            - Publish outputs (Signal.publish)
         5. Finalize flow (flow.finalize())
         6. Shutdown OTel
         """
         # Configure logging for this worker process
         if self.log_params:
+            flow_type_name = (
+                type(self.flow).__name__
+                if self.flow is not None
+                else (self.flow_node.type if self.flow_node is not None else "UnknownFlow")
+            )
             configure_worker(
                 self.node_id,
-                type(self.flow).__name__,
+                flow_type_name,
                 self.log_params['queue'],
                 self.log_params['config'],
                 self.log_params['log_dir'],
@@ -318,8 +343,8 @@ class MPExecutor(multiprocessing.Process, Executor):
         logger.info(f"[{self.node_id}] Starting MPExecutor")
 
         try:
-            # Initialize flow
-            self.flow.init()
+            # Instantiate flow in runtime context and run lazy/init lifecycle.
+            self._ensure_runtime_flow_initialized()
             if self._is_controllable:
                 self.flow.control_init()
             logger.info(f"[{self.node_id}] Flow initialized")
@@ -357,9 +382,14 @@ class MPExecutor(multiprocessing.Process, Executor):
                             'node_id': self.node_id,
                             'fields': result.fields_to_sample,
                         })
-                    IOStep(self.inputs, result.fields_to_sample, now=result.now) \
+                    IOStep(
+                        self.inputs,
+                        result.fields_to_sample,
+                        output_types=self.flow.output_types,
+                        now=result.now,
+                    ) \
                         .sample(self.flow.input_types, self.adapters, now=result.now) \
-                        .transform(self.flow.run) \
+                        .transform(self.flow.step) \
                         .publish(self.outputs)
 
                 if self._is_controllable:
@@ -373,9 +403,10 @@ class MPExecutor(multiprocessing.Process, Executor):
                 self.flow.control_error(e)
         finally:
             # Finalize flow
-            if self._is_controllable:
+            if self.flow is not None and self._is_controllable:
                 self.flow.control_finalize()
-            self.flow.finalize()
+            if self.flow is not None:
+                self.flow.finalize()
             logger.info(f"[{self.node_id}] MPExecutor terminated")
             # Flush OTel before exit only if it was enabled/configured for this worker.
             if self.log_params and getattr(self.log_params.get("config"), "otel_enabled", False):

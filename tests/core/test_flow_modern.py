@@ -14,7 +14,7 @@ class IO:
     val: int
 
 class SimpleFlow(Flow[IO, IO]):
-    def run(self, input: IO):
+    def step(self, input: IO):
         return input
 
 def test_rate_clock_modern():

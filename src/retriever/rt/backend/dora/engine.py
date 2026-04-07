@@ -19,6 +19,7 @@ from retriever.ir.core import IR, IRNode, IREdge
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.backend.interface import ExecutionEngine
+from retriever.rt.lifecycle import is_main_thread_flow_node
 from retriever.rt.logging.manager import LogManager
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,8 @@ class DoraEngine(ExecutionEngine):
                 - 'keep_yaml': Don't delete YAML after stop (default: False)
                 - 'yaml_dir': Custom directory for YAML (default: tempdir)
                 - 'dora_timeout': Timeout for dora commands (default: 10s)
+                - 'dora_fresh': Destroy any existing dora runtime before `dora up`
+                  and fail fast if a fresh runtime cannot be started (default: False)
                 - 'dora_destroy': Destroy dora runtime on stop (default: False)
                 - 'init_delay': Delay after dora start (default: 1.0s)
                 - 'buffer_engine': Buffer engine kind for per-port sampling ('python' | 'native', default: 'python')
@@ -136,8 +139,8 @@ class DoraEngine(ExecutionEngine):
                 continue
             executor = self._create_executor(node)
 
-            # Check if flow is marked as main-thread (@gui_flow)
-            if getattr(executor.flow, "_main_thread", False):
+            # Check class-level marker without forcing runtime-heavy instantiation.
+            if is_main_thread_flow_node(node):
                 self.main_thread_runners.append(executor)
                 self._main_thread_nodes.append(node.id)
                 logger.info(f"Main-thread flow detected: {node.id}")
@@ -150,9 +153,6 @@ class DoraEngine(ExecutionEngine):
 
     def _create_executor(self, node) -> DoraExecutor:
         """Create DoraExecutor for each node."""
-        # Load flow instance
-        flow = node.instantiate()
-
         # Load clock from config
         clock = IRNode.instantiate_clock(node.config)
 
@@ -214,15 +214,24 @@ class DoraEngine(ExecutionEngine):
         # Queues must be inherited, not pickled
         control_cmd_queue = None
         control_resp_queue = None
+        control_log_queue = None
         if "control_channel" in self.config:
             ctrl_chan = self.config["control_channel"]
-            if hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
+            if hasattr(ctrl_chan, 'register_node'):
+                ctrl_chan.register_node(node.id)
+                control_cmd_queue = ctrl_chan.get_node_command_queue(node.id)
+                control_resp_queue = ctrl_chan.response_queue
+                if hasattr(ctrl_chan, "log_queue"):
+                    control_log_queue = ctrl_chan.log_queue
+            elif hasattr(ctrl_chan, 'command_queue') and hasattr(ctrl_chan, 'response_queue'):
                 control_cmd_queue = ctrl_chan.command_queue
                 control_resp_queue = ctrl_chan.response_queue
+                if hasattr(ctrl_chan, "log_queue"):
+                    control_log_queue = ctrl_chan.log_queue
 
         executor = DoraExecutor(
             node_id=node.id,
-            flow=flow,
+            flow_node=node,
             clock=clock,
             input_ports=input_ports,
             output_ports=output_ports,
@@ -232,6 +241,7 @@ class DoraEngine(ExecutionEngine):
             log_params=log_params,
             control_command_queue=control_cmd_queue,
             control_response_queue=control_resp_queue,
+            control_log_queue=control_log_queue,
         )
 
         logger.debug(f"Created executor for {node.id}")
@@ -280,6 +290,12 @@ class DoraEngine(ExecutionEngine):
     def _start_dora_runtime(self, timeout: float) -> None:
         """Start dora runtime with 'dora up'."""
         logger.debug("Starting dora runtime")
+        fresh_runtime = bool(self.config.get("dora_fresh", False))
+
+        if fresh_runtime:
+            logger.info("Ensuring fresh dora runtime before startup")
+            self._destroy_dora_runtime()
+            time.sleep(0.25)
 
         try:
             result = subprocess.run(
@@ -289,11 +305,19 @@ class DoraEngine(ExecutionEngine):
             if result.returncode == 0:
                 logger.info("Dora runtime started")
             else:
+                if fresh_runtime:
+                    logger.warning(
+                        "dora up returned a non-zero exit code while requesting a fresh "
+                        "runtime; waiting for readiness anyway.\n"
+                        f"stdout: {result.stdout}\n"
+                        f"stderr: {result.stderr}"
+                    )
                 # Runtime may already be running
-                logger.warning(
-                    f"dora up returned {result.returncode} "
-                    f"(may already be running): {result.stderr}"
-                )
+                else:
+                    logger.warning(
+                        f"dora up returned {result.returncode} "
+                        f"(may already be running): {result.stderr}"
+                    )
 
         # except FileNotFoundError:
         #     raise FileNotFoundError(
@@ -303,6 +327,38 @@ class DoraEngine(ExecutionEngine):
 
         except subprocess.TimeoutExpired:
             logger.warning(f"dora up timed out after {timeout}s")
+
+        self._wait_for_dora_ready(timeout)
+
+    def _wait_for_dora_ready(self, timeout: float) -> None:
+        """Wait until `dora check` confirms the coordinator/daemon are reachable."""
+        deadline = time.time() + timeout
+        last_error = ""
+
+        while time.time() < deadline:
+            try:
+                result = subprocess.run(
+                    ["dora", "check"],
+                    capture_output=True,
+                    text=True,
+                    timeout=min(2.0, timeout),
+                )
+            except subprocess.TimeoutExpired:
+                last_error = "dora check timed out"
+                time.sleep(0.25)
+                continue
+
+            if result.returncode == 0:
+                logger.debug("Dora coordinator/daemon reported ready")
+                return
+
+            last_error = (result.stderr or result.stdout).strip()
+            time.sleep(0.25)
+
+        raise RuntimeError(
+            "dora runtime did not become ready in time. "
+            f"Last readiness check output: {last_error}"
+        )
 
     def _start_dataflow(self, timeout: float) -> None:
         """Start dataflow with 'dora start <yaml> --detach'."""
@@ -375,7 +431,7 @@ class DoraEngine(ExecutionEngine):
             self._stop_dataflow()
 
         # Destroy dora runtime (optional, disabled by default)
-        if self.config.get("dora_destroy", False):
+        if self.config.get("dora_destroy", False) or self.config.get("dora_fresh", False):
             self._destroy_dora_runtime()
 
         # Cleanup temp files
@@ -419,8 +475,15 @@ class DoraEngine(ExecutionEngine):
                 ["dora", "destroy"], capture_output=True, text=True, timeout=timeout
             )
 
+            stderr_lower = result.stderr.lower()
             if result.returncode == 0:
                 logger.info("Dora runtime destroyed")
+            elif (
+                "no daemon running" in stderr_lower
+                or "could not connect to dora-coordinator" in stderr_lower
+                or "connection refused" in stderr_lower
+            ):
+                logger.debug("No existing dora runtime to destroy")
             else:
                 logger.warning(
                     f"dora destroy returned {result.returncode}: {result.stderr}"
