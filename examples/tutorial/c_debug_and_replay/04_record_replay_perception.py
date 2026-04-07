@@ -2,14 +2,14 @@
 Record + replay a perception camera stream (in-process stepper) for debugging.
 
 This is a stepper-first workflow:
-  - record once from hardware (real camera) to `.rrd` and/or `.mcap`
+  - record once from hardware (real camera) to `.rrd` plus a mirrored `.mcap`
   - replay later (still in-process) so breakpoints inside `Flow.step()` work
   - optionally visualize replay in stdout, OpenCV, Rerun, or both
 
 Run:
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10
-  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize both
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --visualize rerun
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def parse_args() -> argparse.Namespace:
     replay.add_argument(
         "--recording",
         type=Path,
-        default=Path("logs/perception.mcap"),
+        default=Path("logs/perception.rrd"),
         help="Input recording path (.rrd or .mcap).",
     )
     replay.add_argument("--steps", type=int, default=10, help="Max number of step iterations")
