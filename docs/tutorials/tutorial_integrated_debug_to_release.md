@@ -15,7 +15,7 @@ It is written as a single narrative because the workflow matters more than any s
 5. You turn the artifacts into a release decision (GO / NO-GO).
 
 Along the way you will see the actual interfaces you will use in real projects:
-`Flow.run(...)`, `Pipeline.connect(...)`, clocks (`Rate`, `Trigger`), adapters (`Latest`, `Hold`, `Window`),
+`Flow.step(...)`, `Pipeline.connect(...)`, clocks (`Rate`, `Trigger`), adapters (`Latest`, `Hold`, `Window`),
 and the stepper-first tools around recording and replay.
 
 ## Setup (One-Time) and How to Run These Examples
@@ -56,9 +56,6 @@ Retriever is a graph of typed transformations.
 A `Flow` is the smallest unit. It takes a typed input object and returns a typed output object.
 Those types are not decoration; they are the contract used by clocks, adapters, and validation.
 
-In older code you may still see the `@flow_io` alias on envelope classes. Treat both forms as:
-"this dataclass is part of the message contract".
-
 ```python
 from retriever.flow import Flow, io
 
@@ -72,7 +69,7 @@ class Out:
     result: int
 
 class Double(Flow[In, Out]):
-    def run(self, input: In) -> Out:
+    def step(self, input: In) -> Out:
         return Out(result=input.value * 2)
 ```
 
@@ -85,14 +82,14 @@ Two pieces of vocabulary show up everywhere:
 Finally, there is a practical rule that drives the rest of this article:
 
 If you want to use a debugger, start with in-process stepping.
-Backends like `multiprocessing` and `dora` run flows in worker processes, so your editor breakpoint inside `Flow.run()`
+Backends like `multiprocessing` and `dora` run flows in worker processes, so your editor breakpoint inside `Flow.step()`
 often will not hit unless you attach to the worker.
 
 ## Part 1: Debug Logic With the Stepper (Breakpoints That Actually Hit)
 
 We will start with the smallest pipeline that still has the real shape: a source, a transformation, and a sink.
 
-Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py` and find this line in `DebugFlow.run(...)`:
+Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py` and find this line in `DebugFlow.step(...)`:
 
 ```python
 x = input.value  # put a breakpoint here
@@ -158,18 +155,20 @@ convenient to store in `logs/` or attach to an issue.
 Record a short perception session:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
 ```
 
 Notes:
 
 - This tutorial tries to use a real camera and falls back to a synthetic stream if none is available.
-- The concrete thing you care about is that you now have `logs/perception.mcap`.
+- The concrete thing you care about is that you now have:
+  - `logs/perception.rrd` for Rerun inspection
+  - `logs/perception.mcap` as a mirrored interchange artifact
 
 If you want to view the recording immediately, you can use the library helper:
 
 ```bash
-pixi run python -c "import retriever; retriever.view('logs/perception.mcap')"
+pixi run python -c "import retriever; retriever.view('logs/perception.rrd')"
 ```
 
 If you want to load it programmatically (for example, to build a notebook later), you can iterate the step stream:
@@ -191,14 +190,16 @@ Replay is the bridge between "debuggable" and "reproducible": you run the same s
 Run the replay mode:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --show-window
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 ```
 
-This replay is intentionally in-process. That is the point: it keeps the "set a breakpoint in `Flow.run()`" workflow
+This replay is intentionally in-process. That is the point: it keeps the "set a breakpoint in `Flow.step()`" workflow
 alive even when the original input came from hardware.
 
-If you prefer a headless run (no OpenCV window), drop `--show-window`.
-If you want to stream live to Rerun while replaying, add `--stream`.
+Replay accepts either `.rrd` or `.mcap`.
+If you prefer a headless run, use `--visualize stdout`.
+If you want to stream live to Rerun while replaying, use `--visualize rerun`.
+If you want both the cv2 window and Rerun, use `--visualize both`.
 
 ## Part 5: Turn Runs Into Evidence (Run Manifests and Lineage)
 
@@ -318,7 +319,7 @@ pixi run verify-incident-replay
 
 If you worked through the tutorial in order, you now have a complete, end-to-end loop:
 
-- You can step through `Flow.run()` with a breakpoint and inspect typed payloads.
+- You can step through `Flow.step()` with a breakpoint and inspect typed payloads.
 - You can record and replay sessions so bugs are reproducible.
 - You can generate evidence artifacts under `logs/` that can be checked automatically.
 - You can run parity and incident gates and treat failures as release blockers.
