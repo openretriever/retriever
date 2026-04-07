@@ -310,6 +310,44 @@ class Pipeline:
 
         return self._stepper.step(now=now, dt=dt)
 
+    def inject_input(
+        self,
+        node: Union[str, TemporalFlow],
+        port: str,
+        value: Any,
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """
+        Inject one external input value into a node for the next in-process step.
+
+        This is intended for composite/debugging workflows where a pipeline has
+        surfaced but unconnected input ports.
+        """
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+
+        node_id = node if isinstance(node, str) else self.get_node_id(node)
+        self._stepper.inject_input(node_id, port, value, timestamp=timestamp)
+        return self
+
+    def inject_inputs(
+        self,
+        values: Dict[str, Dict[str, Any]],
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """Inject a batch of external input values into surfaced pipeline ports."""
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+
+        self._stepper.inject_inputs(values, timestamp=timestamp)
+        return self
+
     def reset(self) -> None:
         """
         Reset in-process execution state (debugging).

@@ -17,6 +17,12 @@ class Value:
     value: int
 
 
+@flow_io
+@dataclass
+class Bias:
+    bias: int
+
+
 class Counter(Flow[None, Value]):
     def reset(self) -> None:
         self.count = 0
@@ -42,6 +48,11 @@ class Recorder(Flow[Value, None]):
 
 class UnsupportedValue:
     pass
+
+
+class BiasTrigger(Flow[Bias, Value]):
+    def step(self, input: Bias) -> Value:
+        return Value(value=input.bias + 1)
 
 
 def test_pipeline_step_propagates_values_in_process():
@@ -235,3 +246,36 @@ def test_mcap_reader_rejects_legacy_pickled_payloads():
     payload = pickle.dumps({"legacy": True})
     with pytest.raises(RuntimeError, match="Legacy pickled MCAP payload"):
         _deserialize_value(payload, "retriever.LegacyThing")
+
+
+def test_pipeline_can_inject_unconnected_trigger_input():
+    pipe = Pipeline("inject_demo")
+    triggered = BiasTrigger() @ Trigger("bias")
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(triggered, sink, sync=Latest())
+
+    try:
+        pipe.inject_input(triggered, "bias", 4)
+        res = pipe.step(dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert sink.flow.seen == [5]
+
+
+def test_pipeline_injected_inputs_are_cleared_on_reset():
+    pipe = Pipeline("inject_reset_demo")
+    triggered = BiasTrigger() @ Trigger("bias")
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(triggered, sink, sync=Latest())
+
+    try:
+        pipe.inject_inputs({pipe.get_node_id(triggered): {"bias": 7}})
+        pipe.reset()
+        res = pipe.step(dt=0.1)
+    finally:
+        pipe.close_stepper()
+
+    assert not any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert sink.flow.seen == []
