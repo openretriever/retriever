@@ -10,7 +10,9 @@ import sys
 from retriever.error import ErrCode, HubError
 from retriever.hub._loader import ModuleProxy
 from retriever.flow import Flow, Pipeline, Rate, Latest, io
+from retriever.flow.io import get_flow_io_fields, get_flow_io_types, is_flow_io
 from retriever.rt.lifecycle import initialize_flow_runtime, instantiate_flow_from_node
+from retriever.rt.runtime import execute_ir
 
 
 @io
@@ -90,6 +92,9 @@ TestFlow = "test_mod.flow:TestFlow"
 TestConfig = "test_mod.config:TestConfig"
 SharedPose = "test_mod.types:SharedPose"
 pose_to_tuple = "test_mod.transforms:pose_to_tuple"
+GreeterFlow = "test_mod.greeter:GreeterFlow"
+GreeterInput = "test_mod.greeter_types:GreeterInput"
+GreeterOutput = "test_mod.greeter_types:GreeterOutput"
 BuildTestPipeline = "test_mod.pipeline:build_test_pipeline"
 BuildTestPipelineFlow = "test_mod.pipeline:build_test_pipeline_flow"
 """
@@ -144,9 +149,16 @@ class TestFlow(Flow[TestFlowIn, TestFlowOut]):
         "test_mod/config.py": f"""class TestConfig:
     delta = {flow_delta}
 """,
-        "test_mod/types.py": """from retriever.flow import io
+        "test_mod/types.py": """from retriever import register_type
+from retriever.flow import io
 
 
+@register_type(
+    "HubSharedPose",
+    category="geometry",
+    description="Hub-exported shared pose envelope",
+    tags=["hub", "pose"],
+)
 @io
 class SharedPose:
     x: float
@@ -155,6 +167,30 @@ class SharedPose:
 """,
         "test_mod/transforms.py": """def pose_to_tuple(pose):
     return (pose.x, pose.y, pose.z)
+""",
+        "test_mod/greeter_types.py": """from retriever.flow import io
+
+
+@io
+class GreeterInput:
+    name: str
+
+
+@io
+class GreeterOutput:
+    greeting: str
+""",
+        "test_mod/greeter.py": """from retriever.flow import Flow
+from test_mod.greeter_types import GreeterInput, GreeterOutput
+
+
+class GreeterFlow(Flow[GreeterInput, GreeterOutput]):
+    def __init__(self, prefix: str = "Hello"):
+        super().__init__()
+        self.prefix = prefix
+
+    def run(self, input: GreeterInput) -> GreeterOutput:
+        return GreeterOutput(greeting=f"{self.prefix}, {input.name}!")
 """,
         "test_mod/pipeline.py": """from retriever.flow import Flow, Pipeline, Rate, Latest, io
 from retriever.pipeline_registry import register_pipeline, build_pipeline_flow
@@ -387,6 +423,137 @@ class TestHubUse:
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
+    def test_use_exported_io_type_behaves_like_local_io(self, mock_request, mock_cache_root, tmp_path: Path):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            SharedPose = hub.use("test-org/test-mod:SharedPose")
+
+            assert is_flow_io(SharedPose)
+            assert get_flow_io_fields(SharedPose) == ["x", "y", "z"]
+            assert get_flow_io_types(SharedPose) == {"x": float, "y": float, "z": float}
+
+            pose = SharedPose(x=1.0, z=3.0)
+            assert pose._signals == ["x", "z"]
+            assert pose._has_signal("x") is True
+            assert pose._has_signal("y") is False
+            assert pose.y is None
+
+            @io
+            class PoseSummary:
+                total: float
+
+            class PoseReducer(Flow[SharedPose, PoseSummary]):
+                def step(self, input: SharedPose) -> PoseSummary:
+                    return PoseSummary(total=input.x + input.y + input.z)
+
+            flow = PoseReducer()
+            out = flow.step(SharedPose(x=1.0, y=2.0, z=3.0))
+            assert out.total == 6.0
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_registered_type_is_discoverable(self, mock_request, mock_cache_root, tmp_path: Path):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import find_types, get_type, hub
+
+            SharedPose = hub.use("test-org/test-mod:SharedPose")
+
+            assert get_type("HubSharedPose") is SharedPose
+            geometry_types = find_types(category="geometry", tags=["hub", "pose"])
+            assert geometry_types["HubSharedPose"].type_class is SharedPose
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_transform_accepts_local_io_equivalent(self, mock_request, mock_cache_root, tmp_path: Path):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            pose_to_tuple = hub.use("test-org/test-mod:pose_to_tuple")
+
+            @io
+            class LocalPose:
+                x: float
+                y: float
+                z: float
+
+            local_pose = LocalPose(x=4.0, y=5.0, z=6.0)
+            assert pose_to_tuple(local_pose) == (4.0, 5.0, 6.0)
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_explicit_exports_preserve_intra_package_type_identity(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            GreeterFlow = hub.use("test-org/test-mod:GreeterFlow")
+            GreeterInput = hub.use("test-org/test-mod:GreeterInput")
+            GreeterOutput = hub.use("test-org/test-mod:GreeterOutput")
+
+            greeter = GreeterFlow(prefix="Hi")
+            out = greeter.run(GreeterInput(name="Retriever"))
+
+            assert greeter.input_type is GreeterInput
+            assert greeter.output_type is GreeterOutput
+            assert isinstance(out, GreeterOutput)
+            assert out.greeting == "Hi, Retriever!"
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
     def test_use_exported_pipeline_factory_for_extension(self, mock_request, mock_cache_root, tmp_path: Path):
         with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
             import json
@@ -564,6 +731,135 @@ class TestHubUse:
             )
 
             outer.run(backend="multiprocessing", duration=0.05)
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_flow_factory_unlowered_ir_stays_backend_guarded(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build_flow = hub.use("test-org/test-mod:BuildTestPipelineFlow")
+
+            outer = Pipeline("hub_outer_pipeline_guarded")
+            with outer:
+                bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+                stage = (build_flow() @ Rate(hz=10)).named("stage")
+                bias.then(stage, sync=Latest())
+
+            ir = outer.validate(lower_composite_flows=False)
+            with pytest.raises(ValueError, match="stage"):
+                execute_ir(ir, backend="multiprocessing", duration=0.01)
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_flow_factory_can_compose_multiple_instances(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build_flow = hub.use("test-org/test-mod:BuildTestPipelineFlow")
+
+            outer = Pipeline("hub_outer_pipeline_multi_stage")
+            with outer:
+                left_bias = (BiasSource(bias=4) @ Rate(hz=10)).named("left_bias")
+                right_bias = (BiasSource(bias=7) @ Rate(hz=10)).named("right_bias")
+                left = (build_flow() @ Rate(hz=10)).named("left")
+                right = (build_flow() @ Rate(hz=10)).named("right")
+                left_bias.then(left, sync=Latest())
+                right_bias.then(right, sync=Latest())
+
+            ir = outer.validate()
+            node_ids = {node.id for node in ir.nodes}
+            assert "left" not in node_ids
+            assert "right" not in node_ids
+            assert {
+                "left_bias",
+                "right_bias",
+                "left__source",
+                "left__processor",
+                "right__source",
+                "right__processor",
+            } <= node_ids
+
+            result = outer.step(now=0.0)
+            try:
+                assert result.outputs["left"].value == 5
+                assert result.outputs["left"].aux == 99
+                assert result.outputs["right"].value == 8
+                assert result.outputs["right"].aux == 99
+            finally:
+                outer.close_stepper()
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_flow_factory_builds_on_dora(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        pytest.importorskip("dora")
+        from retriever.rt.backend.dora.engine import DoraEngine
+
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build_flow = hub.use("test-org/test-mod:BuildTestPipelineFlow")
+
+            outer = Pipeline("hub_outer_pipeline_dora")
+            with outer:
+                bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+                stage = (build_flow() @ Rate(hz=10)).named("stage")
+                bias.then(stage, sync=Latest())
+
+            ir = outer.validate()
+            engine = DoraEngine(ir)
+            engine.build()
+            try:
+                executor_ids = {ex.flow_node.id for ex in engine.executors if ex.flow_node is not None}
+                assert "stage" not in executor_ids
+                assert {"bias", "stage__source", "stage__processor"} <= executor_ids
+            finally:
+                engine.stop()
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
