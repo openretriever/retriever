@@ -65,6 +65,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def cmd_record(args: argparse.Namespace) -> None:
+    if args.out.expanduser().resolve() == args.replay_out.expanduser().resolve():
+        raise SystemExit("--out and --replay-out must be different artifact paths.")
     pipe, _camera = build_record_pipeline()
     cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
