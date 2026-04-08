@@ -140,7 +140,7 @@ demo-control = "python examples/control_demo.py --web-port 8080 --keyboard"
 demo-control-web = "python examples/control_demo.py --web-port 8080"
 
 # Tutorial Examples
-demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora"
+demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --visualize rerun"
 demo-stepper = "python -m examples.tutorial.c_debug_and_replay.01_debug_stepper"
 demo-perception-stepper = "python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper"
 demo-request-response = "python -m examples.tutorial.b_ir_and_execution.07_request_response"
