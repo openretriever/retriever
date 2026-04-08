@@ -240,6 +240,16 @@ class Flow(ABC, Generic[I, O]):
         """
         return None
 
+    def __lazy_init__(self) -> None:
+        """
+        Optional runtime-local initialization hook.
+
+        Use this for process-local helpers derived from already-serialized config
+        before `init()` acquires heavyweight resources. Keep `__init__()` limited
+        to lightweight, serializable authoring-time configuration.
+        """
+        return None
+
     def init_config(self) -> dict:
         """
         Return a JSON-serializable dict that can reconstruct this Flow.
