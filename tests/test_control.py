@@ -4,7 +4,6 @@ Tests for the pipeline control system.
 
 import pytest
 import time
-from dataclasses import dataclass
 
 from retriever import Pipeline, Flow, Rate, Latest
 from retriever.flow.io import io
@@ -18,13 +17,11 @@ from retriever.rt.control import (
 
 
 @io
-@dataclass
 class CounterInput:
     trigger: bool = False
 
 
 @io
-@dataclass
 class CounterOutput:
     count: int = 0
 
@@ -103,7 +100,7 @@ class TestControllable:
         assert status.node_id == "test_node"
         assert status.flow_class == "SimpleCounterFlow"
         assert status.state == FlowState.RUNNING
-        assert status.step_count > 0
+        assert status.step_count == 1
 
 
 class TestControlChannel:
@@ -163,6 +160,7 @@ class TestPipelineIntegration:
         # Step the pipeline a few times
         for _ in range(3):
             result = pipe.step()
+            assert result.executed
 
         # Get the flow instance
         flow = counter.flow

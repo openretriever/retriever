@@ -30,9 +30,28 @@ class TemporalFlow:
     pipeline: Optional["Pipeline"] = None
     name: Optional[str] = None
 
+    def __post_init__(self) -> None:
+        """Attach standalone handles created inside an active Pipeline/Builder context."""
+        from retriever.flow.builder import PipelineBuilder
+
+        ctx = PipelineBuilder.active()
+        if ctx is None:
+            return
+
+        builder = getattr(ctx, "_builder", ctx)
+        owner = ctx if hasattr(ctx, "_builder") else getattr(ctx, "owner", None)
+        if owner is not None and self.pipeline is None:
+            self.pipeline = owner
+
+        register = getattr(builder, "_register_handle", None)
+        if callable(register):
+            register(self)
+            self._registered_builder = builder
+
     @property
     def clock(self) -> "Clock":
         """Convenience accessor for the clock."""
+        return self.config.clock
 
     @property
     def input_type(self) -> Optional["type"]:
@@ -62,7 +81,10 @@ class TemporalFlow:
                 f"Invalid flow name '{name}'. "
                 "Flow names must be valid identifiers like 'camera' or 'planner_main'."
             )
+
+        old_name = self.name
         self.name = name
+        self._rename_registered_handle(old_name, name)
         return self
 
     def matches(self, selector: str) -> bool:
@@ -74,6 +96,36 @@ class TemporalFlow:
         if self.name:
             return f"<TemporalFlow {self.name}:{flow_name}>"
         return f"<TemporalFlow {flow_name}>"
+
+    def _rename_registered_handle(self, old_name: Optional[str], new_name: str) -> None:
+        """Rename an already-registered handle inside its owning pipeline."""
+        builder = getattr(self.pipeline, "_builder", None) or getattr(
+            self,
+            "_registered_builder",
+            None,
+        )
+        if builder is None:
+            return
+
+        handles = builder._handles  # type: ignore[attr-defined]
+        old_node_id = None
+        for node_id, handle in handles.items():
+            if handle is self:
+                old_node_id = node_id
+                break
+        if old_node_id is None or old_node_id == new_name:
+            return
+        if new_name in handles and handles[new_name] is not self:
+            raise ValueError(f"Flow name '{new_name}' is already in use.")
+
+        handles.pop(old_node_id)
+        handles[new_name] = self
+        for conn in builder._connections:  # type: ignore[attr-defined]
+            if conn.src_node_id == old_node_id:
+                conn.src_node_id = new_name
+            if conn.dst_node_id == old_node_id:
+                conn.dst_node_id = new_name
+        builder._graph = None  # type: ignore[attr-defined]
 
     def then(
         self,

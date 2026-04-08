@@ -18,6 +18,7 @@ import pickle
 import time
 import types
 from collections import deque
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
@@ -34,6 +35,15 @@ from retriever.rt.step import IOStep, IOView
 from retriever.rt.lifecycle import initialize_flow_runtime
 
 T = TypeVar("T")
+_CURRENT_STEP_TIME: ContextVar[Optional[float]] = ContextVar(
+    "retriever_current_step_time",
+    default=None,
+)
+
+
+def current_step_time() -> Optional[float]:
+    """Return the logical time of the active in-process step, if any."""
+    return _CURRENT_STEP_TIME.get()
 
 
 class InMemoryChannel:
@@ -290,44 +300,53 @@ class PipelineStepper:
         """
         self._ensure_initialized()
         step_now = self._compute_now(now=now, dt=dt)
+        step_token = _CURRENT_STEP_TIME.set(step_now)
 
-        executed: List[str] = []
-        inputs_snapshot: Dict[str, Any] = {}
-        outputs_snapshot: Dict[str, Any] = {}
+        try:
+            executed: List[str] = []
+            inputs_snapshot: Dict[str, Any] = {}
+            outputs_snapshot: Dict[str, Any] = {}
 
-        for node_id in self._node_order:
-            handle = self._flows[node_id]
-            clock = handle.config.clock
+            for node_id in self._node_order:
+                handle = self._flows[node_id]
+                clock = handle.config.clock
 
-            should_execute, fields = self._should_execute(clock, self._inputs[node_id])
-            if not should_execute:
-                continue
+                should_execute, fields = self._should_execute(clock, self._inputs[node_id])
+                if not should_execute:
+                    continue
 
-            signal = IOStep(
-                self._inputs[node_id],
-                fields_filter=fields,
-                output_types=handle.flow.output_types,
-                now=step_now,
-            )
-            signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
-            inputs_snapshot[node_id] = signal.instance
-
-            signal.transform(handle.flow.step)
-
-            # Basic support for generator-returning flows (services not supported here)
-            if isinstance(signal.instance, types.GeneratorType):
-                raise RTError(
-                    ErrCode.RT_INVALID_YIELD,
-                    "Pipeline.step() does not support generator-based Flow.step() service calls yet",
-                    node=node_id,
+                signal = IOStep(
+                    self._inputs[node_id],
+                    fields_filter=fields,
+                    output_types=handle.flow.output_types,
+                    now=step_now,
                 )
+                signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
+                inputs_snapshot[node_id] = signal.instance
 
-            outputs_snapshot[node_id] = signal.instance
-            signal.publish(self._outputs[node_id])
+                signal.transform(handle.flow.step)
 
-            executed.append(node_id)
+                # Basic support for generator-returning flows (services not supported here)
+                if isinstance(signal.instance, types.GeneratorType):
+                    raise RTError(
+                        ErrCode.RT_INVALID_YIELD,
+                        "Pipeline.step() does not support generator-based Flow.step() service calls yet",
+                        node=node_id,
+                    )
 
-        return StepResult(now=step_now, executed=executed, inputs=inputs_snapshot, outputs=outputs_snapshot)
+                outputs_snapshot[node_id] = signal.instance
+                signal.publish(self._outputs[node_id])
+
+                executed.append(node_id)
+
+            return StepResult(
+                now=step_now,
+                executed=executed,
+                inputs=inputs_snapshot,
+                outputs=outputs_snapshot,
+            )
+        finally:
+            _CURRENT_STEP_TIME.reset(step_token)
 
     @staticmethod
     def _should_execute(clock: Clock, inputs: Dict[str, InMemoryChannel]) -> tuple[bool, List[str]]:

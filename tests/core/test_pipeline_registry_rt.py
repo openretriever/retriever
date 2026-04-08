@@ -48,6 +48,11 @@ class RichIn:
     bias: int
 
 
+@io
+class BiasOut:
+    bias: int
+
+
 class RichSource(Flow[None, RichOut]):
     def step(self, _):  # type: ignore[override]
         return RichOut(value=1, aux=9)
@@ -73,6 +78,15 @@ class RichProc(Flow[RichIn, ProcOut]):
 class ReplacementProc(Flow[RichIn, ProcOut]):
     def step(self, input: RichIn) -> ProcOut:
         return ProcOut(value=input.value + input.bias + 10)
+
+
+class BiasSource(Flow[None, BiasOut]):
+    def __init__(self, *, bias: int):
+        super().__init__()
+        self.bias = bias
+
+    def step(self, _):  # type: ignore[override]
+        return BiasOut(bias=self.bias)
 
 
 def test_pipeline_registry_factory_returns_irstruct():
@@ -209,6 +223,52 @@ def test_pipeline_registry_can_build_flow_wrapper_from_surface():
     assert out2.value == 6
     assert out2.aux == 9
     assert [port.external_name for port in flow.surface.inputs] == ["bias"]
+
+
+def test_pipeline_registry_flow_wrapper_can_be_nested_in_outer_pipeline(monkeypatch):
+    from retriever.rt.stepper import PipelineStepper
+
+    step_calls: list[float | None] = []
+    inject_calls: list[float | None] = []
+    original_step = PipelineStepper.step
+    original_inject_inputs = PipelineStepper.inject_inputs
+
+    def spy_step(self, *, now=None, dt=None):
+        step_calls.append(now)
+        return original_step(self, now=now, dt=dt)
+
+    def spy_inject_inputs(self, values, *, timestamp=None):
+        inject_calls.append(timestamp)
+        return original_inject_inputs(self, values, timestamp=timestamp)
+
+    monkeypatch.setattr(PipelineStepper, "step", spy_step)
+    monkeypatch.setattr(PipelineStepper, "inject_inputs", spy_inject_inputs)
+
+    @register_pipeline("test_pipeline_registry_nested_wrapper", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_registry_nested_wrapper") as ctx:
+            src = (CountingRichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    outer = Pipeline("test_pipeline_registry_outer")
+    with outer:
+        bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+        stage = (build_pipeline_flow("test_pipeline_registry_nested_wrapper") @ Rate(hz=10)).named("stage")
+        bias.then(stage, sync=Latest())
+
+    try:
+        ir = outer.validate()
+        assert any(node.id == "stage" and node.config.get("in_process_only") for node in ir.nodes)
+
+        result = outer.step(now=7.0)
+        assert result.outputs["stage"].value == 5
+        assert result.outputs["stage"].aux == 9
+        assert step_calls == [7.0, 7.0]
+        assert inject_calls == [7.0]
+    finally:
+        outer.close_stepper()
 
 
 def test_pipeline_registry_flow_wrapper_respects_explicit_surface():
