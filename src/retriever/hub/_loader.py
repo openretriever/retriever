@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 import types
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from retriever.error import ErrCode, HubError
 from retriever.hub._ref import ModuleRef
@@ -23,7 +24,56 @@ def _ensure_namespace() -> None:
         sys.modules[_HUB_NS] = ns
 
 
-def _load_package(module_root: Path, module_name: str) -> types.ModuleType:
+def _sanitize_namespace(namespace: str) -> str:
+    sanitized = re.sub(r"[^0-9A-Za-z_]+", "_", namespace).strip("_")
+    if not sanitized:
+        return "module"
+    if sanitized[0].isdigit():
+        return f"n_{sanitized}"
+    return sanitized
+
+
+def _qualified_root(module_name: str, namespace: Optional[str]) -> str:
+    if not namespace:
+        return f"{_HUB_NS}.{module_name}"
+    return f"{_HUB_NS}.{_sanitize_namespace(namespace)}__{module_name}"
+
+
+def _evict_stale_bare_aliases(module_name: str) -> None:
+    prefix = f"{module_name}."
+    for key, mod in list(sys.modules.items()):
+        if key != module_name and not key.startswith(prefix):
+            continue
+        mod_name = getattr(mod, "__name__", "")
+        if isinstance(mod_name, str) and mod_name.startswith(f"{_HUB_NS}."):
+            sys.modules.pop(key, None)
+
+
+def _attach_hub_metadata(
+    module: types.ModuleType,
+    *,
+    module_name: str,
+    source_module: str,
+    namespace: Optional[str],
+    hub_meta: Optional[Dict[str, Any]],
+) -> None:
+    if hub_meta is None:
+        return
+    module.__retriever_hub__ = {
+        **hub_meta,
+        "module_name": module_name,
+        "namespace": namespace,
+        "source_module": source_module,
+    }
+
+
+def _load_package(
+    module_root: Path,
+    module_name: str,
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
+) -> types.ModuleType:
     """Load a Python package from module_root without modifying sys.path.
 
     The package is registered under '_retriever_hub.{module_name}' in sys.modules
@@ -42,10 +92,12 @@ def _load_package(module_root: Path, module_name: str) -> types.ModuleType:
         )
 
     # A package without __init__.py — treat as namespace package
-    qualified = f"{_HUB_NS}.{module_name}"
+    qualified = _qualified_root(module_name, namespace)
 
     if qualified in sys.modules:
         return sys.modules[qualified]
+
+    _evict_stale_bare_aliases(module_name)
 
     if init_path.exists():
         spec = importlib.util.spec_from_file_location(
@@ -70,6 +122,13 @@ def _load_package(module_root: Path, module_name: str) -> types.ModuleType:
     module = importlib.util.module_from_spec(spec)
     module.__package__ = qualified
     module.__path__ = [str(pkg_dir)]  # type: ignore[attr-defined]
+    _attach_hub_metadata(
+        module,
+        module_name=module_name,
+        source_module=module_name,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
 
     # Register before exec so relative imports inside __init__.py work
     sys.modules[qualified] = module
@@ -90,15 +149,37 @@ def _load_package(module_root: Path, module_name: str) -> types.ModuleType:
     return module
 
 
-def _import_submodule(module_root: Path, dotted_path: str) -> types.ModuleType:
+def _import_submodule(
+    module_root: Path,
+    module_name: str,
+    dotted_path: str,
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
+) -> types.ModuleType:
     """Import a submodule like 'lidar_slam.flow'."""
     _ensure_namespace()
 
-    qualified = f"{_HUB_NS}.{dotted_path}"
+    if dotted_path == module_name:
+        return _load_package(
+            module_root,
+            module_name,
+            namespace=namespace,
+            hub_meta=hub_meta,
+        )
+
+    qualified_root = _qualified_root(module_name, namespace)
+    parts = dotted_path.split(".")
+    if not parts or parts[0] != module_name:
+        raise HubError(
+            ErrCode.HUB_IMPORT_FAILED,
+            f"Export module '{dotted_path}' must be inside package '{module_name}'",
+        )
+
+    relative_parts = parts[1:]
+    qualified = f"{qualified_root}.{'.'.join(relative_parts)}"
     if qualified in sys.modules:
         return sys.modules[qualified]
-
-    parts = dotted_path.split(".")
 
     # Build file path
     rel_path = Path(*parts)
@@ -121,15 +202,26 @@ def _import_submodule(module_root: Path, dotted_path: str) -> types.ModuleType:
         )
 
     submod = importlib.util.module_from_spec(spec)
-    parent_dotted = ".".join(parts[:-1])
-    submod.__package__ = f"{_HUB_NS}.{parent_dotted}" if parent_dotted else _HUB_NS
+    parent_relative = ".".join(relative_parts[:-1])
+    submod.__package__ = (
+        f"{qualified_root}.{parent_relative}" if parent_relative else qualified_root
+    )
+    _attach_hub_metadata(
+        submod,
+        module_name=module_name,
+        source_module=dotted_path,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
 
     sys.modules[qualified] = submod
     sys.modules[dotted_path] = submod
 
     # Wire into parent module
-    if parent_dotted:
-        parent_qualified = f"{_HUB_NS}.{parent_dotted}"
+    if relative_parts:
+        parent_qualified = (
+            f"{qualified_root}.{parent_relative}" if parent_relative else qualified_root
+        )
         parent = sys.modules.get(parent_qualified)
         if parent is not None:
             setattr(parent, parts[-1], submod)
@@ -147,7 +239,14 @@ def _import_submodule(module_root: Path, dotted_path: str) -> types.ModuleType:
     return submod
 
 
-def _resolve_export(module_root: Path, export_path: str) -> Any:
+def _resolve_export(
+    module_root: Path,
+    module_name: str,
+    export_path: str,
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
+) -> Any:
     """Resolve an export path like 'lidar_slam.flow:LidarSlamFlow'."""
     module_path, _, attr_name = export_path.partition(":")
     if not attr_name:
@@ -157,7 +256,13 @@ def _resolve_export(module_root: Path, export_path: str) -> Any:
             "(e.g. 'pkg.module:ClassName')",
         )
 
-    submod = _import_submodule(module_root, module_path)
+    submod = _import_submodule(
+        module_root,
+        module_name,
+        module_path,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
     try:
         return getattr(submod, attr_name)
     except AttributeError:
@@ -168,7 +273,12 @@ def _resolve_export(module_root: Path, export_path: str) -> Any:
 
 
 def load_exports(
-    module_root: Path, module_name: str, exports: Dict[str, str]
+    module_root: Path,
+    module_name: str,
+    exports: Dict[str, str],
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Load all declared exports from a module.
 
@@ -181,12 +291,47 @@ def load_exports(
         {export_name: actual_object}
     """
     # Ensure the top-level package is loaded first
-    _load_package(module_root, module_name)
+    _load_package(
+        module_root,
+        module_name,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
 
     result: Dict[str, Any] = {}
     for export_name, export_path in exports.items():
-        result[export_name] = _resolve_export(module_root, export_path)
+        result[export_name] = _resolve_export(
+            module_root,
+            module_name,
+            export_path,
+            namespace=namespace,
+            hub_meta=hub_meta,
+        )
     return result
+
+
+def ensure_module_loaded(
+    module_root: Path,
+    module_name: str,
+    dotted_path: str,
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
+) -> types.ModuleType:
+    """Ensure one package/submodule is loaded under the hub namespace."""
+    _load_package(
+        module_root,
+        module_name,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
+    return _import_submodule(
+        module_root,
+        module_name,
+        dotted_path,
+        namespace=namespace,
+        hub_meta=hub_meta,
+    )
 
 
 class ModuleProxy:
