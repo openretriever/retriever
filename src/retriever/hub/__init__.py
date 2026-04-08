@@ -104,7 +104,18 @@ def use(ref: str, *, refresh: bool = False) -> Any:
     # 9. Load exports
     module_name = rtv_config["module"]
     export_table = rtv_config.get("exports", {})
-    exports = load_exports(module_root, module_name, export_table)
+    namespace = f"{parsed.org}_{parsed.name}_{commit_sha[:12]}"
+    exports = load_exports(
+        module_root,
+        module_name,
+        export_table,
+        namespace=namespace,
+        hub_meta={
+            "org": parsed.org,
+            "name": parsed.name,
+            "commit": commit_sha,
+        },
+    )
 
     # 10. Cache in process
     _loaded[cache_key] = exports

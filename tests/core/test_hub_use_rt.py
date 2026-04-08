@@ -9,7 +9,8 @@ import sys
 
 from retriever.error import ErrCode, HubError
 from retriever.hub._loader import ModuleProxy
-from retriever.flow import Flow, Rate, io
+from retriever.flow import Flow, Pipeline, Rate, Latest, io
+from retriever.rt.lifecycle import initialize_flow_runtime, instantiate_flow_from_node
 
 
 @io
@@ -30,6 +31,23 @@ class OverrideProc(Flow[OverrideIn, OverrideOut]):
 
     def step(self, input: OverrideIn) -> OverrideOut:
         return OverrideOut(value=input.value + input.bias + self.delta)
+
+
+@io
+class BiasOut:
+    bias: int
+
+
+class BiasSource(Flow[None, BiasOut]):
+    def __init__(self, *, bias: int):
+        super().__init__()
+        self.bias = bias
+
+    def init_config(self) -> dict:
+        return {"bias": self.bias}
+
+    def step(self, _):  # type: ignore[override]
+        return BiasOut(bias=self.bias)
 
 
 def _build_tarball(files: dict[str, str], top_dir: str = "repo-sha123") -> bytes:
@@ -95,12 +113,37 @@ def _clean_hub_state():
             del sys.modules[key]
 
 
-def _make_tarball() -> bytes:
+def _make_tarball(*, flow_delta: int = 1) -> bytes:
     return _build_tarball({
         "pyproject.toml": _PYPROJECT_TOML,
         "test_mod/__init__.py": "",
-        "test_mod/flow.py": "class TestFlow:\n    name = 'test'\n",
-        "test_mod/config.py": "class TestConfig:\n    pass\n",
+        "test_mod/flow.py": """from retriever.flow import Flow, io
+from test_mod.config import TestConfig
+
+
+@io
+class TestFlowIn:
+    value: int
+
+
+@io
+class TestFlowOut:
+    value: int
+
+
+class TestFlow(Flow[TestFlowIn, TestFlowOut]):
+    name = "test"
+
+    def __init__(self):
+        super().__init__()
+        self.cfg = TestConfig()
+
+    def step(self, input: TestFlowIn) -> TestFlowOut:
+        return TestFlowOut(value=input.value + self.cfg.delta)
+""",
+        "test_mod/config.py": f"""class TestConfig:
+    delta = {flow_delta}
+""",
         "test_mod/types.py": """from retriever.flow import io
 
 
@@ -198,6 +241,9 @@ class TestHubUse:
             result = hub.use("test-org/test-mod:TestFlow")
             assert result.__name__ == "TestFlow"
             assert result.name == "test"
+            flow = result()
+            out = flow.step(flow.input_type(value=4))
+            assert out.value == 5
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
@@ -226,6 +272,13 @@ class TestHubUse:
             assert mod.BuildTestPipeline.__name__ == "build_test_pipeline"
             assert mod.BuildTestPipelineFlow.__name__ == "build_test_pipeline_flow"
 
+            flow = mod.TestFlow()
+            out = flow.step(flow.input_type(value=4))
+            assert out.value == 5
+
+            pose = mod.SharedPose(x=1.0, y=2.0, z=3.0)
+            assert mod.pose_to_tuple(pose) == (1.0, 2.0, 3.0)
+
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
     def test_use_with_version(self, mock_request, mock_cache_root, tmp_path: Path):
@@ -246,6 +299,43 @@ class TestHubUse:
             from retriever import hub
             result = hub.use("test-org/test-mod:TestFlow@0.9.0")
             assert result.__name__ == "TestFlow"
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_versions_do_not_alias_same_package_namespace(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            tar_by_sha = {
+                "abc123def456789012345678901234567890abcd": _make_tarball(flow_delta=1),
+                "older_sha_padding_to_fill_space_here_1234": _make_tarball(flow_delta=9),
+            }
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    for sha, tarball in tar_by_sha.items():
+                        if sha in url:
+                            return tarball
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            Flow09 = hub.use("test-org/test-mod:TestFlow@0.9.0")
+            Flow10 = hub.use("test-org/test-mod:TestFlow@1.0.0")
+
+            assert Flow09 is not Flow10
+            assert Flow09.__module__ != Flow10.__module__
+            assert Flow09().step(Flow09().input_type(value=1)).value == 10
+            assert Flow10().step(Flow10().input_type(value=1)).value == 2
+            assert hub.use("test-org/test-mod:TestFlow@0.9.0") is Flow09
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
@@ -330,6 +420,39 @@ class TestHubUse:
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_factory_preserves_baseline_behavior(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build = hub.use("test-org/test-mod:BuildTestPipeline")
+            pipe = build()
+            try:
+                assert set(pipe.get_flow_dict()) == {"source", "processor"}
+                pipe.inject_input("processor", "bias", 3, timestamp=0.0)
+                result = pipe.step(now=0.0)
+
+                assert result.outputs["source"].aux == 99
+                assert result.outputs["processor"].value == 4
+            finally:
+                pipe.close_stepper()
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
     def test_use_exported_pipeline_factory_with_shared_type_transform(
         self, mock_request, mock_cache_root, tmp_path: Path
     ):
@@ -388,10 +511,95 @@ class TestHubUse:
 
             build_flow = hub.use("test-org/test-mod:BuildTestPipelineFlow")
             flow = build_flow()
-            out = flow.step(flow.input_type(bias=4))
+            out1 = flow.step(flow.input_type(bias=4))
+            out2 = flow.step(flow.input_type(bias=4))
             flow.finalize()
 
-            assert out.value == 5
+            assert set(flow.input_type.__dataclass_fields__.keys()) == {"bias"}
+            assert set(flow.output_type.__dataclass_fields__.keys()) == {"aux", "value"}
+            assert [port.external_name for port in flow.surface.inputs] == ["bias"]
+            assert sorted(port.external_name for port in flow.surface.outputs) == ["aux", "value"]
+            assert out1.value == 5
+            assert out1.aux == 99
+            assert out2.value == 6
+            assert out2.aux == 99
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_flow_factory_can_compose_and_run_on_multiprocessing(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build_flow = hub.use("test-org/test-mod:BuildTestPipelineFlow")
+
+            outer = Pipeline("hub_outer_pipeline")
+            with outer:
+                bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+                stage = (build_flow() @ Rate(hz=10)).named("stage")
+                bias.then(stage, sync=Latest())
+
+            ir = outer.validate()
+            assert "stage" not in {node.id for node in ir.nodes}
+            assert {"bias", "stage__source", "stage__processor"} <= {node.id for node in ir.nodes}
+            assert any(
+                edge.source.node == "bias"
+                and edge.destination.node == "stage__processor"
+                and edge.destination.port == "bias"
+                for edge in ir.edges
+            )
+
+            outer.run(backend="multiprocessing", duration=0.05)
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_hub_loaded_ir_nodes_can_recover_after_module_unload(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            build = hub.use("test-org/test-mod:BuildTestPipeline")
+            pipe = build()
+            ir = pipe.validate()
+            source_node = next(node for node in ir.nodes if node.id == "source")
+
+            for key in list(sys.modules):
+                if "test_mod" in key or "_retriever_hub" in key:
+                    del sys.modules[key]
+
+            flow = instantiate_flow_from_node(source_node)
+            initialize_flow_runtime(flow)
+            out = flow.step(None)
+
+            assert out.value == 1
             assert out.aux == 99
 
 
