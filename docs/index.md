@@ -78,16 +78,6 @@ pipe.close_stepper()
 - **[Architecture](architecture.md)** - Design philosophy and system overview
 - **[API](API.md)** - API reference
 
-### Quick Navigation
-- **Getting Started**: [Quickstart](quickstart.md), [Install](getting_started/install.md)
-- **Tutorial Curriculum**: [tutorials/index.md](tutorials/index.md)
-- **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
-- **Architecture**: [architecture.md](architecture.md)
-- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md)
-- **Typing + Data**: [Flow Typing Contract](guides/flow_typing_standard.md), [Robotics Typing v1](guides/robotics_typing.md), [Data Spec v1](guides/data_spec_eventstream.md)
-- **Examples**: `examples/` directory and `tests/core/`
-- **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
-
 ## 🚀 Key Features
 
 ### ✅ Production Ready
@@ -137,4 +127,4 @@ ir = build_ir("my_pipeline")
 
 ---
 
-**Ready to start?** → [README.md](README.md) | **Deep dive** → [architecture.md](architecture.md)
+**Ready to start?** → [Quickstart](quickstart.md) | **Tutorials** → [Tutorial Tracks](tutorials/index.md)

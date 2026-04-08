@@ -111,16 +111,17 @@ pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 
 ### 2. Export a pipeline-flow factory
 
-Use this when downstream code wants to treat the whole sub-pipeline as one flow stage
-inside an in-process pipeline.
+Use this when downstream code wants to treat the whole sub-pipeline as one flow stage.
 
 ```python
 slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
 camera.then(slam_stage, sync=Latest())
 ```
 
-This wrapper is currently in-process only. Retriever will reject it on
-`multiprocessing` and `dora` backends.
+Direct `flow.step(...)` on this wrapper is still local/in-process.
+When you nest it inside a larger `Pipeline` and build or run that pipeline,
+Retriever lowers the wrapper into flat IR so `multiprocessing` and `dora`
+backends can execute the inner nodes normally.
 
 Shared types and transforms compose with these factories the same way:
 
@@ -180,6 +181,19 @@ Helper APIs:
 - `build_pipeline_flow(...)`
 
 Pipeline ports still belong to concrete internal flow nodes, even when the whole pipeline is reused hierarchically.
+
+## Visualizing composed pipelines
+
+`Pipeline.visualize(...)` and `IR.visualize(...)` now preserve wrapped-pipeline context for
+`build_pipeline_flow(...)` stages. In HTML and ASCII views, a nested pipeline stage is rendered
+as a grouped pipeline box around the lowered inner flows, with:
+
+- the wrapped pipeline name
+- surfaced input/output bindings
+- a summary of the internal flow graph
+
+This keeps the outer graph readable while still showing that a set of lowered nodes belongs to one
+reusable pipeline stage, not a flat unrelated subgraph.
 
 ## Flow instantiation and local resources
 

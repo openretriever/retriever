@@ -6,6 +6,10 @@ title: "Track B: IR and Execution"
 
 Focus: pipeline validation, IR structure, execution graph build, and backend behavior.
 
+Start here:
+- `02_ir_validation` if you want to inspect the IR directly.
+- `06_dora_perception` if you want a perception-shaped runtime example.
+
 ## Modules
 
 ```bash
@@ -20,12 +24,24 @@ pixi run python -m examples.tutorial.b_ir_and_execution.08_detection_window_stat
 pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
 ```
 
+## Generate an HTML View
+
+```bash
+pixi run env PYTHONPATH=src python - <<'PY'
+from retriever.tutorials.perception import build_tutorial_perception_pipeline
+
+path = build_tutorial_perception_pipeline(
+    use_real_camera=False,
+    show_window=False,
+).visualize("/tmp/tutorial_perception.html")
+
+print(path)
+PY
+```
+
 ## What To Observe
 
 - Graph-level validation and error surfaces.
 - Runtime differences between multiprocessing and Dora.
 - Perception and request/response in the same contract model.
-- Hard-gated backend parity artifacts in `logs/tutorial_parity/`.
-
-Expected output reference:
-- `examples/tutorial/expected_outputs/032_backend_parity_benchmark.md`
+- Backend parity as a verification check after the structure is already clear.

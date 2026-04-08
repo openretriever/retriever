@@ -8,6 +8,7 @@ Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
 Start here:
 - [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
+- `02_debug_perception_stepper` for breakpoint-friendly local stepping.
 
 ## Modules
 
@@ -21,6 +22,23 @@ pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
+```
+
+## Generate an HTML View
+
+Before stepping or replaying the perception pipeline, generate a static HTML view:
+
+```bash
+pixi run env PYTHONPATH=src python - <<'PY'
+from retriever.tutorials.perception import build_tutorial_perception_pipeline
+
+path = build_tutorial_perception_pipeline(
+    use_real_camera=False,
+    show_window=False,
+).visualize("/tmp/tutorial_perception.html")
+
+print(path)
+PY
 ```
 
 ## What To Observe
@@ -37,17 +55,3 @@ pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspecti
 2. Record real sensor session to MCAP (`04_record_replay_perception record`).
 3. Replay the same MCAP (`04_record_replay_perception replay`) for deterministic debugging.
 4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
-
-## Expected Artifacts (P0/P1)
-
-- `logs/tutorial_trace/tut024_trace_envelopes.jsonl`
-- `logs/tutorial_trace/tut024_trace_report.json`
-- `logs/tutorial_incident/tut033_incident_report.json`
-- `logs/tutorial_incident/tut033_incident_checklist.md`
-- `logs/tutorial_mcap/tut036_mcap_session_summary.json`
-- `logs/tutorial_mcap/tut036_mcap_step_table.jsonl`
-
-Expected output reference:
-- `examples/tutorial/expected_outputs/024_trace_contract_basics.md`
-- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
-- `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`
