@@ -6,6 +6,9 @@ title: "Track G: Operations and Interfaces"
 
 Focus: registries, wrapper abstractions, and operational interaction surfaces.
 
+Start here:
+- `06_composable_pipelines` if you want reusable pipelines that can still be extended.
+
 ## Modules
 
 ```bash
@@ -17,6 +20,18 @@ pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_
 pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
 ```
 
+## Generate an HTML View
+
+```bash
+pixi run python - <<'PY'
+import importlib
+
+mod = importlib.import_module("examples.tutorial.g_operations_interfaces.06_composable_pipelines")
+path = mod.build_outer_composable_counter().visualize("/tmp/outer_composable_counter.html")
+print(path)
+PY
+```
+
 ## What To Observe
 
 - Registry extension patterns.
@@ -24,3 +39,4 @@ pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipel
 - Mirror-native robotics typing imports and registry lookup parity.
 - Typed boundary payloads carrying frame/time/source metadata.
 - Registered pipelines used both as live graphs and as reusable flow stages.
+- Nested pipeline stages rendered as boxed nodes with surfaced ports and inner-flow summaries.
