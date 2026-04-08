@@ -7,6 +7,7 @@ Context manager that tracks flow connections and builds FlowGraph.
 from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, is_dataclass
+import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
 from retriever.error import ErrCode, FlowError
@@ -567,6 +568,9 @@ class PipelineBuilder:
             config = handle.config.to_dict()
             if getattr(handle.flow, "in_process_only", False):
                 config["in_process_only"] = True
+            hub_import = self._get_hub_import_metadata(flow_class)
+            if hub_import is not None:
+                config["hub_import"] = hub_import
             viz_metadata = handle.flow.viz_metadata()
             if viz_metadata is not None:
                 if not isinstance(viz_metadata, dict):
@@ -606,6 +610,14 @@ class PipelineBuilder:
             )
 
         return ir_nodes
+
+    @staticmethod
+    def _get_hub_import_metadata(flow_class: type) -> Optional[Dict[str, Any]]:
+        module = sys.modules.get(flow_class.__module__)
+        hub_import = getattr(module, "__retriever_hub__", None)
+        if not isinstance(hub_import, dict):
+            return None
+        return deepcopy(hub_import)
 
     def _lower_composite_flow_nodes(self, ir: IR) -> IR:
         for node_id, handle in self._handles.items():

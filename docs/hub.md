@@ -38,6 +38,17 @@ hub.use("company-abc/lidar-slam:LidarSlamFlow")
 hub.use("company-abc/lidar-slam:BuildSlamPipeline@0.1.0")
 ```
 
+## Loading semantics
+
+- `hub.use("org/name:Export")` returns the actual exported class/function/value, not a wrapper.
+- `hub.use("org/name")` returns a `ModuleProxy` over the declared export table, not the raw Python module.
+- Different versions of the same hub module are isolated by commit-scoped internal namespaces, so `@0.9.0` and `@1.0.0` do not alias each other in one process.
+- Backend/runtime re-import can recover hub-loaded flow classes from the local hub cache when a fresh process needs to reconstruct nodes from IR.
+
+Current boundary:
+
+- a serialized IR from hub-loaded code is still not a self-contained artifact across machines by itself; the target machine must have the corresponding hub cache content available, or load the module through Hub first.
+
 ## What a module can export
 
 Hub exports are normal Python attributes. A module may export:
