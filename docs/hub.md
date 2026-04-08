@@ -24,6 +24,13 @@ SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
 pose_to_matrix = hub.use("company-abc/lidar-slam:pose_to_matrix")
 ```
 
+Examples in this repo:
+
+- `examples/hub/hello-world.py`: whole-module import through `ModuleProxy`, then use exported flow/type symbols
+- `examples/hub/hello-world-explicit.py`: explicit `hub.use("org/name:Export")` imports against a live module
+- `examples/hub/detection-window.py`: import flows/types from Hub and compose them into a local pipeline
+- `examples/hub/composable-pipeline-template.py`: copy-paste template for imported live pipelines, pipeline-flow wrappers, and shared transforms
+
 Module reference format:
 
 ```plaintext
@@ -41,7 +48,9 @@ hub.use("company-abc/lidar-slam:BuildSlamPipeline@0.1.0")
 Repository examples:
 
 - `examples/hub/hello-world.py`
+- `examples/hub/hello-world-explicit.py`
 - `examples/hub/detection-window.py`
+- `examples/hub/composable-pipeline-template.py`
 
 ## Loading semantics
 
@@ -68,8 +77,7 @@ Hub exports are normal Python attributes. A module may export:
 Recommended public split:
 
 - `types.py`: shared envelope types and domain types
-  Use `@io` only for flow-boundary envelopes. Keep canonical domain types plain when
-  they should not gain optional-field signal semantics.
+  Use `@io` only for flow-boundary envelopes. Keep canonical domain types plain when they should not gain optional-field signal semantics.
 - `transforms.py`: pure representation conversion helpers
 - `pipeline.py`: graph assembly and composition helpers
 
@@ -108,8 +116,7 @@ BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
 ```
 
 The Hub loader reads `[tool.retriever.module]`, then imports the declared module and returns the requested export.
-That means module top-level code must be import-safe: do not open cameras, sockets,
-SDK clients, or other local resources during import.
+That means module top-level code must be import-safe: do not open cameras, sockets, SDK clients, or other local resources during import.
 
 ## Composable pipelines
 
@@ -127,18 +134,18 @@ pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 
 ### 2. Export a pipeline-flow factory
 
-Use this when downstream code wants to treat the whole sub-pipeline as one flow stage
-inside an in-process pipeline.
+Use this when downstream code wants to treat the whole sub-pipeline as one flow stage inside an in-process pipeline.
 
 ```python
 slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
 camera.then(slam_stage, sync=Latest())
 ```
 
-This wrapper is an in-process composition surface. When you embed it inside a
-larger pipeline and build IR, Retriever lowers the wrapped sub-pipeline into
-ordinary runtime nodes so it can run on `multiprocessing` or `dora`. The raw
-wrapper node itself is still guarded outside that lowering path.
+Important boundary:
+
+- direct `flow.step(...)` on this wrapper is still local/in-process
+- the wrapper itself is not the backend artifact
+- when you nest it inside a larger `Pipeline` and build or run that pipeline, Retriever lowers the wrapper into flat IR so `multiprocessing` and `dora` backends can execute the inner nodes normally
 
 Shared types and transforms compose with these factories the same way:
 
@@ -151,6 +158,12 @@ pipe = build_slam()  # `SE3Pose` can be a plain shared representation type
 threshold = pose_to_threshold(SE3Pose(x=1.0, y=2.0, z=3.0))
 pipe.inject_input("frontend", "threshold", threshold, timestamp=0.0)
 ```
+
+Rule of thumb:
+
+- export `BuildXPipeline` when downstream users may inspect, replace, or rewire internal flows
+- export `BuildXPipelineFlow` when downstream users want one reusable stage inside a larger graph
+- export both when the module should support both extension and hierarchical composition
 
 ## Surface grammar
 
@@ -198,6 +211,16 @@ Helper APIs:
 - `build_pipeline_flow(...)`
 
 Pipeline ports still belong to concrete internal flow nodes, even when the whole pipeline is reused hierarchically.
+
+## Visualizing composed pipelines
+
+`Pipeline.visualize(...)` and `IR.visualize(...)` preserve wrapped-pipeline context for `build_pipeline_flow(...)` stages. In HTML and ASCII views, a nested pipeline stage is rendered as a grouped pipeline box around the lowered inner flows, with:
+
+- the wrapped pipeline name
+- surfaced input/output bindings
+- a summary of the internal flow graph
+
+This keeps the outer graph readable while still showing that a set of lowered nodes belongs to one reusable pipeline stage rather than a flat unrelated subgraph.
 
 ## Flow instantiation and local resources
 
@@ -259,21 +282,3 @@ Retriever Hub uses an index repository with entries under:
 ```plaintext
 modules/{org}/{name}.toml
 ```
-
-Example:
-
-```toml
-[module]
-repo = "https://github.com/company-abc/lidar-slam"
-description = "LiDAR SLAM pipeline"
-author = "Company ABC"
-license = "MIT"
-tags = ["lidar", "slam", "mapping"]
-```
-
-Minimum expectations before publishing:
-
-- the GitHub repository is reachable
-- `pyproject.toml` contains a valid `[tool.retriever.module]` section
-- at least one semver tag exists
-- the declared module imports cleanly

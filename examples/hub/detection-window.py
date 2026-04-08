@@ -1,4 +1,8 @@
-"""Retriever Hub detection window example.
+"""Hub example: import flows/types from a module and compose them locally.
+
+This demonstrates whole-module import plus local pipeline assembly.
+It does not import a pre-registered pipeline from Hub; see
+`examples/hub/composable-pipeline-template.py` for that shape.
 
 Run:
     pixi run python examples/hub/detection-window.py
