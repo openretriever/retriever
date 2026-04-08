@@ -5,7 +5,7 @@ Validate Retriever Flow typing signatures for Hub preflight.
 Default policy (v2):
 - allow tuple-literal input/output: Flow[(A, B), C], Flow[A, (C, D)]
 - allow typing tuple forms: Flow[tuple[A, B], C], Flow[A, tuple[C, D]]
-- enforce local type compatibility: local generic element classes must use @io/@flow_io
+- enforce local type compatibility: local generic element classes must use @io
 - reject mixed tuple/None elements (e.g. (A, None))
 
 Strict policy (`--strict-single-io`):
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Iterable, List
 
 
-FLOW_IO_DECORATORS = {"io", "flow_io"}
+FLOW_IO_DECORATORS = {"io"}
 TUPLE_NAMES = {"tuple", "Tuple", "typing.Tuple"}
 
 
@@ -177,7 +177,7 @@ def _check_local_io_compatibility(
             _add_error(
                 errors,
                 code="LOCAL_TYPE_NOT_FLOW_IO",
-                message=f"Local type '{tail}' used in Flow generic must use @io/@flow_io",
+                message=f"Local type '{tail}' used in Flow generic must use @io",
                 rel_path=rel_path,
                 line=line,
                 class_name=class_name,
@@ -393,4 +393,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-

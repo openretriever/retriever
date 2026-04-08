@@ -9,7 +9,6 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 from retriever.flow import Flow, FlowConfig, Pipeline, Rate, Latest, TemporalFlow, io
 from retriever.flow.config import ResourceSpec

@@ -1,7 +1,6 @@
 from typing import Any, Optional, Dict, List, Union
 import logging
-from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 try:
     import torch
@@ -19,16 +18,14 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-@flow_io
-@dataclass
+@io
 class TransformerInput:
     """Standard input for HFFlow."""
     text: Optional[Union[str, List[str]]] = None
     image: Optional[Any] = None
     kwargs: Optional[Dict[str, Any]] = None
 
-@flow_io
-@dataclass
+@io
 class TransformerOutput:
     """Standard output for HFFlow."""
     result: Any
@@ -108,4 +105,3 @@ def from_hf(obj: Any, **kwargs) -> Flow:
     Check if object is a Hugging Face Pipeline or Model and wrap it.
     """
     return HFFlow(obj, **kwargs)
-

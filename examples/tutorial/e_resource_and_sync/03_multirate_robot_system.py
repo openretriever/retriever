@@ -23,13 +23,11 @@ from __future__ import annotations
 import argparse
 import math
 import time
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, io
 
 
 @io
-@dataclass
 class SensorsOut:
     encoder: float
     gyro_z: float
@@ -37,7 +35,6 @@ class SensorsOut:
 
 
 @io
-@dataclass
 class PoseOut:
     x: float
     theta: float
@@ -46,14 +43,12 @@ class PoseOut:
 
 
 @io
-@dataclass
 class PlanOut:
     target_x: float
     confidence: float
 
 
 @io
-@dataclass
 class ControlIn:
     x: float
     theta: float
@@ -64,7 +59,6 @@ class ControlIn:
 
 
 @io
-@dataclass
 class CmdOut:
     v: float
     w: float

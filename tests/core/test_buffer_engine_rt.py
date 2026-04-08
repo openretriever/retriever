@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
 import pytest
 
-from retriever.flow import flow_io
+from retriever.flow import io
 from retriever.flow.adapter import Events, Hold, Latest, Window
 from retriever.rt.buffer_engine import PythonBufferEngine
 from retriever.rt.step import IOStep
@@ -54,8 +53,7 @@ def test_signal_prefers_subscriber_sample_fast_path():
         def get_all(self):
             raise AssertionError("Signal should not call get_all when sample() exists")
 
-    @flow_io
-    @dataclass
+    @io
     class In:
         x: int
 

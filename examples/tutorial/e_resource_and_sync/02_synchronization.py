@@ -5,7 +5,7 @@ Demonstrates how to bundle multiple disparate streams (e.g. Det and Seg) by time
 
 import time
 import random
-from dataclasses import dataclass, field as dc_field, fields
+from dataclasses import field as dc_field, fields
 
 from retriever.flow import Flow, Rate, Pipeline, io, Latest, Trigger
 from retriever.flow.sync import Synchronizer
@@ -13,20 +13,17 @@ from retriever.flow.sync import Synchronizer
 # --- Data Definitions ---
 
 @io
-@dataclass
 class Detection:
     label: str
     box: list[int]
     timestamp: float
 
 @io
-@dataclass
 class Segmentation:
     mask_rle: str
     timestamp: float
 
 @io
-@dataclass
 class SyncInput:
     # Flattened input to avoid nesting complexity in graph ports
     det_label: str = ""
@@ -37,7 +34,6 @@ class SyncInput:
     seg_timestamp: float = 0.0
 
 @io
-@dataclass
 class BundledResult:
     det: Detection
     seg: Segmentation
@@ -46,7 +42,6 @@ class BundledResult:
 # --- Sources ---
 
 @io
-@dataclass
 class Frame:
     id: int
     timestamp: float
@@ -78,7 +73,6 @@ class Segmenter(Flow[Frame, Segmentation]):
 # We just define the output bundling node.
 
 @io
-@dataclass
 class NativeResult:
     det: Detection
     seg: Segmentation

@@ -116,9 +116,9 @@ class RerunLoggable(Protocol):
 
 def rerun_loggable(field_loggers: Dict[str, str] = None):
     """
-    Decorator to make a @flow_io dataclass automatically log to Rerun.
+    Decorator to make an `@io` type automatically log to Rerun.
 
-    Works with multi-port @flow_io types by logging each field separately.
+    Works with multi-port `@io` types by logging each field separately.
 
     Args:
         field_loggers: Optional mapping of field_name -> rerun_archetype.
@@ -127,8 +127,7 @@ def rerun_loggable(field_loggers: Dict[str, str] = None):
 
     Usage:
         @rerun_loggable({"image": "Image", "reward": "Scalar"})
-        @flow_io
-        @dataclass
+        @io
         class MyOutput:
             image: np.ndarray
             reward: float

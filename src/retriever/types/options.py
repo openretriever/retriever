@@ -5,12 +5,11 @@ from typing import Any, Callable, Optional, Sequence, Set
 
 from numpy.typing import NDArray
 
-from retriever.flow import flow_io
+from retriever.flow import io
 from retriever.types.symbolic import GroundAtom, Object, ObjectType, State
 
 
-@flow_io
-@dataclass
+@io
 class Action:
     """An action in an environment.
 

@@ -27,7 +27,6 @@ from examples.tutorial._p0_utils import format_table, utc_now_iso, write_json
 
 
 @io
-@dataclass
 class CounterOut:
     value: int | None = None
 

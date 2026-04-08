@@ -16,7 +16,6 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 from retriever.flow import (
     Flow, Pipeline, io, Rate, Trigger,
     Latest, Window
@@ -25,7 +24,6 @@ from retriever.flow import (
 
 # Multi-port data types
 @io
-@dataclass
 class SensorData:
     """Sensor with multiple fields"""
     value: float
@@ -33,7 +31,6 @@ class SensorData:
 
 
 @io
-@dataclass
 class ProcessedData:
     """Processed data with optional adjustment"""
     result: float
@@ -41,7 +38,6 @@ class ProcessedData:
 
 
 @io
-@dataclass
 class FeedbackData:
     """Feedback adjustment data"""
     adjustment: float

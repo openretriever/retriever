@@ -475,7 +475,7 @@ class PipelineGraph:
         """
         Create text visualization of the graph.
 
-        All fields are Optional in the new @flow_io design.
+        All fields are Optional in the `@io` type system.
 
         Example output:
             PipelineGraph:

@@ -31,19 +31,16 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 @io
-@dataclass
 class SourceOut:
     sample: "SourceSample | None" = None
 
 
 @io
-@dataclass
 class Stage1Out:
     sample: "Stage1Sample | None" = None
 
 
 @io
-@dataclass
 class Stage2Out:
     sample: "Stage2Sample | None" = None
 

@@ -1,8 +1,8 @@
 """
 Flow I/O type system.
 
-Provides @io (and legacy @flow_io) decorator that transforms dataclasses
-into Flow I/O types with signal helpers and port extraction.
+Provides `@io` for declaring Flow I/O types with signal helpers
+and port extraction.
 """
 
 from dataclasses import MISSING, dataclass, fields
@@ -28,12 +28,6 @@ def _unwrap_optional(field_type):
         return next(arg for arg in args if arg is not type(None))
     return field_type
 
-
-@dataclass(frozen=True)
-class _IOConfig:
-    """Configuration for IO types."""
-    check_fields: bool = True
-
 def io(cls=None, *, frozen: bool = True):
     """
     Decorator for Flow input/output types.
@@ -49,18 +43,16 @@ def io(cls=None, *, frozen: bool = True):
             rgb: np.ndarray
             timestamp: float
 
-        # Becomes:
-        @dataclass(frozen=True)
-        class Observation:
-            rgb: Optional[np.ndarray] = None
-            timestamp: Optional[float] = None
-            # + helpers
+        # Becomes a dataclass-like IO envelope with:
+        #   rgb: Optional[np.ndarray] = None
+        #   timestamp: Optional[float] = None
+        #   + signal helpers
 
-    Can also be used with existing dataclasses:
-        @io
-        @dataclass
-        class MyInput:
-            ...
+    Notes:
+        - `@io` already applies dataclass conversion when needed.
+        - Passing an existing dataclass through `io(MyType)` is still supported.
+        - `frozen` is accepted for API compatibility, but IO envelopes remain
+          runtime-mutable via the injected helper methods.
     """
     def wrap(cls):
         # 1. Auto-apply dataclass if needed
@@ -100,12 +92,6 @@ def io(cls=None, *, frozen: bool = True):
     if cls is None:
         return wrap
     return wrap(cls)
-
-
-# Backward compatibility alias
-def flow_io(cls):
-    """Deprecated: Use @io instead."""
-    return io(cls)
 
 
 def _inject_custom_init(cls):
@@ -165,25 +151,25 @@ def _inject_signal_helpers(cls):
 
 
 def is_flow_io(cls) -> bool:
-    """Check if class is decorated with @flow_io."""
+    """Check if class is decorated with `@io`."""
     return hasattr(cls, '__is_flow_io__') and cls.__is_flow_io__
 
 
 def get_flow_io_types(cls) -> dict[str, type]:
-    """Get original field types from a @flow_io decorated class."""
+    """Get original field types from an `@io`-decorated class."""
     if not is_flow_io(cls):
         raise FlowError(
             ErrCode.FLOW_IO_INVALID,
-            f"Class '{cls.__name__}' is not decorated with @flow_io",
+            f"Class '{cls.__name__}' is not decorated with @io",
         )
     return cls.__flow_io_original_types__.copy()
 
 
 def get_flow_io_fields(cls) -> list[str]:
-    """Get field names from a @flow_io decorated class."""
+    """Get field names from an `@io`-decorated class."""
     if not is_flow_io(cls):
         raise FlowError(
             ErrCode.FLOW_IO_INVALID,
-            f"Class '{cls.__name__}' is not decorated with @flow_io",
+            f"Class '{cls.__name__}' is not decorated with @io",
         )
     return list(cls.__dataclass_fields__.keys())

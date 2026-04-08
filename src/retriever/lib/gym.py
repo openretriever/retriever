@@ -3,7 +3,6 @@ import logging
 import pickle
 import codecs
 from typing import Any, Type, Optional, Union, Callable
-from dataclasses import dataclass
 
 try:
     import gymnasium as gym
@@ -13,17 +12,15 @@ except ImportError:
     except ImportError:
         gym = None
 
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 logger = logging.getLogger(__name__)
 
-@flow_io
-@dataclass
+@io
 class GymIO:
     action: Any
     
-@flow_io
-@dataclass
+@io
 class GymObservation:
     obs: Any
     reward: float

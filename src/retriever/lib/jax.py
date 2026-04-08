@@ -4,7 +4,6 @@ import pickle
 import codecs
 import time
 from typing import Any, Type, Optional, Union, Dict, Tuple, Callable
-from dataclasses import dataclass
 
 try:
     import jax
@@ -19,7 +18,7 @@ except ImportError:
     train_state = None
     optax = None
 
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +26,7 @@ logger = logging.getLogger(__name__)
 # PART 1: INFERENCE WRAPPERS
 # ============================================================================
 
-@flow_io
-@dataclass
+@io
 class JaxIO:
     inp: Any # jax.numpy.ndarray (Auto zero-copy if backend supports it)
 

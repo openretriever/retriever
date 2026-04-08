@@ -20,27 +20,23 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 import numpy as np
 
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, io
 
 @io
-@dataclass
 class CameraData:
     frame: np.ndarray
     frame_id: int
 
 
 @io
-@dataclass
 class DetectionCount:
     count: float
 
 
 @io
-@dataclass
 class WindowMeanCount:
     mean_count: float
 

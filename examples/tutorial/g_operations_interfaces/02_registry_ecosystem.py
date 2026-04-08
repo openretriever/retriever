@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import math
-from dataclasses import dataclass
 
 import retriever
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
@@ -30,7 +29,6 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 @retriever.register_type("Frame", category="vision", description="Mock camera frame summary", tags=["mock"])
 @io
-@dataclass
 class Frame:
     frame_id: int
     brightness: float
@@ -38,7 +36,6 @@ class Frame:
 
 @retriever.register_type("Pose2D", category="geometry", description="Tiny 2D pose type", tags=["robotics", "spatial"])
 @io
-@dataclass
 class Pose2D:
     x: float
     y: float
@@ -46,7 +43,6 @@ class Pose2D:
 
 @retriever.register_type("RobotStatus", category="robotics", description="Toy robot status", tags=["status", "monitoring"])
 @io
-@dataclass
 class RobotStatus:
     battery: float
     mode: str

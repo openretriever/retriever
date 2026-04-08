@@ -101,7 +101,7 @@ def serialize_arrow(value: Any) -> Tuple[pa.Array, Dict[str, Any]]:
         except (TypeError, ValueError):
             pass # Fallback to pickle
 
-    # Handle dataclass instances (including @flow_io dataclasses)
+    # Handle dataclass instances (including `@io` types)
     elif dataclasses.is_dataclass(value) and not isinstance(value, type):
         try:
             payload = dataclasses.asdict(value)

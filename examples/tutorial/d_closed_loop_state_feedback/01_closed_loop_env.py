@@ -46,13 +46,11 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
 @io
-@dataclass
 class Action:
     action: float
 
 
 @io
-@dataclass
 class Observation:
     transition: "Transition"
 

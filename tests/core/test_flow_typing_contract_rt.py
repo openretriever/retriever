@@ -1,38 +1,33 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
 import pytest
 
 from retriever.error import ErrCode, FlowError
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, flow_io, gui_flow
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io, gui_flow
 from retriever.ir.core import IRNode
 from retriever.rt.backend.multiprocessing.engine import MPEngine
 from retriever.rt.backend.multiprocessing.executor import MPExecutor
 from retriever.rt.step import IOStep
 
 
-@flow_io
-@dataclass
+@io
 class A:
     a: int | None = None
 
 
-@flow_io
-@dataclass
+@io
 class B:
     b: int | None = None
 
 
-@flow_io
-@dataclass
+@io
 class C:
     c: int | None = None
     timestamp: float | None = None
 
 
-@flow_io
-@dataclass
+@io
 class D:
     d: int | None = None
     timestamp: float | None = None

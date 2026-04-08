@@ -14,14 +14,12 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import time
 
 from retriever.flow import Flow, Pipeline, io, Rate, Trigger
 
 
 @io
-@dataclass
 class Data:
     value: int
 

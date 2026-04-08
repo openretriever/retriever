@@ -11,12 +11,10 @@ Run:
   pixi run python -m examples.tutorial.b_ir_and_execution.01_context_graph
 """
 
-from dataclasses import dataclass
 from retriever.flow import Flow, io, Rate, Trigger, Pipeline, Latest
 
 
 @io
-@dataclass
 class Data:
     value: int
 

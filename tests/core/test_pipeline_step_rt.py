@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
-@flow_io
-@dataclass
+@io
 class Value:
     value: int
 
