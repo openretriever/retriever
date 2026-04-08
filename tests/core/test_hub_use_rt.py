@@ -4,7 +4,7 @@ import io as pyio
 import tarfile
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 
 from retriever.error import ErrCode, HubError
@@ -324,6 +324,45 @@ class TestHubUse:
                 result = pipe.step(now=0.0)
 
                 assert pipe.get_node_id(pipe.select_flow("processor")) == "processor"
+                assert result.outputs["processor"].value == 104
+            finally:
+                pipe.close_stepper()
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
+    def test_use_exported_pipeline_factory_with_shared_type_transform(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    return _make_tarball()
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            SharedPose = hub.use("test-org/test-mod:SharedPose")
+            pose_to_tuple = hub.use("test-org/test-mod:pose_to_tuple")
+            build = hub.use("test-org/test-mod:BuildTestPipeline")
+
+            pipe = build()
+            try:
+                pipe.replace(pipe.select_flow("processor"), OverrideProc(delta=100) @ Rate(hz=10))
+
+                pose = SharedPose(x=1.0, y=1.0, z=1.0)
+                bias = int(sum(pose_to_tuple(pose)))
+                pipe.inject_input("processor", "bias", bias, timestamp=0.0)
+
+                result = pipe.step(now=0.0)
+
                 assert result.outputs["processor"].value == 104
             finally:
                 pipe.close_stepper()

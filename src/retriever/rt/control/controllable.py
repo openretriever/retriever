@@ -86,6 +86,23 @@ class Controllable(ABC):
         self._init_time: Optional[float] = None
         self._last_step_time: Optional[float] = None
         self._error_message: Optional[str] = None
+        self._control_step_inflight = False
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        step = cls.__dict__.get("step")
+        if step is None or getattr(step, "_controllable_wrapped", False):
+            return
+
+        def wrapped_step(self, *args, **kwargs):
+            result = step(self, *args, **kwargs)
+            if not getattr(self, "_control_step_inflight", False):
+                self.control_post_step()
+            return result
+
+        wrapped_step._controllable_wrapped = True  # type: ignore[attr-defined]
+        cls.step = wrapped_step
 
     # =========================================================================
     # State Management
@@ -125,6 +142,7 @@ class Controllable(ABC):
         if self._control_state in (FlowState.STOPPED, FlowState.ERROR):
             return False
 
+        self._control_step_inflight = True
         return True
 
     def control_post_step(self) -> None:
@@ -132,13 +150,16 @@ class Controllable(ABC):
         with self._control_lock:
             self._step_count += 1
             self._last_step_time = time.time()
+            self._control_step_inflight = False
 
     def control_finalize(self) -> None:
         """Called by executor before flow.finalize()."""
+        self._control_step_inflight = False
         self._set_state(FlowState.STOPPED)
 
     def control_error(self, error: Exception) -> None:
         """Called by executor when an error occurs."""
+        self._control_step_inflight = False
         self._set_state(FlowState.ERROR)
         self._error_message = str(error)
 
@@ -174,6 +195,7 @@ class Controllable(ABC):
             self._step_count = 0
             self._last_step_time = None
             self._error_message = None
+            self._control_step_inflight = False
 
     def __getstate__(self):
         """

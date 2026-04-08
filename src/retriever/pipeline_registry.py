@@ -530,7 +530,7 @@ def _make_surface_io_type(
 
 def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurface):
     from retriever.flow import Flow
-    from retriever.rt.stepper import PipelineStepper
+    from retriever.rt.stepper import PipelineStepper, current_step_time
 
     input_bindings, output_bindings = _build_surface_bindings(ctx, surface)
     class_stem = _sanitize_identifier(name.title())
@@ -574,7 +574,7 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
 
         def step(self, input):  # type: ignore[override]
             stepper = self._ensure_stepper()
-            step_now = time.time()
+            step_now = current_step_time() or time.time()
 
             if input is not None:
                 injected: Dict[str, Dict[str, Any]] = {}

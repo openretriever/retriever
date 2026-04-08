@@ -15,7 +15,7 @@ build_slam = hub.use("company-abc/lidar-slam:BuildSlamPipeline")
 pipe = build_slam()
 pipe.select_flow("frontend")
 
-# Share a pipeline-flow factory for hierarchical composition
+# Share a pipeline-flow factory for hierarchical in-process composition
 build_slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")
 slam_stage = build_slam_stage(resolution=0.05) @ Rate(hz=10)
 
@@ -44,13 +44,16 @@ Hub exports are normal Python attributes. A module may export:
 
 - flow classes or flow factories
 - live pipeline factories
-- pipeline-flow factories
-- shared `@io` payload types
+- pipeline-flow factories for in-process hierarchical composition
+- shared `@io` envelope types for flow boundaries
+- shared domain / representation types
 - representation transforms and serialization helpers
 
 Recommended public split:
 
-- `types.py`: shared `@io` payload contracts
+- `types.py`: shared envelope types and domain types
+  Use `@io` only for flow-boundary envelopes. Keep canonical domain types plain when
+  they should not gain optional-field signal semantics.
 - `transforms.py`: pure representation conversion helpers
 - `pipeline.py`: graph assembly and composition helpers
 
@@ -89,6 +92,8 @@ BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
 ```
 
 The Hub loader reads `[tool.retriever.module]`, then imports the declared module and returns the requested export.
+That means module top-level code must be import-safe: do not open cameras, sockets,
+SDK clients, or other local resources during import.
 
 ## Composable pipelines
 
@@ -106,11 +111,27 @@ pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 
 ### 2. Export a pipeline-flow factory
 
-Use this when downstream code wants to treat the whole sub-pipeline as one flow stage.
+Use this when downstream code wants to treat the whole sub-pipeline as one flow stage
+inside an in-process pipeline.
 
 ```python
 slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
 camera.then(slam_stage, sync=Latest())
+```
+
+This wrapper is currently in-process only. Retriever will reject it on
+`multiprocessing` and `dora` backends.
+
+Shared types and transforms compose with these factories the same way:
+
+```python
+SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
+pose_to_threshold = hub.use("company-abc/lidar-slam:pose_to_threshold")
+build_slam = hub.use("company-abc/lidar-slam:BuildSlamPipeline")
+
+pipe = build_slam()  # `SE3Pose` can be a plain shared representation type
+threshold = pose_to_threshold(SE3Pose(x=1.0, y=2.0, z=3.0))
+pipe.inject_input("frontend", "threshold", threshold, timestamp=0.0)
 ```
 
 ## Surface grammar
@@ -176,6 +197,7 @@ Do not introduce a separate `.remote()` authoring mode unless Retriever also cha
 
 Guidelines:
 
+- module top-level: import-safe only
 - `__init__`: store lightweight, serializable configuration only
 - `init_config()`: return serializable reconstruction data only
 - `__lazy_init__()` / `init()`: acquire runtime-local resources

@@ -92,6 +92,15 @@ def execute_ir(
     else:
         ir_struct = ir
 
+    in_process_only_nodes = [
+        node.id for node in ir_struct.nodes if node.config.get("in_process_only")
+    ]
+    if in_process_only_nodes and backend != "in-process":
+        raise ValueError(
+            "This IR contains in-process-only flow wrappers and cannot run on "
+            f"backend '{backend}'. Offending nodes: {in_process_only_nodes}"
+        )
+
     # Initialize logging
     log_manager = LogManager()
     config = log_config or LogConfig()

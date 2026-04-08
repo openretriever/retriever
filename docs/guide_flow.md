@@ -38,8 +38,8 @@ class DetectionsOut:
 
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
+- `@io` is standalone. Do not stack it with `@dataclass`.
 - Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
-- `@flow_io` remains available as a deprecated alias for older code.
 
 ---
 
@@ -47,8 +47,11 @@ Notes:
 
 A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
 
-- `init()` / `finalize()` for resources (models, cameras, sockets)
+- `__lazy_init__()` / `init()` / `finalize()` for resources (models, cameras, sockets)
 - `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
+
+Keep module top-level code and `__init__()` import-safe and lightweight. Acquire
+runtime-local resources in `__lazy_init__()` / `init()`.
 
 ```py
 from retriever.flow import Flow, io
