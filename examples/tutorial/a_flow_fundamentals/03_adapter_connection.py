@@ -11,25 +11,21 @@ Run:
   pixi run python -m examples.tutorial.a_flow_fundamentals.03_adapter_connection
 """
 
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, io, Rate, Trigger, Latest, Hold, Window
 
 
 @io
-@dataclass
 class SensorData:
     temperature: float
 
 
 @io
-@dataclass
 class ProcessInput:
     temp: float
 
 
 @io
-@dataclass
 class ProcessedResult:
     value: float
 

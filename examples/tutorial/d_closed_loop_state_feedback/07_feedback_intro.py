@@ -23,7 +23,6 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 @io
-@dataclass
 class Action:
     action: float | None = None
 
@@ -38,7 +37,6 @@ class Transition:
 
 
 @io
-@dataclass
 class Observation:
     transition: Transition
 

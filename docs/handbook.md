@@ -103,7 +103,7 @@ class AddOut:
 
 Notes:
 - `@io` makes fields `Optional[...]` and adds runtime metadata (signals).
-- `@flow_io` remains available as a backward-compatible alias for older code.
+- `@io` is standalone. Do not stack it with `@dataclass`.
 
 ### 2.2 Implement a `Flow[I, O]`
 

@@ -17,13 +17,11 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 @io
-@dataclass
 class RobotState:
     position: float
     goal: float
@@ -32,7 +30,6 @@ class RobotState:
 
 
 @io
-@dataclass
 class MonitorEvent:
     alert: str
 

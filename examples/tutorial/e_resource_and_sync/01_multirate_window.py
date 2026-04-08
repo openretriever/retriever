@@ -23,19 +23,16 @@ from __future__ import annotations
 import argparse
 import math
 import time
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, Window, io
 
 
 @io
-@dataclass
 class SensorOut:
     x: float
 
 
 @io
-@dataclass
 class SmoothedOut:
     x_mean: float
 

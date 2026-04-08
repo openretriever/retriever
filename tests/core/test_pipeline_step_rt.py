@@ -7,19 +7,18 @@ from typing import Optional
 import pytest
 
 from retriever.config import RecordConfig
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 from retriever.lib.mcap import _deserialize_value
 from retriever.recording import build_recording_sink, read_node_stream_from_recording
 from retriever.rt.stepper import EventStreamRecorder, StepResult
 
 
-@flow_io
-@dataclass
+@io
 class Value:
     value: int
 
 
-@flow_io
+@io
 @dataclass
 class Bias:
     bias: int

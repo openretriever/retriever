@@ -3,7 +3,6 @@ import logging
 import pickle
 import codecs
 from typing import Any, Type, Optional, Union, Dict
-from dataclasses import dataclass
 
 try:
     import torch
@@ -14,7 +13,7 @@ except ImportError:
     nn = None
     optim = None
 
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,7 @@ logger = logging.getLogger(__name__)
 # PART 1: INFERENCE WRAPPERS
 # ============================================================================
 
-@flow_io
-@dataclass
+@io
 class TorchIO:
     inp: Any
 

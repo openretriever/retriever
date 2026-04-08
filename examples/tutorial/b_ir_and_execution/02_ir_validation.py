@@ -8,12 +8,10 @@ Run:
   pixi run python -m examples.tutorial.b_ir_and_execution.02_ir_validation
 """
 
-from dataclasses import dataclass
 from retriever.flow import Flow, io, Rate, Trigger, Pipeline, Latest
 
 
 @io
-@dataclass
 class Data:
     value: int
 

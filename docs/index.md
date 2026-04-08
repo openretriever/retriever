@@ -47,10 +47,6 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-Preferred public API note:
-- Use `@io` for new code.
-- `@flow_io` remains available as a backward-compatible alias.
-
 ### Debugging
 
 ```python

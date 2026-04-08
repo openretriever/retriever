@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
 import pytest
 
-from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, flow_io, Latest
+from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, io, Latest
 
 from retriever.ir import IR
 from retriever.ir.execution import ExecutionGraph
 
 
-@flow_io
-@dataclass
+@io
 class SourceOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class ProcOut:
     value: int
 

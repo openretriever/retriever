@@ -154,7 +154,7 @@ ERROR_MSGS: Dict[ErrCode, str] = {
     # Flow layer - FlowIO (1200-1299)
     ErrCode.FLOW_IO_UNKNOWN: "Unknown FlowIO error",
     ErrCode.FLOW_IO_INVALID: "Invalid FlowIO configuration",
-    ErrCode.FLOW_IO_NOT_DATACLASS: "@flow_io must be applied to a @dataclass",
+    ErrCode.FLOW_IO_NOT_DATACLASS: "Invalid @io type declaration",
     ErrCode.FLOW_IO_FIELD_NOT_FOUND: "Field not found in FlowIO type",
     ErrCode.FLOW_IO_INIT_UNEXPECTED: "Unexpected keyword argument in FlowIO __init__",
     ErrCode.FLOW_AMBIGUOUS_FIELD: "Ambiguous field access in composite input",

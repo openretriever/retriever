@@ -19,7 +19,6 @@ from retriever.rt.control import ControlConfig, Controllable
 
 
 @io
-@dataclass
 class SensorReading:
     """Sensor reading output."""
     sensor_id: str
@@ -28,7 +27,6 @@ class SensorReading:
 
 
 @io
-@dataclass
 class ProcessedData:
     """Processed data output."""
     processed_value: float

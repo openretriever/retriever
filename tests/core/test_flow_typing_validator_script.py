@@ -26,25 +26,21 @@ def test_validator_allows_tuple_literal_and_tuple_output_by_default(tmp_path: Pa
     src.write_text(
         """
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
-@flow_io
-@dataclass
+@io
 class A:
     a: int | None = None
 
-@flow_io
-@dataclass
+@io
 class B:
     b: int | None = None
 
-@flow_io
-@dataclass
+@io
 class C:
     c: int | None = None
 
-@flow_io
-@dataclass
+@io
 class D:
     d: int | None = None
 
@@ -70,10 +66,9 @@ def test_validator_rejects_local_non_io_types(tmp_path: Path) -> None:
     src.write_text(
         """
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
-@flow_io
-@dataclass
+@io
 class A:
     a: int | None = None
 
@@ -99,15 +94,13 @@ def test_validator_rejects_mixed_none_tuple(tmp_path: Path) -> None:
     src.write_text(
         """
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
-@flow_io
-@dataclass
+@io
 class A:
     a: int | None = None
 
-@flow_io
-@dataclass
+@io
 class C:
     c: int | None = None
 
@@ -129,20 +122,17 @@ def test_validator_strict_mode_rejects_tuple_input_and_output(tmp_path: Path) ->
     src.write_text(
         """
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io
+from retriever.flow import Flow, io
 
-@flow_io
-@dataclass
+@io
 class A:
     a: int | None = None
 
-@flow_io
-@dataclass
+@io
 class B:
     b: int | None = None
 
-@flow_io
-@dataclass
+@io
 class C:
     c: int | None = None
 

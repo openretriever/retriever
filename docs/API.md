@@ -27,7 +27,7 @@ Import path:
 ```py
 from retriever.flow import (
     Flow, Pipeline, PipelineBuilder, TemporalFlow,
-    io, flow_io, is_flow_io,
+    io,
     Rate, Tick, Trigger, Hybrid,
     Latest, Hold, Window, Events,
     handle_service, call_service,
@@ -36,7 +36,7 @@ from retriever.flow import (
 
 Key concepts:
 - `Flow[I, O]`: user-defined node logic (`init/run/reset/finalize`)
-- `@io` classes: typed ports (each field is a port)
+- `@io` classes: typed ports (each field is a port; use `@io` directly, not with `@dataclass`)
 - `flow @ clock`: produces a `TemporalFlow` (node instance with execution config)
 - `Pipeline`: explicit graph builder (recommended)
 - `PipelineBuilder`: lower-level validation builder

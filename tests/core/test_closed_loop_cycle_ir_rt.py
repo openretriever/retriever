@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
-@flow_io
-@dataclass
+@io
 class Action:
     action: int
 
 
-@flow_io
-@dataclass
+@io
 class Observation:
     obs: int
 

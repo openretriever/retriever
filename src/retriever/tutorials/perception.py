@@ -216,7 +216,6 @@ class Detection:
 
 
 @io
-@dataclass
 class CameraData:
     image: Image
     mode: str = "unknown"
@@ -230,7 +229,6 @@ class CameraData:
 
 
 @io
-@dataclass
 class DetectionResults:
     image: Image
     detections: List[Detection]

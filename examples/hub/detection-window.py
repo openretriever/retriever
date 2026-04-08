@@ -1,5 +1,4 @@
 from pathlib import Path
-from dataclasses import dataclass
 
 from retriever import hub
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, io
@@ -8,7 +7,6 @@ dw = hub.use("openretriever/detection-window-demo")
 
 
 @io
-@dataclass
 class Empty:
     pass
 

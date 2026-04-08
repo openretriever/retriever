@@ -20,9 +20,8 @@ import numpy as np
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from dataclasses import dataclass
 
-from retriever.core.flow import Flow, flow_io
+from retriever.core.flow import Flow, io
 from retriever.core.types import Pipeline
 from retriever.integrations.dora.translation import (
     FlowInstanceSerializer,
@@ -31,10 +30,9 @@ from retriever.integrations.dora.translation import (
     DoraConfig
 )
 
-@flow_io
-@dataclass
+@io
 class ArrayOut:
-    """@flow_io wrapper around a numpy array for single-port flows."""
+    """@io wrapper around a numpy array for single-port flows."""
 
     output: np.ndarray
 

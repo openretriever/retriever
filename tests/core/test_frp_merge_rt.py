@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 
-from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, flow_io, Latest
+from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, io, Latest
 from retriever.flow.types import EventBuffer
 from retriever.flow.adapter import Events, Window
 from retriever.rt.step import IOStep
@@ -37,8 +36,7 @@ def test_signal_sampling_passes_now_to_adapter():
         def clear(self) -> None:
             self._buf = []
 
-    @flow_io
-    @dataclass
+    @io
     class In:
         events: list[tuple[float, str]]
 
@@ -50,13 +48,11 @@ def test_signal_sampling_passes_now_to_adapter():
 
 
 def test_flowhandle_rshift_is_then_alias():
-    @flow_io
-    @dataclass
+    @io
     class AOut:
         value: int
 
-    @flow_io
-    @dataclass
+    @io
     class BOut:
         value: int
 

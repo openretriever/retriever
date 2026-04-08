@@ -7,18 +7,15 @@ Run:
   pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
 """
 
-from dataclasses import dataclass
 from retriever.flow import Flow, io
 
 
 @io
-@dataclass
 class NumberInput:
     value: int
 
 
 @io
-@dataclass
 class NumberOutput:
     result: int
 

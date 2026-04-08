@@ -33,13 +33,11 @@ class MathResponse:
 # =============================================================================
 
 @io
-@dataclass
 class NumberOutput:
     value: int
 
 
 @io
-@dataclass
 class NumberInput:
     value: int
 

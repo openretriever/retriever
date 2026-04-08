@@ -3,13 +3,11 @@ Tests for modernized Flow API (Rate, Trigger, FlowConfig).
 Verifies that legacy arguments are gone and new resource spec works.
 """
 import pytest
-from dataclasses import dataclass
-from retriever.flow import Flow, Rate, Trigger, Hybrid, FlowConfig, flow_io
+from retriever.flow import Flow, Rate, Trigger, Hybrid, FlowConfig, io
 from retriever.flow.config import ResourceSpec
 from retriever.error import FlowError
 
-@flow_io
-@dataclass
+@io
 class IO:
     val: int
 

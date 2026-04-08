@@ -16,7 +16,6 @@ from retriever.flow import Flow, Pipeline, io, Rate, Trigger
 
 
 @io
-@dataclass
 class CounterOutput:
     count: int
 
@@ -28,7 +27,6 @@ class Result:
 
 
 @io
-@dataclass
 class ProcessedOutput:
     result: Result
 

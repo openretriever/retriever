@@ -15,13 +15,11 @@ Run:
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 from retriever.flow import Flow, FlowConfig, Pipeline, Rate, io
 
 
 @io
-@dataclass
 class Val:
     x: float
 

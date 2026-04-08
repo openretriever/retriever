@@ -4,13 +4,11 @@ import pytest
 yaml = pytest.importorskip("yaml")  # PyYAML (optional; required for dora compiler)
 
 
-from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, flow_io, Latest
+from retriever.flow import Flow, Pipeline, Rate, io, Latest
 
 
-@flow_io
-@dataclass
+@io
 class Val:
     x: int
 

@@ -13,7 +13,7 @@ from retriever.flow.builder import PipelineBuilder
 from retriever.flow.pipeline import Pipeline
 from retriever.flow.functional import connect, default_pipeline, reset_default_pipeline, clear_default_pipeline
 from retriever.flow.graph import PipelineGraph, PipelineNode, PipelineEdge
-from retriever.flow.io import flow_io, is_flow_io, io
+from retriever.flow.io import is_flow_io, io
 from retriever.flow.service import handle_service, call_service
 
 
@@ -56,7 +56,6 @@ __all__ = [
 
     # I/O
     'io',
-    'flow_io',
     'is_flow_io',
 
     # Services

@@ -8,12 +8,10 @@ Run:
   pixi run python -m examples.tutorial.a_flow_fundamentals.02_clock_types
 """
 
-from dataclasses import dataclass
 from retriever.flow import Flow, io, Rate, Trigger, Hybrid
 
 
 @io
-@dataclass
 class Data:
     value: int
 

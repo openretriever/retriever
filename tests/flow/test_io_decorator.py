@@ -1,10 +1,8 @@
 import dataclasses
 import pytest
-import numpy as np
 from dataclasses import dataclass
-from typing import Optional
 
-from retriever.flow import io, flow_io
+from retriever.flow import io
 from retriever.error import FlowError
 
 def test_io_auto_dataclass():
@@ -28,13 +26,14 @@ def test_io_auto_dataclass():
 
 def test_io_existing_dataclass():
     """Test @io on an existing dataclass."""
-    @io
     @dataclass
     class MyExisting:
         a: float
-    
-    assert dataclasses.is_dataclass(MyExisting)
-    obj = MyExisting(a=3.14)
+
+    Wrapped = io(MyExisting)
+
+    assert dataclasses.is_dataclass(Wrapped)
+    obj = Wrapped(a=3.14)
     assert obj.a == 3.14
 
 def test_io_helpers():
@@ -62,22 +61,11 @@ def test_io_helpers():
     with pytest.raises(FlowError):
         obj._get_signal("nonexistent")
 
-def test_legacy_alias():
-    """Test that @flow_io works as an alias."""
-    @flow_io
-    class LegacyData:
-        z: int
-        
-    assert dataclasses.is_dataclass(LegacyData)
-    obj = LegacyData(z=1)
-    assert obj.z == 1
-
 if __name__ == "__main__":
     try:
         test_io_auto_dataclass()
         test_io_existing_dataclass()
         test_io_helpers()
-        test_legacy_alias()
         print("All tests passed!")
     except Exception as e:
         print(f"Test failed: {e}")

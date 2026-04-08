@@ -22,11 +22,9 @@ import argparse
 
 import retriever
 from retriever.flow import Flow, Pipeline, Rate, Trigger, io
-from dataclasses import dataclass
 
 
 @io
-@dataclass
 class Value:
     value: int
 

@@ -16,20 +16,17 @@ Run (dora backend):
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 
 from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 from retriever.flow.adapter import Window
 
 
 @io
-@dataclass
 class SrcOut:
     x: float
 
 
 @io
-@dataclass
 class SinkIn:
     x: float
 

@@ -7,7 +7,7 @@ pa = pytest.importorskip("pyarrow")
 
 from dataclasses import dataclass
 
-from retriever.flow import flow_io
+from retriever.flow import io
 from retriever.rt.backend.dora.serde import deserialize_arrow, serialize_arrow
 
 
@@ -52,14 +52,13 @@ def test_serde_dataclass_roundtrip():
     assert out.value == 7
 
 
-@flow_io
-@dataclass
+@io
 class FlowIO:
     x: int
     y: int
 
 
-def test_serde_flow_io_dataclass_roundtrip():
+def test_serde_io_dataclass_roundtrip():
     msg = FlowIO(x=1, y=2)
     arrow, meta = serialize_arrow(msg)
     assert meta["_type"] == "dataclass"

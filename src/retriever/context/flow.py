@@ -1,23 +1,20 @@
 import asyncio
 import threading
 from typing import Any, Dict, Optional
-from dataclasses import dataclass
 
 from retriever import Flow
 from retriever.error import FlowError, ErrCode
-from retriever.flow import flow_io
+from retriever.flow import io
 from retriever.context import MCPClient
 
 import json
 
-@flow_io
-@dataclass
+@io
 class MCPRequest:
     """Request to invoke an MCP tool. Serialized as JSON string for atomicity."""
     content: str
 
-@flow_io
-@dataclass
+@io
 class MCPResponse:
     """Response from an MCP tool."""
     content: str
