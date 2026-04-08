@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import re
 import sys
@@ -65,6 +66,61 @@ def _attach_hub_metadata(
         "namespace": namespace,
         "source_module": source_module,
     }
+
+
+def _iter_intra_package_imports(file_path: Path, module_name: str) -> list[str]:
+    """Collect absolute intra-package imports referenced by one source file."""
+    try:
+        tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
+    except (OSError, SyntaxError):
+        return []
+
+    prefix = f"{module_name}."
+    deps: list[str] = []
+    seen: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                name = alias.name
+                if not name.startswith(prefix) or name in seen:
+                    continue
+                seen.add(name)
+                deps.append(name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level != 0 or not node.module:
+                continue
+            module = node.module
+            if not module.startswith(prefix) or module in seen:
+                continue
+            seen.add(module)
+            deps.append(module)
+    return deps
+
+
+def _preload_intra_package_imports(
+    module_root: Path,
+    module_name: str,
+    file_path: Path,
+    *,
+    namespace: Optional[str] = None,
+    hub_meta: Optional[Dict[str, Any]] = None,
+    exclude: Optional[str] = None,
+) -> None:
+    """Preload absolute intra-package imports through the namespaced loader.
+
+    This keeps `import pkg.submod` and `from pkg.submod import X` inside a hub
+    module aligned with the same namespaced module objects that Hub exports.
+    """
+    for dotted_path in _iter_intra_package_imports(file_path, module_name):
+        if dotted_path == exclude:
+            continue
+        _import_submodule(
+            module_root,
+            module_name,
+            dotted_path,
+            namespace=namespace,
+            hub_meta=hub_meta,
+        )
 
 
 def _load_package(
@@ -136,6 +192,15 @@ def _load_package(
 
     if spec.loader is not None:
         try:
+            if init_path.exists():
+                _preload_intra_package_imports(
+                    module_root,
+                    module_name,
+                    init_path,
+                    namespace=namespace,
+                    hub_meta=hub_meta,
+                    exclude=module_name,
+                )
             spec.loader.exec_module(module)
         except Exception as exc:
             # Clean up on failure
@@ -227,6 +292,14 @@ def _import_submodule(
             setattr(parent, parts[-1], submod)
 
     try:
+        _preload_intra_package_imports(
+            module_root,
+            module_name,
+            file_path,
+            namespace=namespace,
+            hub_meta=hub_meta,
+            exclude=dotted_path,
+        )
         spec.loader.exec_module(submod)
     except Exception as exc:
         sys.modules.pop(qualified, None)
