@@ -88,10 +88,10 @@ class Pipeline:
             ):
                 clock.on_lag = desired
 
-    def validate(self):
-        """Validate the pipeline (applies pipeline-level defaults first)."""
+    def validate(self, *, lower_composite_flows: bool = True):
+        """Validate the pipeline and compile it to IR."""
         self._apply_clock_defaults()
-        return self._builder.validate()
+        return self._builder.validate(lower_composite_flows=lower_composite_flows)
 
     def visualize(
         self,
@@ -353,8 +353,8 @@ class Pipeline:
         return self
 
     def _build_ir(self):
-        """Validate and return an IR (Internal)."""
-        return self.validate()
+        """Build backend-ready IR (Internal)."""
+        return self.validate(lower_composite_flows=True)
 
     def build_execution(self, *, policy: Any = "aggressive", **kwargs: Any):
         """Build an ExecutionGraph from this pipeline's IR."""

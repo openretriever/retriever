@@ -6,6 +6,7 @@ from pathlib import Path
 from retriever.flow import Flow, Pipeline, Rate, Latest, io
 from retriever.ir.core import IR, IRAnalysis
 from retriever.ir.execution import ExecutionGraph
+from retriever.pipeline_registry import build_pipeline_flow, register_pipeline
 
 
 # Simple test pipeline
@@ -31,6 +32,38 @@ class SinkIn:
 class SinkFlow(Flow[SinkIn, None]):
     def step(self, inp: SinkIn) -> None:
         pass
+
+
+@io
+class BiasIn:
+    count: int
+    bias: int
+
+
+@io
+class BiasOut:
+    count: int
+
+
+class BiasFlow(Flow[BiasIn, BiasOut]):
+    def step(self, inp: BiasIn) -> BiasOut:
+        return BiasOut(count=inp.count + inp.bias)
+
+
+@register_pipeline(
+    "test.composed_visualization",
+    surface_policy="explicit",
+    input_ports=["adder.bias"],
+    output_ports=["adder.count"],
+    overwrite=True,
+)
+def _build_composed_visualization_pipeline() -> Pipeline:
+    pipe = Pipeline("test.composed_visualization")
+    with pipe:
+        counter = (CounterFlow() @ Rate(10.0)).named("counter")
+        adder = (BiasFlow() @ Rate(10.0)).named("adder")
+        counter.then(adder, map={"count": "count"}, sync=Latest())
+    return pipe
 
 
 def _build_simple_ir() -> IR:
@@ -80,6 +113,50 @@ class TestIRMethods:
         assert path.exists()
         content = path.read_text()
         assert "<html" in content.lower()
+
+    def test_visualize_wrapped_pipeline(self, tmp_path: Path):
+        """Test composed pipeline wrappers carry visualization metadata."""
+        outer = Pipeline("outer_wrapped_visualization")
+        with outer:
+            stage = (build_pipeline_flow("test.composed_visualization") @ Rate(10.0)).named("stage")
+            sink = (SinkFlow() @ Rate(10.0)).named("sink")
+            stage.then(sink, map={"count": "count"}, sync=Latest())
+
+        unlowered_ir = outer.validate(lower_composite_flows=False)
+        stage_node = next(node for node in unlowered_ir.nodes if node.id == "stage")
+
+        assert stage_node.config["in_process_only"] is True
+        wrapped = stage_node.config["viz"]
+        assert wrapped["kind"] == "pipeline"
+        assert wrapped["pipeline_name"] == "test.composed_visualization"
+        assert wrapped["summary"] == {"node_count": 2, "edge_count": 1}
+        assert wrapped["surface"]["inputs"][0]["external_name"] == "bias"
+        assert wrapped["surface"]["outputs"][0]["external_name"] == "count"
+        assert [node["id"] for node in wrapped["internal"]["nodes"]] == ["counter", "adder"]
+
+        lowered_ir = outer.validate()
+        lowered_nodes = {node.id: node for node in lowered_ir.nodes if node.id.startswith("stage__")}
+        assert set(lowered_nodes) == {"stage__counter", "stage__adder"}
+
+        group = lowered_nodes["stage__counter"].config["viz"]["pipeline_groups"][0]
+        assert group["wrapper_node_id"] == "stage"
+        assert group["pipeline_name"] == "test.composed_visualization"
+        assert group["summary"] == {"node_count": 2, "edge_count": 1}
+        assert group["surface"]["inputs"][0]["external_name"] == "bias"
+        assert group["surface"]["outputs"][0]["external_name"] == "count"
+        assert [node["lowered_id"] for node in group["internal"]["nodes"]] == [
+            "stage__counter",
+            "stage__adder",
+        ]
+
+        ascii_graph = lowered_ir.to_ascii()
+        assert "+ Pipeline [stage] (test.composed_visualization)" in ascii_graph
+        assert "[counter]" in ascii_graph
+
+        path = lowered_ir.visualize(tmp_path / "wrapped_viz.html")
+        content = path.read_text()
+        assert "pipeline-group" in content
+        assert "test.composed_visualization" in content
 
     def test_save_load(self, tmp_path: Path):
         """Test ir.save() and IR.load() round-trip."""

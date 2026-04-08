@@ -119,17 +119,23 @@ def demo_extend_declared_pipeline() -> None:
         pipe.close_stepper()
 
 
-def demo_compose_pipeline_as_flow() -> None:
-    print("\n=== Compose Pipeline As Flow ===")
+def build_outer_composable_counter(*, bias: int = 4) -> Pipeline:
     outer = Pipeline("outer.composable_counter")
 
     with outer:
-        bias = BiasSource(bias=4) @ Rate(hz=10)
+        bias_source = BiasSource(bias=bias) @ Rate(hz=10)
         sub = (retriever.build_pipeline_flow("tutorial.composable_counter") @ Rate(hz=10)).named("stage")
         sink = DecisionPrinter() @ Rate(hz=10)
 
-        bias.then(sub, sync=Latest())
+        bias_source.then(sub, sync=Latest())
         sub.then(sink, sync=Latest())
+
+    return outer
+
+
+def demo_compose_pipeline_as_flow() -> None:
+    print("\n=== Compose Pipeline As Flow ===")
+    outer = build_outer_composable_counter()
 
     try:
         result = outer.step(now=0.0)
