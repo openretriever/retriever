@@ -24,6 +24,13 @@ SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
 pose_to_matrix = hub.use("company-abc/lidar-slam:pose_to_matrix")
 ```
 
+Examples in this repo:
+
+- `examples/hub/hello-world.py`: whole-module import through `ModuleProxy`, then use exported flow/type symbols
+- `examples/hub/hello-world-explicit.py`: explicit `hub.use("org/name:Export")` imports against a live module
+- `examples/hub/detection-window.py`: import flows/types from Hub and compose them into a local pipeline
+- `examples/hub/composable-pipeline-template.py`: copy-paste template for imported live pipelines, pipeline-flow wrappers, and shared transforms
+
 Module reference format:
 
 ```plaintext
@@ -129,10 +136,13 @@ slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz
 camera.then(slam_stage, sync=Latest())
 ```
 
-Direct `flow.step(...)` on this wrapper is still local/in-process.
-When you nest it inside a larger `Pipeline` and build or run that pipeline,
-Retriever lowers the wrapper into flat IR so `multiprocessing` and `dora`
-backends can execute the inner nodes normally.
+Important boundary:
+
+- direct `flow.step(...)` on this wrapper is still local/in-process
+- the wrapper itself is not the backend artifact
+- when you nest it inside a larger `Pipeline` and build or run that pipeline,
+  Retriever lowers the wrapper into flat IR so `multiprocessing` and `dora`
+  backends can execute the inner nodes normally
 
 Shared types and transforms compose with these factories the same way:
 
@@ -145,6 +155,12 @@ pipe = build_slam()  # `SE3Pose` can be a plain shared representation type
 threshold = pose_to_threshold(SE3Pose(x=1.0, y=2.0, z=3.0))
 pipe.inject_input("frontend", "threshold", threshold, timestamp=0.0)
 ```
+
+Rule of thumb:
+
+- export `BuildXPipeline` when downstream users may inspect, replace, or rewire internal flows
+- export `BuildXPipelineFlow` when downstream users want one reusable stage inside a larger graph
+- export both when the module should support both extension and hierarchical composition
 
 ## Surface grammar
 
