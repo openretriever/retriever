@@ -98,7 +98,7 @@ class PipelineStepper:
 
     def __init__(self, ctx: PipelineBuilder):
         self._ctx = ctx
-        self._ir: IR = ctx.validate()
+        self._ir: IR = ctx.validate(lower_composite_flows=False)
 
         self._flows: Dict[str, TemporalFlow] = {n.id: ctx.get_handle_for_node(n.id) for n in self._ir.nodes}
 

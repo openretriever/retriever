@@ -85,6 +85,9 @@ class BiasSource(Flow[None, BiasOut]):
         super().__init__()
         self.bias = bias
 
+    def init_config(self) -> dict:
+        return {"bias": self.bias}
+
     def step(self, _):  # type: ignore[override]
         return BiasOut(bias=self.bias)
 
@@ -260,7 +263,15 @@ def test_pipeline_registry_flow_wrapper_can_be_nested_in_outer_pipeline(monkeypa
 
     try:
         ir = outer.validate()
-        assert any(node.id == "stage" and node.config.get("in_process_only") for node in ir.nodes)
+        assert all(not node.config.get("in_process_only") for node in ir.nodes)
+        assert "stage" not in {node.id for node in ir.nodes}
+        assert {"bias", "stage__source", "stage__processor"} <= {node.id for node in ir.nodes}
+        assert any(
+            edge.source.node == "bias"
+            and edge.destination.node == "stage__processor"
+            and edge.destination.port == "bias"
+            for edge in ir.edges
+        )
 
         result = outer.step(now=7.0)
         assert result.outputs["stage"].value == 5
@@ -269,6 +280,24 @@ def test_pipeline_registry_flow_wrapper_can_be_nested_in_outer_pipeline(monkeypa
         assert inject_calls == [7.0]
     finally:
         outer.close_stepper()
+
+
+def test_pipeline_registry_flow_wrapper_runs_on_multiprocessing_backend():
+    @register_pipeline("test_pipeline_registry_flow_wrapper_mp", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_registry_flow_wrapper_mp") as ctx:
+            src = (CountingRichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    outer = Pipeline("test_pipeline_registry_outer_mp")
+    with outer:
+        bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+        stage = (build_pipeline_flow("test_pipeline_registry_flow_wrapper_mp") @ Rate(hz=10)).named("stage")
+        bias.then(stage, sync=Latest())
+
+    outer.run(backend="multiprocessing", duration=0.05)
 
 
 def test_pipeline_registry_flow_wrapper_respects_explicit_surface():

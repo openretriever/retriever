@@ -136,11 +136,11 @@ class PipelineRegistry:
         if isinstance(result, IR):
             return result
         if isinstance(result, PipelineBuilder):
-            return result.validate()
+            return result.validate(lower_composite_flows=True)
 
         # Support Pipeline objects (via duck typing or direct import)
         if hasattr(result, "validate") and hasattr(result, "_build_ir"):
-            return result.validate()
+            return result.validate(lower_composite_flows=True)
 
         raise TypeError(
             f"Pipeline factory '{name}' returned unsupported type: {type(result)} "
@@ -150,7 +150,18 @@ class PipelineRegistry:
     def build_surface(self, name: str, **kwargs: Any) -> PipelineSurface:
         """Build a flow-like surface from a registered pipeline."""
         info = self.get(name)
-        ir = self.build_ir(name, **kwargs)
+        result = info.factory(**kwargs)
+        if isinstance(result, IR):
+            ir = result
+        elif isinstance(result, PipelineBuilder):
+            ir = result.validate(lower_composite_flows=False)
+        elif hasattr(result, "validate") and hasattr(result, "_build_ir"):
+            ir = result.validate(lower_composite_flows=False)
+        else:
+            raise TypeError(
+                f"Pipeline factory '{name}' returned unsupported type: {type(result)} "
+                "(expected IR, PipelineBuilder, or Pipeline)"
+            )
         return _build_pipeline_surface_from_ir(
             ir,
             surface_policy=info.surface_policy,
@@ -162,14 +173,14 @@ class PipelineRegistry:
         """Build an in-process composite Flow wrapper from a registered pipeline."""
         info = self.get(name)
         live_ctx = _build_live_pipeline_context(info, **kwargs)
-        ir = live_ctx.validate()
+        ir = live_ctx.validate(lower_composite_flows=False)
         surface = _build_pipeline_surface_from_ir(
             ir,
             surface_policy=info.surface_policy,
             input_selectors=info.input_ports,
             output_selectors=info.output_ports,
         )
-        return _build_pipeline_flow_from_surface(name, live_ctx, surface)
+        return _build_pipeline_flow_from_surface(name, live_ctx, surface, ir)
 
 
 _global_pipeline_registry = PipelineRegistry()
@@ -511,6 +522,54 @@ def _build_surface_bindings(
     return tuple(input_bindings), tuple(output_bindings)
 
 
+def _build_pipeline_viz_metadata(name: str, ir: IR, surface: PipelineSurface) -> Dict[str, Any]:
+    internal_edges = [
+        {
+            "source": edge.source.node,
+            "source_port": IR.get_logical_port(edge.source.port),
+            "destination": edge.destination.node,
+            "destination_port": IR.get_logical_port(edge.destination.port),
+        }
+        for edge in ir.edges
+        if not IR.get_logical_port(edge.source.port).startswith("_")
+        and not IR.get_logical_port(edge.destination.port).startswith("_")
+    ]
+    return {
+        "kind": "pipeline",
+        "pipeline_name": name,
+        "summary": {
+            "node_count": len(ir.nodes),
+            "edge_count": len(internal_edges),
+        },
+        "surface": {
+            "inputs": [
+                {
+                    "external_name": port.external_name,
+                    "node_id": port.node_id,
+                    "node_type": port.node_type,
+                    "port": port.port,
+                    "type": port.type,
+                }
+                for port in surface.inputs
+            ],
+            "outputs": [
+                {
+                    "external_name": port.external_name,
+                    "node_id": port.node_id,
+                    "node_type": port.node_type,
+                    "port": port.port,
+                    "type": port.type,
+                }
+                for port in surface.outputs
+            ],
+        },
+        "internal": {
+            "nodes": [{"id": node.id, "type": node.type} for node in ir.nodes],
+            "edges": internal_edges,
+        },
+    }
+
+
 def _make_surface_io_type(
     name: str,
     bindings: Tuple[PipelineSurfaceBinding, ...],
@@ -528,7 +587,12 @@ def _make_surface_io_type(
     return io(make_dataclass(name, fields_spec))
 
 
-def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurface):
+def _build_pipeline_flow_from_surface(
+    name: str,
+    ctx: Any,
+    surface: PipelineSurface,
+    ir: IR,
+):
     from retriever.flow import Flow
     from retriever.rt.stepper import PipelineStepper, current_step_time
 
@@ -536,6 +600,7 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
     class_stem = _sanitize_identifier(name.title())
     input_type = _make_surface_io_type(f"{class_stem}Input", input_bindings)
     output_type = _make_surface_io_type(f"{class_stem}Output", output_bindings)
+    pipeline_viz = _build_pipeline_viz_metadata(name, ir, surface)
 
     base = Flow[input_type or None, output_type or None]  # type: ignore[misc]
     output_cache_init = {binding.surface_port.external_name: None for binding in output_bindings}
@@ -544,6 +609,11 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
         in_process_only = True
 
         def __init__(self):
+            self._pipeline_flow_wrapper = True
+            self._pipeline_flow_context = ctx
+            self._pipeline_flow_surface = surface
+            self._pipeline_flow_input_bindings = input_bindings
+            self._pipeline_flow_output_bindings = output_bindings
             self.context = ctx
             self.surface = surface
             self.input_bindings = input_bindings
@@ -556,6 +626,9 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
             # nested inside a larger in-process Pipeline. Backend execution is blocked
             # separately via the `in_process_only` marker in IR node config.
             return {}
+
+        def viz_metadata(self) -> dict:
+            return pipeline_viz
 
         def _ensure_stepper(self) -> PipelineStepper:
             if self._stepper is None:

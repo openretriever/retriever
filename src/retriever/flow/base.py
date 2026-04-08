@@ -6,7 +6,7 @@ A Flow is a signal function that transforms inputs to outputs.
 
 from abc import ABC, abstractmethod
 from typing import get_origin, get_args
-from typing import ClassVar, Tuple, TypeVar, Generic, Optional, Type, TYPE_CHECKING
+from typing import Any, ClassVar, Tuple, TypeVar, Generic, Optional, Type, TYPE_CHECKING
 from retriever.error import FlowError, ErrCode
 
 if TYPE_CHECKING:
@@ -260,6 +260,16 @@ class Flow(ABC, Generic[I, O]):
         also override `from_init_config(...)`.
         """
         return {}
+
+    def viz_metadata(self) -> Optional[dict[str, Any]]:
+        """
+        Return optional JSON-serializable metadata for IR visualization only.
+
+        This is intentionally non-semantic: execution backends must not depend
+        on it. Use it to enrich HTML/ASCII views for composite or specialized
+        nodes without affecting runtime behavior.
+        """
+        return None
 
     @classmethod
     def from_init_config(cls, config: dict) -> "Flow":
