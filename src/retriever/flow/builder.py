@@ -75,6 +75,7 @@ class PipelineBuilder:
     def __init__(self, name: str = "pipeline"):
         """Initialize empty context."""
         self._name: str = name
+        self._context_token = None
 
         # Track handles: node_id → handle
         self._handles: Dict[str, "TemporalFlow"] = {}
@@ -94,13 +95,15 @@ class PipelineBuilder:
 
     def __enter__(self) -> "PipelineBuilder":
         """Activate this context for the current thread"""
-        _active_context.set(self)
+        self._context_token = _active_context.set(self)
         logger.debug(f"PipelineBuilder '{self._name}' activated")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Deactivate context"""
-        _active_context.set(None)
+        if self._context_token is not None:
+            _active_context.reset(self._context_token)
+            self._context_token = None
         logger.debug(f"PipelineBuilder '{self._name}' deactivated")
         return False
 
@@ -181,6 +184,10 @@ class PipelineBuilder:
 
     def _register_handle(self, handle: "TemporalFlow") -> str:
         """Register handle if not already registered, return node_id"""
+        for node_id, existing in self._handles.items():
+            if existing is handle:
+                return node_id
+
         node_id = self._create_node_id(handle)
         if node_id not in self._handles:
             self._handles[node_id] = handle
@@ -190,9 +197,28 @@ class PipelineBuilder:
         return node_id
 
     def _create_node_id(self, handle: "TemporalFlow") -> str:
-        """Create unique node ID from handle"""
+        """Create a stable, human-addressable node ID for a handle."""
+        explicit = getattr(handle, "name", None)
+        if explicit:
+            existing = self._handles.get(explicit)
+            if existing is not None and existing is not handle:
+                raise FlowError(
+                    ErrCode.FLOW_CONNECTION_INVALID,
+                    f"Flow name '{explicit}' is already in use in pipeline '{self._name}'. "
+                    "Use unique TemporalFlow.named(...) selectors for composable pipelines.",
+                    flow_name=explicit,
+                )
+            return explicit
+
         flow = handle.flow
-        return f"{flow.__class__.__name__}_{id(handle)}"
+        base = flow.__class__.__name__
+        if base not in self._handles:
+            return base
+
+        suffix = 2
+        while f"{base}__{suffix}" in self._handles:
+            suffix += 1
+        return f"{base}__{suffix}"
 
     # ========================================================================
     # Graph Building
@@ -213,7 +239,7 @@ class PipelineBuilder:
 
         # Step 1: Add all nodes
         for node_id, handle in self._handles.items():
-            # Extract ports from @flow_io types (Composite aware)
+            # Extract ports from @io types (Composite aware)
             input_ports = self._extract_ports(handle.flow.input_types)
             output_ports = self._extract_ports(handle.flow.output_types)
 
@@ -379,6 +405,10 @@ class PipelineBuilder:
         """Get all registered handles."""
         return list(self._handles.values())
 
+    def get_flow_dict(self) -> Dict[str, "TemporalFlow"]:
+        """Get the registered flow handles keyed by stable node id."""
+        return dict(self._handles)
+
     def get_name(self) -> str:
         """Get pipeline name"""
         return self._name
@@ -404,6 +434,36 @@ class PipelineBuilder:
             ErrCode.FLOW_CONTEXT_NODE_NOT_FOUND,
             "Handle not found in context. Connect it into the Pipeline/PipelineBuilder first.",
             handle=handle.flow.__class__.__name__,
+        )
+
+    def select_flow(self, selector: str) -> "TemporalFlow":
+        """
+        Resolve a flow by explicit node id/name or by unique Flow class name.
+
+        Exact node ids are preferred. As a fallback, a bare Flow class name is
+        accepted when it uniquely matches one registered handle.
+        """
+        if selector in self._handles:
+            return self._handles[selector]
+
+        matches = [
+            (node_id, handle)
+            for node_id, handle in self._handles.items()
+            if handle.matches(selector)
+        ]
+        if len(matches) == 1:
+            return matches[0][1]
+        if not matches:
+            raise FlowError(
+                ErrCode.FLOW_CONTEXT_NODE_NOT_FOUND,
+                f"Flow selector '{selector}' not found. Available: {list(self._handles.keys())}",
+                selector=selector,
+            )
+        raise FlowError(
+            ErrCode.FLOW_CONNECTION_INVALID,
+            f"Flow selector '{selector}' is ambiguous. Matches: {[node_id for node_id, _ in matches]}",
+            selector=selector,
+            matches=[node_id for node_id, _ in matches],
         )
 
     # ========================================================================
@@ -506,13 +566,16 @@ class PipelineBuilder:
             # Extract service metadata
             service_handlers = self._extract_service_handlers(flow_class)
             callers_map[node_id] = self._extract_service_methods(flow_class)
+            config = handle.config.to_dict()
+            if getattr(handle.flow, "in_process_only", False):
+                config["in_process_only"] = True
 
             ir_node = IRNode(
                 id=node_id,
                 type=flow_class.__name__,
                 module=flow_class.__module__,
                 init_config=init_config,
-                config=handle.config.to_dict(),
+                config=config,
                 inputs={
                     name: type_to_str(typ) for name, typ in node.input_ports.items()
                 },

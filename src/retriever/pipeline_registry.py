@@ -192,7 +192,7 @@ def register_pipeline(
     Surface controls:
       - `surface_policy="auto_unused"`: expose unconnected non-internal ports
       - `surface_policy="explicit"`: expose only selectors from `input_ports`
-        / `output_ports`, using `FlowClass.port`
+        / `output_ports`, using `flow_id.port`
       - `surface_policy="none"`: do not expose a flow-like surface
 
     Example:
@@ -368,29 +368,42 @@ def _resolve_surface_selector(
     if "." not in selector:
         raise ValueError(
             f"Invalid pipeline surface selector '{selector}'. "
-            "Expected 'FlowClass.port'."
+            "Expected 'flow_id.port'. Named flow selectors like 'camera.image' are preferred; "
+            "a bare FlowClass fallback only works when unique."
         )
-    node_type, port = selector.split(".", 1)
-    matches = []
+    node_selector, port = selector.rsplit(".", 1)
+    direct_match: PipelineSurfacePort | None = None
+    fallback_matches = []
     for node in ir.nodes:
         port_map = node.inputs if direction == "input" else node.outputs
-        if node.type == node_type and port in port_map:
-            matches.append(
-                PipelineSurfacePort(
-                    node_id=node.id,
-                    node_type=node.type,
-                    port=port,
-                    type=port_map[port],
-                    direction=direction,
-                )
-            )
-    if len(matches) == 1:
-        return matches[0]
-    if not matches:
-        raise ValueError(f"Pipeline surface selector '{selector}' did not match any {direction} port.")
+        if port not in port_map:
+            continue
+        surface_port = PipelineSurfacePort(
+            node_id=node.id,
+            node_type=node.type,
+            port=port,
+            type=port_map[port],
+            direction=direction,
+        )
+        if node.id == node_selector:
+            direct_match = surface_port
+            break
+        if node.type == node_selector:
+            fallback_matches.append(surface_port)
+    if direct_match is not None:
+        return direct_match
+    if len(fallback_matches) == 1:
+        return fallback_matches[0]
+    if not fallback_matches:
+        available = sorted(node.id for node in ir.nodes)
+        raise ValueError(
+            f"Pipeline surface selector '{selector}' did not match any {direction} port. "
+            f"Available flow ids: {available}"
+        )
     raise ValueError(
         f"Pipeline surface selector '{selector}' is ambiguous. "
-        f"Matches: {[match.node_id for match in matches]}"
+        f"Matches: {[match.node_id for match in fallback_matches]}. "
+        "Use a stable flow id/name in the selector."
     )
 
 
@@ -411,8 +424,8 @@ def _assign_external_names(
         raw = port.port.replace(".", "__")
         candidates = [
             _sanitize_identifier(raw),
-            _sanitize_identifier(f"{port.node_type}__{raw}"),
             _sanitize_identifier(f"{port.node_id}__{raw}"),
+            _sanitize_identifier(f"{port.node_type}__{raw}"),
         ]
         chosen = ""
         for candidate in candidates:
@@ -529,6 +542,7 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
         in_process_only = True
 
         def __init__(self):
+            self.context = ctx
             self.surface = surface
             self.input_bindings = input_bindings
             self.output_bindings = output_bindings
@@ -536,9 +550,10 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
             self._output_cache = dict(output_cache_init)
 
         def init_config(self) -> dict:
-            raise RuntimeError(
-                "Pipeline flow wrappers built by build_pipeline_flow(...) are in-process only."
-            )
+            # Validation still needs a serializable placeholder when this wrapper is
+            # nested inside a larger in-process Pipeline. Backend execution is blocked
+            # separately via the `in_process_only` marker in IR node config.
+            return {}
 
         def _ensure_stepper(self) -> PipelineStepper:
             if self._stepper is None:
@@ -547,7 +562,8 @@ def _build_pipeline_flow_from_surface(name: str, ctx: Any, surface: PipelineSurf
 
         def reset(self) -> None:
             self._output_cache = dict(output_cache_init)
-            self._ensure_stepper().reset()
+            if self._stepper is not None:
+                self._stepper.reset()
 
         def finalize(self) -> None:
             if self._stepper is not None:

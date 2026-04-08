@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import pytest
 
-from retriever.flow import Flow, PipelineBuilder, Rate, flow_io, Latest
+from retriever.flow import Flow, Pipeline, PipelineBuilder, Rate, io, Latest
 from retriever.pipeline_registry import (
     build_ir,
     build_pipeline_flow,
@@ -13,14 +11,12 @@ from retriever.pipeline_registry import (
 )
 
 
-@flow_io
-@dataclass
+@io
 class SourceOut:
     value: int
 
 
-@flow_io
-@dataclass
+@io
 class ProcOut:
     value: int
 
@@ -40,15 +36,13 @@ class Sink(Flow[ProcOut, None]):
         return None
 
 
-@flow_io
-@dataclass
+@io
 class RichOut:
     value: int
     aux: int
 
 
-@flow_io
-@dataclass
+@io
 class RichIn:
     value: int
     bias: int
@@ -60,6 +54,9 @@ class RichSource(Flow[None, RichOut]):
 
 
 class CountingRichSource(Flow[None, RichOut]):
+    def init(self) -> None:
+        self.count = 0
+
     def reset(self) -> None:
         self.count = 0
 
@@ -71,6 +68,11 @@ class CountingRichSource(Flow[None, RichOut]):
 class RichProc(Flow[RichIn, ProcOut]):
     def step(self, input: RichIn) -> ProcOut:
         return ProcOut(value=input.value + input.bias)
+
+
+class ReplacementProc(Flow[RichIn, ProcOut]):
+    def step(self, input: RichIn) -> ProcOut:
+        return ProcOut(value=input.value + input.bias + 10)
 
 
 def test_pipeline_registry_factory_returns_irstruct():
@@ -130,36 +132,70 @@ def test_pipeline_registry_auto_surface_exposes_unused_ports():
     assert sorted(port.external_name for port in surface.outputs) == ["aux", "value"]
 
 
-def test_pipeline_registry_explicit_surface_selectors():
+def test_pipeline_registry_explicit_surface_selectors_support_named_flow_ids():
     @register_pipeline(
         "test_pipeline_registry_explicit_surface",
         surface_policy="explicit",
-        input_ports=["RichProc.bias"],
-        output_ports=["RichSource.aux"],
+        input_ports=["processor.bias"],
+        output_ports=["source.aux"],
         overwrite=True,
     )
     def build():
         with PipelineBuilder("test_pipeline_registry_explicit_surface") as ctx:
-            src = RichSource() @ Rate(hz=10)
-            proc = RichProc() @ Rate(hz=10)
+            src = (RichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
             src.then(proc, map={"value": "value"}, sync=Latest())
             return ctx
 
     surface = build_pipeline_surface("test_pipeline_registry_explicit_surface")
-    assert [port.node_type for port in surface.inputs] == ["RichProc"]
+    assert [port.node_id for port in surface.inputs] == ["processor"]
     assert [port.port for port in surface.inputs] == ["bias"]
-    assert [port.node_type for port in surface.outputs] == ["RichSource"]
+    assert [port.node_id for port in surface.outputs] == ["source"]
     assert [port.port for port in surface.outputs] == ["aux"]
     assert [port.external_name for port in surface.inputs] == ["bias"]
     assert [port.external_name for port in surface.outputs] == ["aux"]
+
+
+def test_pipeline_select_flow_and_get_flow_dict_use_stable_ids():
+    pipe = Pipeline("test_pipeline_select_flow")
+    with pipe:
+        src = (RichSource() @ Rate(hz=10)).named("source")
+        proc = (RichProc() @ Rate(hz=10)).named("processor")
+        src.then(proc, map={"value": "value"}, sync=Latest())
+
+    assert set(pipe.get_flow_dict()) == {"source", "processor"}
+    assert pipe.select_flow("source") is src
+    assert pipe.select_flow("processor") is proc
+    assert pipe.select_flow("RichProc") is proc
+
+
+def test_pipeline_replace_preserves_flow_selector_by_default():
+    pipe = Pipeline("test_pipeline_replace_keeps_selector")
+    with pipe:
+        src = (CountingRichSource() @ Rate(hz=10)).named("source")
+        proc = (RichProc() @ Rate(hz=10)).named("processor")
+        src.then(proc, map={"value": "value"}, sync=Latest())
+
+    replacement = ReplacementProc() @ Rate(hz=10)
+    pipe.replace(proc, replacement)
+
+    pipe.inject_input("processor", "bias", 4, timestamp=0.0)
+    result = pipe.step(now=0.0)
+
+    assert pipe.select_flow("processor") is replacement
+    assert pipe.get_node_id(replacement) == "processor"
+    assert result.outputs["processor"].value == 15
+
+    ir = pipe.validate()
+    assert any(node.id == "processor" and node.type == "ReplacementProc" for node in ir.nodes)
 
 
 def test_pipeline_registry_can_build_flow_wrapper_from_surface():
     @register_pipeline("test_pipeline_registry_flow_wrapper", overwrite=True)
     def build():
         with PipelineBuilder("test_pipeline_registry_flow_wrapper") as ctx:
-            src = CountingRichSource() @ Rate(hz=10)
-            proc = RichProc() @ Rate(hz=10)
+            src = (CountingRichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
             src.then(proc, map={"value": "value"}, sync=Latest())
             return ctx
 
@@ -179,16 +215,17 @@ def test_pipeline_registry_flow_wrapper_respects_explicit_surface():
     @register_pipeline(
         "test_pipeline_registry_flow_wrapper_explicit",
         surface_policy="explicit",
-        input_ports=["RichProc.bias"],
-        output_ports=["RichSource.aux"],
+        input_ports=["processor.bias"],
+        output_ports=["source.aux"],
         overwrite=True,
     )
     def build():
-        with PipelineBuilder("test_pipeline_registry_flow_wrapper_explicit") as ctx:
-            src = RichSource() @ Rate(hz=10)
-            proc = RichProc() @ Rate(hz=10)
+        pipe = Pipeline("test_pipeline_registry_flow_wrapper_explicit")
+        with pipe:
+            src = (RichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
             src.then(proc, map={"value": "value"}, sync=Latest())
-            return ctx
+        return pipe
 
     flow = build_pipeline_flow("test_pipeline_registry_flow_wrapper_explicit")
     out = flow.step(flow.input_type(bias=3))
