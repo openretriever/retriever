@@ -1,18 +1,27 @@
-# Retriever Hub Design
+# Retriever Hub
 
 ## API in a nutshell
 
 ```python
 from retriever import hub
+from retriever.flow import Pipeline, Rate, Latest
 
-# For a single flow
+# Share one flow
 LidarSlam = hub.use("company-abc/lidar-slam:LidarSlamFlow")
 slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
-pipe.connect(pointcloud, slam, sync=Latest())
 
-# For a whole package
-lidar = hub.use("company-abc/lidar-slam")
-slam = lidar.LidarSlamFlow(resolution=0.05) @ Rate(hz=10)
+# Share a live pipeline factory you can still extend
+build_slam = hub.use("company-abc/lidar-slam:BuildSlamPipeline")
+pipe = build_slam()
+pipe.select_flow("frontend")
+
+# Share a pipeline-flow factory for hierarchical composition
+build_slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")
+slam_stage = build_slam_stage(resolution=0.05) @ Rate(hz=10)
+
+# Share a type or a representation transform
+SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
+pose_to_matrix = hub.use("company-abc/lidar-slam:pose_to_matrix")
 ```
 
 Module reference format:
@@ -21,18 +30,29 @@ Module reference format:
 {org}/{module-name}[:{attribute}][@{version}]
 ```
 
-- `{org}`: organization name
-- `{plugin-name}`: plugin name
-- `{attribute}`: attribute name (optional)
-- `{version}`: version (optional)
-
-Full example:
+Examples:
 
 ```python
-LidarSlam = hub.use("company-abc/lidar-slam:LidarSlamFlow@0.1.0")
-slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
-pipe.connect(pointcloud, slam, sync=Latest())
+hub.use("company-abc/lidar-slam")
+hub.use("company-abc/lidar-slam:LidarSlamFlow")
+hub.use("company-abc/lidar-slam:BuildSlamPipeline@0.1.0")
 ```
+
+## What a module can export
+
+Hub exports are normal Python attributes. A module may export:
+
+- flow classes or flow factories
+- live pipeline factories
+- pipeline-flow factories
+- shared `@io` payload types
+- representation transforms and serialization helpers
+
+Recommended public split:
+
+- `types.py`: shared `@io` payload contracts
+- `transforms.py`: pure representation conversion helpers
+- `pipeline.py`: graph assembly and composition helpers
 
 ## Packaging a module
 
@@ -43,18 +63,18 @@ lidar-slam/
 ├── pyproject.toml
 └── lidar_slam/
     ├── flow.py
-    └── config.py
+    ├── pipeline.py
+    ├── transforms.py
+    └── types.py
 ```
 
-`pyproject.toml` contents:
+`pyproject.toml`:
 
 ```toml
 [project]
 name = "lidar-slam"
 version = "1.2.0"
-dependencies = [
-    "numpy>=1.24,<2",
-]
+dependencies = ["numpy>=1.24,<2"]
 
 [tool.retriever.module]
 module = "lidar_slam"
@@ -62,71 +82,157 @@ min_retriever_version = "1.0.0"
 
 [tool.retriever.module.exports]
 LidarSlamFlow = "lidar_slam.flow:LidarSlamFlow"
-LidarConfig = "lidar_slam.config:LidarConfig"
+SE3Pose = "lidar_slam.types:SE3Pose"
+pose_to_matrix = "lidar_slam.transforms:pose_to_matrix"
+BuildSlamPipeline = "lidar_slam.pipeline:build_slam_pipeline"
+BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
 ```
 
-The `[tool.retriever.module]` section in `pyproject.toml` is what the Hub loader looks for. Standard Python metadata (`name`, `version`, `dependencies`) lives in the normal `[project]` table, while Retriever-specific fields live under `[tool.retriever.module]`.
+The Hub loader reads `[tool.retriever.module]`, then imports the declared module and returns the requested export.
 
-Modules are expected to be published as a GitHub repository (or on other similar Git hosting services).
+## Composable pipelines
 
-At least one semver Git tag is required for the module for versioning.
+Two export patterns matter for reusable pipelines:
 
-## Hub Index
+### 1. Export a live pipeline factory
 
-Retriever Hub uses an official Git repository as the index for modules.
+Use this when downstream code wants to inspect or extend the imported graph.
+
+```python
+pipe = hub.use("company-abc/lidar-slam:BuildSlamPipeline")()
+frontend = pipe.select_flow("frontend")
+pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
+```
+
+### 2. Export a pipeline-flow factory
+
+Use this when downstream code wants to treat the whole sub-pipeline as one flow stage.
+
+```python
+slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
+camera.then(slam_stage, sync=Latest())
+```
+
+## Surface grammar
+
+Explicit pipeline surfaces use:
 
 ```plaintext
-retriever-index/
-├── schema.json                  # JSON schema for plugin entries
-└── modules/
-    ├── company-abc/
-    │   ├── lidar-slam.toml
-    │   └── imu-fusion.toml
-    └── organization-xyz/
-        └── hello-world.toml
+flow_id.port
 ```
 
-Module entry example:
+Resolution order:
+
+1. exact flow id / node id
+2. unique flow class name fallback
+
+Recommendation:
+
+- Name internal handles with `.named("camera")`, `.named("frontend")`, `.named("planner")`
+- Use those stable ids in `input_ports=[...]` and `output_ports=[...]`
+
+Example:
+
+```python
+source = (Camera() @ Rate(hz=10)).named("camera")
+frontend = (Frontend() @ Rate(hz=10)).named("frontend")
+```
+
+Then:
+
+```python
+@register_pipeline(
+    "slam_stage",
+    surface_policy="explicit",
+    input_ports=["frontend.threshold"],
+    output_ports=["camera.image", "frontend.pose"],
+)
+```
+
+Helper APIs:
+
+- `handle.named("camera")`
+- `pipe.get_flow_dict()`
+- `pipe.select_flow("camera")`
+- `pipe.replace(old, new)` keeps the old flow id by default
+- `build_pipeline_surface(...)`
+- `build_pipeline_flow(...)`
+
+Pipeline ports still belong to concrete internal flow nodes, even when the whole pipeline is reused hierarchically.
+
+## Flow instantiation and local resources
+
+Keep the authoring surface as ordinary Python construction:
+
+```python
+camera = Camera(device_id="front")
+```
+
+Do not introduce a separate `.remote()` authoring mode unless Retriever also changes its backend/placement model. Today the runtime boundary already exists:
+
+- authoring code creates flow objects eagerly
+- `Pipeline.step()` runs those same instances in-process
+- backends reconstruct flows lazily from IR in the runtime process
+
+Guidelines:
+
+- `__init__`: store lightweight, serializable configuration only
+- `init_config()`: return serializable reconstruction data only
+- `__lazy_init__()` / `init()`: acquire runtime-local resources
+
+Local resources include:
+
+- camera handles
+- sockets
+- SDK clients
+- GPU contexts
+- file handles
+
+Preferred pattern:
+
+```python
+from retriever.flow import Flow, io
+
+
+@io
+class Frame:
+    image: bytes
+
+
+class Camera(Flow[None, Frame]):
+    def __init__(self, *, device_id: str):
+        self.device_id = device_id
+        self._camera = None
+
+    def init_config(self) -> dict:
+        return {"device_id": self.device_id}
+
+    def init(self) -> None:
+        self._camera = open_camera(self.device_id)
+```
+
+## Hub index
+
+Retriever Hub uses an index repository with entries under:
+
+```plaintext
+modules/{org}/{name}.toml
+```
+
+Example:
 
 ```toml
 [module]
-repo = "<https://github.com/company-abc/lidar-slam>"
+repo = "https://github.com/company-abc/lidar-slam"
 description = "LiDAR SLAM pipeline"
 author = "Company ABC"
 license = "MIT"
-tags = ["lidar", "slam", "mapping", "pointcloud"]
-
-[module.links]
-docs = "<https://company-abc.com/products/lidar-slam>"
-support = "<https://github.com/company-abc/lidar-slam/issues>"
+tags = ["lidar", "slam", "mapping"]
 ```
 
-### Submission Process
+Minimum expectations before publishing:
 
-Module authors submit their module to the Hub Index by opening a PR that adds a new module entry (toml file) under `modules/{org}/{name}.toml`.
-
-Prerequisites before submitting:
-
-- The module's Git repository is publicly accessible.
-- The repository contains a valid `pyproject.toml` with a `[tool.retriever.module]` section.
-- At least one semver Git tag is present in the repository.
-
-Once the PR is opened, there should be some CI checks to validate the submission. Steps could be something like:
-
-- The repo URL is reachable.
-- Verify the `pyproject.toml` contains a valid `[tool.retriever.module]` section.
-- At least one semver Git tag is present in the repository.
-- The module name declared in `pyproject.toml` matches the filename in the PR.
-- The module is importable in a clean environment.
-
-## Loading process
-
-1. Parse the `hub.use` string. Extract org, module name, export name, version, etc.
-2. Check the local plugin cache. If exists, return from cache.
-3. Look up `plugins/{org}/{name}.toml` in the index (fetch from GitHub, optionally cached?) -> get repo URL
-4. Resolve version. If none specified, list Git tags via GitHub API and pick latest semver
-5. Download the tarball for that tag
-6. Extract it, read `pyproject.toml` from the archive root and parse the `[tool.retriever.module]` section
-7. Check `min_retriever_version` against the running library version
-8. Check `[project].dependencies` against installed packages via `importlib.metadata`
-9. Add the extracted directory to `sys.path`, import the declared module and return the object
+- the repository is reachable
+- `pyproject.toml` contains a valid `[tool.retriever.module]` section
+- at least one semver tag exists
+- the declared module imports cleanly

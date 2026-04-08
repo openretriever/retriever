@@ -5,6 +5,8 @@ A TemporalFlow represents a flow bound to a clock, forming a node
 in the dataflow graph that can be connected to other nodes.
 """
 
+import keyword
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Dict
 
@@ -16,6 +18,9 @@ if TYPE_CHECKING:
     from retriever.flow.pipeline import Pipeline
 
 
+_FLOW_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
 @dataclass
 class TemporalFlow:
     """A flow bound to execution configuration."""
@@ -23,6 +28,7 @@ class TemporalFlow:
     flow: "Flow"
     config: "FlowConfig"
     pipeline: Optional["Pipeline"] = None
+    name: Optional[str] = None
 
     @property
     def clock(self) -> "Clock":
@@ -37,6 +43,37 @@ class TemporalFlow:
     def output_type(self) -> Optional["type"]:
         """Get the output type O of the bound flow."""
         return self.flow.output_type
+
+    @property
+    def display_name(self) -> str:
+        """Human-readable selector/debug label for this handle."""
+        return self.name or self.flow.__class__.__name__
+
+    def named(self, name: str) -> "TemporalFlow":
+        """
+        Assign a stable selector/name to this flow within a pipeline.
+
+        Named flows can be addressed later via helpers like
+        `pipe.select_flow("camera")` and explicit pipeline surface selectors
+        like `"camera.image"`.
+        """
+        if not _FLOW_NAME_RE.match(name) or keyword.iskeyword(name):
+            raise ValueError(
+                f"Invalid flow name '{name}'. "
+                "Flow names must be valid identifiers like 'camera' or 'planner_main'."
+            )
+        self.name = name
+        return self
+
+    def matches(self, selector: str) -> bool:
+        """Return True when `selector` matches this handle's name or flow class."""
+        return selector == self.name or selector == self.flow.__class__.__name__
+
+    def __repr__(self) -> str:
+        flow_name = self.flow.__class__.__name__
+        if self.name:
+            return f"<TemporalFlow {self.name}:{flow_name}>"
+        return f"<TemporalFlow {flow_name}>"
 
     def then(
         self,

@@ -22,7 +22,7 @@ class Flow(ABC, Generic[I, O]):
     Abstract base class for flows.
 
     A Flow transforms inputs of type I to outputs of type O.
-    I and O must be @flow_io decorated dataclasses.
+    I and O must be `@io`-decorated types.
     """
 
     _input_types: Tuple[Type, ...] = ()
@@ -118,7 +118,7 @@ class Flow(ABC, Generic[I, O]):
         cls._input_type = cls._input_types[0] if cls._input_types else None
         cls._output_type = cls._output_types[0] if cls._output_types else None
 
-        # Validate @flow_io decoration
+        # Validate @io decoration
         cls._validate_flow_io_types(cls._input_types, cls._output_types)
 
     @classmethod
@@ -220,6 +220,16 @@ class Flow(ABC, Generic[I, O]):
         """
         pass
 
+    def __lazy_init__(self) -> None:
+        """
+        Optional runtime-local initialization hook.
+
+        Use this for process-local helpers derived from already-serialized config
+        before `init()` acquires heavyweight resources. Keep `__init__()` limited
+        to lightweight, serializable authoring-time configuration.
+        """
+        return None
+
     def init_config(self) -> dict:
         """
         Return a JSON-serializable dict that can reconstruct this Flow.
@@ -229,6 +239,9 @@ class Flow(ABC, Generic[I, O]):
           you constructed in Python, so constructor args work naturally.
         - Backend execution (multiprocessing/dora) reconstructs Flows from IR,
           so we need a way to serialize constructor arguments.
+        - Local resources (devices, sockets, SDK clients, file handles) should
+          not live in this config. Serialize descriptors/paths/ids instead, and
+          reacquire the resource in `init()` / `__lazy_init__()`.
 
         Default behavior:
         - Returns `{}` (assumes the Flow is default-constructible).
@@ -286,10 +299,10 @@ class Flow(ABC, Generic[I, O]):
         Called each time the flow's clock fires.
 
         Args:
-            input: Input value of type I (@flow_io dataclass)
+            input: Input value of type I (`@io` type)
 
         Returns:
-            Output value of type O (@flow_io dataclass)
+            Output value of type O (`@io` type)
 
         Example:
             def step(self, input: ProcessInput) -> ProcessOutput:

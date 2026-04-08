@@ -14,6 +14,7 @@ pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosyst
 pixi run python -m examples.tutorial.g_operations_interfaces.03_unified_wrapper
 pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
 pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
+pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
 ```
 
 ## What To Observe
@@ -22,3 +23,4 @@ pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_
 - Unified wrapper patterns and operator-facing workflows.
 - Mirror-native robotics typing imports and registry lookup parity.
 - Typed boundary payloads carrying frame/time/source metadata.
+- Registered pipelines used both as live graphs and as reusable flow stages.

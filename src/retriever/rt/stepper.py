@@ -23,14 +23,14 @@ from pathlib import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter
+from retriever.flow.adapter import Adapter, Latest
 from retriever.flow.types import EventBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.builder import PipelineBuilder
 from retriever.flow.temporal import TemporalFlow
 from retriever.ir.core import IR, IREdge
-from retriever.rt.step import IOStep
+from retriever.rt.step import IOStep, IOView
 from retriever.rt.lifecycle import initialize_flow_runtime
 
 T = TypeVar("T")
@@ -121,9 +121,148 @@ class PipelineStepper:
         self.reset_buffers()
 
     def reset_buffers(self) -> None:
+        seen: set[int] = set()
         for ch in self._channels.values():
+            if id(ch) in seen:
+                continue
+            seen.add(id(ch))
             ch.clear()
+        for node_inputs in self._inputs.values():
+            for ch in node_inputs.values():
+                if id(ch) in seen:
+                    continue
+                seen.add(id(ch))
+                ch.clear()
 
+    def inject_input(
+        self,
+        node_id: str,
+        port: str,
+        value: Any,
+        *,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """Inject one external value into a node input port for the next step."""
+        if node_id not in self._flows:
+            raise ValueError(f"Unknown node `{node_id}`")
+
+        logical_port = IR.get_logical_port(port)
+        self._ensure_external_input_channel(node_id, logical_port)
+
+        ts = self._now if timestamp is None else float(timestamp)
+        if ts is None:
+            ts = time.time()
+
+        self._inputs[node_id][logical_port].put_one(value, ts)
+
+    def inject_inputs(
+        self,
+        values: Dict[str, Dict[str, Any]],
+        *,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """Inject a batch of external values keyed by node id then logical port."""
+        for node_id, ports in values.items():
+            for port, value in ports.items():
+                self.inject_input(node_id, port, value, timestamp=timestamp)
+
+    def _ensure_external_input_channel(self, node_id: str, logical_port: str) -> None:
+        if logical_port in self._inputs[node_id]:
+            return
+
+        handle = self._flows[node_id]
+        available_ports = IOView.resolve_ports(list(handle.flow.input_types))
+        if logical_port not in available_ports:
+            raise ValueError(
+                f"Node `{node_id}` has no input port `{logical_port}`. "
+                f"Available inputs: {sorted(available_ports.keys())}"
+            )
+
+        adapter = Latest()
+        channel = InMemoryChannel(buffer_size=adapter.buffer_size)
+        self._inputs[node_id][logical_port] = channel
+        self._adapters[node_id][logical_port] = adapter
+
+    def step(self, *, now: Optional[float] = None, dt: Optional[float] = None) -> StepResult:
+        """
+        Execute one discrete debugging step in-process.
+
+        Semantics (debug-focused, not real-time):
+          - Rate/Tick flows execute once per step.
+          - Trigger flows execute when a new arrival is observed on a trigger field.
+          - Hybrid flows prefer trigger execution; otherwise execute once per step.
+
+        Args:
+            now: Optional wall-clock timestamp to associate with this step.
+            dt: If provided, advance an internal logical clock by `dt` seconds.
+
+        Returns:
+            StepResult with per-node input/output snapshots.
+        """
+        self._ensure_initialized()
+        step_now = self._compute_now(now=now, dt=dt)
+
+        executed: List[str] = []
+        inputs_snapshot: Dict[str, Any] = {}
+        outputs_snapshot: Dict[str, Any] = {}
+
+        for node_id in self._node_order:
+            handle = self._flows[node_id]
+            clock = handle.config.clock
+
+            should_execute, fields = self._should_execute(clock, self._inputs[node_id])
+            if not should_execute:
+                continue
+
+            signal = IOStep(
+                self._inputs[node_id],
+                fields_filter=fields,
+                output_types=handle.flow.output_types,
+                now=step_now,
+            )
+            signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
+            inputs_snapshot[node_id] = signal.instance
+
+            signal.transform(handle.flow.step)
+
+            # Basic support for generator-returning flows (services not supported here)
+            if isinstance(signal.instance, types.GeneratorType):
+                raise RTError(
+                    ErrCode.RT_INVALID_YIELD,
+                    "Pipeline.step() does not support generator-based Flow.step() service calls yet",
+                    node=node_id,
+                )
+
+            outputs_snapshot[node_id] = signal.instance
+            signal.publish(self._outputs[node_id])
+
+            executed.append(node_id)
+
+        return StepResult(now=step_now, executed=executed, inputs=inputs_snapshot, outputs=outputs_snapshot)
+
+    @staticmethod
+    def _should_execute(clock: Clock, inputs: Dict[str, InMemoryChannel]) -> tuple[bool, List[str]]:
+        if isinstance(clock, Rate):
+            return True, ["..."]
+
+        if isinstance(clock, Trigger):
+            for field in clock.fields:
+                ch = inputs.get(field)
+                if ch is not None and ch.new_arrival():
+                    return True, [field]
+            return False, []
+
+        if isinstance(clock, Hybrid):
+            for field in clock.trigger_fields:
+                ch = inputs.get(field)
+                if ch is not None and ch.new_arrival():
+                    return True, [field]
+            return True, ["..."]
+
+        raise FlowError(
+            ErrCode.FLOW_CLOCK_INVALID,
+            f"Unknown clock type: {type(clock).__name__}",
+        )
     def reset(self) -> None:
         """
         Reset stepper state for repeated debugging runs.
@@ -213,86 +352,6 @@ class PipelineStepper:
         self._now = time.time()
         return self._now
 
-    def step(self, *, now: Optional[float] = None, dt: Optional[float] = None) -> StepResult:
-        """
-        Execute one discrete debugging step in-process.
-
-        Semantics (debug-focused, not real-time):
-          - Rate/Tick flows execute once per step.
-          - Trigger flows execute when a new arrival is observed on a trigger field.
-          - Hybrid flows prefer trigger execution; otherwise execute once per step.
-
-        Args:
-            now: Optional wall-clock timestamp to associate with this step.
-            dt: If provided, advance an internal logical clock by `dt` seconds.
-
-        Returns:
-            StepResult with per-node input/output snapshots.
-        """
-        self._ensure_initialized()
-        step_now = self._compute_now(now=now, dt=dt)
-
-        executed: List[str] = []
-        inputs_snapshot: Dict[str, Any] = {}
-        outputs_snapshot: Dict[str, Any] = {}
-
-        for node_id in self._node_order:
-            handle = self._flows[node_id]
-            clock = handle.config.clock
-
-            should_execute, fields = self._should_execute(clock, self._inputs[node_id])
-            if not should_execute:
-                continue
-
-            signal = IOStep(
-                self._inputs[node_id],
-                fields_filter=fields,
-                output_types=handle.flow.output_types,
-                now=step_now,
-            )
-            signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
-            inputs_snapshot[node_id] = signal.instance
-
-            signal.transform(handle.flow.run)
-
-            # Basic support for generator-returning flows (services not supported here)
-            if isinstance(signal.instance, types.GeneratorType):
-                raise RTError(
-                    ErrCode.RT_INVALID_YIELD,
-                    "Pipeline.step() does not support generator-based flows (service calls) yet",
-                    node=node_id,
-                )
-
-            outputs_snapshot[node_id] = signal.instance
-            signal.publish(self._outputs[node_id])
-
-            executed.append(node_id)
-
-        return StepResult(now=step_now, executed=executed, inputs=inputs_snapshot, outputs=outputs_snapshot)
-
-    @staticmethod
-    def _should_execute(clock: Clock, inputs: Dict[str, InMemoryChannel]) -> tuple[bool, List[str]]:
-        if isinstance(clock, Rate):
-            return True, ["..."]
-
-        if isinstance(clock, Trigger):
-            for field in clock.fields:
-                ch = inputs.get(field)
-                if ch is not None and ch.new_arrival():
-                    return True, [field]
-            return False, []
-
-        if isinstance(clock, Hybrid):
-            for field in clock.trigger_fields:
-                ch = inputs.get(field)
-                if ch is not None and ch.new_arrival():
-                    return True, [field]
-            return True, ["..."]
-
-        raise FlowError(
-            ErrCode.FLOW_CLOCK_INVALID,
-            f"Unknown clock type: {type(clock).__name__}",
-        )
 
 
 # ======================================================================================
@@ -322,7 +381,7 @@ def replay_flow(buffer: EventBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     Create a replay source flow that outputs recorded items sequentially.
 
     Notes:
-    - `output_type` must be a `@flow_io` dataclass type.
+    - `output_type` must be an `@io` dataclass type.
     - When exhausted, returns an "empty" output instance (all fields None),
       so no outputs are published.
     """
