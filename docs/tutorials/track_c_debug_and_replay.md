@@ -34,8 +34,8 @@ pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspecti
 ## Core Feature Flow
 
 1. Step pipeline in-process (`01_debug_stepper`) to debug logic with breakpoints.
-2. Record real sensor session to MCAP (`04_record_replay_perception record`).
-3. Replay the same MCAP (`04_record_replay_perception replay`) for deterministic debugging.
+2. Record one real sensor session to `.rrd`, with a mirrored `.mcap` artifact for interchange (`04_record_replay_perception record`).
+3. Replay the same captured session from `.rrd` or `.mcap` (`04_record_replay_perception replay`) for deterministic debugging.
 4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
 
 ## Expected Artifacts (P0/P1)
