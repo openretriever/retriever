@@ -1,7 +1,7 @@
 """Retriever Hub hello-world example.
 
-This demonstrates whole-module import through `hub.use("org/name")`.
-The returned value is a `ModuleProxy` exposing the module's declared exports.
+Requires the published `openretriever/hello-world` example module to be
+reachable from Retriever Hub.
 
 Run:
     pixi run python examples/hub/hello-world.py

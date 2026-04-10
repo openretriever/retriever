@@ -1,5 +1,9 @@
 """Retriever Hub explicit export example.
 
+Requires the published `openretriever/hello-world` example module to be
+reachable from Retriever Hub.
+
+Run:
     pixi run python examples/hub/hello-world-explicit.py
 """
 

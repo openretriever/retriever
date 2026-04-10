@@ -145,7 +145,6 @@ Important boundary:
 
 - direct `flow.step(...)` on this wrapper is still local/in-process
 - the wrapper itself is not the backend artifact
-<<<<<<< HEAD
 - when you nest it inside a larger `Pipeline` and build or run that pipeline, Retriever lowers the wrapper into flat IR so `multiprocessing` and `dora` backends can execute the inner nodes normally
 
 Shared types and transforms compose with these factories the same way:
