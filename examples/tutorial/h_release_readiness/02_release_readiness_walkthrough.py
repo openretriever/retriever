@@ -352,7 +352,7 @@ def main() -> None:
     summary = {
         "schema_version": "retriever.release_readiness.v1",
         "generated_at": utc_now_iso(),
-        "notes_root": str(notes_root),
+        "reference_root": str(reference_root),
         "decision": decision,
         "gates": [asdict(g) for g in gates],
         "matrix_checks": [asdict(row) for row in matrix_checks],
