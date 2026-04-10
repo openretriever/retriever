@@ -11,5 +11,5 @@ print(f"Exports: {dir(hw)}")
 
 g = hw.GreeterFlow(prefix="Hi")
 inp = hw.GreeterInput(name="Nakiri Ayame")
-out = g.run(inp)
+out = g.step(inp)
 print(f"Result: {out.greeting}")

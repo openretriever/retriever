@@ -38,6 +38,11 @@ hub.use("company-abc/lidar-slam:LidarSlamFlow")
 hub.use("company-abc/lidar-slam:BuildSlamPipeline@0.1.0")
 ```
 
+Repository examples:
+
+- `examples/hub/hello-world.py`
+- `examples/hub/detection-window.py`
+
 ## Loading semantics
 
 - `hub.use("org/name:Export")` returns the actual exported class/function/value, not a wrapper.
