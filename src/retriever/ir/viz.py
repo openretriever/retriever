@@ -669,7 +669,7 @@ def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
     return c_type, detail
 
 
-def _get_wrapped_pipeline_viz(ir_node: IRNode) -> Dict[str, Any] | None:
+def _get_wrapped_pipeline_viz(ir_node: IRNode) -> Optional[Dict[str, Any]]:
     viz = ir_node.config.get("viz")
     if isinstance(viz, dict) and viz.get("kind") == "pipeline":
         return viz
