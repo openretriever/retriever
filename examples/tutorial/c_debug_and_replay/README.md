@@ -12,7 +12,8 @@
 ## What To Expect
 
 - Use stepper workflows to isolate failures.
-- Record/replay traces and identify bottlenecks.
+- Record one session to `.rrd` plus a mirrored `.mcap`, then replay either artifact.
+- Identify bottlenecks and verify replay behavior without live hardware.
 
 ## Run
 

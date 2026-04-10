@@ -7,7 +7,7 @@ from retriever.config import RecordConfig
 from retriever.pipeline_registry import build_ir, list_pipelines
 from retriever.recording import build_recording_sink
 from retriever.rt.stepper import StepResult
-from examples.shared.perception_runtime import (
+from retriever.tutorials.perception import (
     CameraSource,
     ColorDetector,
     CameraData,
@@ -56,11 +56,11 @@ def test_tutorial_perception_emits_semantic_camera_and_detection_events(
     monkeypatch.setenv("RETRIEVER_PIPELINE_ID", "tutorial.perception")
 
     camera = CameraSource(use_real_camera=False, width=160, height=120)
-    camera.init()
-    sample = camera.run(None)
+    camera.reset()
+    sample = camera.step(None)
 
     detector = ColorDetector(min_confidence=0.4)
-    detector.run(sample)
+    detector.step(sample)
 
     rows = _read_jsonl(stream_path)
     events = [str(row.get("event")) for row in rows]

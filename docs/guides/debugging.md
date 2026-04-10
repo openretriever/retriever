@@ -222,8 +222,8 @@ Perception example:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
   - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay ...`
 
-Use the perception example with `.mcap` by default. `.rrd` is also supported for replay and viewer inspection:
+Use the perception example with `.rrd` as the primary local-debug artifact and a mirrored `.mcap` for portable interchange:
 
-- Record to MCAP: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap`
-- Record to RRD: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd`
-- Replay either artifact: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap`
+- Record both artifacts in one run: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap`
+- Replay from RRD: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd`
+- Replay from MCAP: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap`
