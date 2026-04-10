@@ -77,8 +77,7 @@ def build_context() -> Pipeline:
 
 def build_functional() -> Pipeline:
     # Reset default pipeline
-    from retriever.flow.pipeline import reset_default_pipeline
-    reset_default_pipeline()
+    retriever.clear_default_pipeline()
 
     a = Source() @ Rate(hz=10)
     b = Double() @ Trigger("value")

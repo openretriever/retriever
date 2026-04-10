@@ -20,14 +20,15 @@ Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this r
 # Install pixi (if needed)
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run the Dora perception demo (auto-installs deps)
-pixi run demo-webcam-detection
+# Start with the local multiprocessing baseline
+pixi run demo-stepper
+pixi run demo-record-replay
 ```
 
-If `dora` complains about schema/version, kill stale processes:
+If you want the Dora-backed perception path after that, run:
 
 ```bash
-pkill -9 dora && pixi run demo-dora-simple
+pixi run demo-webcam-detection
 ```
 
 Pixi vs uv (how they fit together):
@@ -174,8 +175,8 @@ pipe.run(backend="dora", duration=10.0, blocking=True)
 ```
 
 Notes:
-- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-dora-simple`).
-- If you see schema mismatch errors, `pkill -9 dora` usually fixes “stale coordinator” issues.
+- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection`).
+- If you see schema mismatch errors while using Dora, restart Dora and rerun the same Dora task.
 
 ### 4.3 Non-blocking run
 
@@ -229,8 +230,7 @@ from retriever.flow import Rate
 
 # Start a fresh pipeline
 # (For scripts, we recommend 'with Pipeline():' instead of global state)
-from retriever.flow.pipeline import reset_default_pipeline
-reset_default_pipeline()
+retriever.clear_default_pipeline()
 
 a = Source() @ Rate(hz=10)
 b = AddOne() @ Rate(hz=10)

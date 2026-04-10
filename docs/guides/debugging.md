@@ -191,11 +191,10 @@ Notes:
 
 ### Interpreter note (Pixi)
 
-If you use Pixi, the interpreter usually lives at:
-
-`./.pixi/envs/default/bin/python`
-
-Make sure VS Code is using that interpreter (or run the module via the launch config).
+If you use Pixi, select the active Pixi interpreter for this repo in VS Code,
+or launch the debug target through `pixi run ...`. Avoid hardcoding a repo-local
+interpreter path in docs or launch configs because the exact environment path can
+differ across platforms and shells.
 
 ---
 

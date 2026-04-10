@@ -34,7 +34,7 @@ class DetectionsOut:
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - `@io` is standalone. Do not stack it with `@dataclass`.
-- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
+- Inside `Flow.step(...)`, read the typed fields directly. If you need optional-field presence checks, use `input._has_signal("field")` / `input._get_signal("field")`; treat the internal signal-list metadata as a debugging aid, not the normal public surface.
 
 ---
 
@@ -221,6 +221,12 @@ Adapters define how a downstream samples its input **buffer**:
 - `Events(duration=..., include_timestamps=..., buffer_size=...)`
 - `Chunking(dt=...)`
 - `Linear()`
+
+Import non-default adapters explicitly, for example:
+
+```py
+from retriever.flow.adapter import Exact, Chunking, Linear
+```
 
 Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
