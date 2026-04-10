@@ -21,25 +21,48 @@ Python **3.11+** is required. Pixi pins `3.11.*` for the runtime environment; `p
 
 For running the actual Retriever codebase and examples, we use [Pixi](https://pixi.sh).
 
-```sh
-# Install pixi
-curl -fsSL https://pixi.sh/install.sh | bash
+macOS / Linux:
 
-# Run a demo
-pixi run demo-dora-simple
+```sh
+curl -fsSL https://pixi.sh/install.sh | bash
+pixi install
+pixi run demo-stepper
 ```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
+pixi install
+pixi run demo-stepper
+```
+
+Once the runtime is installed, the first live-camera-or-mock follow-up is:
+
+```sh
+pixi run demo-webcam-stepper
+```
+
+If no webcam is available, the tutorial camera source falls back to mock frames so the command still exercises the perception path.
 
 See `pixi.toml` for available environments and tasks.
 
-## Manual Setup (conda + uv)
+## Manual Setup (conda/venv + uv)
 
 If you prefer a pure Python workflow without Pixi:
 
+macOS / Linux:
+
 ```sh
-# Create and activate a virtual environment
 python3.11 -m venv .venv
 source .venv/bin/activate
+pip install -e '.[dev]'
+```
 
-# Install the package with dev extras
+Windows PowerShell:
+
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -e '.[dev]'
 ```

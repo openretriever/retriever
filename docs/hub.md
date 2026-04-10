@@ -31,6 +31,8 @@ Examples in this repo:
 - `examples/hub/detection-window.py`: import flows/types from Hub and compose them into a local pipeline
 - `examples/hub/composable-pipeline-template.py`: copy-paste template for imported live pipelines, pipeline-flow wrappers, and shared transforms
 
+The checked-in Hub examples use environment variables for the module refs so the repo does not hardcode private or organization-specific published modules. Set those variables to your own published module refs before running them.
+
 Module reference format:
 
 ```plaintext

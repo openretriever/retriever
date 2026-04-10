@@ -84,6 +84,42 @@ pipe.close_stepper()
 
 `step(...)` runs in the current Python process. Start here before debugging a multiprocessing or dora run.
 
+## First Live Camera + Recording Workflow
+
+Once the minimal example makes sense, use the tutorial perception path:
+
+```bash
+pixi run demo-webcam-stepper
+pixi run demo-webcam-record
+pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
+```
+
+What to expect:
+
+- If a real webcam is available, Retriever captures from it.
+- If no webcam is available, the tutorial camera source falls back to mock frames so the record/replay path still works.
+- `stdout` replay is the documented default across macOS, Linux, and Windows.
+- Use `--show-window` or `--visualize rerun` only on local desktop sessions where GUI viewers are available.
+- If camera index `0` is not the right device, run the underlying module with `--camera-index N`.
+
+This is the shortest public path that exercises:
+
+- live perception with `Pipeline.step(...)`
+- persisted `.rrd` recording
+- mirrored `.mcap` recording
+- deterministic replay from either artifact
+
+## Next Reusable-Surface Example
+
+When you want to package a pipeline and reuse it as a stage in a larger graph:
+
+```bash
+pixi run demo-composable-pipelines
+```
+
+See [Track G: Operations and Interfaces](tutorials/track_g_operations_interfaces.md) after the quickstart.
+
 ## The Three Rules That Matter Most
 
 1. Always define public flow inputs and outputs with `@io`.

@@ -1,22 +1,30 @@
 """Hub example: import flows/types from a module and compose them locally.
 
-Requires the published `openretriever/detection-window-demo` example module
-to be reachable from Retriever Hub.
+Set `RETRIEVER_HUB_DETECTION_WINDOW_MODULE` to a published Hub module ref that
+exports the camera/detector/window demo surface.
 
 This example demonstrates whole-module import plus local pipeline assembly. It
 imports flow and IO definitions from Hub, then builds a local pipeline around
 those exports.
 
 Run:
-    pixi run python examples/hub/detection-window.py
+    RETRIEVER_HUB_DETECTION_WINDOW_MODULE=your-org/detection-window-demo pixi run python examples/hub/detection-window.py
 """
 
+import os
 from pathlib import Path
 
 from retriever import hub
 from retriever.flow import Flow, Pipeline, Rate, Trigger, Window, io
 
-dw = hub.use("openretriever/detection-window-demo")
+module_ref = os.environ.get("RETRIEVER_HUB_DETECTION_WINDOW_MODULE", "").strip()
+if not module_ref:
+    raise SystemExit(
+        "Set RETRIEVER_HUB_DETECTION_WINDOW_MODULE to a published Hub module ref, "
+        "for example 'your-org/detection-window-demo'."
+    )
+
+dw = hub.use(module_ref)
 
 
 @io

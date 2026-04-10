@@ -1,17 +1,26 @@
 """Retriever Hub explicit export example.
 
-Requires the published `openretriever/hello-world` example module to be
-reachable from Retriever Hub.
+Set `RETRIEVER_HUB_HELLO_WORLD_MODULE` to a published Hub module ref that exports
+`GreeterFlow`, `GreeterInput`, and `GreeterOutput`.
 
 Run:
-    pixi run python examples/hub/hello-world-explicit.py
+    RETRIEVER_HUB_HELLO_WORLD_MODULE=your-org/hello-world pixi run python examples/hub/hello-world-explicit.py
 """
+
+import os
 
 from retriever import hub
 
-GreeterFlow = hub.use("openretriever/hello-world:GreeterFlow")
-GreeterInput = hub.use("openretriever/hello-world:GreeterInput")
-GreeterOutput = hub.use("openretriever/hello-world:GreeterOutput")
+module_ref = os.environ.get("RETRIEVER_HUB_HELLO_WORLD_MODULE", "").strip()
+if not module_ref:
+    raise SystemExit(
+        "Set RETRIEVER_HUB_HELLO_WORLD_MODULE to a published Hub module ref, "
+        "for example 'your-org/hello-world'."
+    )
+
+GreeterFlow = hub.use(f"{module_ref}:GreeterFlow")
+GreeterInput = hub.use(f"{module_ref}:GreeterInput")
+GreeterOutput = hub.use(f"{module_ref}:GreeterOutput")
 
 greeter = GreeterFlow(prefix="Hi")
 inp = GreeterInput(name="Retriever")

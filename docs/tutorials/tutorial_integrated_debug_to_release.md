@@ -79,13 +79,15 @@ That gives you two complementary artifacts:
 Replay keeps the input fixed while you change code.
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
 ```
 
-You can also use the bundled combined task:
+Use `stdout` first. On a local desktop session, you can opt into GUI replay:
 
 ```bash
-pixi run demo-record-replay
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --visualize rerun
 ```
 
 Use replay when you want debugger-friendly iteration without hardware variance.

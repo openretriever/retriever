@@ -22,10 +22,10 @@ pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --steps
 Set a breakpoint inside `Flow.step()` and rerun with `--fail-at 3` if you want
 an exception-driven stop.
 
-## Phase 2: Record Real Data
+## Phase 2: Record Live Data (or Mock Fallback)
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
+pixi run demo-webcam-record
 ```
 
 Artifacts:
@@ -33,16 +33,20 @@ Artifacts:
 - `logs/perception.rrd`
 - `logs/perception.mcap`
 
+If no webcam is available, this tutorial falls back to mock frames so you can still validate the recording pipeline.
+
 ## Phase 3: Replay the Same Session
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
 ```
 
-Or use the combined public task:
+Use `stdout` as the cross-platform default. On a local desktop session, you can opt into GUI replay:
 
 ```bash
-pixi run demo-record-replay
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --visualize rerun
 ```
 
 ## Phase 4: Verify the Diagnosis

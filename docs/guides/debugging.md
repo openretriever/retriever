@@ -211,6 +211,8 @@ Preferred recording paths:
 - `pipe.run(record="session.rrd")` for a native Rerun session artifact.
 - `pipe.run(record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)))` when you want both.
 
+For cross-platform debugging, prefer replaying to `stdout` first. Treat OpenCV windows and live Rerun viewers as optional local-desktop tools rather than the default workflow.
+
 Legacy stepper-first helpers still exist for single-stream capture:
 
 - High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
@@ -226,3 +228,4 @@ Use the perception example with `.rrd` as the primary local-debug artifact and a
 - Record both artifacts in one run: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap`
 - Replay from RRD: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd`
 - Replay from MCAP: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap`
+- If no webcam is available, the tutorial source falls back to mock frames so you can still validate the artifact path.

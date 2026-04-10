@@ -72,7 +72,15 @@ Use Python 3.11 for the pinned runtime environment in this repo.
 Quick start with [Pixi](https://pixi.sh):
 
 ```sh
+# macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
+pixi install
+pixi run demo-stepper
+```
+
+```powershell
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
 pixi install
 pixi run demo-stepper
 ```
@@ -106,7 +114,8 @@ Useful launch points:
 
 ```sh
 pixi run demo-stepper
-pixi run demo-functional-fanin-fanout
-pixi run demo-record-replay
+pixi run demo-webcam-stepper
+pixi run demo-webcam-record
+pixi run demo-composable-pipelines
 pixi run demo-release-readiness
 ```

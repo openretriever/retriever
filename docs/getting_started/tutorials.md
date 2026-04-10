@@ -26,14 +26,17 @@ Canonical tutorials are grouped into one-level topic tracks under `examples/tuto
 ```bash
 pixi run demo-stepper
 pixi run demo-perception-stepper
-pixi run demo-record-replay
-pixi run demo-webcam-detection
+pixi run demo-webcam-stepper
+pixi run demo-webcam-record
 ```
 
 ## Useful next runs
 
 ```bash
+pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
 pixi run demo-functional-fanin-fanout
+pixi run demo-composable-pipelines
 pixi run demo-incident-replay
 pixi run demo-mcap-session-inspection
 pixi run demo-manifest-lineage

@@ -18,17 +18,27 @@ Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this r
 
 ```bash
 # Install pixi (if needed)
+# macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
 
 # Start with the local multiprocessing baseline
 pixi run demo-stepper
-pixi run demo-record-replay
+pixi run demo-webcam-record
 ```
 
-If you want the Dora-backed perception path after that, run:
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
+pixi install
+pixi run demo-stepper
+```
+
+If you want the live camera path after that, run:
 
 ```bash
-pixi run demo-webcam-detection
+pixi run demo-webcam-stepper
+pixi run demo-webcam-record
 ```
 
 Pixi vs uv (how they fit together):
@@ -175,7 +185,7 @@ pipe.run(backend="dora", duration=10.0, blocking=True)
 ```
 
 Notes:
-- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection`).
+- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection-dora`).
 - If you see schema mismatch errors while using Dora, restart Dora and rerun the same Dora task.
 
 ### 4.3 Non-blocking run
@@ -348,13 +358,19 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics 
 
 Module: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
-### 9.2 Dora perception demo (009)
+### 9.2 Webcam stepper + record/replay
 
 ```bash
-pixi run demo-webcam-detection
+pixi run demo-webcam-stepper
+pixi run demo-webcam-record
+pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
 ```
 
-Module: `examples/tutorial/b_ir_and_execution/06_dora_perception.py`
+Modules:
+
+- `examples/tutorial/c_debug_and_replay/03_debug_perception_stepper_real_camera.py`
+- `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`
 
 ### 9.3 Request/response demo (010)
 
