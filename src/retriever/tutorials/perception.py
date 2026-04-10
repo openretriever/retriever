@@ -10,11 +10,6 @@ from pathlib import Path
 from typing import Any, List, Literal, Optional
 
 try:
-    import cv2  # type: ignore[import-not-found]
-except Exception:  # pragma: no cover - optional dependency
-    cv2 = None  # type: ignore[assignment]
-
-try:
     import numpy as np  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover - optional dependency
     np = None  # type: ignore[assignment]
@@ -29,15 +24,35 @@ from retriever.recording import detect_recording_format, open_recording_reader
 from retriever.pipeline_registry import register_pipeline
 
 _PERCEPTION_BLUEPRINT_SENT = False
+_CV2_MODULE: Any = None
+_CV2_ATTEMPTED = False
 PerceptionDisplayMode = Literal["none", "stdout", "cv2"]
 PERCEPTION_DISPLAY_MODES: tuple[PerceptionDisplayMode, ...] = ("none", "stdout", "cv2")
 
 
-def _require_demo_deps() -> None:
-    if cv2 is None or np is None:
+def _optional_cv2() -> Any:
+    global _CV2_MODULE, _CV2_ATTEMPTED
+    if not _CV2_ATTEMPTED:
+        _CV2_ATTEMPTED = True
+        try:
+            import cv2 as _cv2  # type: ignore[import-not-found]
+        except Exception:
+            _CV2_MODULE = None
+        else:
+            _CV2_MODULE = _cv2
+    return _CV2_MODULE
+
+
+def _require_demo_deps(*, require_cv2: bool = False) -> None:
+    if np is None:
         raise RuntimeError(
-            "tutorial.perception requires demo dependencies (numpy, opencv-python). "
+            "tutorial.perception requires demo dependencies (numpy). "
             "Install retriever with the demo extras to use this pipeline."
+        )
+    if require_cv2 and _optional_cv2() is None:
+        raise RuntimeError(
+            "tutorial.perception requires OpenCV for live camera capture and cv2 windows. "
+            "Install retriever with the demo extras to use those paths."
         )
 
 
@@ -105,6 +120,7 @@ def _send_perception_blueprint(rr_module: Any) -> None:
 
 
 def _render_detection_overlay(frame_rgb: Any, detections: List["Detection"]) -> Any:
+    cv2 = _optional_cv2()
     if cv2 is None or frame_rgb is None:
         return frame_rgb
 
@@ -273,6 +289,14 @@ class CameraSource(Flow[None, CameraData]):
         self.mode = "unknown"
         self._initialized = False
 
+    def init_config(self) -> dict:
+        return {
+            "use_real_camera": self.use_real_camera,
+            "width": self.width,
+            "height": self.height,
+            "camera_index": self.camera_index,
+        }
+
     def reset(self) -> None:
         _require_demo_deps()
         if self.cap is not None:
@@ -287,21 +311,25 @@ class CameraSource(Flow[None, CameraData]):
         self.frame_count = 0
         self._initialized = True
         self.mode = "mock"
-        if self.use_real_camera and cv2 is not None:
-            self.cap = cv2.VideoCapture(self.camera_index)
-            if self.cap.isOpened():
-                ret, test_frame = self.cap.read()
-                if ret and test_frame is not None:
-                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-                    self.mode = "real"
-                    print(f"[CameraSource] Using real camera (index {self.camera_index})")
-                else:
-                    print("[CameraSource] Camera read failed, using mock")
-                    self.cap.release()
-                    self.cap = None
+        if self.use_real_camera:
+            cv2 = _optional_cv2()
+            if cv2 is None:
+                print("[CameraSource] OpenCV camera support unavailable, using mock")
             else:
-                print("[CameraSource] No camera found, using mock")
+                self.cap = cv2.VideoCapture(self.camera_index)
+                if self.cap.isOpened():
+                    ret, test_frame = self.cap.read()
+                    if ret and test_frame is not None:
+                        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+                        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+                        self.mode = "real"
+                        print(f"[CameraSource] Using real camera (index {self.camera_index})")
+                    else:
+                        print("[CameraSource] Camera read failed, using mock")
+                        self.cap.release()
+                        self.cap = None
+                else:
+                    print("[CameraSource] No camera found, using mock")
 
         _emit_perception_event(
             node="camera",
@@ -326,6 +354,7 @@ class CameraSource(Flow[None, CameraData]):
         _require_demo_deps()
         self.frame_count += 1
 
+        cv2 = _optional_cv2()
         if self.mode == "real" and self.cap is not None and self.cap.isOpened() and cv2 is not None:
             ret, frame = self.cap.read()
             if ret and frame is not None:
@@ -343,8 +372,8 @@ class CameraSource(Flow[None, CameraData]):
         t = self.frame_count
         x = int((t * 7) % max(1, (self.width - 80)))
         y = int((t * 5) % max(1, (self.height - 80)))
-        cv2.rectangle(frame, (x, 60), (x + 80, 140), (255, 0, 0), -1)
-        cv2.rectangle(frame, (60, y), (140, y + 80), (0, 0, 255), -1)
+        frame[60:140, x : x + 80] = (255, 0, 0)
+        frame[y : y + 80, 60:140] = (0, 0, 255)
         out = CameraData(image=Image(frame=frame, frame_id=self.frame_count), mode=self.mode or "mock")
         _emit_perception_event(
             node="camera",
@@ -358,6 +387,9 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
     def __init__(self, *, min_confidence: float = 0.6) -> None:
         super().__init__()
         self.min_confidence = float(min_confidence)
+
+    def init_config(self) -> dict:
+        return {"min_confidence": self.min_confidence}
 
     def step(self, input: CameraData) -> DetectionResults:
         _require_demo_deps()
@@ -424,9 +456,13 @@ class DisplayFlow(Flow[DetectionResults, None]):
             raise ValueError(f"Unsupported display mode: {display}")
         self.display = display
 
+    def init_config(self) -> dict:
+        return {"display": self.display}
+
     def reset(self) -> None:
         if self.display != "cv2":
             return
+        cv2 = _optional_cv2()
         if cv2 is None:
             raise RuntimeError("OpenCV UI is not available; install demo dependencies to use --visualize cv2.")
         try:
@@ -436,6 +472,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
             raise RuntimeError(f"Failed to create OpenCV window for perception replay: {exc}") from exc
 
     def finalize(self) -> None:
+        cv2 = _optional_cv2()
         if self.display == "cv2" and cv2 is not None:
             cv2.destroyAllWindows()
 
@@ -453,6 +490,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
         elif self.display == "stdout":
             print(f"  Frame {frame_id}: No objects")
 
+        cv2 = _optional_cv2()
         if self.display == "cv2" and cv2 is not None:
             display_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR).copy()
             for det in detections:
@@ -497,6 +535,7 @@ def build_tutorial_perception_pipeline(
     min_confidence: float = 0.6,
     camera_width: int = 640,
     camera_height: int = 480,
+    camera_index: int = 0,
 ) -> Pipeline:
     del stream_rerun  # Reserved for future runtime-level visualization toggles.
     pipe = Pipeline("tutorial.perception")
@@ -505,6 +544,7 @@ def build_tutorial_perception_pipeline(
             use_real_camera=use_real_camera,
             width=camera_width,
             height=camera_height,
+            camera_index=camera_index,
         ) @ Rate(hz=30)
         detector = ColorDetector(min_confidence=min_confidence) @ Trigger("image")
         display = DisplayFlow(display="cv2" if show_window else "stdout") @ Rate(hz=3)
@@ -526,6 +566,7 @@ def _register_tutorial_perception_pipeline(
     min_confidence: float = 0.6,
     camera_width: int = 640,
     camera_height: int = 480,
+    camera_index: int = 0,
 ) -> Pipeline:
     return build_tutorial_perception_pipeline(
         use_real_camera=use_real_camera,
@@ -534,12 +575,13 @@ def _register_tutorial_perception_pipeline(
         min_confidence=min_confidence,
         camera_width=camera_width,
         camera_height=camera_height,
+        camera_index=camera_index,
     )
 
 
-def build_record_pipeline() -> tuple[Pipeline, object]:
+def build_record_pipeline(*, camera_index: int = 0) -> tuple[Pipeline, object]:
     pipe = Pipeline("tutorial.perception.record")
-    camera = CameraSource(use_real_camera=True, width=640, height=480) @ Rate(hz=20)
+    camera = CameraSource(use_real_camera=True, width=640, height=480, camera_index=camera_index) @ Rate(hz=20)
     drain = Drain() @ Trigger("image")
     pipe.connect(camera, drain, sync=Latest())
     return pipe, camera

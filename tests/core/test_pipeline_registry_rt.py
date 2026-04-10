@@ -62,9 +62,6 @@ class RichSource(Flow[None, RichOut]):
 
 
 class CountingRichSource(Flow[None, RichOut]):
-    def init(self) -> None:
-        self.count = 0
-
     def reset(self) -> None:
         self.count = 0
 

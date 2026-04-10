@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import argparse
+import importlib
 import json
 from pathlib import Path
+
+import pytest
 
 from retriever.config import RecordConfig
 from retriever.pipeline_registry import build_ir, list_pipelines
@@ -39,12 +43,23 @@ def test_tutorial_perception_pipeline_registers_and_builds_ir() -> None:
         min_confidence=0.55,
         camera_width=320,
         camera_height=240,
+        camera_index=2,
     )
     assert ir.metadata.name == "tutorial.perception"
     assert len(list(ir.nodes or [])) == 3
     edge_ports = {(str(edge.source.port), str(edge.destination.port)) for edge in list(ir.edges or [])}
     assert ("image", "image") in edge_ports
     assert ("detections", "detections") in edge_ports
+
+    nodes = {node.id: node for node in ir.nodes}
+    assert nodes["CameraSource"].init_config == {
+        "use_real_camera": False,
+        "width": 320,
+        "height": 240,
+        "camera_index": 2,
+    }
+    assert nodes["ColorDetector"].init_config == {"min_confidence": 0.55}
+    assert nodes["DisplayFlow"].init_config == {"display": "stdout"}
 
 
 def test_tutorial_perception_emits_semantic_camera_and_detection_events(
@@ -98,7 +113,6 @@ def test_tutorial_perception_replay_helpers_emit_semantic_events(
 
 def test_tutorial_perception_loads_camera_buffer_from_rrd(tmp_path: Path) -> None:
     import numpy as np
-    import pytest
 
     pytest.importorskip("rerun")
 
@@ -135,3 +149,40 @@ def test_tutorial_perception_loads_camera_buffer_from_rrd(tmp_path: Path) -> Non
     assert camera.mode == "mock"
     assert camera.image.frame.shape == (3, 4, 3)
     assert int(camera.image.frame[0, 0, 1]) == 20
+
+
+def test_tutorial_record_replay_cli_roundtrip_emits_rrd_and_mcap(tmp_path: Path) -> None:
+    pytest.importorskip("rerun")
+
+    mod = importlib.import_module("examples.tutorial.c_debug_and_replay.04_record_replay_perception")
+
+    rrd_path = tmp_path / "perception.rrd"
+    mcap_path = tmp_path / "perception.mcap"
+
+    record_args = argparse.Namespace(
+        out=rrd_path,
+        replay_out=mcap_path,
+        camera_index=0,
+        stream=False,
+        steps=3,
+        dt=0.01,
+        sleep=0.0,
+    )
+    mod.cmd_record(record_args)
+
+    assert rrd_path.exists()
+    assert rrd_path.stat().st_size > 0
+    assert mcap_path.exists()
+    assert mcap_path.stat().st_size > 0
+
+    replay_args = argparse.Namespace(
+        recording=rrd_path,
+        steps=3,
+        dt=0.01,
+        sleep=0.0,
+        visualize="stdout",
+    )
+    mod.cmd_replay(replay_args)
+
+    replay_args.recording = mcap_path
+    mod.cmd_replay(replay_args)

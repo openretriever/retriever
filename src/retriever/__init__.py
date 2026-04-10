@@ -7,7 +7,12 @@ Core modules:
 - rt: Runtime execution backends
 """
 
-__version__ = "0.0.0"
+from importlib.metadata import PackageNotFoundError, version as _package_version
+
+try:
+    __version__ = _package_version("retriever")
+except PackageNotFoundError:
+    __version__ = "0.0.0+local"
 
 from retriever.flow import Flow, Rate, Clock
 from retriever.flow.adapter import Latest
@@ -41,7 +46,8 @@ def init(
     Args:
         name: Session name (useful for logging/recording)
         record: Recording path (str) or configuration (RecordConfig)
-        backend: Default backend for run() (e.g. "multiprocessing", "dora")
+        backend: Default backend for `pipe.run()` / `retriever.run()`
+                 (e.g. "multiprocessing", "dora")
         backend_config: Default backend configuration dict. Values are merged
                         with (and overridden by) `pipe.run(backend_config=...)`.
         default_sync: Default sync adapter for connections (e.g. Latest()).

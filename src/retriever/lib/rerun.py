@@ -98,12 +98,26 @@ def _set_time_seconds_compat(rr_module, time_seconds: float) -> None:
     The viewer often defaults to `log_time`; mirroring here keeps image/tensor views
     populated even when the user hasn't switched timelines manually.
     """
-    if hasattr(rr_module, "set_time_seconds"):
+    if hasattr(rr_module, "set_time"):
+        rr_module.set_time("retriever_time", duration=time_seconds)
+        rr_module.set_time("log_time", timestamp=time_seconds)
+    else:
         rr_module.set_time_seconds("retriever_time", time_seconds)
         rr_module.set_time_seconds("log_time", time_seconds)
+
+
+def _set_time_sequence_compat(rr_module, timeline: str, sequence: int) -> None:
+    if hasattr(rr_module, "set_time"):
+        rr_module.set_time(timeline, sequence=sequence)
     else:
-        rr_module.set_time("retriever_time", timestamp=time_seconds)
-        rr_module.set_time("log_time", timestamp=time_seconds)
+        rr_module.set_time_sequence(timeline, sequence)
+
+
+def _set_time_named_seconds_compat(rr_module, timeline: str, time_seconds: float) -> None:
+    if hasattr(rr_module, "set_time"):
+        rr_module.set_time(timeline, timestamp=time_seconds)
+    else:
+        rr_module.set_time_seconds(timeline, time_seconds)
 
 
 def _ensure_rerun_from_env(default_app_id: str = "retriever_worker"):
@@ -154,10 +168,7 @@ def log_value_from_env(
 
     try:
         if sequence is not None:
-            if hasattr(rr_module, "set_time_sequence"):
-                rr_module.set_time_sequence("step", sequence)
-            else:
-                rr_module.set_time("step", sequence=sequence)
+            _set_time_sequence_compat(rr_module, "step", sequence)
 
         if time_seconds is not None:
             _set_time_seconds_compat(rr_module, time_seconds)
@@ -481,10 +492,7 @@ class RerunManager:
         rr = _ensure_rerun()
 
         # Set time for this step
-        if hasattr(rr, "set_time_sequence"):
-            rr.set_time_sequence("step", step_idx)
-        else:
-            rr.set_time("step", sequence=step_idx)
+        _set_time_sequence_compat(rr, "step", step_idx)
 
         if hasattr(result, "now") and result.now is not None:
             _set_time_seconds_compat(rr, result.now)
@@ -514,10 +522,7 @@ class RerunManager:
         _set_time_seconds_compat(rr, time_seconds)
 
         if step is not None:
-            if hasattr(rr, "set_time_sequence"):
-                rr.set_time_sequence("step", step)
-            else:
-                rr.set_time("step", sequence=step)
+            _set_time_sequence_compat(rr, "step", step)
 
     def cleanup(self, open_recording: bool = True) -> None:
         """
@@ -687,10 +692,7 @@ def jump_to_step(step: int) -> None:
     Note: This requires Rerun viewer to be connected.
     """
     rr = _ensure_rerun()
-    if hasattr(rr, "set_time_sequence"):
-        rr.set_time_sequence("step", step)
-    else:
-        rr.set_time("step", sequence=step)
+    _set_time_sequence_compat(rr, "step", step)
     # TODO: Rerun doesn't have direct "jump to time" API yet
     # This sets the time for next log, which implicitly moves the timeline
 

@@ -8,7 +8,7 @@ What this demonstrates:
   - treating a registered pipeline as a reusable flow via `build_pipeline_flow(...)`
 
 Run:
-  pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
+  pixi run demo-composable-pipelines
 """
 
 from __future__ import annotations
@@ -46,9 +46,6 @@ class DecisionView:
 
 
 class Counter(Flow[None, CounterOut]):
-    def init(self) -> None:
-        self.count = 0
-
     def reset(self) -> None:
         self.count = 0
 

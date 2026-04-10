@@ -555,7 +555,10 @@ def view_in_rerun(path: Union[str, Path], spawn: bool = True) -> None:
             topic = channel.topic
             timestamp_s = message.log_time / 1e9
 
-            rr.set_time_seconds("recording", timestamp_s)
+            if hasattr(rr, "set_time"):
+                rr.set_time("recording", timestamp=timestamp_s)
+            else:
+                rr.set_time_seconds("recording", timestamp_s)
 
             # Handle image channels
             if channel.schema_id and schema.name == "foxglove.RawImage":

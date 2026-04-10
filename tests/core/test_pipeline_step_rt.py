@@ -154,6 +154,35 @@ def test_pipeline_record_config_can_emit_rrd_and_mcap(tmp_path):
     assert mcap_path.stat().st_size > 0
 
 
+def test_pipeline_run_record_convenience_emits_session_artifacts(tmp_path):
+    pytest.importorskip("rerun")
+
+    rrd_path = tmp_path / "run_session.rrd"
+    mcap_path = tmp_path / "run_session.mcap"
+
+    pipe = Pipeline("run_record_demo")
+    src = Counter() @ Rate(hz=30)
+    drain = Recorder() @ Trigger("value")
+    pipe.connect(src, drain, sync=Latest())
+    node_id = pipe.get_node_id(src)
+
+    pipe.run(
+        backend="multiprocessing",
+        duration=0.2,
+        blocking=True,
+        record=RecordConfig(path=rrd_path, mirrors=(mcap_path,)),
+    )
+
+    assert rrd_path.exists()
+    assert rrd_path.stat().st_size > 0
+    assert mcap_path.exists()
+    assert mcap_path.stat().st_size > 0
+
+    mcap_buffer = read_node_stream_from_recording(mcap_path, node_id, output_type=Value)
+    assert mcap_buffer
+    assert mcap_buffer[0][1].value >= 1
+
+
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
     if suffix == ".rrd":
@@ -186,6 +215,29 @@ def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
         pipe2.close_stepper()
 
     assert sink2.flow.seen == [1, 2, 3]
+
+
+def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path):
+    pipe = Pipeline("replay_many_demo")
+    src1 = Counter() @ Rate(hz=10)
+    src2 = Counter() @ Rate(hz=10)
+    sink1 = Recorder() @ Trigger("value")
+    sink2 = Recorder() @ Trigger("value")
+    pipe.connect(src1, sink1, sync=Latest())
+    pipe.connect(src2, sink2, sync=Latest())
+
+    calls = []
+
+    def fake_replay(handle, *, buffer=None, path=None, clock=None, output_type=None):
+        calls.append((handle, path))
+        return handle
+
+    monkeypatch.setattr(pipe, "replay", fake_replay)
+
+    record_path = tmp_path / "session.mcap"
+    pipe.replay_from(record_path, inputs=[src1, src2])
+
+    assert calls == [(src1, record_path), (src2, record_path)]
 
 
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])

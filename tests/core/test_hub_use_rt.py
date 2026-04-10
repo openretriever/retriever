@@ -214,7 +214,7 @@ class ProcOut:
 
 
 class TestSource(Flow[None, SourceOut]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.count = 0
 
     def step(self, _):  # type: ignore[override]
