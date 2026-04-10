@@ -185,7 +185,7 @@ This split (logical IR vs physical execution graph) is the foundation for:
 
 Retriever supports distributing pipelines across multiple computers using the **Dora** backend. This is useful for splitting lighter controller logic (low latency) from heavy compute (GPU).
 
-### 6.1 `deploy(machine: str)`
+### 7.1 `deploy(machine: str)`
 
 You can map specific flows to machines using the `.deploy()` method:
 
@@ -199,9 +199,8 @@ vla_model = VLAFlow() @ Trigger("image")
 vla_model.deploy("machine_b")
 ```
 
-```
 
-### 6.2 Runtime Deployment Overrides (Preferred)
+### 7.2 Runtime Deployment Overrides (Preferred)
 
 Decouple your code from physical infrastructure by specifying deployment at runtime:
 
@@ -215,7 +214,7 @@ pipe.run(
 )
 ```
 
-### 6.3 Backend Configuration
+### 7.3 Backend Configuration
 
 For this to work, you must use the **Dora** backend and have a running Dora Coordinator.
 

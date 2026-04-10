@@ -132,7 +132,7 @@ from retriever.pipeline_registry import (
 )
 ```
 
-This enables “system packages” (future golden repo) to register pipelines via entry points:
+This enables external packages to register pipelines via entry points:
 - group: `retriever.plugins`
 
 See: `docs/architecture.md` (“Registry + plugins”).

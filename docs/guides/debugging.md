@@ -70,7 +70,7 @@ Implementation lives in:
 
 ### Flow lifecycle in the stepper
 
-- The stepper calls `Flow.init()` lazily on the first `step()`.
+- The stepper initializes flow runtime lazily on the first `step()` via `__lazy_init__()` and the legacy `init()` compatibility hook.
 - `Pipeline.reset_stepper()` calls `Flow.reset()` and clears all buffers.
 - `Pipeline.close_stepper()` calls `Flow.finalize()` and drops the stepper.
 
