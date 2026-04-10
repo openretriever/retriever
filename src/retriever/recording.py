@@ -20,7 +20,10 @@ import json
 import zlib
 from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path
-from types import UnionType
+try:
+    from types import UnionType
+except ImportError:  # pragma: no cover - Python < 3.10
+    UnionType = None
 from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_args, get_origin
 
 import numpy as np
@@ -593,7 +596,7 @@ def _unwrap_optional_type(expected_type: Any) -> Any:
     origin = get_origin(expected_type)
     if origin is None:
         return expected_type
-    if origin in (Union, UnionType):
+    if origin is Union or (UnionType is not None and origin is UnionType):
         args = [arg for arg in get_args(expected_type) if arg is not type(None)]
         if len(args) == 1:
             return args[0]

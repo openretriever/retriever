@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 import pytest
 
@@ -217,7 +218,7 @@ def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
     finally:
         sink.close()
 
-    buffer = read_node_stream_from_recording(record_path, "MaybeValue", output_type=Value | None)
+    buffer = read_node_stream_from_recording(record_path, "MaybeValue", output_type=Optional[Value])
     assert [None if value is None else value.value for _ts, value in buffer] == [None, 2]
 
 
