@@ -9,7 +9,7 @@ title: "L01 Retriever Mental Model (Flow, TemporalFlow, Pipeline)"
 - Track: A (Flow Fundamentals)
 - Tier: 0-1
 - Duration: 20 minutes
-- Prerequisites: baseline `pixi` environment in `retriever/`
+- Prerequisites: baseline `pixi` environment in the repository root
 
 ## Learning Objectives
 1. Explain `Flow` as typed input/output transformation.

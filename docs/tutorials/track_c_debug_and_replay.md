@@ -8,6 +8,7 @@ Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
 Start here:
 - [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
+- [Walkthrough: Stepper, Debugger, and MCAP Replay](walkthrough_stepper_debug_and_replay.md)
 
 ## Modules
 
