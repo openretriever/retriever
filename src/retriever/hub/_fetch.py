@@ -22,7 +22,12 @@ def _is_path_safe(member: tarfile.TarInfo, dest: Path) -> bool:
 
 
 def download_and_extract(
-    owner: str, repo: str, commit_sha: str, dest_dir: Path
+    owner: str,
+    repo: str,
+    commit_sha: str,
+    dest_dir: Path,
+    *,
+    replace: bool = False,
 ) -> Path:
     """Download a tarball for a commit and extract to dest_dir.
 
@@ -65,8 +70,11 @@ def download_and_extract(
 
         # Move contents to dest_dir
         if dest_dir.exists():
-            # Another process may have raced us; use existing
-            return dest_dir
+            if not replace:
+                # Another process may have raced us; use existing
+                return dest_dir
+            import shutil
+            shutil.rmtree(dest_dir, ignore_errors=True)
 
         os.rename(str(inner), str(dest_dir))
     except HubError:

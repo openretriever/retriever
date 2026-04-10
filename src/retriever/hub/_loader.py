@@ -50,6 +50,25 @@ def _evict_stale_bare_aliases(module_name: str) -> None:
             sys.modules.pop(key, None)
 
 
+def unload_namespace(module_name: str, namespace: Optional[str]) -> None:
+    """Unload one namespaced hub package and its bare alias modules."""
+    qualified_root = _qualified_root(module_name, namespace)
+    qualified_prefix = f"{qualified_root}."
+    bare_prefix = f"{module_name}."
+
+    for key, mod in list(sys.modules.items()):
+        if key == qualified_root or key.startswith(qualified_prefix):
+            sys.modules.pop(key, None)
+            continue
+        if key != module_name and not key.startswith(bare_prefix):
+            continue
+        mod_name = getattr(mod, "__name__", "")
+        if isinstance(mod_name, str) and (
+            mod_name == qualified_root or mod_name.startswith(qualified_prefix)
+        ):
+            sys.modules.pop(key, None)
+
+
 def _attach_hub_metadata(
     module: types.ModuleType,
     *,

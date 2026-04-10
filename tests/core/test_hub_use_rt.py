@@ -398,6 +398,44 @@ class TestHubUse:
 
     @patch("retriever.hub._cache._CACHE_ROOT")
     @patch("retriever.hub._http._do_request")
+    def test_refresh_reloads_same_ref_and_evicts_stale_aliases(
+        self, mock_request, mock_cache_root, tmp_path: Path
+    ):
+        with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
+            import json
+
+            archive_calls = {"count": 0}
+
+            def side_effect(url):
+                if "raw.githubusercontent.com" in url:
+                    return _INDEX_TOML.encode()
+                elif "api.github.com" in url:
+                    return json.dumps(_TAGS_JSON).encode()
+                elif "archive" in url:
+                    archive_calls["count"] += 1
+                    if archive_calls["count"] == 1:
+                        return _make_tarball(flow_delta=1)
+                    return _make_tarball(flow_delta=7)
+                raise ValueError(f"Unexpected URL: {url}")
+
+            mock_request.side_effect = side_effect
+
+            from retriever import hub
+
+            Flow1 = hub.use("test-org/test-mod:TestFlow")
+            flow1 = Flow1()
+            assert flow1.step(flow1.input_type(value=1)).value == 2
+            assert sys.modules["test_mod.config"].TestConfig.delta == 1
+
+            Flow2 = hub.use("test-org/test-mod:TestFlow", refresh=True)
+
+            assert Flow2 is not Flow1
+            flow2 = Flow2()
+            assert flow2.step(flow2.input_type(value=1)).value == 8
+            assert sys.modules["test_mod.config"].TestConfig.delta == 7
+
+    @patch("retriever.hub._cache._CACHE_ROOT")
+    @patch("retriever.hub._http._do_request")
     def test_use_exported_type_and_transform(self, mock_request, mock_cache_root, tmp_path: Path):
         with patch("retriever.hub._cache._CACHE_ROOT", tmp_path):
             import json
