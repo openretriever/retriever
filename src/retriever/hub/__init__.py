@@ -41,7 +41,7 @@ from retriever.hub._check import (
 )
 from retriever.hub._fetch import download_and_extract
 from retriever.hub._index import lookup_module, parse_github_url
-from retriever.hub._loader import ModuleProxy, load_exports
+from retriever.hub._loader import ModuleProxy, load_exports, unload_namespace
 from retriever.hub._ref import ModuleRef, parse_ref
 from retriever.hub._resolve import resolve_version
 
@@ -81,11 +81,14 @@ def use(ref: str, *, refresh: bool = False) -> Any:
         return _return(_loaded[cache_key], parsed)
 
     # 5. Check disk cache or download
+    if refresh:
+        _loaded.pop(cache_key, None)
+
     if not refresh and is_cached(parsed.org, parsed.name, commit_sha):
         module_root = get_cached_module_root(parsed.org, parsed.name, commit_sha)
     else:
         dest = cache_dir_for(parsed.org, parsed.name, commit_sha)
-        module_root = download_and_extract(owner, repo, commit_sha, dest)
+        module_root = download_and_extract(owner, repo, commit_sha, dest, replace=refresh)
         mark_cached(parsed.org, parsed.name, commit_sha)
 
     # 6. Read and validate metadata
@@ -104,7 +107,20 @@ def use(ref: str, *, refresh: bool = False) -> Any:
     # 9. Load exports
     module_name = rtv_config["module"]
     export_table = rtv_config.get("exports", {})
-    exports = load_exports(module_root, module_name, export_table)
+    namespace = f"{parsed.org}_{parsed.name}_{commit_sha[:12]}"
+    if refresh:
+        unload_namespace(module_name, namespace)
+    exports = load_exports(
+        module_root,
+        module_name,
+        export_table,
+        namespace=namespace,
+        hub_meta={
+            "org": parsed.org,
+            "name": parsed.name,
+            "commit": commit_sha,
+        },
+    )
 
     # 10. Cache in process
     _loaded[cache_key] = exports

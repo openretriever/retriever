@@ -4,7 +4,7 @@ title: "Retriever Documentation"
 
 # Retriever Documentation
 
-These docs are being updated to match the **refactored runtime**.
+These docs track the current runtime surface.
 
 **Single canonical note:** `docs/handbook.md`
 
@@ -24,4 +24,4 @@ Key references:
 - `docs/guide_execution.md`
 - `docs/guides/debugging.md`
 
-For runtime/core work, prefer `docs/handbook.md`. The other guides are optional references and may lag behind.
+For runtime/core work, prefer `docs/handbook.md`. The other guides are smaller topic references that should stay aligned with it.

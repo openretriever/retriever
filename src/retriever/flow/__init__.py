@@ -49,9 +49,9 @@ __all__ = [
     'clear_default_pipeline',
 
     # Graph
-    'FlowGraph',
-    'FlowNode',
-    'FlowEdge',
+    'PipelineGraph',
+    'PipelineNode',
+    'PipelineEdge',
 
     # I/O
     'io',

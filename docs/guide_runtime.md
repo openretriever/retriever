@@ -27,12 +27,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
 
@@ -72,12 +72,12 @@ More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
-For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")`.
+For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")` or `pipe.run(record="log.rrd")`.
 
 For granular control (e.g. recording specific flows during manual stepping), use:
 
 ```py
-pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
+pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)  # legacy single-stream capture
 pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ```
 
@@ -86,15 +86,16 @@ pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ### `@io` types (ports)
 
 Flows communicate with typed `@io` classes. Each annotated field becomes a port.
-`@flow_io` remains as a backward-compatible alias, but new docs and examples should prefer `@io`.
 
 ### `Flow[I, O]` (node logic)
 
 A `Flow` is a node that implements:
 
-- `init()` (optional)
-- `run(input: I) -> O`
+- `reset()` (optional)
+- `step(input: I) -> O`
 - `finalize()` (optional)
+
+`run()` and `init()` remain as deprecated compatibility aliases for older flows.
 
 ### Clocks (when a node executes)
 
@@ -159,6 +160,9 @@ but you can call it directly for debugging or inspection.
 - `in-process`: single-process wrapper for debugging/recording
 
 `execute_ir(...)` accepts either an `IR` or an `ExecutionGraph`.
+For `backend="in-process"`, you must supply a live `Pipeline` instance through
+`backend_config["pipeline_instance"]`; saved IR / IR-file execution is not
+currently supported for that backend.
 
 ### Dora backend config: native node overrides (Tier A.1)
 

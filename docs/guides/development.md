@@ -155,7 +155,7 @@ class Detections:
 
 
 class DetectionFlow(Flow[CameraFrame, Detections]):
-    def run(self, image: CameraFrame) -> Detections:
+    def step(self, image: CameraFrame) -> Detections:
         return Detections(boxes=[])
 
 
@@ -172,8 +172,8 @@ with pipe:
 - **`src/retriever/flow/`**: authoring surface, clocks, adapters, pipeline wiring
 - **`src/retriever/ir/`**: logical IR and execution graph structures
 - **`src/retriever/rt/`**: runtime execution, stepper, multiprocessing, dora
-- **`src/retriever/data_spec/`**: explicit dataset/event/export contracts
-- **`src/retriever/robotics_typing/`**: typed robotics boundary payloads
+- **`src/retriever/types/`**: shared typed payloads, schema helpers, and registry surface
+- **`src/retriever/recording.py`**: persisted `.mcap` / `.rrd` recording and replay helpers
 - **`examples/tutorial/`**: public runnable examples for the runtime release
 
 ## Development Workflow
@@ -226,7 +226,7 @@ with pipe:
 from retriever.flow import Flow
 
 class MyFlow(Flow[InputType, OutputType]):
-    def run(self, input_data: InputType) -> OutputType:
+    def step(self, input_data: InputType) -> OutputType:
         return output
 ```
 
@@ -289,7 +289,7 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def run(self, input: Observation) -> Command:
+    def step(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 
 
@@ -315,7 +315,7 @@ Use the same authored pipeline across the supported execution surfaces:
 
 ```python
 pipe.run(backend="multiprocessing", duration=2.0)
-pipe.run(backend="dora", duration=2.0)
+# Use backend="dora" explicitly for dora deployment/parity.
 
 # In-process debugging
 pipe.step(dt=0.1)
@@ -417,7 +417,7 @@ jobs:
        result: float
 
    class NewComponent(Flow[Input, Output]):
-       def run(self, input_data: Input) -> Output:
+       def step(self, input_data: Input) -> Output:
            return Output(result=input_data.value)
    ```
 

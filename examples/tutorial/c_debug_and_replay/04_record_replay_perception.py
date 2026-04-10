@@ -3,11 +3,12 @@ Record + replay a perception camera stream (in-process stepper) for debugging.
 
 This is a stepper-first workflow:
   - record once from hardware (real camera) to MCAP
-  - replay later (still in-process) so breakpoints inside `Flow.run()` work
+  - replay later (still in-process) so breakpoints inside `Flow.step()` work
   - optionally stream to Rerun for live visualization
 
 Run:
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap --steps 10
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --steps 10
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --stream  # with live Rerun
 
   pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10

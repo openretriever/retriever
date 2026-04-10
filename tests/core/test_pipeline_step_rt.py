@@ -254,6 +254,7 @@ def test_pipeline_can_inject_unconnected_trigger_input():
     triggered = BiasTrigger() @ Trigger("bias")
     sink = Recorder() @ Trigger("value")
     pipe.connect(triggered, sink, sync=Latest())
+    triggered_id = pipe.get_node_id(triggered)
 
     try:
         pipe.inject_input(triggered, "bias", 4)
@@ -261,7 +262,7 @@ def test_pipeline_can_inject_unconnected_trigger_input():
     finally:
         pipe.close_stepper()
 
-    assert any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert triggered_id in res.executed
     assert sink.flow.seen == [5]
 
 
@@ -270,13 +271,14 @@ def test_pipeline_injected_inputs_are_cleared_on_reset():
     triggered = BiasTrigger() @ Trigger("bias")
     sink = Recorder() @ Trigger("value")
     pipe.connect(triggered, sink, sync=Latest())
+    triggered_id = pipe.get_node_id(triggered)
 
     try:
-        pipe.inject_inputs({pipe.get_node_id(triggered): {"bias": 7}})
+        pipe.inject_inputs({triggered_id: {"bias": 7}})
         pipe.reset()
         res = pipe.step(dt=0.1)
     finally:
         pipe.close_stepper()
 
-    assert not any(node_id.startswith("BiasTrigger_") for node_id in res.executed)
+    assert triggered_id not in res.executed
     assert sink.flow.seen == []

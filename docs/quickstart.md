@@ -35,13 +35,13 @@ class Source(Flow[None, Number]):
         super().__init__()
         self.count = 0
 
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         self.count += 1
         return Number(value=self.count)
 
 
 class Double(Flow[Number, Doubled]):
-    def run(self, input: Number) -> Doubled:
+    def step(self, input: Number) -> Doubled:
         return Doubled(value=input.value * 2)
 
 
@@ -69,12 +69,12 @@ Use `run(...)` when you want real backend behavior:
 
 ```python
 pipe.run(backend="multiprocessing", duration=1.0)
-pipe.run(backend="dora", duration=1.0)
+# Use backend="dora" when you explicitly want the dora runtime.
 ```
 
 ### Debugging
 
-Use `step(...)` when you want breakpoints inside `Flow.run(...)`:
+Use `step(...)` when you want breakpoints inside `Flow.step(...)`:
 
 ```python
 result = pipe.step(dt=0.5)
@@ -96,4 +96,4 @@ pipe.close_stepper()
 - [Flow Guide](guide_flow.md)
 - [Runtime Guide](guide_runtime.md)
 - [Debugging](guides/debugging.md)
-- [Track A: Flow Fundamentals](tutorials/track_a_flow_fundamentals.md)
+- [Tutorial Tracks](getting_started/tutorials.md)

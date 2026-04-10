@@ -14,7 +14,7 @@ This repo is early-stage and moves fast. Keep PRs small, include tests when it m
 
 ## Setup
 
-1) Set up an environment by following `docs/install.md`.
+1) Set up an environment by following `docs/getting_started/install.md`.
 
 2) Install dev tooling (ruff/black/mypy/pytest/pre-commit) inside the Pixi env:
 

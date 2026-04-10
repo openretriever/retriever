@@ -146,7 +146,7 @@ def main():
         pipe.connect(sync_node, sink)
         
     print("Running Native Sync Demo...")
-    pipe.run(duration=3.0)
+    pipe.run(backend="multiprocessing", duration=3.0)
 
 class Printer(Flow[NativeResult, None]):
     def step(self, res: NativeResult):

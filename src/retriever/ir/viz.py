@@ -22,9 +22,11 @@ HTML_TEMPLATE = """
             --accent-orange: #ff6b35; /* Astro-like Orange */
             --accent-blue: #3b82f6;
             --accent-green: #10b981;
+            --accent-teal: #0f766e;
             --color-source-bg: #fff7ed; --color-source-border: #f97316; /* Orange */
             --color-sink-bg: #faf5ff; --color-sink-border: #9333ea; /* Purple */
             --color-inter-bg: #eff6ff; --color-inter-border: #3b82f6; /* Blue */
+            --color-pipeline-bg: #ecfeff; --color-pipeline-border: #0f766e; /* Teal */
             
             --text-main: #374151;
         }
@@ -98,6 +100,7 @@ HTML_TEMPLATE = """
             <div class="legend-item"><div class="dot" style="background:var(--color-source-bg); border:2px solid var(--color-source-border)"></div>Source (Orange)</div>
             <div class="legend-item"><div class="dot" style="background:var(--color-inter-bg); border:2px solid var(--color-inter-border)"></div>Intermediate (Blue)</div>
             <div class="legend-item"><div class="dot" style="background:var(--color-sink-bg); border:2px solid var(--color-sink-border)"></div>Sink (Purple)</div>
+            <div class="legend-item"><div class="dot" style="background:var(--color-pipeline-bg); border:3px double var(--color-pipeline-border)"></div>Nested Pipeline</div>
             
             <div style="width:1px; height:15px; background:#ddd; margin:0 5px;"></div>
             
@@ -122,6 +125,21 @@ HTML_TEMPLATE = """
         } catch(e) {
             console.error("Failed to set title", e);
         }
+
+        function shortPipelineName(name) {
+            if (!name) return "pipeline";
+            const parts = String(name).split('.');
+            return parts[parts.length - 1] || String(name);
+        }
+
+        function previewWrappedPipeline(meta) {
+            const nodes = (((meta || {}).internal || {}).nodes || []);
+            if (!nodes.length) return "";
+            if (nodes.length <= 3) {
+                return nodes.map(n => n.id || n.type || "?").join(" -> ");
+            }
+            return `${nodes.length} inner flows`;
+        }
         
         // Helper to check for sources/sinks based on edges
         const sourceNodes = new Set(irData.nodes.map(n => n.id));
@@ -134,10 +152,46 @@ HTML_TEMPLATE = """
 
         // Transform IR to Cytoscape elements
         const elements = [];
+        const pipelineGroupIds = new Set();
+
+        function ensurePipelineGroupElements(groups) {
+            let parentGroupId = null;
+            groups.forEach(group => {
+                if (!group || !group.group_id) return;
+                if (!pipelineGroupIds.has(group.group_id)) {
+                    elements.push({
+                        data: {
+                            id: group.group_id,
+                            parent: parentGroupId || undefined,
+                            label: `${group.wrapper_node_id}\n[pipeline: ${shortPipelineName(group.pipeline_name)}]`,
+                            wrappedPipeline: {
+                                pipeline_name: group.pipeline_name,
+                                summary: group.summary,
+                                surface: group.surface,
+                                internal: group.internal
+                            },
+                            isPipelineGroup: true
+                        },
+                        classes: 'pipeline-group'
+                    });
+                    pipelineGroupIds.add(group.group_id);
+                }
+                parentGroupId = group.group_id;
+            });
+            return parentGroupId;
+        }
         
         // Nodes
         irData.nodes.forEach(node => {
             const clock = node.config.clock || {};
+            const pipelineGroups = node.config.viz && Array.isArray(node.config.viz.pipeline_groups)
+                ? node.config.viz.pipeline_groups
+                : [];
+            const parentGroupId = ensurePipelineGroupElements(pipelineGroups);
+            const primaryGroup = pipelineGroups.length ? pipelineGroups[pipelineGroups.length - 1] : null;
+            const wrappedPipeline = node.config.viz && node.config.viz.kind === "pipeline"
+                ? node.config.viz
+                : null;
             let clockType = "Unknown";
             let clockDetail = "";
             
@@ -167,9 +221,17 @@ HTML_TEMPLATE = """
             }
 
             // Label shows just the class/name part of the ID
-            let label = node.id;
-            if (label.includes('_')) {
-                label = label.split('_')[0];
+            let label = primaryGroup && primaryGroup.local_node_id ? primaryGroup.local_node_id : node.id;
+            if (!primaryGroup && label.includes('__')) {
+                label = label.split('__')[0];
+            }
+
+            if (wrappedPipeline) {
+                label += `\n[pipeline: ${shortPipelineName(wrappedPipeline.pipeline_name)}]`;
+                const preview = previewWrappedPipeline(wrappedPipeline);
+                if (preview) {
+                    label += `\n${preview}`;
+                }
             }
             
             // Add clock info to label for visibility
@@ -194,6 +256,7 @@ HTML_TEMPLATE = """
             
             // Clock Classes
             classes.push(clockType.toLowerCase());
+            if (wrappedPipeline) classes.push('wrapped-pipeline');
 
             elements.push({
                 data: {
@@ -204,7 +267,10 @@ HTML_TEMPLATE = """
                     clockDetail: clockDetail,
                     inputs: Object.keys(node.inputs),
                     outputs: Object.keys(node.outputs),
-                    services: node.service_handlers ? node.service_handlers.map(s => s.service_id) : []
+                    services: node.service_handlers ? node.service_handlers.map(s => s.service_id) : [],
+                    wrappedPipeline: wrappedPipeline,
+                    pipelineGroup: primaryGroup,
+                    parent: parentGroupId || undefined
                 },
                 classes: classes.join(' ')
             });
@@ -292,11 +358,32 @@ HTML_TEMPLATE = """
              });
         });
 
+        function renderWrappedPorts(title, ports) {
+            if (!ports || !ports.length) return "";
+            let html = `<div style="margin-top:12px"><span class="prop-key">${title}:</span><div style="margin-top:6px; display:flex; flex-direction:column; gap:6px">`;
+            ports.forEach(port => {
+                html += `<div class="prop"><span class="prop-key">${port.external_name}</span><span class="prop-val">${port.node_id}.${port.port}</span></div>`;
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
+        function renderWrappedNodeList(nodes) {
+            if (!nodes || !nodes.length) return "";
+            let html = `<div style="margin-top:12px"><span class="prop-key">Internal flows:</span><div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:4px">`;
+            nodes.forEach(node => {
+                html += `<span class="prop-val">${node.id}</span>`;
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
         // CDN Health Check
         if (!window.cytoscape) { alert("Error: Cytoscape.js CDN failed to load."); }
         
+        var cy = null;
         try {
-            var cy = cytoscape({
+            cy = cytoscape({
                 container: document.getElementById('cy'),
                 elements: elements,
                 style: [
@@ -318,7 +405,26 @@ HTML_TEMPLATE = """
                             'padding': '14px',
                             'shape': 'round-rectangle',
                             'text-wrap': 'wrap',
-                            'text-justification': 'center'
+                            'text-justification': 'center',
+                            'text-max-width': '220px'
+                        }
+                    },
+                    {
+                        selector: 'node.pipeline-group',
+                        style: {
+                            'background-color': '#ccfbf1',
+                            'background-opacity': 0.22,
+                            'border-color': '#0f766e',
+                            'border-width': 3,
+                            'border-style': 'double',
+                            'color': '#134e4a',
+                            'font-size': '12px',
+                            'font-weight': 700,
+                            'text-valign': 'top',
+                            'text-halign': 'center',
+                            'padding': '28px',
+                            'compound-sizing-wrt-labels': 'include',
+                            'shape': 'round-rectangle'
                         }
                     },
                     /* Clock Styles -> Border Style */
@@ -360,11 +466,18 @@ HTML_TEMPLATE = """
                              'color': '#1e40af'
                          }
                     },
-                    
                     {
-                        selector: ':selected',
-                        style: { 'border-width': 4, 'border-color': '#1f2937', 'background-color': '#ffffff', 'shadow-blur': 10, 'shadow-color': 'rgba(0,0,0,0.2)' }
+                        selector: 'node.wrapped-pipeline',
+                        style: {
+                            'background-color': '#ecfeff',
+                            'border-color': '#0f766e',
+                            'border-width': 5,
+                            'border-style': 'double',
+                            'color': '#115e59',
+                            'padding': '18px'
+                        }
                     },
+                    
                     {
                         selector: ':selected',
                         style: { 'border-width': 4, 'border-color': '#1f2937', 'background-color': '#ffffff', 'shadow-blur': 10, 'shadow-color': 'rgba(0,0,0,0.2)' }
@@ -378,9 +491,6 @@ HTML_TEMPLATE = """
                             'line-gradient-stop-colors': '#10b981 #ef4444', /* Green to Red */
                             'line-gradient-stop-positions': '0 100',
                             'target-arrow-color': '#ef4444',
-                            'target-arrow-shape': 'triangle',
-                            'target-arrow-shape': 'triangle',
-                            'target-arrow-shape': 'triangle',
                             'target-arrow-shape': 'triangle',
                             'curve-style': 'unbundled-bezier',
                             'control-point-distances': 'data(curveDist)',
@@ -439,7 +549,7 @@ HTML_TEMPLATE = """
         const title = document.getElementById('panel-title');
         const content = document.getElementById('panel-content');
 
-        cy.on('tap', 'node', function(evt){
+        if (cy) cy.on('tap', 'node', function(evt){
             const node = evt.target;
             const data = node.data();
             
@@ -470,11 +580,31 @@ HTML_TEMPLATE = """
                 html += `</div>`;
             }
 
+            if (data.pipelineGroup) {
+                html += `<div style="margin-top:15px; border-top:1px dashed #dbeafe; padding-top:10px"><span class="prop-key">Pipeline group:</span>`;
+                html += `<div class="prop"><span class="prop-key">Stage:</span><span class="prop-val">${data.pipelineGroup.wrapper_node_id}</span></div>`;
+                html += `<div class="prop"><span class="prop-key">Pipeline:</span><span class="prop-val">${data.pipelineGroup.pipeline_name}</span></div>`;
+                html += `</div>`;
+            }
+
+            if (data.wrappedPipeline) {
+                const wrapped = data.wrappedPipeline;
+                html += `<div style="margin-top:15px; border-top:1px dashed #d1fae5; padding-top:10px"><span class="prop-key">Nested pipeline:</span>`;
+                html += `<div class="prop"><span class="prop-key">Name:</span><span class="prop-val">${wrapped.pipeline_name}</span></div>`;
+                if (wrapped.summary) {
+                    html += `<div class="prop"><span class="prop-key">Size:</span><span class="prop-val">${wrapped.summary.node_count} flows / ${wrapped.summary.edge_count} edges</span></div>`;
+                }
+                html += renderWrappedPorts('Surface inputs', wrapped.surface ? wrapped.surface.inputs : []);
+                html += renderWrappedPorts('Surface outputs', wrapped.surface ? wrapped.surface.outputs : []);
+                html += renderWrappedNodeList(wrapped.internal ? wrapped.internal.nodes : []);
+                html += `</div>`;
+            }
+
             content.innerHTML = html;
             panel.classList.add('visible');
         });
 
-        cy.on('tap', function(evt){
+        if (cy) cy.on('tap', function(evt){
             if(evt.target === cy){
                 panel.classList.remove('visible');
             }
@@ -539,6 +669,33 @@ def get_node_clock_info(ir_node: IRNode) -> Tuple[str, str]:
     return c_type, detail
 
 
+def _get_wrapped_pipeline_viz(ir_node: IRNode) -> Optional[Dict[str, Any]]:
+    viz = ir_node.config.get("viz")
+    if isinstance(viz, dict) and viz.get("kind") == "pipeline":
+        return viz
+    return None
+
+
+def _get_pipeline_groups(ir_node: IRNode) -> List[Dict[str, Any]]:
+    viz = ir_node.config.get("viz")
+    if not isinstance(viz, dict):
+        return []
+    groups = viz.get("pipeline_groups")
+    if isinstance(groups, list):
+        return [group for group in groups if isinstance(group, dict)]
+    return []
+
+
+def _format_wrapped_port_bindings(ports: List[Dict[str, Any]]) -> str:
+    bindings = []
+    for port in ports:
+        external = port.get("external_name") or port.get("port") or "port"
+        node_id = port.get("node_id") or "node"
+        node_port = port.get("port") or "port"
+        bindings.append(f"{external}->{node_id}.{node_port}")
+    return ", ".join(bindings)
+
+
 from retriever.ir.core import IR
 
 
@@ -589,6 +746,7 @@ def generate_ascii_graph(ir: "IR") -> str:
 
     # Mapping id -> node
     id_to_node = {n.id: n for n in ir.nodes}
+    seen_pipeline_groups: set[str] = set()
 
     while queue:
         n = queue.pop(0)
@@ -613,11 +771,49 @@ def generate_ascii_graph(ir: "IR") -> str:
         clock_str = f"{c_type}({c_detail})" if c_detail else c_type
 
         # Simplify ID for display (NodeClass_123 -> NodeClass)
-        display_name = node.id
-        if "_" in display_name:
-            display_name = display_name.split("_")[0]
+        pipeline_groups = _get_pipeline_groups(node)
+        primary_group = pipeline_groups[-1] if pipeline_groups else None
+        display_name = (
+            primary_group.get("local_node_id") or node.id
+            if primary_group
+            else node.id
+        )
+        if isinstance(display_name, str) and not primary_group and "__" in display_name:
+            display_name = display_name.split("__")[0]
+
+        for group in pipeline_groups:
+            group_id = str(group.get("group_id") or "")
+            if not group_id or group_id in seen_pipeline_groups:
+                continue
+            seen_pipeline_groups.add(group_id)
+            output.append(
+                f"+ Pipeline [{group.get('wrapper_node_id', 'stage')}] "
+                f"({group.get('pipeline_name', 'pipeline')})"
+            )
 
         output.append(f"[{display_name}] <{clock_str}>")
+
+        wrapped_pipeline = _get_wrapped_pipeline_viz(node)
+        if wrapped_pipeline is not None:
+            pipeline_name = wrapped_pipeline.get("pipeline_name", "pipeline")
+            output.append(f"   pipeline: {pipeline_name}")
+
+            summary = wrapped_pipeline.get("summary", {})
+            if summary:
+                output.append(
+                    "   contains: "
+                    f"{summary.get('node_count', '?')} flows, {summary.get('edge_count', '?')} edges"
+                )
+
+            surface = wrapped_pipeline.get("surface", {})
+            if surface.get("inputs"):
+                output.append(
+                    f"   surface in: {_format_wrapped_port_bindings(surface['inputs'])}"
+                )
+            if surface.get("outputs"):
+                output.append(
+                    f"   surface out: {_format_wrapped_port_bindings(surface['outputs'])}"
+                )
 
         outgoing = adj[node.id]
         if not outgoing:
@@ -625,7 +821,14 @@ def generate_ascii_graph(ir: "IR") -> str:
         else:
             for edge in outgoing:
                 dest_id = edge.destination.node
-                dest_display = dest_id.split("_")[0] if "_" in dest_id else dest_id
+                dest_node = id_to_node.get(dest_id)
+                dest_groups = _get_pipeline_groups(dest_node) if dest_node is not None else []
+                dest_primary_group = dest_groups[-1] if dest_groups else None
+                dest_display = (
+                    dest_primary_group.get("local_node_id") or dest_id
+                    if dest_primary_group
+                    else (dest_id.split("__")[0] if "__" in dest_id else dest_id)
+                )
 
                 adapter_info = ""
                 if edge.adapter:

@@ -5,6 +5,8 @@ A TemporalFlow represents a flow bound to a clock, forming a node
 in the dataflow graph that can be connected to other nodes.
 """
 
+import keyword
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Dict
 
@@ -16,6 +18,9 @@ if TYPE_CHECKING:
     from retriever.flow.pipeline import Pipeline
 
 
+_FLOW_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
 @dataclass
 class TemporalFlow:
     """A flow bound to execution configuration."""
@@ -23,10 +28,30 @@ class TemporalFlow:
     flow: "Flow"
     config: "FlowConfig"
     pipeline: Optional["Pipeline"] = None
+    name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        """Attach standalone handles created inside an active Pipeline/Builder context."""
+        from retriever.flow.builder import PipelineBuilder
+
+        ctx = PipelineBuilder.active()
+        if ctx is None:
+            return
+
+        builder = getattr(ctx, "_builder", ctx)
+        owner = ctx if hasattr(ctx, "_builder") else getattr(ctx, "owner", None)
+        if owner is not None and self.pipeline is None:
+            self.pipeline = owner
+
+        register = getattr(builder, "_register_handle", None)
+        if callable(register):
+            register(self)
+            self._registered_builder = builder
 
     @property
     def clock(self) -> "Clock":
         """Convenience accessor for the clock."""
+        return self.config.clock
 
     @property
     def input_type(self) -> Optional["type"]:
@@ -37,6 +62,70 @@ class TemporalFlow:
     def output_type(self) -> Optional["type"]:
         """Get the output type O of the bound flow."""
         return self.flow.output_type
+
+    @property
+    def display_name(self) -> str:
+        """Human-readable selector/debug label for this handle."""
+        return self.name or self.flow.__class__.__name__
+
+    def named(self, name: str) -> "TemporalFlow":
+        """
+        Assign a stable selector/name to this flow within a pipeline.
+
+        Named flows can be addressed later via helpers like
+        `pipe.select_flow("camera")` and explicit pipeline surface selectors
+        like `"camera.image"`.
+        """
+        if not _FLOW_NAME_RE.match(name) or keyword.iskeyword(name):
+            raise ValueError(
+                f"Invalid flow name '{name}'. "
+                "Flow names must be valid identifiers like 'camera' or 'planner_main'."
+            )
+
+        old_name = self.name
+        self.name = name
+        self._rename_registered_handle(old_name, name)
+        return self
+
+    def matches(self, selector: str) -> bool:
+        """Return True when `selector` matches this handle's name or flow class."""
+        return selector == self.name or selector == self.flow.__class__.__name__
+
+    def __repr__(self) -> str:
+        flow_name = self.flow.__class__.__name__
+        if self.name:
+            return f"<TemporalFlow {self.name}:{flow_name}>"
+        return f"<TemporalFlow {flow_name}>"
+
+    def _rename_registered_handle(self, old_name: Optional[str], new_name: str) -> None:
+        """Rename an already-registered handle inside its owning pipeline."""
+        builder = getattr(self.pipeline, "_builder", None) or getattr(
+            self,
+            "_registered_builder",
+            None,
+        )
+        if builder is None:
+            return
+
+        handles = builder._handles  # type: ignore[attr-defined]
+        old_node_id = None
+        for node_id, handle in handles.items():
+            if handle is self:
+                old_node_id = node_id
+                break
+        if old_node_id is None or old_node_id == new_name:
+            return
+        if new_name in handles and handles[new_name] is not self:
+            raise ValueError(f"Flow name '{new_name}' is already in use.")
+
+        handles.pop(old_node_id)
+        handles[new_name] = self
+        for conn in builder._connections:  # type: ignore[attr-defined]
+            if conn.src_node_id == old_node_id:
+                conn.src_node_id = new_name
+            if conn.dst_node_id == old_node_id:
+                conn.dst_node_id = new_name
+        builder._graph = None  # type: ignore[attr-defined]
 
     def then(
         self,

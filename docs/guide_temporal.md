@@ -124,6 +124,12 @@ Returns the raw event buffer slice `[(ts, val), ...]` in the window.
 pipe.connect(stream, logic, sync=Events(duration=1.0))
 ```
 
+The following adapters are not re-exported from `retriever.flow`; import them directly:
+
+```python
+from retriever.flow.adapter import Exact, Linear, Chunking
+```
+
 ### `Exact`
 Finds the value with a timestamp *exactly matching* `now` (within tolerance).
 - **Use case**: Strictly synchronized sensor fusion where data is expected to be aligned.
@@ -206,12 +212,12 @@ class ActionChunking(Chunking):
 
 ## 6. Runtime Details
 
-### Execution Step (`sample → run → publish`)
+### Execution Step (`sample → step → publish`)
 
 At each step `now`:
 1.  **Scheduler** (Dora/MP) triggers the node.
 2.  **Sample**: `Signal` reads input buffers and applies the configured **Adapter** for each port using `now`.
-3.  **Run**: The node's `run()` method executes with the sampled inputs.
+3.  **Step**: The node's `step()` method executes with the sampled inputs.
 4.  **Publish**: Outputs are broadcast with timestamp `now`.
 
 ### Lag Policy (`Rate.on_lag`)

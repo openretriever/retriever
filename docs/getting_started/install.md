@@ -6,16 +6,9 @@ title: "Installation Guide"
 
 Environment definitions (Pixi tasks/environments) live in `pixi.toml`. Pixi is the recommended path; the conda+uv section below is an alternative if you prefer a pure Python workflow.
 
-Use Python 3.11 for the current runtime stack.
-
-Notes:
-- Pixi currently pins Python `3.11.*` for the runtime environment.
-- `pyproject.toml` also requires Python `>=3.11`.
-- Treat 3.11 as the public, tested baseline for the core runtime docs and examples.
-
 ## Supported Python
 
-Use Python 3.10–3.12 for the full stack. The runtime/core is pure-Python, but some optional “system” deps (e.g. Ray) may lag on newer Python versions.
+Python **3.11+** is required. Pixi pins `3.11.*` for the runtime environment; `pyproject.toml` declares `>=3.11`.
 
 ## Pixi vs uv (how they fit together)
 
@@ -55,5 +48,14 @@ pixi run demo-dora
 See `pixi.toml` for available environments and tasks.
 
 ## Manual Setup (conda + uv)
-...
-(Rest of the file remains similar or can be simplified)
+
+If you prefer a pure Python workflow without Pixi:
+
+```sh
+# Create and activate a virtual environment
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# Install the package with dev extras
+pip install -e '.[dev]'
+```

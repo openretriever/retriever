@@ -5,7 +5,9 @@ Context manager that tracks flow connections and builds FlowGraph.
 """
 
 from contextvars import ContextVar
+from copy import deepcopy
 from dataclasses import dataclass, is_dataclass
+import sys
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
 from retriever.error import ErrCode, FlowError
@@ -75,6 +77,7 @@ class PipelineBuilder:
     def __init__(self, name: str = "pipeline"):
         """Initialize empty context."""
         self._name: str = name
+        self._context_token = None
 
         # Track handles: node_id → handle
         self._handles: Dict[str, "TemporalFlow"] = {}
@@ -94,13 +97,15 @@ class PipelineBuilder:
 
     def __enter__(self) -> "PipelineBuilder":
         """Activate this context for the current thread"""
-        _active_context.set(self)
+        self._context_token = _active_context.set(self)
         logger.debug(f"PipelineBuilder '{self._name}' activated")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Deactivate context"""
-        _active_context.set(None)
+        if self._context_token is not None:
+            _active_context.reset(self._context_token)
+            self._context_token = None
         logger.debug(f"PipelineBuilder '{self._name}' deactivated")
         return False
 
@@ -181,6 +186,10 @@ class PipelineBuilder:
 
     def _register_handle(self, handle: "TemporalFlow") -> str:
         """Register handle if not already registered, return node_id"""
+        for node_id, existing in self._handles.items():
+            if existing is handle:
+                return node_id
+
         node_id = self._create_node_id(handle)
         if node_id not in self._handles:
             self._handles[node_id] = handle
@@ -190,9 +199,28 @@ class PipelineBuilder:
         return node_id
 
     def _create_node_id(self, handle: "TemporalFlow") -> str:
-        """Create unique node ID from handle"""
+        """Create a stable, human-addressable node ID for a handle."""
+        explicit = getattr(handle, "name", None)
+        if explicit:
+            existing = self._handles.get(explicit)
+            if existing is not None and existing is not handle:
+                raise FlowError(
+                    ErrCode.FLOW_CONNECTION_INVALID,
+                    f"Flow name '{explicit}' is already in use in pipeline '{self._name}'. "
+                    "Use unique TemporalFlow.named(...) selectors for composable pipelines.",
+                    flow_name=explicit,
+                )
+            return explicit
+
         flow = handle.flow
-        return f"{flow.__class__.__name__}_{id(handle)}"
+        base = flow.__class__.__name__
+        if base not in self._handles:
+            return base
+
+        suffix = 2
+        while f"{base}__{suffix}" in self._handles:
+            suffix += 1
+        return f"{base}__{suffix}"
 
     # ========================================================================
     # Graph Building
@@ -213,7 +241,7 @@ class PipelineBuilder:
 
         # Step 1: Add all nodes
         for node_id, handle in self._handles.items():
-            # Extract ports from @flow_io types (Composite aware)
+            # Extract ports from @io types (Composite aware)
             input_ports = self._extract_ports(handle.flow.input_types)
             output_ports = self._extract_ports(handle.flow.output_types)
 
@@ -379,6 +407,10 @@ class PipelineBuilder:
         """Get all registered handles."""
         return list(self._handles.values())
 
+    def get_flow_dict(self) -> Dict[str, "TemporalFlow"]:
+        """Get the registered flow handles keyed by stable node id."""
+        return dict(self._handles)
+
     def get_name(self) -> str:
         """Get pipeline name"""
         return self._name
@@ -406,18 +438,45 @@ class PipelineBuilder:
             handle=handle.flow.__class__.__name__,
         )
 
+    def select_flow(self, selector: str) -> "TemporalFlow":
+        """
+        Resolve a flow by explicit node id/name or by unique Flow class name.
+
+        Exact node ids are preferred. As a fallback, a bare Flow class name is
+        accepted when it uniquely matches one registered handle.
+        """
+        if selector in self._handles:
+            return self._handles[selector]
+
+        matches = [
+            (node_id, handle)
+            for node_id, handle in self._handles.items()
+            if handle.matches(selector)
+        ]
+        if len(matches) == 1:
+            return matches[0][1]
+        if not matches:
+            raise FlowError(
+                ErrCode.FLOW_CONTEXT_NODE_NOT_FOUND,
+                f"Flow selector '{selector}' not found. Available: {list(self._handles.keys())}",
+                selector=selector,
+            )
+        raise FlowError(
+            ErrCode.FLOW_CONNECTION_INVALID,
+            f"Flow selector '{selector}' is ambiguous. Matches: {[node_id for node_id, _ in matches]}",
+            selector=selector,
+            matches=[node_id for node_id, _ in matches],
+        )
+
     # ========================================================================
     # Validation Entry Point (delegates to IR layer)
     # ========================================================================
 
-    def validate(self):
-        """Validate the flow graph (delegates to IR layer)."""
-        # Ensure graph is built
-        _ = self.graph
+    def validate(self, *, lower_composite_flows: bool = True):
+        """Validate the flow graph and compile it into IR."""
+        return self.build_ir(lower_composite_flows=lower_composite_flows)
 
-        # Delegate to IR validator
-
-    def build_ir(self) -> "IR":
+    def build_ir(self, *, lower_composite_flows: bool = True) -> "IR":
         """
         Compile pipeline construction context into pure IR.
 
@@ -459,23 +518,23 @@ class PipelineBuilder:
             name=pipeline_name, created_at=datetime.now().isoformat(), validated=True
         )
 
-        logger.info(
-            f"Compilation complete: {len(ir_nodes)} nodes, "
-            f"{len(ir_edges)} edges, "
-            f"{len(topology.groups)} groups"
-        )
-
-        return IR(
+        ir = IR(
             version="1.0.0",
             metadata=metadata,
             nodes=ir_nodes,
             edges=ir_edges,
             topology=topology,
         )
+        if lower_composite_flows:
+            ir = self._lower_composite_flow_nodes(ir)
 
-    def validate(self) -> "IR":
-        """Alias for build_ir."""
-        return self.build_ir()
+        logger.info(
+            f"Compilation complete: {len(ir.nodes)} nodes, "
+            f"{len(ir.edges)} edges, "
+            f"{len(ir.topology.groups)} groups"
+        )
+
+        return ir
 
     # ========================================================================
     # IR Compilation Helpers (formerly compiler.py)
@@ -506,13 +565,30 @@ class PipelineBuilder:
             # Extract service metadata
             service_handlers = self._extract_service_handlers(flow_class)
             callers_map[node_id] = self._extract_service_methods(flow_class)
+            config = handle.config.to_dict()
+            if getattr(handle.flow, "in_process_only", False):
+                config["in_process_only"] = True
+            hub_import = self._get_hub_import_metadata(flow_class)
+            if hub_import is not None:
+                config["hub_import"] = hub_import
+            viz_metadata = handle.flow.viz_metadata()
+            if viz_metadata is not None:
+                if not isinstance(viz_metadata, dict):
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        "Flow.viz_metadata() must return a dict or None",
+                        node=node_id,
+                        type=flow_class.__name__,
+                        got_type=type(viz_metadata).__name__,
+                    )
+                config["viz"] = viz_metadata
 
             ir_node = IRNode(
                 id=node_id,
                 type=flow_class.__name__,
                 module=flow_class.__module__,
                 init_config=init_config,
-                config=handle.config.to_dict(),
+                config=config,
                 inputs={
                     name: type_to_str(typ) for name, typ in node.input_ports.items()
                 },
@@ -534,6 +610,367 @@ class PipelineBuilder:
             )
 
         return ir_nodes
+
+    @staticmethod
+    def _get_hub_import_metadata(flow_class: type) -> Optional[Dict[str, Any]]:
+        module = sys.modules.get(flow_class.__module__)
+        hub_import = getattr(module, "__retriever_hub__", None)
+        if not isinstance(hub_import, dict):
+            return None
+        return deepcopy(hub_import)
+
+    def _lower_composite_flow_nodes(self, ir: IR) -> IR:
+        for node_id, handle in self._handles.items():
+            flow = handle.flow
+            if not self._is_composite_flow_wrapper(flow):
+                continue
+            if ir.get_node(node_id) is None:
+                continue
+            ir = self._inline_composite_flow_node(ir, node_id, flow)
+        return ir
+
+    @staticmethod
+    def _is_composite_flow_wrapper(flow: Any) -> bool:
+        return bool(getattr(flow, "_pipeline_flow_wrapper", False))
+
+    def _inline_composite_flow_node(self, ir: IR, node_id: str, flow: Any) -> IR:
+        nested_ctx = flow._pipeline_flow_context
+        nested_ir = nested_ctx.validate(lower_composite_flows=True)
+        node_map = self._make_lowered_node_map(ir, node_id, nested_ir.nodes)
+        pipeline_group = self._build_lowered_pipeline_group(flow, node_id, node_map)
+
+        input_bindings = {
+            binding.surface_port.external_name: binding.surface_port
+            for binding in flow._pipeline_flow_input_bindings
+        }
+        output_bindings = {
+            binding.surface_port.external_name: binding.surface_port
+            for binding in flow._pipeline_flow_output_bindings
+        }
+
+        kept_nodes = [node for node in ir.nodes if node.id != node_id]
+        kept_edges = [
+            edge
+            for edge in ir.edges
+            if edge.source.node != node_id and edge.destination.node != node_id
+        ]
+
+        cloned_nodes = [
+            self._clone_lowered_node(node, node_map, pipeline_group) for node in nested_ir.nodes
+        ]
+        cloned_edges = [self._clone_lowered_edge(edge, node_map) for edge in nested_ir.edges]
+        rewired_edges = []
+
+        for edge in ir.edges:
+            if edge.destination.node == node_id:
+                external_name = IR.get_logical_port(edge.destination.port)
+                try:
+                    binding = input_bindings[external_name]
+                except KeyError as exc:
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Composite flow '{node_id}' has no surfaced input '{external_name}'",
+                        node=node_id,
+                        port=external_name,
+                    ) from exc
+
+                dst_port = binding.port
+                if IR.is_fan_in_port(edge.destination.port):
+                    dst_port = IR.make_fan_in_port(edge.source.node, dst_port)
+
+                rewired_edges.append(
+                    IREdge(
+                        id=f"{edge.source.node}.{edge.source.port}->{node_map[binding.node_id]}.{dst_port}",
+                        type=edge.type,
+                        source=IREdgeSource(
+                            node=edge.source.node,
+                            port=edge.source.port,
+                        ),
+                        destination=IREdgeDestination(
+                            node=node_map[binding.node_id],
+                            port=dst_port,
+                        ),
+                        adapter=deepcopy(edge.adapter),
+                        qsize=edge.qsize,
+                        on_full=edge.on_full,
+                    )
+                )
+            elif edge.source.node == node_id:
+                try:
+                    binding = output_bindings[edge.source.port]
+                except KeyError as exc:
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Composite flow '{node_id}' has no surfaced output '{edge.source.port}'",
+                        node=node_id,
+                        port=edge.source.port,
+                    ) from exc
+
+                src_node = node_map[binding.node_id]
+                dst_port = edge.destination.port
+                if IR.is_fan_in_port(dst_port):
+                    dst_port = IR.make_fan_in_port(src_node, IR.get_logical_port(dst_port))
+
+                rewired_edges.append(
+                    IREdge(
+                        id=f"{src_node}.{binding.port}->{edge.destination.node}.{dst_port}",
+                        type=edge.type,
+                        source=IREdgeSource(
+                            node=src_node,
+                            port=binding.port,
+                        ),
+                        destination=IREdgeDestination(
+                            node=edge.destination.node,
+                            port=dst_port,
+                        ),
+                        adapter=deepcopy(edge.adapter),
+                        qsize=edge.qsize,
+                        on_full=edge.on_full,
+                    )
+                )
+
+        ir.nodes = kept_nodes + cloned_nodes
+        ir.edges = kept_edges + cloned_edges + rewired_edges
+        self._refresh_lowered_ir(ir)
+        return ir
+
+    @staticmethod
+    def _build_lowered_pipeline_group(
+        flow: Any,
+        wrapper_node_id: str,
+        node_map: Dict[str, str],
+    ) -> Optional[Dict[str, Any]]:
+        viz = flow.viz_metadata()
+        if not isinstance(viz, dict) or viz.get("kind") != "pipeline":
+            return None
+
+        internal = viz.get("internal", {})
+        internal_nodes = []
+        for node in internal.get("nodes", []):
+            if not isinstance(node, dict):
+                continue
+            local_id = node.get("id")
+            internal_nodes.append(
+                {
+                    **deepcopy(node),
+                    "lowered_id": node_map.get(local_id, local_id),
+                }
+            )
+
+        internal_edges = []
+        for edge in internal.get("edges", []):
+            if not isinstance(edge, dict):
+                continue
+            source = edge.get("source")
+            destination = edge.get("destination")
+            internal_edges.append(
+                {
+                    **deepcopy(edge),
+                    "source": node_map.get(source, source),
+                    "destination": node_map.get(destination, destination),
+                }
+            )
+
+        return {
+            "group_id": f"__pipeline_group__{wrapper_node_id}",
+            "wrapper_node_id": wrapper_node_id,
+            "pipeline_name": viz.get("pipeline_name", wrapper_node_id),
+            "summary": deepcopy(viz.get("summary", {})),
+            "surface": deepcopy(viz.get("surface", {})),
+            "internal": {
+                "nodes": internal_nodes,
+                "edges": internal_edges,
+            },
+        }
+
+    def _make_lowered_node_map(
+        self,
+        ir: IR,
+        wrapper_node_id: str,
+        nested_nodes: List[IRNode],
+    ) -> Dict[str, str]:
+        used_ids = {node.id for node in ir.nodes if node.id != wrapper_node_id}
+        node_map: Dict[str, str] = {}
+        for nested_node in nested_nodes:
+            base = f"{wrapper_node_id}__{nested_node.id}"
+            candidate = base
+            suffix = 2
+            while candidate in used_ids:
+                candidate = f"{base}__{suffix}"
+                suffix += 1
+            node_map[nested_node.id] = candidate
+            used_ids.add(candidate)
+        return node_map
+
+    def _clone_lowered_node(
+        self,
+        node: IRNode,
+        node_map: Dict[str, str],
+        pipeline_group: Optional[Dict[str, Any]] = None,
+    ) -> IRNode:
+        config = deepcopy(node.config)
+        if pipeline_group is not None:
+            viz = config.get("viz")
+            if not isinstance(viz, dict):
+                viz = {}
+            existing_groups = viz.get("pipeline_groups")
+            pipeline_groups = list(existing_groups) if isinstance(existing_groups, list) else []
+            pipeline_groups = [
+                {
+                    **deepcopy(pipeline_group),
+                    "local_node_id": node.id,
+                    "lowered_node_id": node_map[node.id],
+                }
+            ] + pipeline_groups
+            viz["pipeline_groups"] = pipeline_groups
+            config["viz"] = viz
+
+        return IRNode(
+            id=node_map[node.id],
+            type=node.type,
+            module=node.module,
+            init_config=deepcopy(node.init_config),
+            config=config,
+            inputs={
+                self._rename_embedded_node_refs(port, node_map): typ
+                for port, typ in node.inputs.items()
+            },
+            outputs={
+                self._rename_embedded_node_refs(port, node_map): typ
+                for port, typ in node.outputs.items()
+            },
+            successors=[node_map.get(successor, successor) for successor in node.successors],
+            predecessors=[node_map.get(predecessor, predecessor) for predecessor in node.predecessors],
+            service_handlers=deepcopy(node.service_handlers),
+            service_callers=[
+                IRServiceCaller(
+                    service_id=caller.service_id,
+                    target_node=node_map.get(caller.target_node, caller.target_node),
+                )
+                for caller in node.service_callers
+            ],
+        )
+
+    def _clone_lowered_edge(self, edge: IREdge, node_map: Dict[str, str]) -> IREdge:
+        source_node = node_map.get(edge.source.node, edge.source.node)
+        destination_node = node_map.get(edge.destination.node, edge.destination.node)
+        source_port = self._rename_embedded_node_refs(edge.source.port, node_map)
+        destination_port = self._rename_embedded_node_refs(edge.destination.port, node_map)
+        return IREdge(
+            id=f"{source_node}.{source_port}->{destination_node}.{destination_port}",
+            type=edge.type,
+            source=IREdgeSource(node=source_node, port=source_port),
+            destination=IREdgeDestination(node=destination_node, port=destination_port),
+            adapter=deepcopy(edge.adapter),
+            qsize=edge.qsize,
+            on_full=edge.on_full,
+        )
+
+    @staticmethod
+    def _rename_embedded_node_refs(port: str, node_map: Dict[str, str]) -> str:
+        if IR.is_fan_in_port(port):
+            _, source_node, logical_port = port.split("/", 2)
+            return IR.make_fan_in_port(node_map.get(source_node, source_node), logical_port)
+        if port.startswith("_request_in/") or port.startswith("_response_in/"):
+            prefix, ref_node = port.split("/", 1)
+            return f"{prefix}/{node_map.get(ref_node, ref_node)}"
+        return port
+
+    def _refresh_lowered_ir(self, ir: IR) -> None:
+        self._normalize_lowered_data_edges(ir)
+        self._validate_lowered_services(ir)
+
+        for node in ir.nodes:
+            node.successors = []
+            node.predecessors = []
+
+        topo_graph = PipelineGraph()
+        for node in ir.nodes:
+            topo_graph.add_node(node.id, {"_in": object}, {"_out": object})
+
+        seen_pairs = set()
+        for edge in ir.edges:
+            if not self._is_topology_edge(edge):
+                continue
+            src = ir.get_node(edge.source.node)
+            dst = ir.get_node(edge.destination.node)
+            if src and edge.destination.node not in src.successors:
+                src.successors.append(edge.destination.node)
+            if dst and edge.source.node not in dst.predecessors:
+                dst.predecessors.append(edge.source.node)
+            pair = (edge.source.node, edge.destination.node)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            topo_graph.connect(edge.source.node, "_out", edge.destination.node, "_in", {})
+
+        ir.topology = IRTopology(
+            sources=topo_graph.find_sources(),
+            sinks=topo_graph.find_sinks(),
+            groups=topo_graph.get_topological_groups(),
+            node_count=len(ir.nodes),
+            edge_count=len(ir.edges),
+            has_cycle=topo_graph.has_cycles(),
+            is_connected=topo_graph.is_connected(),
+        )
+
+    @staticmethod
+    def _is_topology_edge(edge: IREdge) -> bool:
+        return not (
+            IR.get_logical_port(edge.source.port).startswith("_")
+            or IR.get_logical_port(edge.destination.port).startswith("_")
+        )
+
+    def _normalize_lowered_data_edges(self, ir: IR) -> None:
+        edges_by_dst: Dict[Tuple[str, str], List[IREdge]] = {}
+        for edge in ir.edges:
+            if not self._is_topology_edge(edge):
+                continue
+            key = (edge.destination.node, IR.get_logical_port(edge.destination.port))
+            edges_by_dst.setdefault(key, []).append(edge)
+
+        for (dst_node, logical_port), edges in edges_by_dst.items():
+            if len(edges) > 1:
+                self._validate_ir_fan_in(dst_node, logical_port, edges)
+                for edge in edges:
+                    edge.destination.port = IR.make_fan_in_port(edge.source.node, logical_port)
+                    edge.id = self._format_ir_edge_id(edge)
+                continue
+
+            edge = edges[0]
+            edge.destination.port = logical_port
+            edge.id = self._format_ir_edge_id(edge)
+
+    @staticmethod
+    def _validate_ir_fan_in(dst_node: str, dst_port: str, edges: List[IREdge]) -> None:
+        if len(edges) < 2:
+            return
+
+        ref_edge = edges[0]
+        ref_type = ref_edge.type
+        ref_adapter = ref_edge.adapter
+
+        for edge in edges[1:]:
+            if edge.type != ref_type:
+                raise IRError(
+                    ErrCode.IR_VAL_TYPE_MISMATCH,
+                    f"Fan-in type mismatch on {dst_node}.{dst_port}",
+                )
+            if edge.adapter != ref_adapter:
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Fan-in adapter mismatch on {dst_node}.{dst_port}",
+                )
+
+    def _validate_lowered_services(self, ir: IR) -> None:
+        self._build_handler_index(ir.nodes)
+
+    @staticmethod
+    def _format_ir_edge_id(edge: IREdge) -> str:
+        return (
+            f"{edge.source.node}.{edge.source.port}"
+            f"->{edge.destination.node}.{edge.destination.port}"
+        )
 
     def _build_edges(self, flow_graph: PipelineGraph) -> List[IREdge]:
         """Build IR edges from FlowGraph edges with port type validation."""

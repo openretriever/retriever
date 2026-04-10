@@ -21,6 +21,7 @@ from retriever.flow.pipeline import (
     reset,
     view,
 )
+from retriever.flow.functional import clear_default_pipeline
 from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 
@@ -91,6 +92,7 @@ __all__ = [
     "Pipeline",
     "connect",
     "default_pipeline",
+    "clear_default_pipeline",
     "run",
     "step",
     "reset",

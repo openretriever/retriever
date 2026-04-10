@@ -28,12 +28,3 @@ pixi run demo-webcam-detection
 pixi run demo-record-replay
 pixi run demo-perception-stepper
 ```
-
-## Advanced Examples
-
-- **PyTorch/CUDA Zero-Copy**: `examples/advanced/pytorch_cuda_async`
-  - Demonstrates ultra-fast zero-copy tensor transfer.
-  - See [Zero-Copy Guide](../guides/advanced_zero_copy.md).
-
-- **VLA Inference**: `examples/advanced/vla_inference_optim`
-  - Optimization for Vision-Language-Action models.

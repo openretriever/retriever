@@ -35,7 +35,7 @@ from retriever.flow import (
 ```
 
 Key concepts:
-- `Flow[I, O]`: user-defined node logic (`init/run/reset/finalize`)
+- `Flow[I, O]`: user-defined node logic (`step/reset/finalize`)
 - `@io` classes: typed ports (each field is a port)
 - `flow @ clock`: produces a `TemporalFlow` (node instance with execution config)
 - `Pipeline`: explicit graph builder (recommended)
@@ -60,7 +60,7 @@ from retriever.lib import Wrapper
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
 
 - **Execution**:
-    - `retriever.run(backend="dora", duration=10, record="log.mcap")`: Executes pipeline (records if record= set).
+    - `retriever.run(backend="multiprocessing", duration=10, record="log.mcap")`: Executes pipeline (records if `record=` is set).
     - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
     - `retriever.reset()`: Resets the default pipeline state.
 
@@ -94,7 +94,8 @@ from retriever.rt import execute_ir
 Backends:
 - `multiprocessing`: (default)
 - `dora`: High-performance, zero-copy (Rust)
-- `in-process`: Debugging/recording (determinstic)
+- `in-process`: Debugging/recording (deterministic)
+- `in-process` requires a live `Pipeline` instance; it is not a saved-IR loader.
 
 Architecture: `docs/architecture.md`.
 

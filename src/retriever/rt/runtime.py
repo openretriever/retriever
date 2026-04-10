@@ -47,7 +47,7 @@ def execute_ir(
 
     Args:
         ir: Either IR instance or path to IR JSON file
-        backend: Backend name ('multiprocessing' or 'dora')
+        backend: Backend name ('multiprocessing', 'dora', or 'in-process')
         duration: Optional duration in seconds (None = run indefinitely)
         blocking: If True, wait for completion/duration. If False, return immediately.
         log_config: Logging configuration (optional, uses defaults if None)
@@ -66,7 +66,7 @@ def execute_ir(
         execute_ir(ir, backend='multiprocessing', duration=10.0)
 
         # Execute from file path
-        execute_ir('pipeline.json', backend='dora', duration=10.0)
+        execute_ir('pipeline.json', backend='multiprocessing', duration=10.0)
 
         # Execute indefinitely (requires Ctrl+C to stop)
         execute_ir(ir, backend='multiprocessing')
@@ -91,6 +91,22 @@ def execute_ir(
         ir_struct = ir.ir  # Use the underlying IR
     else:
         ir_struct = ir
+
+    in_process_only_nodes = [
+        node.id for node in ir_struct.nodes if node.config.get("in_process_only")
+    ]
+    if in_process_only_nodes and backend != "in-process":
+        raise ValueError(
+            "This IR contains in-process-only flow wrappers and cannot run on "
+            f"backend '{backend}'. Offending nodes: {in_process_only_nodes}"
+        )
+
+    if backend == "in-process" and not (backend_config or {}).get("pipeline_instance"):
+        raise NotImplementedError(
+            "The in-process backend requires a live Pipeline instance via "
+            "backend_config['pipeline_instance']. Saved IR / IR-file execution is "
+            "currently supported only on multiprocessing or dora."
+        )
 
     # Initialize logging
     log_manager = LogManager()

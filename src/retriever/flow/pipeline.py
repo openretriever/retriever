@@ -31,6 +31,7 @@ class Pipeline:
         self._builder = PipelineBuilder(name=name)
         self._builder.owner = self
         self._name = name
+        self._context_token = None
         self._stepper = None
         self._default_on_lag = on_lag
 
@@ -87,10 +88,10 @@ class Pipeline:
             ):
                 clock.on_lag = desired
 
-    def validate(self):
-        """Validate the pipeline (applies pipeline-level defaults first)."""
+    def validate(self, *, lower_composite_flows: bool = True):
+        """Validate the pipeline and compile it to IR."""
         self._apply_clock_defaults()
-        return self._builder.validate()
+        return self._builder.validate(lower_composite_flows=lower_composite_flows)
 
     def visualize(
         self,
@@ -129,12 +130,14 @@ class Pipeline:
         # Set Pipeline as active context (not the inner builder)
         # This ensures isinstance(ctx, Pipeline) works in TemporalFlow.then()
         from retriever.flow.builder import _active_context
-        _active_context.set(self)
+        self._context_token = _active_context.set(self)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         from retriever.flow.builder import _active_context
-        _active_context.set(None)
+        if self._context_token is not None:
+            _active_context.reset(self._context_token)
+            self._context_token = None
         return False
 
     def register_connection(self, *args, **kwargs):
@@ -142,6 +145,12 @@ class Pipeline:
 
     def get_handles(self) -> List[TemporalFlow]:
         return self._builder.get_handles()
+
+    def get_flow_dict(self) -> Dict[str, TemporalFlow]:
+        return self._builder.get_flow_dict()
+
+    def select_flow(self, selector: str) -> TemporalFlow:
+        return self._builder.select_flow(selector)
 
     def get_connections(self) -> List[Any]:
         return self._builder.get_connections()
@@ -221,7 +230,6 @@ class Pipeline:
         self._stepper = None
         return self
 
-
     def merge(self, other: "Pipeline") -> "Pipeline":
         """
         Merge another Pipeline into this one.
@@ -241,7 +249,9 @@ class Pipeline:
                 dst=dst,
                 map=conn.map,
                 sync=conn.sync,
+                edge_config=conn.edge_config,
                 qsize=conn.qsize,
+                on_full=conn.on_full,
             )
 
         for handle in other.get_handles():
@@ -250,22 +260,54 @@ class Pipeline:
         self._stepper = None
         return self
 
-    def replace(self, old: TemporalFlow, new: TemporalFlow) -> "Pipeline":
+    def replace(
+        self,
+        old: TemporalFlow,
+        new: TemporalFlow,
+        *,
+        keep_id: bool = True,
+    ) -> "Pipeline":
         """
         Replace a node handle inside this pipeline.
 
         This is primarily intended for debugging workflows, e.g. swapping a real
         camera source for a replay source while keeping the rest of the pipeline.
         """
-        old_id = self.get_node_id(old)
-        new_id = self._builder._register_handle(new)  # type: ignore[attr-defined]
+        from retriever.error import FlowError, ErrCode
 
-        # Rewrite connections
-        for conn in self._builder._connections:  # type: ignore[attr-defined]
-            if conn.src_node_id == old_id:
-                conn.src_node_id = new_id
-            if conn.dst_node_id == old_id:
-                conn.dst_node_id = new_id
+        if old is new:
+            return self
+        if new.pipeline is not None and new.pipeline is not self:
+            raise FlowError(
+                ErrCode.FLOW_CONNECTION_INVALID,
+                "Cannot replace with a handle that already belongs to a different Pipeline.",
+            )
+
+        old_id = self.get_node_id(old)
+        existing_id = None
+        for node_id, handle in self._builder._handles.items():  # type: ignore[attr-defined]
+            if handle is new:
+                existing_id = node_id
+                break
+        if existing_id is not None and existing_id != old_id:
+            raise FlowError(
+                ErrCode.FLOW_CONNECTION_INVALID,
+                f"Replacement handle is already registered as '{existing_id}' in this pipeline.",
+                node_id=existing_id,
+            )
+
+        if keep_id:
+            new_id = old_id
+            new.name = old_id
+        else:
+            new_id = existing_id or self._builder._register_handle(new)  # type: ignore[attr-defined]
+
+            # Rewrite connections when the node id changes.
+            for conn in self._builder._connections:  # type: ignore[attr-defined]
+                if conn.src_node_id == old_id:
+                    conn.src_node_id = new_id
+                if conn.dst_node_id == old_id:
+                    conn.dst_node_id = new_id
 
         # Swap handle table
         self._builder._handles.pop(old_id, None)  # type: ignore[attr-defined]
@@ -280,9 +322,39 @@ class Pipeline:
         self._stepper = None
         return self
 
+    def inject_input(
+        self,
+        node_id: str,
+        port: str,
+        value: Any,
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """Inject one external input into the in-process stepper."""
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+        self._stepper.inject_input(node_id, port, value, timestamp=timestamp)
+        return self
+
+    def inject_inputs(
+        self,
+        values: Dict[str, Dict[str, Any]],
+        *,
+        timestamp: Optional[float] = None,
+    ) -> "Pipeline":
+        """Inject a batch of external inputs into the in-process stepper."""
+        from retriever.rt.stepper import PipelineStepper
+
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+        self._stepper.inject_inputs(values, timestamp=timestamp)
+        return self
+
     def _build_ir(self):
-        """Validate and return an IR (Internal)."""
-        return self.validate()
+        """Build backend-ready IR (Internal)."""
+        return self.validate(lower_composite_flows=True)
 
     def build_execution(self, *, policy: Any = "aggressive", **kwargs: Any):
         """Build an ExecutionGraph from this pipeline's IR."""
@@ -915,7 +987,7 @@ def connect(
 
 def run(
     *,
-    backend: str = "dora",
+    backend: str = "multiprocessing",
     duration: Optional[float] = None,
     blocking: bool = True,
     log_config: Optional[Any] = None,
