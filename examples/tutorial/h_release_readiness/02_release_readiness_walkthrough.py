@@ -44,34 +44,25 @@ def bundled_reference_root() -> Path:
 
 
 def find_reference_root(explicit: Path | None) -> Path:
+    bundled = bundled_reference_root().resolve()
+
     if explicit is not None:
         explicit = explicit.resolve()
-        if (explicit / "dev_retriever_release").exists():
-            return explicit
-        if explicit.name == "RetrieverNotes" and explicit.exists():
-            return explicit
-        maybe = explicit / "RetrieverNotes"
-        if maybe.exists():
-            return maybe
-        raise FileNotFoundError(f"Release reference bundle not found from explicit path: {explicit}")
+        candidates = [explicit, explicit / "release_reference_v1"]
+        for candidate in candidates:
+            if (candidate / "dev_retriever_release").exists():
+                return candidate
+        raise FileNotFoundError(
+            f"Release reference bundle not found from explicit path: {explicit}. "
+            "Expected a directory containing dev_retriever_release/."
+        )
 
-    candidates: list[Path] = []
-    cwd = Path.cwd().resolve()
-    candidates.extend([cwd, *cwd.parents])
-
-    here = Path(__file__).resolve()
-    candidates.extend(here.parents)
-
-    for base in candidates:
-        probe = base / "RetrieverNotes"
-        if probe.exists():
-            return probe
-
-    bundled = bundled_reference_root()
     if bundled.exists():
         return bundled
 
-    raise FileNotFoundError("Could not locate a release reference bundle. Pass --reference-root.")
+    raise FileNotFoundError(
+        "Bundled release reference bundle is missing. Pass --reference-root to a directory containing dev_retriever_release/."
+    )
 
 
 def first_existing(paths: list[Path]) -> Path | None:
@@ -99,7 +90,7 @@ def read_blocked_transition_count(path: Path) -> int:
 def render_markdown(
     *,
     generated_at: str,
-    notes_root: Path,
+    reference_root: Path,
     gates: list[GateResult],
     matrix_checks: list[MatrixCheck],
     decision: str,
@@ -108,7 +99,7 @@ def render_markdown(
     lines.append("# TUT-029 Release Readiness Checklist")
     lines.append("")
     lines.append(f"- Generated at: {generated_at}")
-    lines.append(f"- Reference root: `{notes_root}`")
+    lines.append(f"- Reference root: `{reference_root}`")
     lines.append("")
 
     lines.append("## Acceptance Gates")
@@ -145,7 +136,7 @@ def parse_args() -> argparse.Namespace:
         dest="reference_root",
         type=Path,
         default=None,
-        help="Path to a release reference bundle (or a RetrieverNotes root).",
+        help="Path to a release reference bundle.",
     )
     p.add_argument("--evidence-dir", type=Path, default=Path("logs/tutorial_release_evidence"))
     p.add_argument(
@@ -163,9 +154,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    notes_root = find_reference_root(args.reference_root)
+    reference_root = find_reference_root(args.reference_root)
 
-    release_root = notes_root / "dev_retriever_release"
+    release_root = reference_root / "dev_retriever_release"
     validation_root = release_root / "validation"
     core_root = release_root / "core_release"
     pipeline_root = release_root / "pipeline_release"
@@ -350,7 +341,7 @@ def main() -> None:
 
     markdown = render_markdown(
         generated_at=utc_now_iso(),
-        notes_root=notes_root,
+        reference_root=reference_root,
         gates=gates,
         matrix_checks=matrix_checks,
         decision=decision,

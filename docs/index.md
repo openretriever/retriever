@@ -82,7 +82,7 @@ pipe.close_stepper()
 - **Architecture**: [architecture.md](architecture.md)
 - **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md)
 - **Examples**: `examples/` directory and `tests/core/`
-- **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
+- **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins)
 
 ## 🚀 Key Features
 

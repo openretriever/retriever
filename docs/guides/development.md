@@ -311,20 +311,37 @@ pipe.close_stepper()
 
 ## Testing & Quality Assurance
 
-### Test Organization
+### Test Layout
+
+The live test tree is intentionally small and topic-based:
 
 ```
 tests/
-├── core/                  # Core framework tests
-│   ├── test_flow.py      # Flow composition tests
-│   ├── test_executor.py  # Execution engine tests
-│   └── test_types.py     # Type system tests
-├── perception/            # Perception system tests
-├── planning/              # Planning system tests
-├── integration/           # End-to-end integration tests
-├── performance/           # Performance and benchmark tests
-└── fixtures/              # Shared test data and utilities
+├── core/         # public surface, runtime, registry, hub, pipeline
+├── flow/         # authoring and composition semantics
+├── integration/  # end-to-end backend/runtime checks
+├── ir/           # IR lowering and visualization
+├── planning/     # planning-oriented slices
+└── images/       # image fixtures / generated artifacts
 ```
+
+### Common Test Commands
+
+```bash
+# Full suite
+pixi run python -m pytest
+
+# Focused runtime/public-surface checks
+pixi run python -m pytest tests/core -q
+
+# Authoring + IR checks
+pixi run python -m pytest tests/flow tests/ir -q
+
+# Integration slice
+pixi run python -m pytest tests/integration -q
+```
+
+Some tests require optional extras or specific backends. Keep the docs and Pixi tasks aligned with the real test commands in this repo; do not advertise custom pytest flags unless they are wired into the project configuration.
 
 ### Writing Effective Tests
 
@@ -340,49 +357,22 @@ def test_flow_composition():
 
 **Integration Tests**:
 ```python
-@pytest.mark.integration
-def test_complete_manipulation_pipeline():
+def test_complete_pipeline_round_trip():
     """Test a real pipeline on the multiprocessing backend."""
     pipe = build_demo_pipeline()
     engine = pipe.run(backend="multiprocessing", duration=0.5, blocking=False)
     engine.stop()
 ```
 
-**Performance Tests**:
-```python
-@pytest.mark.performance
-def test_pipeline_throughput():
-    """Test system performance under load."""
-    pipe = build_demo_pipeline()
-    for _ in range(100):
-        pipe.step(dt=0.02)
-    pipe.close_stepper()
-```
-
 ### Continuous Integration
 
-```yaml
-# .github/workflows/test.yml
-name: Test Suite
-on: [push, pull_request]
+Keep CI aligned with the same commands developers use locally:
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install pixi
-        run: curl -fsSL https://pixi.sh/install.sh | bash
-      - name: Install environment
-        run: pixi install
-      - name: Run quality checks
-        run: |
-          pixi run ruff check .
-          pixi run black .
-          pixi run mypy src/retriever
-          pixi run python -m pytest
-      - name: Run performance tests
-        run: pixi run python -m pytest --performance
+```bash
+pixi run ruff check .
+pixi run black .
+pixi run mypy src/retriever
+pixi run python -m pytest
 ```
 
 ## Contributing Guidelines
@@ -472,12 +462,13 @@ interfaces and backend hooks should live in the core runtime repo.
 
 ### Performance Optimization
 
-**Profiling Pipelines**:
+Use standard Python profiling first, and only document extra tooling once it is part of the checked-in environment:
+
 ```python
 import cProfile
 import pstats
 
-def profile_pipeline():
+def profile_pipeline() -> None:
     profiler = cProfile.Profile()
     profiler.enable()
 
@@ -486,16 +477,7 @@ def profile_pipeline():
 
     profiler.disable()
     stats = pstats.Stats(profiler)
-    stats.sort_stats('cumulative').print_stats(20)
-```
-
-**Memory Usage Analysis**:
-```bash
-# Monitor memory during execution
-pixi run python -m pytest --memray
-
-# Memory profiling for specific components
-python -m memray run --live examples/memory_test.py
+    stats.sort_stats("cumulative").print_stats(20)
 ```
 
 ### Extending the Runtime
@@ -543,20 +525,17 @@ python -c "import retriever; print(retriever.__version__)"
 
 **Performance Issues**:
 ```bash
-# Profile execution
-pixi run python -m pytest --profile
+# Re-run a narrow slice first
+pixi run python -m pytest tests/core -q
 
-# Check for memory leaks
-pixi run python -m pytest --memray
-
-# Benchmark against baseline
-pixi run python -m pytest --benchmark
+# Then profile a concrete script or example
+python -m cProfile -m examples.tutorial.c_debug_and_replay.01_debug_stepper
 ```
 
 **Testing Failures**:
 ```bash
 # Run specific test module
-pixi run python -m pytest tests/core/test_flow.py
+pixi run python -m pytest tests/core -q
 
 # Run with verbose output
 pixi run python -m pytest -v

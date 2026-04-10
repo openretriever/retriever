@@ -70,6 +70,10 @@ Backend boundary note:
 - Native backends and transport-specific optimizations remain backend implementation details.
 - The public architecture surface is `Pipeline` / `IR` / `ExecutionGraph` / `execute_ir(...)`.
 
+In-process note:
+- Prefer `Pipeline.step(...)` / `Pipeline.close_stepper()` for in-process debugging.
+- `execute_ir(..., backend="in-process")` is not a generic loader for saved IR files; it requires a live pipeline/runtime context in the current process.
+
 ---
 
 ## 2) Execution-step data model (FRP vocabulary)
