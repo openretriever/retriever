@@ -104,7 +104,7 @@ class ErrCode(IntEnum):
     MP_UNKNOWN = 4100
 
     # Dora Backend errors (4200-4299)
-    DORA_UNKOWN = 4200
+    DORA_UNKNOWN = 4200
     DORA_EVENT_INVALID = 4201
     DORA_GET_INPUT_FAILED = 4202
     DORA_SET_OUTPUT_FAILED = 4203
@@ -208,7 +208,7 @@ ERROR_MSGS: Dict[ErrCode, str] = {
     ErrCode.MP_UNKNOWN: "Unknown multiprocessing backend error",
 
     # Backend layer - Dora (4200-4299)
-    ErrCode.DORA_UNKOWN: "Unknown dora backend error",
+    ErrCode.DORA_UNKNOWN: "Unknown dora backend error",
     ErrCode.DORA_EVENT_INVALID: "Invalid dora event structure or missing required fields",
     ErrCode.DORA_GET_INPUT_FAILED: "Failed to receive input from dora node",
     ErrCode.DORA_SET_OUTPUT_FAILED: "Failed to send output via dora node",

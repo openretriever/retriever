@@ -55,7 +55,7 @@ def make_env():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backend", default="dora", choices=["dora", "multiprocessing"])
+    parser.add_argument("--backend", default="multiprocessing", choices=["dora", "multiprocessing"])
     parser.add_argument("--duration", type=float, default=5.0)
     args = parser.parse_args()
     

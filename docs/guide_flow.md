@@ -11,11 +11,6 @@ This guide describes the **refactored** Flow authoring surface used by the runti
 Older pre-runtime-authoring material is not part of the public release docs in this repo.
 Use the tutorial tracks and `docs/handbook.md` as the supported source of truth.
 
-Quick checks (Dora lag policy):
-
-- Warn + drop missed ticks: `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
-- Panic (alias for `error`): `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
-
 ---
 
 ## 1) Define typed ports with `@io`
@@ -39,19 +34,19 @@ class DetectionsOut:
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - `@io` is standalone. Do not stack it with `@dataclass`.
-- Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
+- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
 
 ---
 
 ## 2) Implement a `Flow[I, O]`
 
-A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
+A `Flow` is a typed node. Implement `step(...)` and optionally lifecycle hooks:
 
-- `__lazy_init__()` / `init()` / `finalize()` for resources (models, cameras, sockets)
-- `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
+- `__lazy_init__()` / `reset()` / `finalize()` for resources and runtime-local state
+- `run()` / `init()` only as deprecated compatibility aliases for older flows
 
 Keep module top-level code and `__init__()` import-safe and lightweight. Acquire
-runtime-local resources in `__lazy_init__()` / `init()`.
+runtime-local resources in `__lazy_init__()` / `reset()`.
 
 ```py
 from retriever.flow import Flow, io
@@ -68,17 +63,17 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
 
-- `Flow.step(...)` and `Flow.forward(...)` are aliases for `run(...)`. This keeps the word “run” available for backend execution (`Pipeline.run`).
+- `Flow.run(...)` and `Flow.forward(...)` are compatibility aliases for `step(...)`. Backend execution stays on `Pipeline.run(...)`.
 
 ## 2.1) Wrapper Factory (Torch/Gym)
 
@@ -239,7 +234,7 @@ See: `docs/guide_temporal.md`.
 
 ```py
 pipe.run(backend="multiprocessing", duration=1.0)
-pipe.run(backend="dora", duration=10.0)
+# Use backend="dora" explicitly for dora deployments or parity checks.
 
 # Record to file (uses in-process backend)
 pipe.run(duration=5.0, record="session.mcap")
@@ -248,7 +243,7 @@ pipe.run(duration=5.0, record="session.mcap")
 ### In-process single-step debugging
 
 `Pipeline.step(...)` runs the pipeline in the current Python process so you can use the VS Code debugger
-inside `Flow.run(...)`:
+inside `Flow.step(...)`:
 
 ```py
 pipe.step(dt=0.1)

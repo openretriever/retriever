@@ -30,12 +30,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
 
@@ -46,10 +46,6 @@ pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
-
-Preferred public API note:
-- Use `@io` for new code.
-- `@flow_io` remains available as a backward-compatible alias.
 
 ### Debugging
 
@@ -73,8 +69,7 @@ pipe.close_stepper()
 - **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
     - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
-    - See also: **[MCP Guide](guide_mcp.md)** (External Tools & Memory)
-- **[Development Guide](development.md)** - Dev workflow and architecture
+- **[Development Guide](guides/development.md)** - Dev workflow and architecture
 
 ### Reference
 - **[Architecture](architecture.md)** - Design philosophy and system overview
@@ -85,7 +80,7 @@ pipe.close_stepper()
 - **Tutorials**: [getting_started/tutorials.md](getting_started/tutorials.md)
 - **Canonical Runtime**: [guide_runtime.md](guide_runtime.md)
 - **Architecture**: [architecture.md](architecture.md)
-- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md), [MCP](guide_mcp.md)
+- **Deep Dives**: [Temporal](guide_temporal.md), [Execution](guide_execution.md)
 - **Examples**: `examples/` directory and `tests/core/`
 - **Registry + Plugins**: [architecture.md](architecture.md#4-registry--plugins-pipelines-and-systems)
 
@@ -95,7 +90,7 @@ pipe.close_stepper()
 - **Type-Safe Composition**: Catch errors at development time, not runtime
 - **Multi-Backend Execution**: Local multiprocessing + dora-rs backend
 - **Registry + Plugins**: Entry-point based pipeline discovery (`retriever.plugins`)
-- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.run(...)`
+- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.step(...)`
 - **Record/Replay**: Stepper-first “rosbag-like” debug workflow
 
 ### 🎯 Framework Benefits

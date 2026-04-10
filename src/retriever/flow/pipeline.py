@@ -987,7 +987,7 @@ def connect(
 
 def run(
     *,
-    backend: str = "dora",
+    backend: str = "multiprocessing",
     duration: Optional[float] = None,
     blocking: bool = True,
     log_config: Optional[Any] = None,

@@ -45,7 +45,7 @@ Notes:
 `Pipeline.step(...)` is a **debug tool**, not a backend:
 
 - runs the pipeline inside the current Python process
-- advances one discrete step of the runtime semantics: `sample → run → publish`
+- advances one discrete step of the runtime semantics: `sample → step → publish`
 - returns a `StepResult` with what executed and snapshots of inputs/outputs
 
 ```py
@@ -128,7 +128,7 @@ In `Pipeline.step(...)`, buffers are in-process and the buffer size is derived f
 These are intentional constraints for the first version:
 
 - Generator-based flows / services are **not supported** in `Pipeline.step(...)` yet.
-  - The dora executor supports generators for RPC; the stepper currently raises an error if `Flow.run()` yields.
+  - The dora executor supports generators for RPC; the stepper currently raises an error if `Flow.step()` yields.
 - Service edges (`_request_out`, `_response_in/...`) are ignored by the stepper for now.
 - Cycles are executed once per step using the IR’s SCC groups order; this is a debug approximation.
 
@@ -148,7 +148,7 @@ Use: `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`
 What to do:
 
 1. Open `examples/tutorial/c_debug_and_replay/01_debug_stepper.py`
-2. Set a breakpoint inside `DebugFlow.run()` (or any `Flow.run()` you want to inspect)
+2. Set a breakpoint inside `DebugFlow.step()` (or any `Flow.step()` you want to inspect)
 3. Start the VS Code debugger (F5) using the provided launch config (see `.vscode/launch.json`)
 
 ### Breaking on exceptions
@@ -159,7 +159,7 @@ The example can optionally raise an exception when the counter reaches a value:
 python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --fail-at 3
 ```
 
-In VS Code, enable “Break on exceptions” to stop exactly where the exception is raised inside `Flow.run()`.
+In VS Code, enable “Break on exceptions” to stop exactly where the exception is raised inside `Flow.step()`.
 
 ### Debugging the perception detector (no camera)
 
@@ -171,7 +171,7 @@ It generates synthetic red/blue frames in-process and runs:
 
 `SyntheticCamera → ColorDetector → PrintDetections`
 
-Set breakpoints inside `ColorDetector.run()` / `_detect_from_mask()` and run under the debugger.
+Set breakpoints inside `ColorDetector.step()` / `_detect_from_mask()` and run under the debugger.
 
 ### Debugging the perception workflow (real camera)
 
@@ -204,9 +204,15 @@ Make sure VS Code is using that interpreter (or run the module via the launch co
 The stepper is useful for “record once, debug many times” workflows:
 
 - record a short input sequence from real hardware
-- replay it later in-process so you can set breakpoints inside `Flow.run()`
+- replay it later in-process so you can set breakpoints inside `Flow.step()`
 
-Library helpers (stepper-first):
+Preferred recording paths:
+
+- `pipe.run(record="session.mcap")` for a portable session artifact.
+- `pipe.run(record="session.rrd")` for a native Rerun session artifact.
+- `pipe.run(record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)))` when you want both.
+
+Legacy stepper-first helpers still exist for single-stream capture:
 
 - High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
 - Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
@@ -216,4 +222,8 @@ Perception example:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
   - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay ...`
 
-These examples store a gzip+pickle file by default at `logs/perception_recording.pkl.gz`.
+Use the perception example with `.mcap` by default. `.rrd` is also supported for replay and viewer inspection:
+
+- Record to MCAP: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.mcap`
+- Record to RRD: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd`
+- Replay either artifact: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap`

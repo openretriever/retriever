@@ -10,7 +10,7 @@ Enables PyTorch-style component substitution and automatic discovery:
 Example:
     @register_flow("camera", category="vision")
     class WebcamFlow(Flow[None, RGBImage]):
-        def run(self, _): return capture_webcam()
+        def step(self, _): return capture_webcam()
     
     # Usage
     camera = get_flow("camera")  # Returns WebcamFlow instance
@@ -86,7 +86,7 @@ class FlowRegistry:
         Example:
             @register_flow("camera", category="vision", description="Default camera flow")
             class WebcamFlow(Flow[None, RGBImage]):
-                def run(self, _): return capture_webcam()
+                def step(self, _): return capture_webcam()
                 
             # Later: camera = get_flow("camera")
         """

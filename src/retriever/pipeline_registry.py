@@ -288,7 +288,7 @@ def find_pipelines(
 def run_pipeline(
     name: str,
     *,
-    backend: str = "dora",
+    backend: str = "multiprocessing",
     duration: Optional[float] = None,
     blocking: bool = True,
     backend_config: Optional[Dict[str, Any]] = None,

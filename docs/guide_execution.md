@@ -56,10 +56,10 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 import retriever
 
 # Implicit execution of default pipeline
-retriever.run(backend="dora", duration=10.0)
+retriever.run(backend="multiprocessing", duration=10.0)
 
 # With manual pipeline
-pipe.run(backend="dora", duration=10.0)
+pipe.run(backend="multiprocessing", duration=10.0)
 ```
 
 ### 2.2 Low-Level (IR Access)
@@ -73,7 +73,7 @@ pipe = Pipeline("demo")
 
 ir = pipe.validate()               # logical graph
 graph = pipe.build_execution()     # physical graph (partitions + placement)
-execute_ir(graph, backend="dora")  # runs the compiled graph
+execute_ir(graph, backend="multiprocessing")  # runs the compiled graph
 ```
 
 Notes:
@@ -93,8 +93,6 @@ pipe.run(
 )
 ```
 
-<<<<<<< HEAD
-=======
 `.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
 
 ```python
@@ -106,12 +104,12 @@ pipe.run(
 )
 ```
 
->>>>>>> 8052397 (feat(recording): add generic rrd session replay)
 To replay:
 ```python
 # Inject recorded data into a flow source
 pipe.replay(camera, path="session.rrd")  # `.mcap` works too
-pipe.run(backend="in-process")
+pipe.step(dt=0.1)
+pipe.close_stepper()
 ```
 
 ---
@@ -153,7 +151,7 @@ retriever.step(dt=0.1)
 retriever.step(dt=0.1)
 ```
 
-**Note**: `retriever.step` simulates execution in the *current process*. It ignores the `backend` argument normally passed to `run()`.
+**Note**: `retriever.step` simulates execution in the current process. The in-process backend itself requires a live `Pipeline` instance and is not available from a saved IR file.
 
 ---
 
@@ -177,8 +175,6 @@ This split (logical IR vs physical execution graph) is the foundation for:
 - explicit placement (multi-process, multi-host, Ray tasks/actors)
 - backend selection per partition (e.g., local mp vs dora vs ray)
 - richer compilation (non-linear partitions, watermark-aware operators, explicit adapters)
-
-See also: `docs/temp_notes/2025-12-16_outline_design_alignment.md`.
 
 ## 7) Distributed Execution (Multi-Machine)
 

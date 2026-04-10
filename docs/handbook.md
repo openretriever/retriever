@@ -4,29 +4,11 @@ title: "Retriever Runtime Handbook (Canonical)"
 
 # Retriever Runtime Handbook (Canonical)
 
-This is the **single canonical note** for using the **refactored Retriever runtime/core**.
-
-Retriever is being split into:
-
-- **Runtime/Core (this repo):** typed Flow graphs → IR → backend execution + debugging tools
-- **Golden/System (future repo):** canonical system pipelines + heavy deps (models/robots/sim/training/Ray)
+This is the **single canonical note** for using the **Retriever runtime/core**.
 
 If you only read one document, read this one.
 
 If you want the shorter version first, start with `docs/quickstart.md`.
-
----
-
-## What’s New (2025-12-17)
-
-- Canonical examples live in `examples/tutorial/`.
-- New ergonomics demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
-- `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
-- Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/b_ir_and_execution/07_request_response.py`.
-
-Known caveat:
-- Backend execution reconstructs Flow instances from IR, so per-instance constructor args in examples won’t survive unless they’re represented in IR/config. Prefer self-healing defaults or explicit IR-level configuration.
-- **Sync Policy Breaking Change**: `pipe.connect(..., sync=...)` is now mandatory unless a global default is set via `retriever.init(default_sync=...)`.
 
 ---
 
@@ -103,7 +85,6 @@ class AddOut:
 
 Notes:
 - `@io` makes fields `Optional[...]` and adds runtime metadata (signals).
-- `@flow_io` remains available as a backward-compatible alias for older examples.
 
 ### 2.2 Implement a `Flow[I, O]`
 
@@ -112,18 +93,18 @@ from retriever.flow import Flow
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
 Lifecycle hooks:
-- `init()` / `finalize()` (optional) for resources
-- `reset()` (optional) for gym-like state (mainly for stepper workflows)
+- `reset()` / `finalize()` (optional) for resources and gym-like state
+- `init()` remains available only as a deprecated compatibility alias
 
 ---
 
@@ -209,7 +190,7 @@ engine.stop()
 ## 5) Debugging: single-step execution (`Pipeline.step`)
 
 `Pipeline.step()` runs the pipeline **in the current Python process** and advances one discrete step.
-This is the recommended way to use the VS Code debugger inside `Flow.run()` logic.
+This is the recommended way to use the VS Code debugger inside `Flow.step()` logic.
 
 ```py
 res = pipe.step(dt=0.1)
@@ -230,13 +211,10 @@ Recommended examples:
 
 Topic-focused tutorials (legacy extractions):
 
-- Windowed vision stats: `examples/tutorial/02_vision_processing/01_detection_window_stats.py`
-- Closed-loop feedback intro: `examples/tutorial/06_feedback_loops/00_feedback_intro.py`
-- Event-driven replanning: `examples/tutorial/06_feedback_loops/01_event_driven_replan.py`
-- Execution monitoring: `examples/tutorial/06_feedback_loops/02_execution_monitoring.py`
-
-Advanced examples:
-- See `examples/advanced/` for currently supported runtime examples. Prefer the tutorial tracks for public release material.
+- Windowed vision stats: `examples/tutorial/b_ir_and_execution/08_detection_window_stats.py`
+- Closed-loop feedback intro: `examples/tutorial/d_closed_loop_state_feedback/07_feedback_intro.py`
+- Event-driven replanning: `examples/tutorial/d_closed_loop_state_feedback/08_event_driven_replan.py`
+- Execution monitoring: `examples/tutorial/d_closed_loop_state_feedback/09_execution_monitoring.py`
 
 ---
 
@@ -302,7 +280,8 @@ To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 ```py
 # Inject recorded data into 'camera' flow
 pipe.replay(camera, path="session.rrd")  # `.mcap` works too
-pipe.run(backend="in-process")
+pipe.step(dt=0.1)
+pipe.close_stepper()
 ```
 
 ---
@@ -411,11 +390,6 @@ System/legacy folders still present (to move to golden repo):
 
 - `src/golden_retriever/models`, `src/golden_retriever/robots`, `src/golden_retriever/envs`,
   `src/golden_retriever/mappers`, `src/golden_retriever/skills`, etc.
-
-Golden split templates in this repo:
-
-- runtime manifests: `pyproject.toml`, `pixi.toml`
-- system templates: `pyproject-golden.toml`, `pixi-golden.toml`
 
 ---
 
