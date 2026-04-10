@@ -73,7 +73,9 @@ class AddOne(Flow[SrcOut, AddOut]):
 ```
 
 
-- `Flow.run(...)` and `Flow.forward(...)` are compatibility aliases for `step(...)`. Backend execution stays on `Pipeline.run(...)`.
+- Override `step(...)` in new code. `run(...)` is a deprecated backwards-compat
+  alias, and `forward(...)` is a PyTorch-style alias for `step(...)`. Backend
+  execution stays on `Pipeline.run(...)`.
 
 ## 2.1) Wrapper Factory (Torch/Gym)
 
@@ -289,8 +291,8 @@ Example:
 
 Gym-style env wrapper notes:
 - A Gym env is typically stateful and imperative; in Retriever you wrap it in a `Flow`:
-  - `init()` creates the env
-  - `run(Action)` performs `env.step(action)` and returns `Observation`
+  - `reset()` creates or refreshes the env state
+  - `step(Action)` performs `env.step(action)` and returns `Observation`
   - the flow can internally decide when to `reset()` (e.g. on `done=True`)
 - The closed-loop becomes a normal pipeline cycle (env↔controller), which can run on
   multiprocessing or Dora without changing user code.

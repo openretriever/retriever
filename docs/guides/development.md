@@ -39,7 +39,7 @@ git clone <repository-url>
 cd <repo-root>
 
 # Option A: Pixi (quick demo env defined in pixi.toml)
-pixi run demo-dora
+pixi run demo-dora-simple
 pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 
 # Option B: uv (in your own venv/conda env)
@@ -99,20 +99,10 @@ pixi run mypy src/retriever
 pixi run python -m pytest
 ```
 
-### Documentation (MkDocs)
+### Documentation
 
-MkDocs config lives in `mkdocs.yml`, with pages under `docs/`.
-
-```bash
-# Install mkdocs tooling (in your active env)
-python -m pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin mkdocs-minify-plugin
-
-# Serve docs locally
-mkdocs serve
-
-# Build static site
-mkdocs build
-```
+The docs source of truth is the Markdown content under `docs/`.
+Keep the handbook and the topic guides aligned when you change public behavior.
 
 ### Environment Variables
 
@@ -441,10 +431,11 @@ jobs:
 
 ### Adding Robot Integrations
 
-System-layer robot integrations belong under `src/golden_retriever/` or in an external package.
-Only runtime-agnostic interfaces and backend hooks should live in the core runtime repo.
+System-layer robot integrations should live in an external package or a separate
+system repository that depends on Retriever runtime/core. Only runtime-agnostic
+interfaces and backend hooks should live in the core runtime repo.
 
-1. **Create Robot Package**: `src/golden_retriever/robots/new_robot/`
+1. **Create Robot Package**: `robots/new_robot/` in your system package
 2. **Implement Robot Interface**:
    ```python
    class NewRobotInterface:
@@ -456,8 +447,8 @@ Only runtime-agnostic interfaces and backend hooks should live in the core runti
            # Implementation
            pass
    ```
-3. **Add Skills**: `src/golden_retriever/skills/new_robot/`
-4. **Create Tests**: `src/golden_retriever/tests/test_new_robot.py`
+3. **Add Skills**: `skills/new_robot/` in that system package
+4. **Create Tests**: `tests/test_new_robot.py`
 5. **Update Configuration**: Add to robot registry
 
 ### Adding Execution Backends
@@ -467,8 +458,8 @@ Only runtime-agnostic interfaces and backend hooks should live in the core runti
    def execute_my_backend(ir: IR, **kwargs):
        # Compile IR to backend-specific graph
        graph = compile_to_my_backend(ir)
-       # Execute
-       graph.run()
+       # Execute via the backend's runtime entrypoint
+       return execute_compiled_graph(graph, **kwargs)
    ```
 
 2. **Add Performance Benchmarks**:
@@ -520,7 +511,7 @@ For core runtime work, prefer explicit extension points over monkey-patching:
 - add runtime backends under `src/retriever/rt/backend/`
 
 External systems such as Ray, hardware SDKs, or model-serving stacks should usually live in
-`src/golden_retriever/` or external packages and integrate with the runtime through normal `Flow`
+external packages and integrate with the runtime through normal `Flow`
 wrappers and typed `@io` envelopes.
 
 ## Troubleshooting
@@ -621,7 +612,7 @@ logger.setLevel(logging.DEBUG)
 
 After reading this guide:
 
-1. **Set up your environment**: follow `docs/install.md`
+1. **Set up your environment**: follow `docs/getting_started/install.md`
 2. **Run the test suite**: `python -m pytest`
 3. **Try the examples**: start with `examples/tutorial/a_flow_fundamentals/01_basic_flow.py`
 4. **Read the architecture guide**: [architecture.md](../architecture.md) for technical details

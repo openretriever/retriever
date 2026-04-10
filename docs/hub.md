@@ -135,8 +135,10 @@ slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz
 camera.then(slam_stage, sync=Latest())
 ```
 
-This wrapper is currently in-process only. Retriever will reject it on
-`multiprocessing` and `dora` backends.
+This wrapper is an in-process composition surface. When you embed it inside a
+larger pipeline and build IR, Retriever lowers the wrapped sub-pipeline into
+ordinary runtime nodes so it can run on `multiprocessing` or `dora`. The raw
+wrapper node itself is still guarded outside that lowering path.
 
 Shared types and transforms compose with these factories the same way:
 
@@ -216,7 +218,7 @@ Guidelines:
 - module top-level: import-safe only
 - `__init__`: store lightweight, serializable configuration only
 - `init_config()`: return serializable reconstruction data only
-- `__lazy_init__()` / `init()`: acquire runtime-local resources
+- `__lazy_init__()` / `reset()`: acquire runtime-local resources
 
 Local resources include:
 
@@ -239,13 +241,14 @@ class Frame:
 
 class Camera(Flow[None, Frame]):
     def __init__(self, *, device_id: str):
+        super().__init__()
         self.device_id = device_id
         self._camera = None
 
     def init_config(self) -> dict:
         return {"device_id": self.device_id}
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._camera = open_camera(self.device_id)
 ```
 
@@ -270,7 +273,7 @@ tags = ["lidar", "slam", "mapping"]
 
 Minimum expectations before publishing:
 
-- the repository is reachable
+- the GitHub repository is reachable
 - `pyproject.toml` contains a valid `[tool.retriever.module]` section
 - at least one semver tag exists
 - the declared module imports cleanly

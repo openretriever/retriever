@@ -41,5 +41,5 @@ pixi run python -m pytest tests/core -q
 
 ## Documentation
 
-- Docs are in `docs/` and served by MkDocs (`mkdocs.yml`).
-- Local preview: `mkdocs serve`
+- Docs live in `docs/` as the primary source.
+- When docs behavior changes, update the relevant guide/handbook pages in the same PR.

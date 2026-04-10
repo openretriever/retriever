@@ -2,8 +2,7 @@
 Tutorial: Symbolic Planning Types
 
 Demonstrates the PDDL-style symbolic types for task and motion planning.
-These types were migrated from golden_retriever/core and are now part of
-the core retriever package.
+These symbolic types are part of the core `retriever.types` surface.
 
 Components:
 - Type: Define object types with inheritance

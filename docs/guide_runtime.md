@@ -182,7 +182,8 @@ pipe.run(
 )
 ```
 
-Design plan: `docs/temp_notes/2025-12-17_native_acceleration_plan.md`.
+This is a reserved extension point for future native acceleration work; it is
+not required for normal runtime usage.
 
 ### Backend config: buffer engine (Tier B.3)
 

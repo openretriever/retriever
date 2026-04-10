@@ -28,3 +28,11 @@ pixi run demo-webcam-detection
 pixi run demo-record-replay
 pixi run demo-perception-stepper
 ```
+
+## Useful next runs
+
+```bash
+pixi run demo-functional-fanin-fanout
+pixi run demo-manifest-lineage
+pixi run demo-release-readiness
+```

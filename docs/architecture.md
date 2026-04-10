@@ -19,7 +19,7 @@ Use this page plus `docs/guide_execution.md` for the supported architecture surf
 
 Code lives in `retriever/flow/`:
 
-- `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
+- `Flow[I, O]`: user-defined node logic (`reset()`, `step()`, `finalize()`)
 - `@io` classes: typed ports (each field is a port)
 - `Pipeline`: explicit graph builder (no context manager)
 - `PipelineBuilder`: lower-level validator/builder used by the registry and tooling
@@ -67,8 +67,8 @@ Note: `execute_ir(...)` accepts either an `IR` (logical graph) or an `ExecutionG
 (physical plan). When given an execution graph, it is lowered to a backend-friendly IR for execution.
 
 Backend boundary note:
-- Dora integration + Rust migration candidates: `docs/temp_notes/2025-12-17_dora_rust_boundary.md`
-- Native acceleration plan (Tier A/B): `docs/temp_notes/2025-12-17_native_acceleration_plan.md`
+- Native backends and transport-specific optimizations remain backend implementation details.
+- The public architecture surface is `Pipeline` / `IR` / `ExecutionGraph` / `execute_ir(...)`.
 
 ---
 
@@ -124,9 +124,9 @@ Backends attach a concrete “execution time” to a step:
 
 ---
 
-## 4) Registry + plugins (pipelines and systems)
+## 4) Registry + plugins
 
-To support “system packages” (and the future split into runtime vs golden system repos), the runtime has:
+To support external packages that register reusable flows and pipelines, the runtime has:
 
 ### 4.1 Pipeline registry (IR-first)
 

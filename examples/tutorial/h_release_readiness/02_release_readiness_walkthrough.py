@@ -39,15 +39,21 @@ class MatrixCheck:
     evidence: list[str]
 
 
-def find_notes_root(explicit: Path | None) -> Path:
+def bundled_reference_root() -> Path:
+    return Path(__file__).resolve().parent / "release_reference_v1"
+
+
+def find_reference_root(explicit: Path | None) -> Path:
     if explicit is not None:
         explicit = explicit.resolve()
+        if (explicit / "dev_retriever_release").exists():
+            return explicit
         if explicit.name == "RetrieverNotes" and explicit.exists():
             return explicit
         maybe = explicit / "RetrieverNotes"
         if maybe.exists():
             return maybe
-        raise FileNotFoundError(f"RetrieverNotes not found from explicit path: {explicit}")
+        raise FileNotFoundError(f"Release reference bundle not found from explicit path: {explicit}")
 
     candidates: list[Path] = []
     cwd = Path.cwd().resolve()
@@ -61,7 +67,11 @@ def find_notes_root(explicit: Path | None) -> Path:
         if probe.exists():
             return probe
 
-    raise FileNotFoundError("Could not locate RetrieverNotes. Pass --notes-root.")
+    bundled = bundled_reference_root()
+    if bundled.exists():
+        return bundled
+
+    raise FileNotFoundError("Could not locate a release reference bundle. Pass --reference-root.")
 
 
 def first_existing(paths: list[Path]) -> Path | None:
@@ -98,7 +108,7 @@ def render_markdown(
     lines.append("# TUT-029 Release Readiness Checklist")
     lines.append("")
     lines.append(f"- Generated at: {generated_at}")
-    lines.append(f"- Notes root: `{notes_root}`")
+    lines.append(f"- Reference root: `{notes_root}`")
     lines.append("")
 
     lines.append("## Acceptance Gates")
@@ -129,7 +139,14 @@ def render_markdown(
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Release-readiness gate walkthrough.")
-    p.add_argument("--notes-root", type=Path, default=None, help="Path to RetrieverNotes or its parent.")
+    p.add_argument(
+        "--reference-root",
+        "--notes-root",
+        dest="reference_root",
+        type=Path,
+        default=None,
+        help="Path to a release reference bundle (or a RetrieverNotes root).",
+    )
     p.add_argument("--evidence-dir", type=Path, default=Path("logs/tutorial_release_evidence"))
     p.add_argument(
         "--out",
@@ -146,7 +163,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    notes_root = find_notes_root(args.notes_root)
+    notes_root = find_reference_root(args.reference_root)
 
     release_root = notes_root / "dev_retriever_release"
     validation_root = release_root / "validation"

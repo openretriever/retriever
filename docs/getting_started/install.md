@@ -17,22 +17,6 @@ Python **3.11+** is required. Pixi pins `3.11.*` for the runtime environment; `p
 - **uv** is great if you want a pure Python workflow (venv/conda + `uv pip install ...` / `uv sync ...`), but avoid
   mixing `uv sync` into a Pixi-managed environment unless you also update `pixi.toml`/`pixi.lock`.
 
-## Quick Start (Pip / Venv)
-
-The documentation build and website are decoupled from `pixi` for simplicity. To build the docs locally:
-
-```sh
-# Create a venv (optional)
-python -m venv .venv
-source .venv/bin/activate
-
-# Install docs dependencies
-pip install -r doc_requirements.txt
-
-# Run the build
-./scripts/build_site.sh
-```
-
 ## Runtime Environment (Pixi)
 
 For running the actual Retriever codebase and examples, we use [Pixi](https://pixi.sh).
@@ -42,7 +26,7 @@ For running the actual Retriever codebase and examples, we use [Pixi](https://pi
 curl -fsSL https://pixi.sh/install.sh | bash
 
 # Run a demo
-pixi run demo-dora
+pixi run demo-dora-simple
 ```
 
 See `pixi.toml` for available environments and tasks.

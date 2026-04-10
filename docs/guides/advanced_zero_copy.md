@@ -79,12 +79,19 @@ if isinstance(value, torch.Tensor):
 
 ## 4. Performance Verification
 
-To verify that your setup is truly Zero-Copy, run the included benchmark.
+This trimmed runtime repo does not currently ship a standalone zero-copy
+benchmark script. The practical way to verify the path is:
 
-```bash
-pixi run python examples/advanced/pytorch_cuda_async/benchmark.py --plot benchmark_plot.png
-```
+1. send a large `torch.Tensor` through a Dora-backed Retriever pipeline,
+2. confirm the serializer stays on the tensor-specific path in
+   `src/retriever/rt/backend/dora/serde.py`,
+3. measure end-to-end latency/throughput in your own benchmark harness.
 
-**Expected Results:**
-- **Throughput**: Should be extremely high (> 10 GB/s, often >> 100 GB/s for large payloads).
-- **Explanation**: Since we only send a "pointer" (handle or offset), the transfer time is constant regardless of tensor size (O(1)), leading to effectively infinite MB/s for large tensors.
+Expected behavior:
+- **Throughput** should stay high for large tensors because the transfer path is
+  dominated by lightweight shared-memory or CUDA-IPC handles rather than full
+  tensor copies.
+- **CPU tensors** should stay on the PyTorch → NumPy → Arrow zero-copy bridge
+  when memory is contiguous.
+- **CUDA tensors** should stay on the CUDA IPC handle path instead of bouncing
+  through host memory.

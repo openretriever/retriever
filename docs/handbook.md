@@ -14,7 +14,7 @@ If you want the shorter version first, start with `docs/quickstart.md`.
 
 ## 0) Quick Start (Pixi)
 
-Supported Python: **3.11** for the pinned runtime environments in this repo.
+Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this repo.
 
 ```bash
 # Install pixi (if needed)
@@ -27,7 +27,7 @@ pixi run demo-webcam-detection
 If `dora` complains about schema/version, kill stale processes:
 
 ```bash
-pkill -9 dora && pixi run demo-dora
+pkill -9 dora && pixi run demo-dora-simple
 ```
 
 Pixi vs uv (how they fit together):
@@ -174,7 +174,7 @@ pipe.run(backend="dora", duration=10.0, blocking=True)
 ```
 
 Notes:
-- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-dora`).
+- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-dora-simple`).
 - If you see schema mismatch errors, `pkill -9 dora` usually fixes “stale coordinator” issues.
 
 ### 4.3 Non-blocking run
@@ -378,18 +378,17 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop
 
 ---
 
-## 10) Project structure (runtime vs legacy/system)
+## 10) Project structure
 
 Runtime/core “source of truth”:
 
 - `src/retriever/flow/*` — typed graph authoring
 - `src/retriever/ir/*` — validation + IR structs
 - `src/retriever/rt/*` — execution, backends, stepper/debugging helpers
+- `src/retriever/types/*` — shared typed payloads and registry-backed type helpers
 
-System/legacy folders still present (to move to golden repo):
-
-- `src/golden_retriever/models`, `src/golden_retriever/robots`, `src/golden_retriever/envs`,
-  `src/golden_retriever/mappers`, `src/golden_retriever/skills`, etc.
+System integrations, robot SDK wrappers, and heavier application stacks should
+live in separate packages that build on top of the runtime/core surface.
 
 ---
 
@@ -422,5 +421,5 @@ Recommended validation loop:
 
 ```bash
 pixi run python -m pytest -q
-pixi run demo-request-dora
+pixi run demo-request-response
 ```
