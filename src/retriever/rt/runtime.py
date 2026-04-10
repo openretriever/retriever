@@ -102,10 +102,10 @@ def execute_ir(
         )
 
     if backend == "in-process" and not (backend_config or {}).get("pipeline_instance"):
-        raise NotImplementedError(
-            "The in-process backend requires a live Pipeline instance via "
-            "backend_config['pipeline_instance']. Saved IR / IR-file execution is "
-            "currently supported only on multiprocessing or dora."
+        raise ValueError(
+            "The in-process backend is a live-Pipeline debug/recording surface. "
+            "Pass backend_config['pipeline_instance'] or use Pipeline.step(), "
+            "pipe.run(record=...), or execute the saved IR on multiprocessing or dora."
         )
 
     # Initialize logging

@@ -47,7 +47,7 @@ Guide: `docs/guide_flow.md`.
 
 ---
 
-## 2) Unified High-Level API (Recommended)
+## 2) Default-pipeline convenience API
 
 Import path:
 ```python
@@ -55,12 +55,14 @@ import retriever  # Global namespace
 from retriever.lib import Wrapper
 ```
 
+- **When to use this**: REPL/notebook experiments or very small scripts where an implicit default pipeline is acceptable. For library code and checked-in examples, prefer an explicit `Pipeline` and `pipe.run(...)`.
+
 - **Pipeline Construction**:
-    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline.
+    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s and records the edge on the implicit default pipeline.
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
 
 - **Execution**:
-    - `retriever.run(backend="multiprocessing", duration=10, record="log.mcap")`: Executes pipeline (records if `record=` is set).
+    - `retriever.run(backend="multiprocessing", duration=10, record="log.mcap")`: Executes the implicit default pipeline (records if `record=` is set).
     - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
     - `retriever.reset()`: Resets the default pipeline state.
 

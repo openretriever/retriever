@@ -14,6 +14,8 @@ from retriever.error import RTError, ErrCode
 import logging
 logger = logging.getLogger(__name__)
 
+DEFAULT_INPUT_WAIT_TIMEOUT_S = 0.1
+
 
 class MPScheduler(Scheduler):
     """
@@ -131,7 +133,7 @@ class MPScheduler(Scheduler):
 
     def _next_trigger(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
         """Block on input queues until data arrives or timeout."""
-        timeout = 1.0  # FIXME: hardcode
+        timeout = DEFAULT_INPUT_WAIT_TIMEOUT_S
         fields = self.clock.fields
 
         # Check for leftover arrivals (data already in buffer)
@@ -208,7 +210,7 @@ class MPScheduler(Scheduler):
 
     def _next_synchronized(self, inputs: Dict[str, Subscriber]) -> ScheduleResult:
         """Block until synchronized data available."""
-        timeout = 1.0
+        timeout = DEFAULT_INPUT_WAIT_TIMEOUT_S
         fields = self.clock.fields
         
         # Check current buffers

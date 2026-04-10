@@ -40,6 +40,7 @@ __all__ = [
     # Configuration
     'FlowConfig',
     'FlowRateConfig',
+    'EdgeConfig',
     'TemporalFlow',
     'PipelineBuilder',
     'Pipeline',

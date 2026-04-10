@@ -50,17 +50,22 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 
 ## 2) Canonical API
 
-### 2.1 Unified (Recommended)
+### 2.1 Pipeline surface (Recommended)
+
+```python
+# Preferred script/API surface
+pipe.run(backend="multiprocessing", duration=10.0)
+```
+
+For REPL/notebook-style experiments, Retriever also exposes default-pipeline helpers:
 
 ```python
 import retriever
 
-# Implicit execution of default pipeline
 retriever.run(backend="multiprocessing", duration=10.0)
-
-# With manual pipeline
-pipe.run(backend="multiprocessing", duration=10.0)
 ```
+
+`retriever.run(...)` operates on the implicit default pipeline. Prefer `pipe.run(...)` in scripts, libraries, and checked-in examples.
 
 ### 2.2 Low-Level (IR Access)
 

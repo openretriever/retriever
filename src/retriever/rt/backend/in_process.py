@@ -34,11 +34,10 @@ class InProcessEngine(ExecutionEngine):
             self._pipeline = config["pipeline_instance"]
             
         if self._pipeline is None:
-            # TODO: Implement hydration from IR for file-based execution
-            raise NotImplementedError(
-                "In-process backend currently requires a live Pipeline instance via "
-                "backend_config['pipeline_instance']. Saved IR / IR-file execution "
-                "is not supported yet."
+            raise ValueError(
+                "The in-process backend is a live-Pipeline debug/recording surface. "
+                "Pass backend_config['pipeline_instance'] or use Pipeline.step(), "
+                "pipe.run(record=...), or execute the saved IR on multiprocessing or dora."
             )
 
         # Setup recording
