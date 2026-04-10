@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import os
 import re
-import tomllib
+try:
+    import tomllib
+except ImportError:  # pragma: no cover - Python < 3.11
+    import tomli as tomllib
 from dataclasses import dataclass, field
 from typing import List
 
