@@ -94,9 +94,11 @@ To record execution to an MCAP file, simply pass `record="..."`. This automatica
 pipe.run(
     duration=5.0,
     record="session.mcap",
-    visualize="rerun"  # Optional: stream to Rerun live
+    visualize="rerun"  # Optional: stream to a local Rerun viewer
 )
 ```
+
+`visualize="rerun"` is a local-desktop convenience surface. On multiprocessing and Dora backends, Retriever shares one Rerun recording id across worker processes so live logs appear in the same viewer session when the viewer is reachable. Use persisted `.rrd` / `.mcap` artifacts when you need a portable debugging record.
 
 `.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
 

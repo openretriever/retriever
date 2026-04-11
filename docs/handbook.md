@@ -269,9 +269,11 @@ This automatically switches to the **in-process** backend to ensure deterministi
 pipe.run(
     duration=5.0,
     record="session.rrd",
-    visualize="rerun"  # Optional: stream to viewer live
+    visualize="rerun"  # Optional: stream to a local Rerun viewer
 )
 ```
+
+Live Rerun viewing is a local-desktop convenience. On multiprocessing and Dora backends, Retriever reuses one shared recording id so worker logs land in the same viewer session when the viewer is reachable. For portable inspection and replay, prefer saved `.rrd` / `.mcap` artifacts.
 
 This generates `session.rrd` containing all flow I/O. If you also want an interchange artifact, mirror to `.mcap`:
 
