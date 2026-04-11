@@ -208,7 +208,11 @@ class Flow(ABC, Generic[I, O]):
                 self._rr_instance = _rr
             except Exception as e:
                 import logging
-                logging.getLogger(__name__).info(f"Rerun not initialized: {e}")
+                logging.getLogger(__name__).warning(
+                    "Rerun not initialized for %s; disabling flow-local logging in this process: %s",
+                    type(self).__name__,
+                    e,
+                )
                 self._rr_instance = False  # Sentinel to avoid retrying
         return self._rr_instance if self._rr_instance else None
 

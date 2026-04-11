@@ -33,7 +33,7 @@ import shutil
 import subprocess
 import logging
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dataclass_fields, is_dataclass
 from pathlib import Path
 from typing import (
     Any,
@@ -315,6 +315,15 @@ def _log_auto_detect(rr, path: str, value: Any) -> None:
             rr.log(path, rr.BarChart(value))
         else:
             rr.log(path, rr.TextLog(str(value)))
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            _log_auto_detect(rr, f"{path}/{k}", v)
+    elif is_dataclass(value) and not isinstance(value, type):
+        # @io types and plain dataclasses: log each field at {path}/{field_name}
+        for f in dataclass_fields(value):
+            field_val = getattr(value, f.name, None)
+            if field_val is not None:
+                _log_auto_detect(rr, f"{path}/{f.name}", field_val)
 
 
 # =============================================================================
@@ -388,9 +397,20 @@ class RerunManager:
 
         if self.config.mode == "spawn":
             rr.init(self.app_id, spawn=True, recording_id=recording_id)
+            logger.info(
+                "Rerun live viewer spawn requested for app=%s recording_id=%s",
+                self.app_id,
+                recording_id,
+            )
         elif self.config.mode == "connect":
             rr.init(self.app_id, recording_id=recording_id)
             _connect_rerun(rr, self.config.address)
+            logger.info(
+                "Rerun live viewer connected at %s for app=%s recording_id=%s",
+                self.config.address,
+                self.app_id,
+                recording_id,
+            )
         elif self.config.mode == "record":
             if self.config.recording_path:
                 self._recording_path = Path(self.config.recording_path)
@@ -476,6 +496,14 @@ class RerunManager:
         if isinstance(value, dict):
             for k, v in value.items():
                 self._log_auto(f"{path}/{k}", v)
+            return
+
+        # @io types and plain dataclasses: log each field at {path}/{field_name}
+        if is_dataclass(value) and not isinstance(value, type):
+            for f in dataclass_fields(value):
+                field_val = getattr(value, f.name, None)
+                if field_val is not None:
+                    self._log_auto(f"{path}/{f.name}", field_val)
             return
 
     def log_step_result(self, result: Any, step_idx: int) -> None:

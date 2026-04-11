@@ -163,7 +163,7 @@ def execute_ir(
                 _connect_rerun(rr, connect_addr)
             except Exception as e:
                 logger.warning(f"Failed to connect Rerun at {connect_addr}: {e}")
-        logger.info(f"Rerun enabled: {connect_addr}")
+        logger.info("Rerun enabled: connect_addr=%s recording_id=%s spawn_viewer=%s", connect_addr, recording_id, spawn_viewer)
 
     # Get backend factory
     factory_class = get_backend(backend)
