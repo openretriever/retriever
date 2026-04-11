@@ -186,3 +186,86 @@ def test_tutorial_record_replay_cli_roundtrip_emits_rrd_and_mcap(tmp_path: Path)
 
     replay_args.recording = mcap_path
     mod.cmd_replay(replay_args)
+
+
+class _DummyDemoPipe:
+    def __init__(self) -> None:
+        self.run_kwargs = None
+
+    def run(self, **kwargs):
+        self.run_kwargs = kwargs
+
+
+def test_webcam_demo_cli_uses_mock_camera_for_worker_rerun(monkeypatch, capsys) -> None:
+    mod = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
+    pipe = _DummyDemoPipe()
+    captured = {}
+
+    def fake_build(*, show_window: bool, camera_index: int, use_real_camera: bool):
+        captured.update(show_window=show_window, camera_index=camera_index, use_real_camera=use_real_camera)
+        return pipe
+
+    monkeypatch.setattr(mod, "build_perception_pipeline", fake_build)
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda: argparse.Namespace(
+            backend="multiprocessing",
+            duration=3.0,
+            camera_index=2,
+            camera_mode="auto",
+            visualize="rerun",
+            fresh_dora=False,
+        ),
+    )
+
+    mod.main()
+
+    assert captured == {"show_window": False, "camera_index": 2, "use_real_camera": False}
+    assert pipe.run_kwargs == {
+        "backend": "multiprocessing",
+        "duration": 3.0,
+        "blocking": True,
+        "backend_config": {},
+        "visualize": "rerun",
+    }
+    out = capsys.readouterr().out
+    assert "Using mock camera in worker backends by default." in out
+    assert "Streaming typed outputs to Rerun." in out
+
+
+def test_webcam_demo_cli_sets_fresh_dora_backend_config(monkeypatch, capsys) -> None:
+    mod = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
+    pipe = _DummyDemoPipe()
+    captured = {}
+
+    def fake_build(*, show_window: bool, camera_index: int, use_real_camera: bool):
+        captured.update(show_window=show_window, camera_index=camera_index, use_real_camera=use_real_camera)
+        return pipe
+
+    monkeypatch.setattr(mod, "build_perception_pipeline", fake_build)
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda: argparse.Namespace(
+            backend="dora",
+            duration=2.0,
+            camera_index=0,
+            camera_mode="mock",
+            visualize="stdout",
+            fresh_dora=True,
+        ),
+    )
+
+    mod.main()
+
+    assert captured == {"show_window": False, "camera_index": 0, "use_real_camera": False}
+    assert pipe.run_kwargs == {
+        "backend": "dora",
+        "duration": 2.0,
+        "blocking": True,
+        "backend_config": {"dora_fresh": True},
+        "visualize": None,
+    }
+    out = capsys.readouterr().out
+    assert "Using a fresh Dora runtime for this demo." in out

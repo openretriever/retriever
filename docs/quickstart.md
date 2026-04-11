@@ -69,7 +69,7 @@ Use `run(...)` when you want real backend behavior:
 
 ```python
 pipe.run(backend="multiprocessing", duration=1.0)
-# Use backend="dora" when you explicitly want the dora runtime.
+pipe.run(backend="dora", duration=1.0)
 ```
 
 ### Debugging
@@ -84,47 +84,65 @@ pipe.close_stepper()
 
 `step(...)` runs in the current Python process. Start here before debugging a multiprocessing or dora run.
 
-## First Live Camera + Recording Workflow
-
-Once the minimal example makes sense, use the tutorial perception path:
-
-```bash
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
-pixi run demo-webcam-replay-mcap
-```
-
-What to expect:
-
-- If a real webcam is available, Retriever captures from it.
-- If no webcam is available, the tutorial camera source falls back to mock frames so the record/replay path still works.
-- `stdout` replay is the documented default across macOS, Linux, and Windows.
-- Use `--show-window` or `--visualize rerun` only on local desktop sessions where GUI viewers are available.
-- If camera index `0` is not the right device, run the underlying module with `--camera-index N`.
-
-This is the shortest public path that exercises:
-
-- live perception with `Pipeline.step(...)`
-- persisted `.rrd` recording
-- mirrored `.mcap` recording
-- deterministic replay from either artifact
-
-## Next Reusable-Surface Example
-
-When you want to package a pipeline and reuse it as a stage in a larger graph:
-
-```bash
-pixi run demo-composable-pipelines
-```
-
-See [Track G: Operations and Interfaces](tutorials/track_g_operations_interfaces.md) after the quickstart.
-
 ## The Three Rules That Matter Most
 
 1. Always define public flow inputs and outputs with `@io`.
 2. Always provide `sync=...` on `pipe.connect(...)`, or set a global default with `retriever.init(default_sync=Latest())`.
 3. Start with `Rate` and `Trigger`; reach for more advanced clocks or adapters only when you have a concrete need.
+
+## Try The Camera Path
+
+If you want something visual right away, use the perception tutorial series.
+
+### 1. Run the webcam quickstart
+
+```bash
+pixi run demo-webcam-detection
+```
+
+This runs `camera -> detector -> display` in-process. It uses a live camera when available and falls back to a mock pattern otherwise. This is the safest cross-platform quickstart because it avoids worker-process camera issues on macOS and keeps debugging simple.
+
+If you specifically want a live Rerun backend demo, use one of these worker-safe mock-camera variants instead:
+
+```bash
+pixi run demo-webcam-detection-mp-rerun
+pixi run demo-webcam-detection-dora-rerun
+```
+
+The Dora demo tasks now start with a fresh runtime by default. If you still hit a stale coordinator or schema/version mismatch while running Dora manually, restart Dora and retry:
+
+```bash
+pkill -9 dora || true
+pixi run demo-webcam-detection-dora-rerun
+```
+
+### 2. Debug the same workflow in-process
+
+Use this when you want breakpoints inside `Flow.step(...)` without Dora or multiprocessing getting in the way:
+
+```bash
+pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 20 --sleep 0.05
+```
+
+Add `--show-window` if you want the OpenCV display window.
+
+If you want the shortest OpenCV window demo directly:
+
+```bash
+pixi run demo-webcam-window
+```
+
+### 3. Record and replay a short session
+
+```bash
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize stdout
+```
+
+This is the shortest path from live sensing to deterministic replay:
+- `logs/perception.rrd` is the inspection artifact for Rerun
+- `logs/perception.mcap` is the interchange/mirror artifact
+- replay accepts either `.rrd` or `.mcap`
 
 ## What To Read Next
 
@@ -132,4 +150,4 @@ See [Track G: Operations and Interfaces](tutorials/track_g_operations_interfaces
 - [Flow Guide](guide_flow.md)
 - [Runtime Guide](guide_runtime.md)
 - [Debugging](guides/debugging.md)
-- [Tutorial Tracks](getting_started/tutorials.md)
+- [Track A: Flow Fundamentals](tutorials/track_a_flow_fundamentals.md)

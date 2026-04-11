@@ -6,6 +6,8 @@ This is a stepper-first workflow:
   - replay later (still in-process) so breakpoints inside `Flow.step()` work
   - optionally visualize replay in stdout, OpenCV, Rerun, or both
 
+`stdout` is the documented cross-platform default. Use `cv2` or `rerun` only on a local desktop session.
+
 Run:
   pixi run demo-webcam-record
   pixi run demo-webcam-replay-rrd

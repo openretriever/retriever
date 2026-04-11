@@ -4,14 +4,15 @@ Perception Pipeline - Live Camera to Object Detection
 Demonstrates perception pipeline with live or mock camera input:
 - Real camera via cv2.VideoCapture (with mock fallback)
 - Color-based object detection
-- Backend execution (multiprocessing or dora)
+- Backend execution (in-process, multiprocessing, or dora)
 
 The default public task uses the in-process backend so a local webcam path works
-reliably across desktop platforms. Dora remains available as an explicit mock-camera
-variant when you want distributed execution.
+reliably across desktop platforms. Dora and multiprocessing remain available as
+explicit mock-camera variants when you want worker backends or live Rerun views.
 
 Run:
   pixi run demo-webcam-detection
+  pixi run demo-webcam-detection-mp-rerun
   pixi run demo-webcam-detection-dora
   pixi run demo-webcam-detection-dora-rerun
 """
@@ -80,11 +81,10 @@ def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
     show_window = mode in {"window", "both"}
     use_rerun = mode in {"rerun", "both"}
 
-    # GUI windows from backend worker processes are fragile across local/remote desktop setups.
-    if args.backend == "dora" and show_window:
+    if args.backend in {"dora", "multiprocessing"} and show_window:
         print(
-            "[Perception Demo] OpenCV windows from Dora worker processes are fragile across macOS, Linux remote sessions,\n"
-            "[Perception Demo] and Windows desktop setups. Disabling the window; prefer --visualize stdout, --visualize rerun,\n"
+            "[Perception Demo] OpenCV windows from worker backends are fragile across macOS, Linux remote sessions,\n"
+            "[Perception Demo] and many Windows desktop setups. Prefer --visualize stdout, --visualize rerun,\n"
             "[Perception Demo] or the in-process webcam stepper for local GUI debugging."
         )
         show_window = False
@@ -105,7 +105,7 @@ def _resolve_camera_mode(args: argparse.Namespace) -> bool:
         return True
 
     print(
-        "[Perception Demo] Using mock camera in backend workers by default.\n"
+        "[Perception Demo] Using mock camera in worker backends by default.\n"
         "[Perception Demo] Use --backend in-process or demo-webcam-stepper when you explicitly want live capture."
     )
     return False
@@ -134,9 +134,15 @@ def main() -> None:
 
     print(f"Running for {args.duration:.1f} seconds...")
     if use_real_camera:
-        print("Tip: Show colored objects (red/blue) to your camera. If no camera is available, this demo falls back to mock frames.")
+        print(
+            "Tip: Show colored objects (red/blue) to your camera. "
+            "If no camera is available, this demo falls back to mock frames."
+        )
     else:
-        print("Tip: This backend demo is using mock frames by default. Use --backend in-process or demo-webcam-stepper for a real camera path.")
+        print(
+            "Tip: This backend demo is using mock frames by default. "
+            "Use --backend in-process or demo-webcam-stepper for a real camera path."
+        )
     print("-" * 60)
     pipe.run(
         backend=args.backend,
@@ -154,7 +160,7 @@ def main() -> None:
         print(f"  • Tries cv2.VideoCapture({args.camera_index}) for real camera")
         print("  • Falls back to mock test pattern if no camera")
     else:
-        print("  • Uses mock test pattern by default in backend workers")
+        print("  • Uses mock test pattern by default in worker backends")
     print("\nDetection:")
     print("  • Red objects: RGB(255, <100, <100)")
     print("  • Blue objects: RGB(<100, <100, 255)")

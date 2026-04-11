@@ -141,8 +141,9 @@ demo-control-web = "python examples/control_demo.py --web-port 8080"
 
 # Tutorial Examples
 demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout --duration 10"
-demo-webcam-detection-dora = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --camera-mode mock --visualize stdout --duration 10"
-demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --camera-mode mock --visualize rerun --duration 10"
+demo-webcam-detection-dora = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --fresh-dora --camera-mode mock --visualize stdout --duration 10"
+demo-webcam-detection-mp-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend multiprocessing --camera-mode mock --visualize rerun --duration 10"
+demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --fresh-dora --camera-mode mock --visualize rerun --duration 10"
 demo-webcam-stepper = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
 demo-webcam-record = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10"
 demo-webcam-replay-rrd = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10"

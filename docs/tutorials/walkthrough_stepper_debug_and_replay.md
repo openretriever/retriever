@@ -45,7 +45,7 @@ pixi run demo-webcam-replay-mcap
 Use `stdout` as the cross-platform default. On a local desktop session, you can opt into GUI replay:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize stdout
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --visualize rerun
 ```
 

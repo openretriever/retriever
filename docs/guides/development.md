@@ -39,7 +39,8 @@ git clone <repository-url>
 cd <repo-root>
 
 # Option A: Pixi (quick demo env defined in pixi.toml)
-pixi run demo-dora-simple
+pixi run demo-webcam-detection
+pixi run demo-webcam-detection-mp-rerun
 pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 
 # Option B: uv (in your own venv/conda env)
@@ -65,9 +66,12 @@ Command conventions:
 ```bash
 # Core development tools (inside Pixi env)
 pixi run python -m pip install -e '.[dev]'
-```
 
-Keep runtime/core changes scoped to this repo's `pyproject.toml`, `pixi.toml`, and `docs/` surfaces.
+# Full system stack (models/robots/training/Ray) is being split into a separate
+# Golden Retriever repository. Templates live in:
+# - pixi-golden.toml
+# - pyproject-golden.toml
+```
 
 ## Development Environment
 
@@ -98,8 +102,11 @@ pixi run python -m pytest
 
 ### Documentation
 
-The docs source of truth is the Markdown content under `docs/`.
-Keep the handbook and the topic guides aligned when you change public behavior.
+Public docs are authored as markdown under `docs/` with tutorial track pages in `docs/tutorials/`.
+
+Current repo note:
+- A checked-in `mkdocs.yml` is not present right now.
+- Use repo markdown files directly as the source of truth.
 
 ### Environment Variables
 
@@ -142,7 +149,7 @@ class Detections:
 
 
 class DetectionFlow(Flow[CameraFrame, Detections]):
-    def step(self, image: CameraFrame) -> Detections:
+    def run(self, image: CameraFrame) -> Detections:
         return Detections(boxes=[])
 
 
@@ -159,8 +166,8 @@ with pipe:
 - **`src/retriever/flow/`**: authoring surface, clocks, adapters, pipeline wiring
 - **`src/retriever/ir/`**: logical IR and execution graph structures
 - **`src/retriever/rt/`**: runtime execution, stepper, multiprocessing, dora
-- **`src/retriever/types/`**: shared typed payloads, schema helpers, and registry surface
-- **`src/retriever/recording.py`**: persisted `.mcap` / `.rrd` recording and replay helpers
+- **`src/retriever/data_spec/`**: explicit dataset/event/export contracts
+- **`src/retriever/robotics_typing/`**: typed robotics boundary payloads
 - **`examples/tutorial/`**: public runnable examples for the runtime release
 
 ## Development Workflow
@@ -213,7 +220,7 @@ with pipe:
 from retriever.flow import Flow
 
 class MyFlow(Flow[InputType, OutputType]):
-    def step(self, input_data: InputType) -> OutputType:
+    def run(self, input_data: InputType) -> OutputType:
         return output
 ```
 
@@ -276,7 +283,7 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def step(self, input: Observation) -> Command:
+    def run(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 
 
@@ -302,7 +309,7 @@ Use the same authored pipeline across the supported execution surfaces:
 
 ```python
 pipe.run(backend="multiprocessing", duration=2.0)
-# Use backend="dora" explicitly for dora deployment/parity.
+pipe.run(backend="dora", duration=2.0)
 
 # In-process debugging
 pipe.step(dt=0.1)
@@ -311,37 +318,20 @@ pipe.close_stepper()
 
 ## Testing & Quality Assurance
 
-### Test Layout
-
-The live test tree is intentionally small and topic-based:
+### Test Organization
 
 ```
 tests/
-├── core/         # public surface, runtime, registry, hub, pipeline
-├── flow/         # authoring and composition semantics
-├── integration/  # end-to-end backend/runtime checks
-├── ir/           # IR lowering and visualization
-├── planning/     # planning-oriented slices
-└── images/       # image fixtures / generated artifacts
+├── core/                  # Core framework tests
+│   ├── test_flow.py      # Flow composition tests
+│   ├── test_executor.py  # Execution engine tests
+│   └── test_types.py     # Type system tests
+├── perception/            # Perception system tests
+├── planning/              # Planning system tests
+├── integration/           # End-to-end integration tests
+├── performance/           # Performance and benchmark tests
+└── fixtures/              # Shared test data and utilities
 ```
-
-### Common Test Commands
-
-```bash
-# Full suite
-pixi run python -m pytest
-
-# Focused runtime/public-surface checks
-pixi run python -m pytest tests/core -q
-
-# Authoring + IR checks
-pixi run python -m pytest tests/flow tests/ir -q
-
-# Integration slice
-pixi run python -m pytest tests/integration -q
-```
-
-Some tests require optional extras or specific backends. Keep the docs and Pixi tasks aligned with the real test commands in this repo; do not advertise custom pytest flags unless they are wired into the project configuration.
 
 ### Writing Effective Tests
 
@@ -357,22 +347,49 @@ def test_flow_composition():
 
 **Integration Tests**:
 ```python
-def test_complete_pipeline_round_trip():
+@pytest.mark.integration
+def test_complete_manipulation_pipeline():
     """Test a real pipeline on the multiprocessing backend."""
     pipe = build_demo_pipeline()
     engine = pipe.run(backend="multiprocessing", duration=0.5, blocking=False)
     engine.stop()
 ```
 
+**Performance Tests**:
+```python
+@pytest.mark.performance
+def test_pipeline_throughput():
+    """Test system performance under load."""
+    pipe = build_demo_pipeline()
+    for _ in range(100):
+        pipe.step(dt=0.02)
+    pipe.close_stepper()
+```
+
 ### Continuous Integration
 
-Keep CI aligned with the same commands developers use locally:
+```yaml
+# .github/workflows/test.yml
+name: Test Suite
+on: [push, pull_request]
 
-```bash
-pixi run ruff check .
-pixi run black .
-pixi run mypy src/retriever
-pixi run python -m pytest
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pixi
+        run: curl -fsSL https://pixi.sh/install.sh | bash
+      - name: Install environment
+        run: pixi install
+      - name: Run quality checks
+        run: |
+          pixi run ruff check .
+          pixi run black .
+          pixi run mypy src/retriever
+          pixi run python -m pytest
+      - name: Run performance tests
+        run: pixi run python -m pytest --performance
 ```
 
 ## Contributing Guidelines
@@ -394,7 +411,7 @@ pixi run python -m pytest
        result: float
 
    class NewComponent(Flow[Input, Output]):
-       def step(self, input_data: Input) -> Output:
+       def run(self, input_data: Input) -> Output:
            return Output(result=input_data.value)
    ```
 
@@ -418,11 +435,10 @@ pixi run python -m pytest
 
 ### Adding Robot Integrations
 
-System-layer robot integrations should live in an external package or a separate
-system repository that depends on Retriever runtime/core. Only runtime-agnostic
-interfaces and backend hooks should live in the core runtime repo.
+System-layer robot integrations belong under `src/golden_retriever/` or in an external package.
+Only runtime-agnostic interfaces and backend hooks should live in the core runtime repo.
 
-1. **Create Robot Package**: `robots/new_robot/` in your system package
+1. **Create Robot Package**: `src/golden_retriever/robots/new_robot/`
 2. **Implement Robot Interface**:
    ```python
    class NewRobotInterface:
@@ -434,8 +450,8 @@ interfaces and backend hooks should live in the core runtime repo.
            # Implementation
            pass
    ```
-3. **Add Skills**: `skills/new_robot/` in that system package
-4. **Create Tests**: `tests/test_new_robot.py`
+3. **Add Skills**: `src/golden_retriever/skills/new_robot/`
+4. **Create Tests**: `src/golden_retriever/tests/test_new_robot.py`
 5. **Update Configuration**: Add to robot registry
 
 ### Adding Execution Backends
@@ -445,8 +461,8 @@ interfaces and backend hooks should live in the core runtime repo.
    def execute_my_backend(ir: IR, **kwargs):
        # Compile IR to backend-specific graph
        graph = compile_to_my_backend(ir)
-       # Execute via the backend's runtime entrypoint
-       return execute_compiled_graph(graph, **kwargs)
+       # Execute
+       graph.run()
    ```
 
 2. **Add Performance Benchmarks**:
@@ -462,13 +478,12 @@ interfaces and backend hooks should live in the core runtime repo.
 
 ### Performance Optimization
 
-Use standard Python profiling first, and only document extra tooling once it is part of the checked-in environment:
-
+**Profiling Pipelines**:
 ```python
 import cProfile
 import pstats
 
-def profile_pipeline() -> None:
+def profile_pipeline():
     profiler = cProfile.Profile()
     profiler.enable()
 
@@ -477,7 +492,16 @@ def profile_pipeline() -> None:
 
     profiler.disable()
     stats = pstats.Stats(profiler)
-    stats.sort_stats("cumulative").print_stats(20)
+    stats.sort_stats('cumulative').print_stats(20)
+```
+
+**Memory Usage Analysis**:
+```bash
+# Monitor memory during execution
+pixi run python -m pytest --memray
+
+# Memory profiling for specific components
+python -m memray run --live examples/memory_test.py
 ```
 
 ### Extending the Runtime
@@ -490,7 +514,7 @@ For core runtime work, prefer explicit extension points over monkey-patching:
 - add runtime backends under `src/retriever/rt/backend/`
 
 External systems such as Ray, hardware SDKs, or model-serving stacks should usually live in
-external packages and integrate with the runtime through normal `Flow`
+`src/golden_retriever/` or external packages and integrate with the runtime through normal `Flow`
 wrappers and typed `@io` envelopes.
 
 ## Troubleshooting
@@ -525,17 +549,20 @@ python -c "import retriever; print(retriever.__version__)"
 
 **Performance Issues**:
 ```bash
-# Re-run a narrow slice first
-pixi run python -m pytest tests/core -q
+# Profile execution
+pixi run python -m pytest --profile
 
-# Then profile a concrete script or example
-python -m cProfile -m examples.tutorial.c_debug_and_replay.01_debug_stepper
+# Check for memory leaks
+pixi run python -m pytest --memray
+
+# Benchmark against baseline
+pixi run python -m pytest --benchmark
 ```
 
 **Testing Failures**:
 ```bash
 # Run specific test module
-pixi run python -m pytest tests/core -q
+pixi run python -m pytest tests/core/test_flow.py
 
 # Run with verbose output
 pixi run python -m pytest -v

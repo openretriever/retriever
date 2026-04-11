@@ -21,8 +21,8 @@ Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this r
 # macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Start with the local multiprocessing baseline
-pixi run demo-stepper
+# Run the webcam quickstart (auto-installs deps)
+pixi run demo-webcam-detection
 pixi run demo-webcam-record
 ```
 
@@ -31,14 +31,20 @@ Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
 pixi install
-pixi run demo-stepper
+pixi run demo-webcam-detection
 ```
 
-If you want the live camera path after that, run:
+If you specifically want live worker-backend Rerun, use one of these mock-camera variants:
 
 ```bash
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
+pixi run demo-webcam-detection-mp-rerun
+pixi run demo-webcam-detection-dora-rerun
+```
+
+The Dora demo tasks already request a fresh runtime. If `dora` still complains about schema/version while you are running Dora manually, kill stale processes and retry:
+
+```bash
+pkill -9 dora && pixi run demo-webcam-detection-dora-rerun
 ```
 
 Pixi vs uv (how they fit together):
@@ -185,8 +191,8 @@ pipe.run(backend="dora", duration=10.0, blocking=True)
 ```
 
 Notes:
-- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection-dora`).
-- If you see schema mismatch errors while using Dora, restart Dora and rerun the same Dora task.
+- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection-dora` and `demo-webcam-detection-dora-rerun`).
+- Dora demo tasks request a fresh runtime. If you still hit schema mismatch errors during manual Dora runs, `pkill -9 dora` usually fixes stale coordinator issues.
 
 ### 4.3 Non-blocking run
 
@@ -363,7 +369,9 @@ Module: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 ### 9.2 Webcam stepper + record/replay
 
 ```bash
-pixi run demo-webcam-stepper
+pixi run demo-webcam-detection
+pixi run demo-webcam-detection-mp-rerun
+pixi run demo-webcam-detection-dora-rerun
 pixi run demo-webcam-record
 pixi run demo-webcam-replay-rrd
 pixi run demo-webcam-replay-mcap
