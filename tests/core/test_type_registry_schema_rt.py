@@ -77,5 +77,5 @@ def test_resolve_schema_ref_supports_robotics_types() -> None:
 def test_resolve_schema_ref_supports_data_spec_contracts() -> None:
     buffer = EventBuffer()
     assert resolve_schema_ref(buffer) == DataSpecSchemaRef(name="data_spec/EventBuffer", version="v1", encoding="python")
-    assert resolve_schema_ref(DataSpecStreamId) == DataSpecSchemaRef(name="data_spec/StreamId", version="v1", encoding="python")
+    assert resolve_schema_ref(DataSpecStreamId) == DataSpecSchemaRef(name="types/StreamId", version="v1", encoding="python")
     assert resolve_schema_ref(DatasetManifest) == DataSpecSchemaRef(name="data_spec/DatasetManifest", version="v1", encoding="python")

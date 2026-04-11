@@ -1,12 +1,14 @@
-"""Generic primitives plus the shared Retriever type registry.
+"""Retriever type system: primitives, registry, and domain type packages.
 
-`retriever.types` is the umbrella import for:
-- runtime/language primitives (`Eff`, symbolic objects, skills)
-- the schema-aware type registry (`register_type`, `get_type`, ...)
-- shared schema/stream identity helpers used by recording and registry code
+`retriever.types` is the umbrella for:
+- shared schema/stream identity primitives: `ClockDomain`, `SchemaRef`, `StreamId`
+- runtime/language primitives: `Eff`, symbolic objects, skills
+- the schema-aware type registry: `register_type`, `get_type`, ...
+- domain type subpackages:
+  - `retriever.types.data_spec`  — event/data contracts, manifests, join policies
+  - `retriever.types.robotics`   — robotics payload standard (PoseStamped, JointState, ...)
 
-Domain standards such as `retriever.robotics_typing` and `retriever.data_spec`
-remain separate public packages and register themselves here.
+Compat aliases `retriever.data_spec` and `retriever.robotics_typing` still work.
 """
 
 from .core import Eff, pure, Module

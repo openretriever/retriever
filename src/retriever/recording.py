@@ -28,7 +28,7 @@ from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_
 
 import numpy as np
 
-from retriever.data_spec import ClockDomain, SchemaRef, StreamId
+from retriever.types.schema import ClockDomain, SchemaRef, StreamId
 from retriever.types_registry import resolve_schema_ref
 
 RecordingFormat = Literal["mcap", "rrd"]
