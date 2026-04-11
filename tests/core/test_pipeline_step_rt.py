@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 import pytest
@@ -183,6 +184,67 @@ def test_pipeline_run_record_convenience_emits_session_artifacts(tmp_path):
     assert mcap_buffer[0][1].value >= 1
 
 
+def test_pipeline_run_record_warns_that_duration_is_wall_clock(tmp_path, monkeypatch, caplog):
+    import retriever.rt.runtime as runtime_module
+
+    calls = []
+
+    def fake_execute_ir(ir, **kwargs):
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(runtime_module, "execute_ir", fake_execute_ir)
+
+    pipe = Pipeline("run_record_warning_demo")
+    src = Counter() @ Rate(hz=10)
+    drain = Recorder() @ Trigger("value")
+    pipe.connect(src, drain, sync=Latest())
+
+    caplog.set_level("WARNING")
+    pipe.run(
+        backend="multiprocessing",
+        duration=1.0,
+        blocking=True,
+        record=str(tmp_path / "session.mcap"),
+    )
+
+    assert calls
+    assert calls[0]["backend"] == "in-process"
+    assert calls[0]["backend_config"]["pipeline_instance"] is pipe
+    assert isinstance(calls[0]["backend_config"]["record"], RecordConfig)
+    assert Path(calls[0]["backend_config"]["record"].path).name == "session.mcap"
+    assert "wall-clock run time, not step count" in caplog.text
+
+
+def test_pipeline_run_record_ignores_authored_host_affinity(tmp_path, monkeypatch, caplog):
+    import retriever.rt.runtime as runtime_module
+
+    calls = []
+
+    def fake_execute_ir(ir, **kwargs):
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(runtime_module, "execute_ir", fake_execute_ir)
+
+    pipe = Pipeline("run_record_affinity_demo")
+    src = (Counter() @ Rate(hz=10)).deploy("machine-a")
+    drain = Recorder() @ Trigger("value")
+    pipe.connect(src, drain, sync=Latest())
+
+    caplog.set_level("WARNING")
+    pipe.run(
+        backend="multiprocessing",
+        duration=0.1,
+        blocking=True,
+        record=str(tmp_path / "session.mcap"),
+    )
+
+    assert calls
+    assert calls[0]["backend"] == "in-process"
+    assert "Ignoring authored host affinity" in caplog.text
+
+
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
     if suffix == ".rrd":
@@ -235,7 +297,7 @@ def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path)
     monkeypatch.setattr(pipe, "replay", fake_replay)
 
     record_path = tmp_path / "session.mcap"
-    pipe.replay_from(record_path, inputs=[src1, src2])
+    pipe.replay_from(path=record_path, inputs=[src1, src2])
 
     assert calls == [(src1, record_path), (src2, record_path)]
 

@@ -8,12 +8,15 @@ context manager. It reuses the same underlying graph/IR machinery as
 
 from __future__ import annotations
 
+import logging
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 from retriever.flow.builder import PipelineBuilder
 from retriever.flow.temporal import TemporalFlow
+
+logger = logging.getLogger(__name__)
 
 
 class Pipeline:
@@ -438,7 +441,12 @@ class Pipeline:
             try:
                 handle.flow.reset()
             except Exception:
-                pass
+                logger.warning(
+                    "Flow.reset() failed during Pipeline.reset() for node '%s' (%s)",
+                    self.get_node_id(handle),
+                    type(handle.flow).__name__,
+                    exc_info=True,
+                )
 
     def close_stepper(self) -> None:
         """
@@ -647,14 +655,14 @@ class Pipeline:
 
     def view(self, path: str | Path) -> None:
         """
-        Open a persisted recording artifact in Rerun.
+        Open a persisted recording artifact in a local Rerun viewer when available.
 
         Args:
             path: Path to .mcap or .rrd file
 
         Example:
             pipe.record(camera, "session.mcap", steps=50)
-            pipe.view("session.mcap")  # Opens Rerun viewer
+            pipe.view("session.mcap")  # Opens a local Rerun viewer when available
         """
         from retriever.recording import view_recording
 
@@ -710,18 +718,23 @@ class Pipeline:
         self.replace(handle, replay)
         return replay
 
-    def replay_from(self, path: str | Path, inputs: List[TemporalFlow]) -> None:
+    def replay_from(
+        self,
+        path: str | Path,
+        inputs: List[TemporalFlow],
+    ) -> None:
         """
-        Systematic Replay: Configure multiple inputs to replay from a recording.
+        Configure multiple inputs to replay from one recording artifact.
 
-        This is a convenience wrapper that calls `replay()` for each handle in `inputs`.
+        Use the explicit `path=...` call style in new code for readability, but the
+        positional `path` argument remains supported for backwards compatibility.
 
         Args:
             path: Path to the recording (.mcap or .rrd)
             inputs: List of source handles to replace with recorded data
 
         Example:
-            pipe.replay_from("session.rrd", inputs=[camera, lidar])
+            pipe.replay_from(path="session.rrd", inputs=[camera, lidar])
         """
         for handle in inputs:
             self.replay(handle, path=path)
@@ -759,7 +772,10 @@ class Pipeline:
             log_config: Optional LogConfig.
             visualize: "rerun" for live streaming.
             record: Path (str) or RecordConfig to enable recording.
-                    Forces backend="in-process" currently.
+                    Forces backend="in-process" currently. When combined with
+                    `duration=...`, the in-process loop advances logical steps as
+                    fast as possible; `duration` limits wall-clock run time, not
+                    exact step count.
             control: ControlConfig for pause/resume/reset control.
                      Example: control=ControlConfig(web_port=8080, keyboard=True)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
@@ -807,24 +823,60 @@ class Pipeline:
         local_backend_config = backend_config or {}
         backend_config = {**global_backend_config, **local_backend_config}
 
+        if record_cfg and duration is not None:
+            logger.warning(
+                "pipe.run(record=...) uses the in-process stepper and advances logical steps at simulation speed; duration limits wall-clock run time, not step count. Use pipe.record(..., steps=..., dt=...) when you need exact logical steps."
+            )
+
         # Inject control channel if enabled
         if self._control_channel:
             backend_config["control_channel"] = self._control_channel
-        
+
+        affinity_overrides: Dict[str, str] = {}
+        for handle in self.get_handles():
+            resources = getattr(handle.config, "resources", None)
+            host_affinity = getattr(resources, "host_affinity", None)
+            if host_affinity:
+                affinity_overrides[self.get_node_id(handle)] = host_affinity[0]
+
+        if (deploy or affinity_overrides) and backend != "dora":
+            if record_cfg is not None:
+                if deploy:
+                    logger.warning(
+                        "Ignoring deploy=... because record=... forces backend='in-process' for local recording."
+                    )
+                    deploy = None
+                if affinity_overrides:
+                    logger.warning(
+                        "Ignoring authored host affinity because record=... forces backend='in-process' for local recording."
+                    )
+                    affinity_overrides = {}
+            else:
+                raise ValueError(
+                    "Deployment affinity is only supported with backend='dora'. Remove deploy()/deploy= or run with backend='dora'."
+                )
+
         # Handle deployment overrides
         if deploy:
             overrides = {}
             for target, machine in deploy.items():
-                if hasattr(target, 'flow'): # Is TemporalFlow
-                    # We need the node ID. The handle doesn't strictly know its ID 
-                    # until pipeline validation, but we can look it up if registered.
+                if hasattr(target, 'flow'):  # Is TemporalFlow
                     node_id = self.get_node_id(target)
                     overrides[node_id] = machine
                 elif isinstance(target, str):
-                    overrides[target] = machine
+                    node_id = target
+                    overrides[node_id] = machine
                 else:
                     raise ValueError(f"Invalid deploy target: {target} (expected TemporalFlow or str ID)")
-            
+
+                if node_id in affinity_overrides and affinity_overrides[node_id] != machine:
+                    logger.warning(
+                        "Overriding deploy() host affinity for node '%s' from '%s' to '%s' via Pipeline.run(deploy=...).",
+                        node_id,
+                        affinity_overrides[node_id],
+                        machine,
+                    )
+
             backend_config["deployment_overrides"] = overrides
 
 

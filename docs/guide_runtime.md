@@ -46,7 +46,7 @@ add = AddOne() @ Rate(hz=10)
 pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
-# Or record to MCAP (uses in-process backend):
+# Or record to MCAP (uses the in-process stepper at logical-step / simulation speed):
 # pipe.run(duration=1.0, record="log.mcap")
 ```
 
@@ -72,12 +72,12 @@ More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
-For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")` or `pipe.run(record="log.rrd")`.
+For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")` or `pipe.run(record="log.rrd")`. Those helpers switch to the in-process stepper and advance logical steps as fast as possible; `duration=...` caps wall-clock run time rather than exact step count.
 
-For granular control (e.g. recording specific flows during manual stepping), use:
+For exact logical step counts or granular control (e.g. recording specific flows during manual stepping), use:
 
 ```py
-pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)  # legacy single-stream capture
+pipe.record(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)  # single-stream legacy pickle capture
 pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ```
 

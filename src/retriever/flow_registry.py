@@ -26,6 +26,7 @@ from retriever.flow.base import Flow as FlowBase
 from retriever.utils import load_plugins
 
 logger = logging.getLogger(__name__)
+_plugins_load_warning_emitted = False
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
@@ -34,12 +35,17 @@ F = TypeVar('F', bound=FlowBase)
 
 
 def _ensure_plugins_loaded() -> None:
+    global _plugins_load_warning_emitted
     # Best-effort plugin loading: enables external packages to register flows.
     try:
         load_plugins()
     except Exception:
-        # Plugins are optional and should not prevent using local code.
-        pass
+        if not _plugins_load_warning_emitted:
+            logger.warning(
+                "Failed to load retriever flow plugins; continuing with local registry only.",
+                exc_info=True,
+            )
+            _plugins_load_warning_emitted = True
 
 @dataclass 
 class FlowInfo:
@@ -222,7 +228,11 @@ class FlowRegistry:
                         if len(base.__args__) >= 2:
                             return base.__args__[0], base.__args__[1]
         except Exception:
-            pass
+            logger.debug(
+                "Failed to infer Flow generic types for %s",
+                flow_class,
+                exc_info=True,
+            )
         return None, None
 
 

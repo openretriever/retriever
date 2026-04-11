@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 class InProcessEngine(ExecutionEngine):
     """
     Executes pipeline in the current process using PipelineStepper.
-    
+
     This backend is ideal for:
     - Debugging (breakpoints work, single threaded)
-    - Recording (deterministic execution)
+    - Recording (deterministic, logical-step execution)
     - Simulation (fast execution of logical steps)
     """
     
@@ -166,8 +166,8 @@ class InProcessEngine(ExecutionEngine):
                 
                 step_idx += 1
                 
-                # TODO: Sleep to match wall clock if desired? 
-                # For now, run as fast as possible (simulation mode).
+                # Intentionally run at logical-step / simulation speed.
+                # `duration` limits wall-clock loop time, not exact tick count.
                 
         except KeyboardInterrupt:
             logger.info("Stopped by user.")

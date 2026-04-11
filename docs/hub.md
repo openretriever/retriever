@@ -216,7 +216,7 @@ Pipeline ports still belong to concrete internal flow nodes, even when the whole
 
 ## Visualizing composed pipelines
 
-`Pipeline.visualize(...)` and `IR.visualize(...)` preserve wrapped-pipeline context for `build_pipeline_flow(...)` stages. In HTML and ASCII views, a nested pipeline stage is rendered as a grouped pipeline box around the lowered inner flows, with:
+`Pipeline.visualize(...)` and `IR.visualize(...)` preserve wrapped-pipeline context for `build_pipeline_flow(...)` stages in the generated HTML view. The ASCII view is available separately through `IR.to_ascii()` (for example, `pipe.validate().to_ascii()`). In both renderings, a nested pipeline stage is shown as a grouped pipeline box around the lowered inner flows, with:
 
 - the wrapped pipeline name
 - surfaced input/output bindings

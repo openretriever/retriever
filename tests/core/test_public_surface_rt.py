@@ -52,3 +52,25 @@ def test_execute_ir_in_process_requires_live_pipeline_instance():
 def test_dora_unknown_error_code_is_spelled_correctly():
     assert ErrCode.DORA_UNKNOWN == 4200
     assert ERROR_MSGS[ErrCode.DORA_UNKNOWN] == "Unknown dora backend error"
+
+
+def test_pipeline_run_rejects_deploy_on_non_dora_backend():
+    pipe = Pipeline("deploy_guard")
+    with pipe:
+        src = TickSource() @ Rate(hz=1)
+
+    with pytest.raises(ValueError, match="backend='dora'"):
+        pipe.run(
+            backend="multiprocessing",
+            duration=0.1,
+            deploy={pipe.get_node_id(src): "machine-a"},
+        )
+
+
+def test_pipeline_run_rejects_host_affinity_on_non_dora_backend():
+    pipe = Pipeline("affinity_guard")
+    with pipe:
+        (TickSource() @ Rate(hz=1)).deploy("machine-a")
+
+    with pytest.raises(ValueError, match="backend='dora'"):
+        pipe.run(backend="multiprocessing", duration=0.1)

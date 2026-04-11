@@ -211,11 +211,13 @@ Preferred recording paths:
 - `pipe.run(record="session.rrd")` for a native Rerun session artifact.
 - `pipe.run(record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)))` when you want both.
 
+These `pipe.run(record=...)` helpers use the in-process stepper and advance logical steps at simulation speed. `duration=...` therefore limits wall-clock run time rather than exact tick count. If you need an exact number of logical steps, prefer `pipe.record(..., steps=..., dt=...)`.
+
 For cross-platform debugging, prefer replaying to `stdout` first. Treat OpenCV windows and live Rerun viewers as optional local-desktop tools rather than the default workflow.
 
 Legacy stepper-first helpers still exist for single-stream capture:
 
-- High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
+- High-level: `Pipeline.record(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
 - Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
 
 Perception example:

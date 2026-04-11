@@ -263,7 +263,7 @@ Retriever supports a unified API to run and debug pipelines.
 
 ### 6.1 Recording execution
 You can record any execution to a Rerun `.rrd` file (optionally mirrored to `.mcap`) by passing `record=...`.
-This automatically switches to the **in-process** backend to ensure deterministic recording.
+This automatically switches to the **in-process** backend to ensure deterministic recording. The recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock run time rather than exact tick count. Use `pipe.record(..., steps=..., dt=...)` when you need an exact number of logical steps.
 
 ```py
 pipe.run(

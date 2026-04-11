@@ -88,7 +88,7 @@ Notes:
 
 ### 2.3 Unified Recording & Replay
 
-To record execution to an MCAP file, simply pass `record="..."`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
+To record execution to an MCAP file, simply pass `record="..."`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based). The in-process recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock loop time rather than exact tick count. If you need an exact number of logical steps, use `pipe.record(..., steps=..., dt=...)` instead.
 
 ```python
 pipe.run(
@@ -216,7 +216,7 @@ pipe.run(
 
 ### 7.3 Backend Configuration
 
-For this to work, you must use the **Dora** backend and have a running Dora Coordinator.
+For this to work, you must use the **Dora** backend and have a running Dora Coordinator. Retriever now raises if you pass `deploy=` or `.deploy(...)` to a non-Dora backend so placement intent does not fail silently.
 
 1. **Configure Dora**: Define `machine_a` and `machine_b` in your `coordinator.yaml`.
 2. **Start Daemons**: Run `dora daemon --machine-id machine_a` on respective hosts.

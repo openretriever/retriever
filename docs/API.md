@@ -110,7 +110,8 @@ Preferred entry points:
 - `Pipeline.step(now=..., dt=...)` — one in-process debug step
 - `Pipeline.reset_stepper()` / `Pipeline.close_stepper()`
 - unified recording: `pipe.run(record="file.rrd")` or `pipe.run(record=RecordConfig(path="file.rrd", mirrors=("file.mcap",)))`
-- record/replay: `Pipeline.record_to(...)` / `Pipeline.replay(...)` (legacy)
+- session recording/replay: `Pipeline.record(...)`, `Pipeline.view(...)` (local Rerun viewer when available), and `Pipeline.replay(...)`
+- legacy recording aliases remain available for older code, but new examples should prefer `Pipeline.record(handle, path, ...)`
 
 Implementation lives in:
 - `retriever/rt/stepper.py`
