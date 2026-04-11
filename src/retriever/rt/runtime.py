@@ -154,12 +154,41 @@ def execute_ir(
         # Start Rerun after env is set so SDK picks up the correct address.
         spawn_viewer = rr_config.get("spawn", True)
         rr.init(ir_struct.metadata.name, spawn=False, recording_id=recording_id)
+
+        from retriever.lib.rerun import _connect_rerun
+
+        def _viewer_is_listening(addr: str) -> bool:
+            """Probe the Rerun port with a TCP connect; returns True if already open."""
+            import socket
+            a = addr
+            if "://" in a:
+                a = a.split("://", 1)[1]
+            a = a.split("/", 1)[0]
+            host, _, port_str = a.rpartition(":")
+            host = host or "127.0.0.1"
+            try:
+                port = int(port_str)
+            except (ValueError, TypeError):
+                port = 9876
+            try:
+                with socket.create_connection((host, port), timeout=0.3):
+                    return True
+            except OSError:
+                return False
+
         if spawn_viewer:
             port = _extract_rerun_port(connect_addr)
-            rr.spawn(port=port, connect=True)
+            if _viewer_is_listening(connect_addr):
+                logger.info("Rerun viewer already running at %s — reusing", connect_addr)
+                try:
+                    _connect_rerun(rr, connect_addr)
+                except Exception as e:
+                    logger.warning("Rerun connect failed even though port is open: %s", e)
+            else:
+                logger.info("No Rerun viewer at %s — spawning one", connect_addr)
+                rr.spawn(port=port, connect=True)
         else:
             try:
-                from retriever.lib.rerun import _connect_rerun
                 _connect_rerun(rr, connect_addr)
             except Exception as e:
                 logger.warning(f"Failed to connect Rerun at {connect_addr}: {e}")
