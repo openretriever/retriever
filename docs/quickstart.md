@@ -94,19 +94,26 @@ pipe.close_stepper()
 
 If you want something visual right away, use the perception tutorial series.
 
-### 1. Run the Dora camera demo
+### 1. Run the webcam quickstart
 
 ```bash
 pixi run demo-webcam-detection
 ```
 
-This runs `camera -> detector -> display` with a real camera when available and falls back to a mock pattern otherwise. The default quickstart path streams typed outputs to a Rerun viewer.
+This runs `camera -> detector -> display` in-process. It uses a live camera when available and falls back to a mock pattern otherwise. This is the safest cross-platform quickstart because it avoids worker-process camera issues on macOS and keeps debugging simple.
 
-If Dora reports a stale coordinator or schema/version mismatch, restart Dora and retry:
+If you specifically want a live Rerun backend demo, use one of these worker-safe mock-camera variants instead:
+
+```bash
+pixi run demo-webcam-detection-mp-rerun
+pixi run demo-webcam-detection-dora-rerun
+```
+
+The Dora demo tasks now start with a fresh runtime by default. If you still hit a stale coordinator or schema/version mismatch while running Dora manually, restart Dora and retry:
 
 ```bash
 pkill -9 dora || true
-pixi run demo-webcam-detection
+pixi run demo-webcam-detection-dora-rerun
 ```
 
 ### 2. Debug the same workflow in-process
@@ -129,7 +136,7 @@ pixi run demo-webcam-window
 
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize stdout
 ```
 
 This is the shortest path from live sensing to deterministic replay:

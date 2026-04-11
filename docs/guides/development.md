@@ -40,6 +40,7 @@ cd <repo-root>
 
 # Option A: Pixi (quick demo env defined in pixi.toml)
 pixi run demo-webcam-detection
+pixi run demo-webcam-detection-mp-rerun
 pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 
 # Option B: uv (in your own venv/conda env)

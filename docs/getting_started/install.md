@@ -19,7 +19,7 @@ Pixi is the default environment manager for this repo.
 # Install pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run a tutorial demo (auto-resolves env, streams to Rerun)
+# Run a tutorial demo (auto-resolves env)
 pixi run demo-webcam-detection
 ```
 
@@ -47,16 +47,16 @@ python -m pip install -e ".[demo,dora,recording]"
 Then run tutorials directly:
 
 ```bash
-python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend multiprocessing
+python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto
 ```
 
 ## Dora Notes
 
-If `dora` reports stale coordinator/state errors, kill stale processes and retry:
+The Dora demo tasks already request a fresh runtime. If `dora` still reports stale coordinator/state errors while you are running Dora manually, kill stale processes and retry:
 
 ```bash
 pkill -9 dora || true
-pixi run demo-webcam-detection
+pixi run demo-webcam-detection-dora-rerun
 ```
 
 ## Where To Go Next
