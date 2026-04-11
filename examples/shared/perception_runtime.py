@@ -252,6 +252,75 @@ class DetectionResults:
         )
 
 
+def _coerce_image(value: Any) -> Image:
+    if isinstance(value, Image):
+        return value
+    if isinstance(value, dict):
+        return Image(frame=value["frame"], frame_id=int(value["frame_id"]))
+    frame = getattr(value, "frame")
+    frame_id = int(getattr(value, "frame_id"))
+    return Image(frame=frame, frame_id=frame_id)
+
+
+def _coerce_detection(value: Any) -> Detection:
+    if isinstance(value, Detection):
+        return value
+    if isinstance(value, dict):
+        bbox_value = value["bbox"]
+        bbox = bbox_value if isinstance(bbox_value, BBox) else BBox(**bbox_value)
+        return Detection(
+            label=str(value["label"]),
+            confidence=float(value["confidence"]),
+            bbox=bbox,
+        )
+    bbox_value = getattr(value, "bbox")
+    bbox = bbox_value if isinstance(bbox_value, BBox) else BBox(**bbox_value)
+    return Detection(
+        label=str(getattr(value, "label")),
+        confidence=float(getattr(value, "confidence")),
+        bbox=bbox,
+    )
+
+
+def _coerce_camera_data(value: Any) -> CameraData:
+    if isinstance(value, CameraData):
+        image = _coerce_image(value.image)
+        if image is value.image:
+            return value
+        return CameraData(image=image, mode=str(value.mode or "unknown"))
+    if isinstance(value, dict):
+        return CameraData(
+            image=_coerce_image(value["image"]),
+            mode=str(value.get("mode", "unknown")),
+        )
+    return CameraData(
+        image=_coerce_image(getattr(value, "image")),
+        mode=str(getattr(value, "mode", "unknown")),
+    )
+
+
+def _coerce_detection_results(value: Any) -> DetectionResults:
+    if isinstance(value, DetectionResults):
+        image = _coerce_image(value.image)
+        detections = [_coerce_detection(row) for row in (value.detections or [])]
+        if image is value.image and all(
+            original is coerced for original, coerced in zip(value.detections or [], detections)
+        ):
+            return value
+        return DetectionResults(image=image, detections=detections, mode=str(value.mode or "unknown"))
+    if isinstance(value, dict):
+        return DetectionResults(
+            image=_coerce_image(value["image"]),
+            detections=[_coerce_detection(row) for row in value.get("detections", [])],
+            mode=str(value.get("mode", "unknown")),
+        )
+    return DetectionResults(
+        image=_coerce_image(getattr(value, "image")),
+        detections=[_coerce_detection(row) for row in getattr(value, "detections", [])],
+        mode=str(getattr(value, "mode", "unknown")),
+    )
+
+
 class CameraSource(Flow[None, CameraData]):
     """Camera capture that prefers a real camera and falls back to a synthetic stream."""
 
@@ -440,6 +509,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
             cv2.destroyAllWindows()
 
     def step(self, input: DetectionResults) -> None:
+        input = _coerce_detection_results(input)
         if not input.image:
             return None
 
