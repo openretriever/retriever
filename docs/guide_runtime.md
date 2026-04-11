@@ -27,12 +27,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def step(self, _):  # type: ignore[override]
+    def run(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def step(self, input: SrcOut) -> AddOut:
+    def run(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
 
@@ -86,6 +86,7 @@ pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ### `@io` types (ports)
 
 Flows communicate with typed `@io` classes. Each annotated field becomes a port.
+`@flow_io` remains as a backward-compatible alias, but new docs and examples should prefer `@io`.
 
 ### `Flow[I, O]` (node logic)
 

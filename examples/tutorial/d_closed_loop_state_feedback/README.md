@@ -15,14 +15,17 @@
 - `11_safety_monitoring.py`
 - `12_stateful_replanning.py`
 - `13_deadline_aware_mode_switch.py`
-- `14_stateful_counter_basics.py`
-- `15_robot_state_task_script.py`
-- `16_mutable_state_pitfalls.py`
-- `17_immutable_state_transitions.py`
 
 ## Advanced
 
 - `18_advanced_time_patterns.py`
+
+## Legacy Appendix
+
+- `90_legacy_eff_basics.py`
+- `91_legacy_robotics_state.py`
+- `92_legacy_state_intro.py`
+- `93_legacy_immutable_state.py`
 
 ## What To Expect
 
@@ -38,5 +41,5 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mo
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.07_feedback_intro --backend multiprocessing --duration 3
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1
-pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns --steps 20 --dt 0.2
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns
 ```

@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-try:
-    import tomllib
-except ImportError:  # pragma: no cover - Python < 3.11
-    import tomli as tomllib
+import tomllib
 from importlib import metadata
 from pathlib import Path
 from typing import Any

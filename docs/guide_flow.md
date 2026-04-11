@@ -38,15 +38,17 @@ class DetectionsOut:
 
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
-- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
+- Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
+- `@flow_io` remains available as a deprecated alias for older code.
 
 ---
 
 ## 2) Implement a `Flow[I, O]`
 
-A `Flow` is a typed node. Implement `step(...)` and optionally lifecycle hooks:
+A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
 
-- `reset()` / `finalize()` for resources and state (models, cameras, sockets, caches)
+- `init()` / `finalize()` for resources (models, cameras, sockets)
+- `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
 
 ```py
 from retriever.flow import Flow, io
@@ -63,17 +65,17 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def step(self, _):  # type: ignore[override]
+    def run(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def step(self, input: SrcOut) -> AddOut:
+    def run(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
-- `Flow.forward(...)` is an alias for `step(...)`.
-- `Flow.run(...)` remains available as a deprecated compatibility alias.
+
+- `Flow.step(...)` and `Flow.forward(...)` are aliases for `run(...)`. This keeps the word “run” available for backend execution (`Pipeline.run`).
 
 ## 2.1) Wrapper Factory (Torch/Gym)
 
@@ -245,7 +247,7 @@ pipe.run(duration=5.0, record="session.mcap")
 ### In-process single-step debugging
 
 `Pipeline.step(...)` runs the pipeline in the current Python process so you can use the VS Code debugger
-inside `Flow.step(...)`:
+inside `Flow.run(...)`:
 
 ```py
 pipe.step(dt=0.1)

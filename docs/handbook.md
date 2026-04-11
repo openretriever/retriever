@@ -19,7 +19,7 @@ If you want the shorter version first, start with `docs/quickstart.md`.
 
 ## What’s New (2025-12-17)
 
-- Canonical examples live in `examples/tutorial/`; larger system demos live in `examples/advanced/`.
+- Canonical examples live in `examples/tutorial/` (everything else under `examples/` is legacy/system-level).
 - New ergonomics demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
 - `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
 - Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/b_ir_and_execution/07_request_response.py`.
@@ -103,6 +103,7 @@ class AddOut:
 
 Notes:
 - `@io` makes fields `Optional[...]` and adds runtime metadata (signals).
+- `@flow_io` remains available as a backward-compatible alias for older code.
 
 ### 2.2 Implement a `Flow[I, O]`
 
@@ -111,17 +112,17 @@ from retriever.flow import Flow
 
 
 class Source(Flow[None, SrcOut]):
-    def step(self, _):  # type: ignore[override]
+    def run(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def step(self, input: SrcOut) -> AddOut:
+    def run(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
 Lifecycle hooks:
-- `reset()` / `finalize()` (optional) for resources and state
+- `init()` / `finalize()` (optional) for resources
 - `reset()` (optional) for gym-like state (mainly for stepper workflows)
 
 ---
@@ -208,7 +209,7 @@ engine.stop()
 ## 5) Debugging: single-step execution (`Pipeline.step`)
 
 `Pipeline.step()` runs the pipeline **in the current Python process** and advances one discrete step.
-This is the recommended way to use the VS Code debugger inside `Flow.step(...)` logic.
+This is the recommended way to use the VS Code debugger inside `Flow.run()` logic.
 
 ```py
 res = pipe.step(dt=0.1)
@@ -263,7 +264,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 ```
 
 Notes:
-- `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
+- `retriever.connect(...)` respects an active `with Pipeline(...):` context.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---
@@ -273,34 +274,25 @@ Notes:
 Retriever supports a unified API to run and debug pipelines.
 
 ### 6.1 Recording execution
-You can record any execution to a Rerun `.rrd` file (optionally mirrored to `.mcap`) by passing `record=...`.
+You can record any execution to an MCAP file (or Rerun log) by passing `record=...`.
 This automatically switches to the **in-process** backend to ensure deterministic recording.
 
 ```py
 pipe.run(
     duration=5.0,
-    record="session.rrd",
+    record="session.mcap",
     visualize="rerun"  # Optional: stream to viewer live
 )
 ```
 
-This generates `session.rrd` containing all flow I/O. If you also want an interchange artifact, mirror to `.mcap`:
-
-```py
-from retriever import RecordConfig
-
-pipe.run(
-    duration=5.0,
-    record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
-)
-```
+This generates `session.mcap` containing all flow I/O.
 
 ### 6.2 Replay
 To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 
 ```py
 # Inject recorded data into 'camera' flow
-pipe.replay(camera, path="session.rrd")  # `.mcap` works too
+pipe.replay(camera, path="session.mcap")
 pipe.run(backend="in-process")
 ```
 

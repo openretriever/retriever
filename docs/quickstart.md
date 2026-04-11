@@ -35,13 +35,13 @@ class Source(Flow[None, Number]):
         super().__init__()
         self.count = 0
 
-    def step(self, _):  # type: ignore[override]
+    def run(self, _):  # type: ignore[override]
         self.count += 1
         return Number(value=self.count)
 
 
 class Double(Flow[Number, Doubled]):
-    def step(self, input: Number) -> Doubled:
+    def run(self, input: Number) -> Doubled:
         return Doubled(value=input.value * 2)
 
 
@@ -74,7 +74,7 @@ pipe.run(backend="dora", duration=1.0)
 
 ### Debugging
 
-Use `step(...)` when you want breakpoints inside `Flow.step(...)`:
+Use `step(...)` when you want breakpoints inside `Flow.run(...)`:
 
 ```python
 result = pipe.step(dt=0.5)
@@ -89,53 +89,6 @@ pipe.close_stepper()
 1. Always define public flow inputs and outputs with `@io`.
 2. Always provide `sync=...` on `pipe.connect(...)`, or set a global default with `retriever.init(default_sync=Latest())`.
 3. Start with `Rate` and `Trigger`; reach for more advanced clocks or adapters only when you have a concrete need.
-
-## Try The Camera Path
-
-If you want something visual right away, use the perception tutorial series.
-
-### 1. Run the Dora camera demo
-
-```bash
-pixi run demo-webcam-detection
-```
-
-This runs `camera -> detector -> display` with a real camera when available and falls back to a mock pattern otherwise. The default quickstart path streams typed outputs to a Rerun viewer.
-
-If Dora reports a stale coordinator or schema/version mismatch, restart Dora and retry:
-
-```bash
-pkill -9 dora || true
-pixi run demo-webcam-detection
-```
-
-### 2. Debug the same workflow in-process
-
-Use this when you want breakpoints inside `Flow.step(...)` without Dora or multiprocessing getting in the way:
-
-```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 20 --sleep 0.05
-```
-
-Add `--show-window` if you want the OpenCV display window.
-
-If you want the shortest OpenCV window demo directly:
-
-```bash
-pixi run demo-webcam-window
-```
-
-### 3. Record and replay a short session
-
-```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
-```
-
-This is the shortest path from live sensing to deterministic replay:
-- `logs/perception.rrd` is the inspection artifact for Rerun
-- `logs/perception.mcap` is the interchange/mirror artifact
-- replay accepts either `.rrd` or `.mcap`
 
 ## What To Read Next
 

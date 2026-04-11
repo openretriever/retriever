@@ -55,9 +55,11 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def step(self, input: Observation) -> Command:
+    def run(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 ```
+
+`@flow_io` is still accepted as a legacy alias, but `@io` is the canonical public decorator.
 
 Examples:
 - `inp.value`
