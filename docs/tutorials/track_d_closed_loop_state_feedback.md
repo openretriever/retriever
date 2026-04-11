@@ -22,7 +22,11 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.10_time_trigge
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.11_safety_monitoring
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.12_stateful_replanning
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.13_deadline_aware_mode_switch --steps 16 --deadline-ms 8 --heavy-ms 14 --heavy-every 4 --miss-streak-limit 1
-pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.14_stateful_counter_basics --steps 6 --dt 0.1
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.15_robot_state_task_script --steps 8 --dt 0.1
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.16_mutable_state_pitfalls
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.17_immutable_state_transitions
+pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_time_patterns --steps 20 --dt 0.2
 ```
 
 ## What To Observe
@@ -31,6 +35,7 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_ti
 - State reset and persistence boundaries.
 - Valid vs invalid authority-mode transitions.
 - Deadline-driven mode transitions (`NOMINAL <-> SAFE`) under periodic overload.
+- Conditional, timeout, and recurring timer patterns with deterministic triggers.
 
 ## Expected Artifacts (P0)
 

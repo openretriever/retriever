@@ -19,7 +19,7 @@ If you want the shorter version first, start with `docs/quickstart.md`.
 
 ## What’s New (2025-12-17)
 
-- Canonical examples live in `examples/tutorial/` (everything else under `examples/` is legacy/system-level).
+- Canonical examples live in `examples/tutorial/`; larger system demos live in `examples/advanced/`.
 - New ergonomics demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
 - `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
 - Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/b_ir_and_execution/07_request_response.py`.

@@ -48,11 +48,15 @@ class SimClock(Flow[None, Tick]):
     def init_config(self) -> dict:
         return {"dt": self.dt}
 
+    def init(self) -> None:
+        self._step = 0
+        self._t_sim = 0.0
+
     def reset(self) -> None:
         self._step = 0
         self._t_sim = 0.0
 
-    def step(self, _):  # type: ignore[override]
+    def run(self, _):  # type: ignore[override]
         self._step += 1
         self._t_sim += self.dt
         return Tick(step_idx=self._step, t_sim=self._t_sim)
@@ -66,7 +70,7 @@ class ConditionScript(Flow[Tick, Conditions]):
     - reset requests at fixed steps
     """
 
-    def step(self, input: Tick) -> Conditions:
+    def run(self, input: Tick) -> Conditions:
         if input.step_idx is None or input.t_sim is None:
             return Conditions()
 
@@ -95,12 +99,17 @@ class ConditionalDeadlineTrigger(Flow[Conditions, TimerEvent]):
     def init_config(self) -> dict:
         return {"deadline_s": self.deadline_s, "event_name": self.event_name}
 
+    def init(self) -> None:
+        self._start_t = None
+        self._condition_seen = False
+        self._fired = False
+
     def reset(self) -> None:
         self._start_t = None
         self._condition_seen = False
         self._fired = False
 
-    def step(self, input: Conditions) -> TimerEvent:
+    def run(self, input: Conditions) -> TimerEvent:
         if input.t_sim is None:
             return TimerEvent()
         t_sim = float(input.t_sim)
@@ -138,11 +147,15 @@ class HeartbeatTimeoutTrigger(Flow[Conditions, TimerEvent]):
     def init_config(self) -> dict:
         return {"timeout_s": self.timeout_s, "event_name": self.event_name}
 
+    def init(self) -> None:
+        self._last_heartbeat_ok_t = None
+        self._fired = False
+
     def reset(self) -> None:
         self._last_heartbeat_ok_t = None
         self._fired = False
 
-    def step(self, input: Conditions) -> TimerEvent:
+    def run(self, input: Conditions) -> TimerEvent:
         if input.t_sim is None:
             return TimerEvent()
         t_sim = float(input.t_sim)
@@ -182,11 +195,15 @@ class RecurringResetTrigger(Flow[Conditions, TimerEvent]):
     def init_config(self) -> dict:
         return {"period_s": self.period_s, "event_name": self.event_name}
 
+    def init(self) -> None:
+        self._anchor_t = None
+        self._count = 0
+
     def reset(self) -> None:
         self._anchor_t = None
         self._count = 0
 
-    def step(self, input: Conditions) -> TimerEvent:
+    def run(self, input: Conditions) -> TimerEvent:
         if input.t_sim is None:
             return TimerEvent()
         t_sim = float(input.t_sim)
@@ -225,7 +242,7 @@ class EventPrinter(Flow[TimerEvent, None]):
     def init_config(self) -> dict:
         return {"channel": self.channel}
 
-    def step(self, input: TimerEvent) -> None:
+    def run(self, input: TimerEvent) -> None:
         if (
             input.event is None
             or input.pattern is None
