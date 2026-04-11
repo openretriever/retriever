@@ -17,10 +17,10 @@ import argparse
 from dataclasses import dataclass
 import time
 
-from retriever.flow import Flow, Pipeline, flow_io, Rate, Trigger
+from retriever.flow import Flow, Pipeline, io, Rate, Trigger
 
 
-@flow_io
+@io
 @dataclass
 class Data:
     value: int

@@ -19,10 +19,10 @@ import argparse
 import time
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
-@flow_io
+@io
 @dataclass
 class Action:
     action: float | None = None
@@ -37,7 +37,7 @@ class Transition:
     done: bool
 
 
-@flow_io
+@io
 @dataclass
 class Observation:
     transition: Transition

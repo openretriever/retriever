@@ -89,6 +89,9 @@ from retriever.types_registry import (
 # Import built-in shared schema types so registry lookups are stable after plain `import retriever`.
 from retriever.types import ClockDomain as _ClockDomain, SchemaRef as _SchemaRef, StreamId as _StreamId  # noqa: F401
 from retriever import hub  # noqa: F401
+# Import built-in domain typing packages so registry lookups are stable after plain `import retriever`.
+from retriever import robotics_typing as _robotics_typing  # noqa: F401
+from retriever import data_spec as _data_spec  # noqa: F401
 
 __all__ = [
     "Flow",

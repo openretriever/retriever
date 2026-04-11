@@ -50,6 +50,7 @@ def _ensure_hub_module_loaded(node: IRNode) -> bool:
     return True
 
 
+
 def load_flow_class(node: IRNode) -> Type[Flow]:
     """Load Flow class from IR node metadata without instantiating it."""
     try:

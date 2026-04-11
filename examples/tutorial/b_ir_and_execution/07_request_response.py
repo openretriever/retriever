@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from retriever.flow import Flow, Pipeline, flow_io, Rate, Trigger
+from retriever.flow import Flow, Pipeline, io, Rate, Trigger
 from retriever.flow import handle_service, call_service
 from retriever.flow.service import ServiceCall
 
@@ -32,13 +32,13 @@ class MathResponse:
 # Flow I/O Types
 # =============================================================================
 
-@flow_io
+@io
 @dataclass
 class NumberOutput:
     value: int
 
 
-@flow_io
+@io
 @dataclass
 class NumberInput:
     value: int

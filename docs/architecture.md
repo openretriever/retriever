@@ -19,7 +19,7 @@ Use this page plus `docs/guide_execution.md` for the supported architecture surf
 
 Code lives in `retriever/flow/`:
 
-- `Flow[I, O]`: user-defined node logic (`reset()`, `step()`, `finalize()`)
+- `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
 - `@io` classes: typed ports (each field is a port)
 - `Pipeline`: explicit graph builder (no context manager)
 - `PipelineBuilder`: lower-level validator/builder used by the registry and tooling
@@ -67,12 +67,7 @@ Note: `execute_ir(...)` accepts either an `IR` (logical graph) or an `ExecutionG
 (physical plan). When given an execution graph, it is lowered to a backend-friendly IR for execution.
 
 Backend boundary note:
-- Native backends and transport-specific optimizations remain backend implementation details.
-- The public architecture surface is `Pipeline` / `IR` / `ExecutionGraph` / `execute_ir(...)`.
-
-In-process note:
-- Prefer `Pipeline.step(...)` / `Pipeline.close_stepper()` for in-process debugging.
-- `execute_ir(..., backend="in-process")` is not a generic loader for saved IR files; it requires a live pipeline/runtime context in the current process.
+- Dora integration and native acceleration details are tracked in internal design notes, not in the public docs surface.
 
 ---
 
@@ -82,7 +77,9 @@ In-process note:
 
 Each input port is represented at runtime as a finite timestamped history:
 
-- `EventBuffer[T] = list[tuple[float, T]]`
+- `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
+
+For collection/replay/export contracts, `retriever.data_spec.EventBuffer` is a separate layer with explicit lineage and nanosecond event time.
 
 This is what `Subscriber.get_all()` returns.
 
@@ -128,9 +125,9 @@ Backends attach a concrete “execution time” to a step:
 
 ---
 
-## 4) Registry + plugins
+## 4) Registry + plugins (pipelines and systems)
 
-To support external packages that register reusable flows and pipelines, the runtime has:
+To support “system packages” (and the future split into runtime vs golden system repos), the runtime has:
 
 ### 4.1 Pipeline registry (IR-first)
 

@@ -25,16 +25,16 @@ import math
 import time
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, Window, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Window, io
 
 
-@flow_io
+@io
 @dataclass
 class SensorOut:
     x: float
 
 
-@flow_io
+@io
 @dataclass
 class SmoothedOut:
     x_mean: float

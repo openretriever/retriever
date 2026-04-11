@@ -11,6 +11,11 @@ This guide describes the **refactored** Flow authoring surface used by the runti
 Older pre-runtime-authoring material is not part of the public release docs in this repo.
 Use the tutorial tracks and `docs/handbook.md` as the supported source of truth.
 
+Quick checks (Dora lag policy):
+
+- Warn + drop missed ticks: `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
+- Panic (alias for `error`): `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
+
 ---
 
 ## 1) Define typed ports with `@io`
@@ -33,8 +38,7 @@ class DetectionsOut:
 
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
-- `@io` is standalone. Do not stack it with `@dataclass`.
-- Inside `Flow.step(...)`, read the typed fields directly. If you need optional-field presence checks, use `input._has_signal("field")` / `input._get_signal("field")`; treat the internal signal-list metadata as a debugging aid, not the normal public surface.
+- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
 
 ---
 
@@ -42,11 +46,7 @@ Notes:
 
 A `Flow` is a typed node. Implement `step(...)` and optionally lifecycle hooks:
 
-- `__lazy_init__()` / `reset()` / `finalize()` for resources and runtime-local state
-- `run()` / `init()` only as deprecated compatibility aliases for older flows
-
-Keep module top-level code and `__init__()` import-safe and lightweight. Acquire
-runtime-local resources in `__lazy_init__()` / `reset()`.
+- `reset()` / `finalize()` for resources and state (models, cameras, sockets, caches)
 
 ```py
 from retriever.flow import Flow, io
@@ -72,10 +72,8 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 ```
 
-
-- Override `step(...)` in new code. `run(...)` is a deprecated backwards-compat
-  alias, and `forward(...)` is a PyTorch-style alias for `step(...)`. Backend
-  execution stays on `Pipeline.run(...)`.
+- `Flow.forward(...)` is an alias for `step(...)`.
+- `Flow.run(...)` remains available as a deprecated compatibility alias.
 
 ## 2.1) Wrapper Factory (Torch/Gym)
 
@@ -222,15 +220,11 @@ Adapters define how a downstream samples its input **buffer**:
 - `Chunking(dt=...)`
 - `Linear()`
 
-Import non-default adapters explicitly, for example:
-
-```py
-from retriever.flow.adapter import Exact, Chunking, Linear
-```
-
 Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
-`EventBuffer[T] = list[(timestamp: float, value: T)]`
+`retriever.flow.types.EventBuffer[T] = list[(timestamp: float, value: T)]`
+
+This runtime buffer is distinct from `retriever.data_spec.EventBuffer`, which is used for explicit event/data/export contracts.
 
 See: `docs/guide_temporal.md`.
 
@@ -242,7 +236,7 @@ See: `docs/guide_temporal.md`.
 
 ```py
 pipe.run(backend="multiprocessing", duration=1.0)
-# Use backend="dora" explicitly for dora deployments or parity checks.
+pipe.run(backend="dora", duration=10.0)
 
 # Record to file (uses in-process backend)
 pipe.run(duration=5.0, record="session.mcap")
@@ -297,8 +291,8 @@ Example:
 
 Gym-style env wrapper notes:
 - A Gym env is typically stateful and imperative; in Retriever you wrap it in a `Flow`:
-  - `reset()` creates or refreshes the env state
-  - `step(Action)` performs `env.step(action)` and returns `Observation`
+  - `init()` creates the env
+  - `run(Action)` performs `env.step(action)` and returns `Observation`
   - the flow can internally decide when to `reset()` (e.g. on `done=True`)
 - The closed-loop becomes a normal pipeline cycle (env↔controller), which can run on
   multiprocessing or Dora without changing user code.

@@ -70,7 +70,7 @@ Implementation lives in:
 
 ### Flow lifecycle in the stepper
 
-- The stepper initializes flow runtime lazily on the first `step()` via `__lazy_init__()` and the legacy `init()` compatibility hook.
+- The stepper calls `Flow.reset()` lazily on the first `step()`.
 - `Pipeline.reset_stepper()` calls `Flow.reset()` and clears all buffers.
 - `Pipeline.close_stepper()` calls `Flow.finalize()` and drops the stepper.
 
@@ -113,7 +113,8 @@ Time parameters:
 Retriever’s runtime model is:
 
 - each port is a discrete-time **EventStream**
-- concretely stored as a finite `EventBuffer[T] = list[(timestamp, value)]`
+- concretely stored as a finite `retriever.flow.types.EventBuffer[T] = list[(timestamp, value)]`
+- for collection/replay/export semantics, use `retriever.data_spec.EventBuffer` instead of this runtime buffer
 - adapters sample buffers at time `now` to produce a value for the Flow input
 
 In `Pipeline.step(...)`, buffers are in-process and the buffer size is derived from the adapter:
@@ -191,10 +192,11 @@ Notes:
 
 ### Interpreter note (Pixi)
 
-If you use Pixi, select the active Pixi interpreter for this repo in VS Code,
-or launch the debug target through `pixi run ...`. Avoid hardcoding a repo-local
-interpreter path in docs or launch configs because the exact environment path can
-differ across platforms and shells.
+If you use Pixi, the interpreter usually lives at:
+
+`./.pixi/envs/default/bin/python`
+
+Make sure VS Code is using that interpreter (or run the module via the launch config).
 
 ---
 
@@ -205,29 +207,15 @@ The stepper is useful for “record once, debug many times” workflows:
 - record a short input sequence from real hardware
 - replay it later in-process so you can set breakpoints inside `Flow.step()`
 
-Preferred recording paths:
+Library helpers (stepper-first):
 
-- `pipe.run(record="session.mcap")` for a portable session artifact.
-- `pipe.run(record="session.rrd")` for a native Rerun session artifact.
-- `pipe.run(record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)))` when you want both.
-
-These `pipe.run(record=...)` helpers use the in-process stepper and advance logical steps at simulation speed. `duration=...` therefore limits wall-clock run time rather than exact tick count. If you need an exact number of logical steps, prefer `pipe.record(..., steps=..., dt=...)`.
-
-For cross-platform debugging, prefer replaying to `stdout` first. Treat OpenCV windows and live Rerun viewers as optional local-desktop tools rather than the default workflow.
-
-Legacy stepper-first helpers still exist for single-stream capture:
-
-- High-level: `Pipeline.record(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
+- High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
 - Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
 
 Perception example:
 - `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
-  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay ...`
+  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize cv2`
 
-Use the perception example with `.rrd` as the primary local-debug artifact and a mirrored `.mcap` for portable interchange:
-
-- Record both artifacts in one run: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap`
-- Replay from RRD: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd`
-- Replay from MCAP: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap`
-- If no webcam is available, the tutorial source falls back to mock frames so you can still validate the artifact path.
+The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
+Replay accepts either artifact.

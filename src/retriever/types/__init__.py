@@ -1,18 +1,16 @@
-"""Shared Retriever type surface.
+"""Generic primitives plus the shared Retriever type registry.
 
 `retriever.types` is the umbrella import for:
-- runtime and symbolic primitives
+- runtime/language primitives (`Eff`, symbolic objects, skills)
+- the schema-aware type registry (`register_type`, `get_type`, ...)
 - shared schema/stream identity helpers used by recording and registry code
-- schema-aware type registry helpers
 
-Additional domain packages may register into this surface later, but this
-package stays self-contained and dependency-light.
+Domain standards such as `retriever.robotics_typing` and `retriever.data_spec`
+remain separate public packages and register themselves here.
 """
 
-from .compat import FRPConfig
-from .core import Eff, Module, pure
+from .core import Eff, pure, Module
 from .schema import ClockDomain, SchemaRef, StreamId
-from .skills import GroundedSkill, SkillSignature
 from .symbolic import (
     GroundAtom,
     LiftedAtom,
@@ -22,6 +20,8 @@ from .symbolic import (
     State,
     Variable,
 )
+from .skills import SkillSignature, GroundedSkill
+from .compat import FRPConfig
 from .registry import (
     TypeInfo,
     TypeRegistry,

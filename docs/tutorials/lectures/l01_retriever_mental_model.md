@@ -9,7 +9,7 @@ title: "L01 Retriever Mental Model (Flow, TemporalFlow, Pipeline)"
 - Track: A (Flow Fundamentals)
 - Tier: 0-1
 - Duration: 20 minutes
-- Prerequisites: baseline `pixi` environment in the repository root
+- Prerequisites: baseline `pixi` environment in `retriever/`
 
 ## Learning Objectives
 1. Explain `Flow` as typed input/output transformation.
@@ -37,7 +37,7 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
 - Result values match simple deterministic math (`5 -> 10`, `7 -> 14`).
 
 ## Failure Drill
-- Remove `@flow_io` from one dataclass and rerun.
+- Remove `@io` from one envelope class and rerun.
 - Observe contract/type handling degrade and discuss why typed boundary is required.
 
 ## Exercise

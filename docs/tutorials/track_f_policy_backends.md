@@ -4,9 +4,9 @@ title: "Track F: Policy Backends"
 
 # Track F: Policy Backends
 
-Focus: canonical examples from `examples/tutorial/f_policy_backends/`.
+Focus: backend abstraction for closed-loop policy execution (`openpi_pi05`, `lerobot`, `mock`).
 
-## Modules
+## Module
 
 ```bash
 pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
@@ -14,6 +14,10 @@ pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_bac
 
 ## What To Observe
 
-- How to swap policy backends without rewriting the surrounding graph.
-- Where backend-specific policy wrappers belong.
-- What evidence to collect when comparing backend behavior.
+- Graph topology remains unchanged while backend switches.
+- Timing/chunk metrics vary by backend implementation.
+
+## Expected Artifacts (P0)
+
+- `logs/tutorial_policy/tut027_backend_metrics.csv`
+- `logs/tutorial_policy/tut027_backend_metrics.json`

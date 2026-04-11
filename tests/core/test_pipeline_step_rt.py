@@ -302,6 +302,7 @@ def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path)
     assert calls == [(src1, record_path), (src2, record_path)]
 
 
+
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
     if suffix == ".rrd":

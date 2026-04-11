@@ -22,10 +22,25 @@ Each track uses local numbering (`01_`, `02_`, ...) within that folder.
 - `d_closed_loop_state_feedback/03_operator_mode_and_authority_fsm.py`
 - `h_release_readiness/02_release_readiness_walkthrough.py`
 
+## P1 Reliability Hardening Modules
+
+- `b_ir_and_execution/09_backend_parity_benchmark.py`
+- `c_debug_and_replay/07_incident_response_replay_drill.py`
+
+## Advanced Extension Modules
+
+- `e_resource_and_sync/06_functional_fanin_fanout.py`
+- `d_closed_loop_state_feedback/13_deadline_aware_mode_switch.py`
+- `c_debug_and_replay/08_mcap_session_inspection.py`
+- `g_operations_interfaces/05_robotics_typing_boundaries.py`
+- `e_resource_and_sync/07_data_spec_multistream_join.py`
+- `h_release_readiness/03_dataset_manifest_and_lerobot_mapping.py`
+
 ## P0 Runner
 
 ```bash
 ./scripts/run_p0_release_readiness.sh
+pixi run p0-release-readiness
 ```
 
 ## Expected Outputs
@@ -34,4 +49,27 @@ Each track uses local numbering (`01_`, `02_`, ...) within that folder.
 - `expected_outputs/025_run_manifest_and_lineage.md`
 - `expected_outputs/027_closed_loop_policy_backend_abstraction.md`
 - `expected_outputs/028_operator_mode_and_authority_fsm.md`
-- `expected_outputs/029_release_readiness_walkthrough.md`
+- `expected_outputs/034_functional_fanin_fanout.md`
+- `expected_outputs/035_deadline_aware_mode_switch.md`
+- `expected_outputs/036_mcap_session_inspection.md`
+- `expected_outputs/032_backend_parity_benchmark.md`
+- `expected_outputs/033_incident_response_replay_drill.md`
+- `expected_outputs/037_robotics_typing_boundaries.md`
+- `expected_outputs/038_data_spec_multistream_join.md`
+- `expected_outputs/039_dataset_manifest_and_lerobot_mapping.md`
+
+## Reliability Gates
+
+```bash
+pixi run p1-reliability-gates
+pixi run verify-backend-parity
+pixi run verify-incident-replay
+```
+
+## Notebook-Ready Export
+
+```bash
+pixi run demo-mcap-session-inspection
+pixi run export-notebook-ready
+pixi run check-notebook-ready
+```

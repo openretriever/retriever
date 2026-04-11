@@ -41,5 +41,5 @@ pixi run python -m pytest tests/core -q
 
 ## Documentation
 
-- Docs live in `docs/` as the primary source.
-- When docs behavior changes, update the relevant guide/handbook pages in the same PR.
+- Docs are in `docs/` with tutorial curriculum pages in `docs/tutorials/`.
+- `docs/index.md` is the public entry point for docs navigation.

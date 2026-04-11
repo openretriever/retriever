@@ -8,24 +8,20 @@ Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
 Start here:
 - [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
-- [Walkthrough: Stepper, Debugger, and MCAP Replay](walkthrough_stepper_debug_and_replay.md)
 
 ## Modules
 
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
-pixi run demo-webcam-replay-mcap
+pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
 pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
 pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
 ```
-
-Use `stdout` first. On machines without a webcam, the tutorial source falls back to mock frames so the artifact path still works.
 
 ## What To Observe
 
@@ -38,8 +34,8 @@ Use `stdout` first. On machines without a webcam, the tutorial source falls back
 ## Core Feature Flow
 
 1. Step pipeline in-process (`01_debug_stepper`) to debug logic with breakpoints.
-2. Record one live-or-mock sensor session to `.rrd`, with a mirrored `.mcap` artifact for interchange (`demo-webcam-record`).
-3. Replay the same captured session from `.rrd` or `.mcap` (`demo-webcam-replay-rrd` / `demo-webcam-replay-mcap`) for deterministic debugging.
+2. Record real sensor session to MCAP (`04_record_replay_perception record`).
+3. Replay the same MCAP (`04_record_replay_perception replay`) for deterministic debugging.
 4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
 
 ## Expected Artifacts (P0/P1)

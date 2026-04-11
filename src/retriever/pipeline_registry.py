@@ -150,18 +150,7 @@ class PipelineRegistry:
     def build_surface(self, name: str, **kwargs: Any) -> PipelineSurface:
         """Build a flow-like surface from a registered pipeline."""
         info = self.get(name)
-        result = info.factory(**kwargs)
-        if isinstance(result, IR):
-            ir = result
-        elif isinstance(result, PipelineBuilder):
-            ir = result.validate(lower_composite_flows=False)
-        elif hasattr(result, "validate") and hasattr(result, "_build_ir"):
-            ir = result.validate(lower_composite_flows=False)
-        else:
-            raise TypeError(
-                f"Pipeline factory '{name}' returned unsupported type: {type(result)} "
-                "(expected IR, PipelineBuilder, or Pipeline)"
-            )
+        ir = self.build_ir(name, **kwargs)
         return _build_pipeline_surface_from_ir(
             ir,
             surface_policy=info.surface_policy,
@@ -173,7 +162,7 @@ class PipelineRegistry:
         """Build an in-process composite Flow wrapper from a registered pipeline."""
         info = self.get(name)
         live_ctx = _build_live_pipeline_context(info, **kwargs)
-        ir = live_ctx.validate(lower_composite_flows=False)
+        ir = live_ctx.validate()
         surface = _build_pipeline_surface_from_ir(
             ir,
             surface_policy=info.surface_policy,
@@ -566,6 +555,7 @@ def _build_pipeline_viz_metadata(name: str, ir: IR, surface: PipelineSurface) ->
             "edges": internal_edges,
         },
     }
+
 
 
 def _make_surface_io_type(

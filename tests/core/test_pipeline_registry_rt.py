@@ -56,6 +56,7 @@ class BiasOut:
     bias: int
 
 
+
 class RichSource(Flow[None, RichOut]):
     def step(self, _):  # type: ignore[override]
         return RichOut(value=1, aux=9)
@@ -90,6 +91,7 @@ class BiasSource(Flow[None, BiasOut]):
 
     def step(self, _):  # type: ignore[override]
         return BiasOut(bias=self.bias)
+
 
 
 def test_pipeline_registry_factory_returns_irstruct():
@@ -205,6 +207,7 @@ def test_pipeline_replace_preserves_flow_selector_by_default():
 
     ir = pipe.validate()
     assert any(node.id == "processor" and node.type == "ReplacementProc" for node in ir.nodes)
+
 
 
 def test_pipeline_registry_can_build_flow_wrapper_from_surface():

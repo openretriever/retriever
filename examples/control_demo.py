@@ -1,177 +1,201 @@
 """
-Pipeline Control System Demo
+Demo of Pipeline Control System.
 
-Demonstrates pause/resume/reset functionality with keyboard and web control.
+This example demonstrates:
+- Individual flow control (pause/resume/reset specific flows)
+- Web dashboard with real-time monitoring
+- Keyboard controls (optional)
+- Mobile access via QR code
 
-Usage:
-    # With keyboard control only
-    python examples/control_demo.py
-
-    # With web dashboard
-    python examples/control_demo.py --web-port 8080
-
-    # With all controls
-    python examples/control_demo.py --web-port 8080 --keyboard
-
-Controls:
-    Keyboard:
-        Space       - Toggle pause/resume
-        Shift + R   - Reset all flows
-        Shift + S   - Print status
-        Shift + Q   - Stop pipeline
-
-    Web Dashboard:
-        Visit http://localhost:8080
+Run with: pixi run demo-control
 """
 
-import argparse
 import time
 from dataclasses import dataclass
+from typing import Optional
 
-from retriever import Pipeline, Flow, Rate, Latest
-from retriever.flow.io import io
-from retriever.rt.control import Controllable, ControlConfig
+from retriever.flow import Flow, Pipeline, Rate, io, Latest
+from retriever.rt.control import ControlConfig, Controllable
 
 
-# Define flow types
 @io
 @dataclass
-class SensorData:
-    value: float = 0.0
-    timestamp: float = 0.0
+class SensorReading:
+    """Sensor reading output."""
+    sensor_id: str
+    value: float
+    timestamp: float
 
 
 @io
 @dataclass
 class ProcessedData:
-    result: float = 0.0
-    count: int = 0
+    """Processed data output."""
+    processed_value: float
+    average: float
+    count: int
 
 
-# Create controllable flows
-class SensorFlow(Controllable, Flow[None, SensorData]):
-    """Simulated sensor that generates incrementing values."""
+@dataclass
+class SensorFlow(Controllable, Flow[None, SensorReading]):
+    """Simulated sensor that generates readings."""
 
-    def __init__(self):
-        super().__init__()
-        self.reading_count = 0
+    name: str = "SensorFlow"
+    reading_count: int = 0
+
+    def __post_init__(self):
+        """Initialize controllable."""
+        Controllable.__init__(self)
 
     def reset(self) -> None:
         """Reset sensor state."""
         super().reset()
         self.reading_count = 0
-        print("[SensorFlow] State reset!")
+        print(f"[{self.name}] State reset")
 
     def get_custom_state(self) -> dict:
+        """Report custom state for dashboard."""
         return {"reading_count": self.reading_count}
 
-    def step(self, _) -> SensorData:
+    def step(self, input_data: None) -> SensorReading:
+        """Generate sensor readings."""
         self.reading_count += 1
-
-        # Add periodic status messages to demonstrate log capture
-        if self.reading_count % 10 == 0:
-            print(f"[SensorFlow] Generated {self.reading_count} readings")
-
-        return SensorData(
-            value=self.reading_count * 1.5,
+        reading = SensorReading(
+            sensor_id="sensor_1",
+            value=float(self.reading_count * 10),
             timestamp=time.time()
         )
 
+        print(f"[{self.name}] Reading #{self.reading_count}: value={reading.value}")
+        return reading
 
-class ProcessorFlow(Controllable, Flow[SensorData, ProcessedData]):
-    """Processor with internal buffer that can be reset."""
 
-    def __init__(self, window_size: int = 10):
-        super().__init__()
-        self.window_size = window_size
-        self.buffer = []
-        self.process_count = 0
+@dataclass
+class ProcessorFlow(Controllable, Flow[SensorReading, ProcessedData]):
+    """Processes sensor data."""
+
+    name: str = "ProcessorFlow"
+    processed_count: int = 0
+    total_value: float = 0.0
+
+    def __post_init__(self):
+        """Initialize controllable."""
+        Controllable.__init__(self)
 
     def reset(self) -> None:
         """Reset processor state."""
         super().reset()
-        self.buffer.clear()
-        self.process_count = 0
-        print("[ProcessorFlow] State reset!")
+        self.processed_count = 0
+        self.total_value = 0.0
+        print(f"[{self.name}] State reset")
 
     def get_custom_state(self) -> dict:
+        """Report custom state for dashboard."""
+        avg = self.total_value / self.processed_count if self.processed_count > 0 else 0
         return {
-            "buffer_size": len(self.buffer),
-            "window_size": self.window_size,
-            "process_count": self.process_count,
+            "processed_count": self.processed_count,
+            "average_value": round(avg, 2)
         }
 
-    def step(self, input: SensorData) -> ProcessedData:
-        self.process_count += 1
+    def step(self, sensor_data: SensorReading) -> ProcessedData:
+        """Process sensor data."""
+        # Handle None values from adapters
+        if sensor_data.value is None:
+            return ProcessedData(
+                processed_value=0.0,
+                average=self.total_value / max(self.processed_count, 1),
+                count=self.processed_count
+            )
 
-        if input.value is not None and input.value > 0:
-            self.buffer.append(input.value)
-            if len(self.buffer) > self.window_size:
-                self.buffer.pop(0)
+        self.processed_count += 1
+        value = sensor_data.value
+        self.total_value += value
 
-        avg = sum(self.buffer) / len(self.buffer) if self.buffer else 0
+        result = ProcessedData(
+            processed_value=value * 1.5,
+            average=self.total_value / self.processed_count,
+            count=self.processed_count
+        )
 
-        # Add periodic status messages to demonstrate log capture
-        if self.process_count % 10 == 0:
-            print(f"[ProcessorFlow] Processed {self.process_count} samples, avg={avg:.2f}")
+        print(f"[{self.name}] Processed #{self.processed_count}: avg={result.average:.2f}")
+        return result
 
-        return ProcessedData(result=avg, count=self.process_count)
+
+@dataclass
+class MonitorFlow(Controllable, Flow[ProcessedData, None]):
+    """Monitors processed data."""
+
+    name: str = "MonitorFlow"
+    alert_count: int = 0
+
+    def __post_init__(self):
+        """Initialize controllable."""
+        Controllable.__init__(self)
+
+    def reset(self) -> None:
+        """Reset monitor state."""
+        super().reset()
+        self.alert_count = 0
+        print(f"[{self.name}] State reset")
+
+    def get_custom_state(self) -> dict:
+        """Report custom state for dashboard."""
+        return {"alert_count": self.alert_count}
+
+    def step(self, processed_data: ProcessedData) -> None:
+        """Monitor for anomalies."""
+        # Handle None values from adapters
+        if processed_data.average is None:
+            return
+
+        if processed_data.average > 100:
+            self.alert_count += 1
+            print(f"[{self.name}] 🚨 Alert #{self.alert_count}: High average detected!")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline Control Demo")
-    parser.add_argument("--web-port", type=int, help="Enable web dashboard on port")
-    parser.add_argument("--keyboard", action="store_true", help="Enable keyboard control")
-    parser.add_argument("--duration", type=float, default=60.0, help="Duration to run")
-    args = parser.parse_args()
+    """Run the control demo."""
 
-    print("=" * 70)
-    print("Pipeline Control System Demo")
-    print("=" * 70)
+    # Create pipeline with control enabled
+    with Pipeline(name="Control Demo Pipeline") as pipe:
+        # Create flows
+        sensor = SensorFlow() @ Rate(hz=2)
+        processor = ProcessorFlow() @ Rate(hz=2)
+        monitor = MonitorFlow() @ Rate(hz=2)
 
-    # Create pipeline
-    pipe = Pipeline("control_demo")
-
-    # Create control config (will be passed to pipe.run())
-    control_config = ControlConfig(
-        web_port=args.web_port,
-        keyboard=args.keyboard,
-    ) if (args.web_port or args.keyboard) else None
-
-    # Build pipeline
-    with pipe:
-        sensor = SensorFlow() @ Rate(5)  # 5 Hz
-        processor = ProcessorFlow(window_size=5) @ Rate(5)  # 5 Hz
+        # Connect flows
         pipe.connect(sensor, processor, sync=Latest())
+        pipe.connect(processor, monitor, sync=Latest())
 
-    print("\nPipeline built with controllable flows:")
-    print("  - SensorFlow: Generates incrementing values")
-    print("  - ProcessorFlow: Computes moving average")
+    # Execute with control enabled
+    print("\n" + "="*70)
+    print("Starting Pipeline with Control System")
+    print("="*70)
+    print("\nControl Features:")
+    print("  • Web Dashboard: Access via browser (URL shown below)")
+    print("  • Individual Flow Control: Pause/resume/reset specific flows")
+    print("  • Real-time Monitoring: View flow states and custom metrics")
+    print("  • Mobile Access: Scan QR code with your phone")
+    print("\nDashboard Controls:")
+    print("  • Global: Start/Pause/Stop/Reset all flows")
+    print("  • Per-Flow: Start/Pause/Stop individual flows")
+    print("  • Logs: View real-time output from all flows")
+    print("\n" + "="*70 + "\n")
 
-    if args.keyboard:
-        print("\nKeyboard Controls:")
-        print("  Space      - Toggle pause/resume")
-        print("  Shift + R  - Reset all flows")
-        print("  Shift + S  - Print status")
-        print("  Shift + Q  - Stop pipeline")
+    pipe.run(
+        backend="multiprocessing",
+        duration=30,
+        control=ControlConfig(
+            enabled=True,
+            web_port=8080,
+            keyboard=True  # Enable keyboard controls
+        ),
+        blocking=True
+    )
 
-    if args.web_port:
-        print(f"\nWeb Dashboard: http://localhost:{args.web_port}")
-
-    print(f"\nRunning for {args.duration} seconds...")
-    print("=" * 70)
-
-    # Run pipeline with control config
-    try:
-        pipe.run(
-            duration=args.duration,
-            backend="multiprocessing",  # Multiprocessing backend with control support
-            control=control_config,
-        )
-    except KeyboardInterrupt:
-        print("\n\nPipeline interrupted by user")
-
-    print("\nDemo complete!")
+    print("\n" + "="*70)
+    print("Pipeline execution completed")
+    print("="*70)
 
 
 if __name__ == "__main__":

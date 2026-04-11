@@ -4,7 +4,7 @@ title: "Track A: Flow Fundamentals"
 
 # Track A: Flow Fundamentals
 
-Focus: canonical examples from `examples/tutorial/a_flow_fundamentals/`.
+Focus: typed flow authoring, clocks, adapters, and ergonomic graph composition.
 
 ## Modules
 
@@ -18,7 +18,6 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics
 
 ## What To Observe
 
-- How typed `@io` envelopes map to `Flow[I, O]` signatures.
-- When to use `Rate`, `Tick`, and `Trigger` clocks.
-- How adapter choices change sampling semantics at the pipeline boundary.
-- Why `pipe.step(...)` is the fastest way to understand a new graph.
+- How `@io` typing catches wiring mistakes early.
+- Clock choice impact (`Rate`, `Trigger`, and adapter semantics).
+- Equivalent pipeline authoring styles and tradeoffs.

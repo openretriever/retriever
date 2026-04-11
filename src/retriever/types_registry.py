@@ -1,8 +1,8 @@
 """Schema-aware type registry for Retriever payload and contract discovery.
 
-This registry powers `retriever.types` and downstream consumers such as
-recording/export layers. Domain packages may register additional types here,
-but this module stays dependency-light.
+This registry sits between domain packages such as `retriever.robotics_typing`
+and `retriever.data_spec`, and downstream consumers such as recording/export
+layers. It intentionally stays lightweight:
 
 - register Python classes under stable names
 - carry optional schema metadata for recording/export

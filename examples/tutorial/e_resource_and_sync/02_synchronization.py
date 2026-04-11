@@ -7,25 +7,25 @@ import time
 import random
 from dataclasses import dataclass, field as dc_field, fields
 
-from retriever.flow import Flow, Rate, Pipeline, flow_io, Latest, Trigger
+from retriever.flow import Flow, Rate, Pipeline, io, Latest, Trigger
 from retriever.flow.sync import Synchronizer
 
 # --- Data Definitions ---
 
-@flow_io
+@io
 @dataclass
 class Detection:
     label: str
     box: list[int]
     timestamp: float
 
-@flow_io
+@io
 @dataclass
 class Segmentation:
     mask_rle: str
     timestamp: float
 
-@flow_io
+@io
 @dataclass
 class SyncInput:
     # Flattened input to avoid nesting complexity in graph ports
@@ -36,7 +36,7 @@ class SyncInput:
     seg_mask_rle: str = ""
     seg_timestamp: float = 0.0
 
-@flow_io
+@io
 @dataclass
 class BundledResult:
     det: Detection
@@ -45,7 +45,7 @@ class BundledResult:
 
 # --- Sources ---
 
-@flow_io
+@io
 @dataclass
 class Frame:
     id: int
@@ -77,7 +77,7 @@ class Segmenter(Flow[Frame, Segmentation]):
 # We no longer need MySync or manual buffering! 
 # We just define the output bundling node.
 
-@flow_io
+@io
 @dataclass
 class NativeResult:
     det: Detection

@@ -128,6 +128,29 @@ class TestControlChannel:
         msg = channel.receive_command(timeout=0.01)
         assert msg is None
 
+    def test_log_stream_separate_from_control_stream(self):
+        from retriever.rt.control.channel import ControlCommand, ControlMessage
+
+        channel = InProcessControlChannel()
+
+        log_msg = ControlMessage(
+            command=ControlCommand.LOG_OUTPUT,
+            target="test",
+            payload={"level": "INFO", "message": "hello", "timestamp": time.time()},
+        )
+        ctrl_msg = ControlMessage(command=ControlCommand.PAUSE, target="test")
+
+        channel.send_command(log_msg)
+        channel.send_command(ctrl_msg)
+
+        received_log = channel.receive_log(timeout=0.1)
+        received_ctrl = channel.receive_command(timeout=0.1)
+
+        assert received_log is not None
+        assert received_log.command == ControlCommand.LOG_OUTPUT
+        assert received_ctrl is not None
+        assert received_ctrl.command == ControlCommand.PAUSE
+
 
 class TestPipelineController:
     """Test the PipelineController."""

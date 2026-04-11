@@ -4,11 +4,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-REFERENCE_ROOT_DEFAULT="$ROOT_DIR/examples/tutorial/h_release_readiness/release_reference_v1"
-REFERENCE_ROOT="${REFERENCE_ROOT:-${NOTES_ROOT:-$REFERENCE_ROOT_DEFAULT}}"
+NOTES_ROOT_DEFAULT="$(cd "$ROOT_DIR/../RetrieverNotes" 2>/dev/null && pwd || true)"
+NOTES_ROOT="${NOTES_ROOT:-$NOTES_ROOT_DEFAULT}"
 
-if [[ -z "$REFERENCE_ROOT" || ! -d "$REFERENCE_ROOT" ]]; then
-  echo "[error] release reference bundle not found. Set REFERENCE_ROOT=/absolute/path/to/release_reference_v1" >&2
+if [[ -z "$NOTES_ROOT" || ! -d "$NOTES_ROOT" ]]; then
+  echo "[error] RetrieverNotes not found. Set NOTES_ROOT=/absolute/path/to/RetrieverNotes" >&2
   exit 2
 fi
 
@@ -38,29 +38,37 @@ run_step() {
   "$@" 2>&1 | tee "$log_file"
 }
 
-run_step tut024_trace_contract_basics   "${RUNNER[@]}" -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
+run_step tut024_trace_contract_basics \
+  "${RUNNER[@]}" -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
 
-run_step tut025_run_manifest_and_lineage   "${RUNNER[@]}" -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
+run_step tut025_run_manifest_and_lineage \
+  "${RUNNER[@]}" -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
 
-run_step tut027_policy_backend_abstraction   "${RUNNER[@]}" -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
+run_step tut027_policy_backend_abstraction \
+  "${RUNNER[@]}" -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
 
-run_step tut028_authority_fsm   "${RUNNER[@]}" -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm
+run_step tut028_authority_fsm \
+  "${RUNNER[@]}" -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm
 
-run_step tut029_release_readiness_walkthrough   "${RUNNER[@]}" -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough   --reference-root "$REFERENCE_ROOT"   --out "$CHECKLIST_MD"   --summary-json "$SUMMARY_JSON"
+run_step tut029_release_readiness_walkthrough \
+  "${RUNNER[@]}" -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough \
+  --notes-root "$NOTES_ROOT" \
+  --out "$CHECKLIST_MD" \
+  --summary-json "$SUMMARY_JSON"
 
 if [[ ! -f "$SUMMARY_JSON" ]]; then
   echo "[error] missing summary JSON: $SUMMARY_JSON" >&2
   exit 3
 fi
 
-DECISION="$(python - <<'PY2' "$SUMMARY_JSON"
+DECISION="$(python - <<'PY' "$SUMMARY_JSON"
 import json
 import sys
 p = sys.argv[1]
-with open(p, 'r', encoding='utf-8') as f:
+with open(p, "r", encoding="utf-8") as f:
     data = json.load(f)
-print(data.get('decision', 'UNKNOWN'))
-PY2
+print(data.get("decision", "UNKNOWN"))
+PY
 )"
 
 cat > "$RUN_SUMMARY_MD" <<EOF
@@ -68,7 +76,7 @@ cat > "$RUN_SUMMARY_MD" <<EOF
 
 - Timestamp (UTC): ${STAMP}
 - Repository: ${ROOT_DIR}
-- Reference root: ${REFERENCE_ROOT}
+- Notes root: ${NOTES_ROOT}
 - Runner: ${RUNNER_LABEL}
 - Final decision: **${DECISION}**
 
@@ -78,7 +86,7 @@ cat > "$RUN_SUMMARY_MD" <<EOF
 2. \`${RUNNER_LABEL} -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo\`
 3. \`${RUNNER_LABEL} -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction\`
 4. \`${RUNNER_LABEL} -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm\`
-5. \`${RUNNER_LABEL} -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough --reference-root ${REFERENCE_ROOT} --out ${CHECKLIST_MD} --summary-json ${SUMMARY_JSON}\`
+5. \`${RUNNER_LABEL} -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough --notes-root ${NOTES_ROOT} --out ${CHECKLIST_MD} --summary-json ${SUMMARY_JSON}\`
 
 ## Session Artifacts
 

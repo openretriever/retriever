@@ -20,13 +20,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 from retriever.lib.mcap import MCAPReader, MCAPWriter
 
 from examples.tutorial._p0_utils import format_table, utc_now_iso, write_json
 
 
-@flow_io
+@io
 @dataclass
 class CounterOut:
     value: int | None = None

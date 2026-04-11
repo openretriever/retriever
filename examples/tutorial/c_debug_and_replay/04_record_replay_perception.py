@@ -1,15 +1,9 @@
 """
 Record + replay a perception camera stream (in-process stepper) for debugging.
 
-This is a stepper-first workflow:
-  - record once from a live camera (or mock fallback) to `.rrd` plus a mirrored `.mcap`
-  - replay later (still in-process) so breakpoints inside `Flow.step()` work
-  - optionally visualize replay in stdout, OpenCV, Rerun, or both
-
 Run:
-  pixi run demo-webcam-record
-  pixi run demo-webcam-replay-rrd
-  pixi run demo-webcam-replay-mcap
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
+  pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
 """
 
 from __future__ import annotations
@@ -19,7 +13,7 @@ import time
 from pathlib import Path
 
 from retriever.config import RecordConfig
-from retriever.tutorials.perception import (
+from examples.shared.perception_runtime import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,
@@ -43,9 +37,8 @@ def parse_args() -> argparse.Namespace:
         "--replay-out",
         type=Path,
         default=Path("logs/perception.mcap"),
-        help="Optional replay artifact path (.mcap recommended for portable replay).",
+        help="Replay artifact path (.mcap).",
     )
-    record.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")
     record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
     record.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
@@ -72,9 +65,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def cmd_record(args: argparse.Namespace) -> None:
-    if args.out.expanduser().resolve() == args.replay_out.expanduser().resolve():
-        raise SystemExit("--out and --replay-out must be different artifact paths.")
-    pipe, _camera = build_record_pipeline(camera_index=args.camera_index)
+    pipe, _camera = build_record_pipeline()
     cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
         pipe.record(
@@ -89,7 +80,6 @@ def cmd_record(args: argparse.Namespace) -> None:
         pipe.close_stepper()
     outputs = ", ".join(str(path) for path in cfg.artifact_paths())
     print(f"[Recording] saved {args.steps} steps to {outputs}")
-    print("[Recording] if no camera is available, the tutorial pipeline uses mock frames so the artifact flow still works.")
 
 
 def _resolve_recording_path(path: Path) -> Path:
@@ -116,7 +106,8 @@ def cmd_replay(args: argparse.Namespace) -> None:
     if args.visualize in {"rerun", "both"}:
         from retriever.lib.rerun import RerunConfig, RerunManager
 
-        rerun_manager = RerunManager(RerunConfig(mode="spawn"), app_id="perception_replay")
+        config = RerunConfig(mode="spawn")
+        rerun_manager = RerunManager(config, app_id="perception_replay")
         rerun_manager.init()
 
     completed = 0

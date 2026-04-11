@@ -34,7 +34,7 @@ pip = "*"
 ipython = "*"
 
 mujoco = "*"
-mcp = ">=1.25.0,<2"
+# mcp = ">=1.25.0,<2"  # Temporarily disabled - conflicts with fastapi/starlette versions
 
 
 # =============================================================================
@@ -62,8 +62,9 @@ optax = "*"
 # =============================================================================
 [feature.control.pypi-dependencies]
 pynput = "*"       # Global keyboard control
-fastapi = "*"      # Web dashboard
-uvicorn = "*"      # FastAPI server (already in main deps, but included for clarity)
+fastapi = ">=0.100.0"      # Web dashboard (need modern version)
+uvicorn = "*"      # FastAPI server
+qrcode = { version = "*", extras = ["pil"] }  # QR code for mobile access
 
 
 # -----------------------------------------------------------------------------
@@ -136,14 +137,14 @@ test = "python -m pytest tests/ -v"
 test-control = "python -m pytest tests/test_control.py tests/test_adapter_reset.py tests/test_output_capture.py -v"
 
 # Control System Demos
-demo-control = "python examples/control_demo.py --web-port 8080 --keyboard"
-demo-control-web = "python examples/control_demo.py --web-port 8080"
+demo-control = { cmd = "python examples/control_demo.py", env = { PYTHONPATH = ".", RUST_LOG = "error" } }
 
 # Tutorial Examples
 demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout --duration 10"
 demo-webcam-detection-dora = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --camera-mode mock --visualize stdout --duration 10"
 demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --camera-mode mock --visualize rerun --duration 10"
 demo-webcam-stepper = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
+demo-webcam-window = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 200 --sleep 0.05 --show-window"
 demo-webcam-record = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10"
 demo-webcam-replay-rrd = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10"
 demo-webcam-replay-mcap = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10"
@@ -170,6 +171,9 @@ demo-mcap-session-inspection = "python -m examples.tutorial.c_debug_and_replay.0
 verify-incident-replay = "python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill --fail-on-mismatch && python -c \"import json, pathlib; p=pathlib.Path('logs/tutorial_incident/tut033_incident_report.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['overall_pass'] is True; assert d['live_root_cause'] is not None; assert d['diagnosis_signature']['live'] == d['diagnosis_signature']['replay']; print('incident replay verified')\""
 p0-release-readiness = "python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics && python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo && python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction && python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm"
 p0-release-readiness-full = "python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics && python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo && python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction && python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm && python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough"
+p1-reliability-gates = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark --fail-on-drift && python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill --fail-on-mismatch"
+export-notebook-ready = "python scripts/export_notebook_ready.py --docs-root docs/tutorials --out-dir out/jupyter-notebook --emit-ipynb"
+check-notebook-ready = "python scripts/export_notebook_ready.py --docs-root docs/tutorials --out-dir out/jupyter-notebook --check"
 verify-backend-parity = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark --fail-on-drift && python -c \"import json, pathlib; p=pathlib.Path('logs/tutorial_parity/tut032_backend_parity.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['parity']['overall_pass'] is True; assert d['metrics']['multiprocessing']['count'] > 0; assert d['metrics']['dora']['count'] > 0; print('backend parity verified')\""
 
 

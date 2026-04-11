@@ -25,10 +25,10 @@ import math
 import time
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, Rate, flow_io
+from retriever.flow import Flow, Pipeline, Rate, io
 
 
-@flow_io
+@io
 @dataclass
 class SensorsOut:
     encoder: float
@@ -36,7 +36,7 @@ class SensorsOut:
     t: float
 
 
-@flow_io
+@io
 @dataclass
 class PoseOut:
     x: float
@@ -45,14 +45,14 @@ class PoseOut:
     t: float
 
 
-@flow_io
+@io
 @dataclass
 class PlanOut:
     target_x: float
     confidence: float
 
 
-@flow_io
+@io
 @dataclass
 class ControlIn:
     x: float
@@ -63,7 +63,7 @@ class ControlIn:
     plan_confidence: float
 
 
-@flow_io
+@io
 @dataclass
 class CmdOut:
     v: float

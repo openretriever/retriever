@@ -4,7 +4,12 @@ title: "Retriever Runtime Handbook (Canonical)"
 
 # Retriever Runtime Handbook (Canonical)
 
-This is the **single canonical note** for using the **Retriever runtime/core**.
+This is the **single canonical note** for using the **refactored Retriever runtime/core**.
+
+Retriever is being split into:
+
+- **Runtime/Core (this repo):** typed Flow graphs → IR → backend execution + debugging tools
+- **Golden/System (future repo):** canonical system pipelines + heavy deps (models/robots/sim/training/Ray)
 
 If you only read one document, read this one.
 
@@ -12,33 +17,35 @@ If you want the shorter version first, start with `docs/quickstart.md`.
 
 ---
 
+## What’s New (2025-12-17)
+
+- Canonical examples live in `examples/tutorial/`; larger system demos live in `examples/advanced/`.
+- New ergonomics demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py` (explicit vs `with pipe:` vs `retriever.connect(...)`).
+- `Rate(on_lag=...)` + pipeline default `Pipeline(..., on_lag=...)` for “can’t keep up with Hz” behavior.
+- Service request/response (`ServiceCall`) demo is Dora-first: `examples/tutorial/b_ir_and_execution/07_request_response.py`.
+
+Known caveat:
+- Backend execution reconstructs Flow instances from IR, so per-instance constructor args in examples won’t survive unless they’re represented in IR/config. Prefer self-healing defaults or explicit IR-level configuration.
+- **Sync Policy Breaking Change**: `pipe.connect(..., sync=...)` is now mandatory unless a global default is set via `retriever.init(default_sync=...)`.
+
+---
+
 ## 0) Quick Start (Pixi)
 
-Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this repo.
+Supported Python: **3.11** for the pinned runtime environments in this repo.
 
 ```bash
 # Install pixi (if needed)
-# macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Start with the local multiprocessing baseline
-pixi run demo-stepper
-pixi run demo-webcam-record
+# Run the Dora perception demo (auto-installs deps)
+pixi run demo-webcam-detection
 ```
 
-Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
-pixi install
-pixi run demo-stepper
-```
-
-If you want the live camera path after that, run:
+If `dora` complains about schema/version, kill stale processes:
 
 ```bash
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
+pkill -9 dora && pixi run demo-webcam-detection
 ```
 
 Pixi vs uv (how they fit together):
@@ -114,8 +121,8 @@ class AddOne(Flow[SrcOut, AddOut]):
 ```
 
 Lifecycle hooks:
-- `reset()` / `finalize()` (optional) for resources and gym-like state
-- `init()` remains available only as a deprecated compatibility alias
+- `reset()` / `finalize()` (optional) for resources and state
+- `reset()` (optional) for gym-like state (mainly for stepper workflows)
 
 ---
 
@@ -185,8 +192,8 @@ pipe.run(backend="dora", duration=10.0, blocking=True)
 ```
 
 Notes:
-- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection-dora`).
-- If you see schema mismatch errors while using Dora, restart Dora and rerun the same Dora task.
+- Dora requires `dora-rs`, `dora-rs-cli`, `pyarrow` (handled by Pixi in `demo-webcam-detection`).
+- If you see schema mismatch errors, `pkill -9 dora` usually fixes “stale coordinator” issues.
 
 ### 4.3 Non-blocking run
 
@@ -201,7 +208,7 @@ engine.stop()
 ## 5) Debugging: single-step execution (`Pipeline.step`)
 
 `Pipeline.step()` runs the pipeline **in the current Python process** and advances one discrete step.
-This is the recommended way to use the VS Code debugger inside `Flow.step()` logic.
+This is the recommended way to use the VS Code debugger inside `Flow.step(...)` logic.
 
 ```py
 res = pipe.step(dt=0.1)
@@ -220,12 +227,15 @@ Recommended examples:
 - Perception debug (synthetic frames): `examples/tutorial/c_debug_and_replay/02_debug_perception_stepper.py`
 - Perception debug (real camera): `examples/tutorial/c_debug_and_replay/03_debug_perception_stepper_real_camera.py`
 
-Topic-focused tutorials (legacy extractions):
+Track-aligned tutorials:
 
 - Windowed vision stats: `examples/tutorial/b_ir_and_execution/08_detection_window_stats.py`
 - Closed-loop feedback intro: `examples/tutorial/d_closed_loop_state_feedback/07_feedback_intro.py`
 - Event-driven replanning: `examples/tutorial/d_closed_loop_state_feedback/08_event_driven_replan.py`
 - Execution monitoring: `examples/tutorial/d_closed_loop_state_feedback/09_execution_monitoring.py`
+
+Advanced examples:
+- Prefer the tutorial tracks and `examples/control_demo.py` for the public runtime surface in this repo.
 
 ---
 
@@ -240,7 +250,8 @@ from retriever.flow import Rate
 
 # Start a fresh pipeline
 # (For scripts, we recommend 'with Pipeline():' instead of global state)
-retriever.clear_default_pipeline()
+from retriever.flow.pipeline import reset_default_pipeline
+reset_default_pipeline()
 
 a = Source() @ Rate(hz=10)
 b = AddOne() @ Rate(hz=10)
@@ -252,7 +263,7 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 ```
 
 Notes:
-- `retriever.connect(...)` respects an active `with Pipeline(...):` context.
+- `retriever.connect(...)` respects an active `with Pipeline(...):` / `with FlowContext(...):` context.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---
@@ -263,17 +274,15 @@ Retriever supports a unified API to run and debug pipelines.
 
 ### 6.1 Recording execution
 You can record any execution to a Rerun `.rrd` file (optionally mirrored to `.mcap`) by passing `record=...`.
-This automatically switches to the **in-process** backend to ensure deterministic recording. The recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock run time rather than exact tick count. Use `pipe.record(..., steps=..., dt=...)` when you need an exact number of logical steps.
+This automatically switches to the **in-process** backend to ensure deterministic recording.
 
 ```py
 pipe.run(
     duration=5.0,
     record="session.rrd",
-    visualize="rerun"  # Optional: stream to a local Rerun viewer
+    visualize="rerun"  # Optional: stream to viewer live
 )
 ```
-
-Live Rerun viewing is a local-desktop convenience. On multiprocessing and Dora backends, Retriever reuses one shared recording id so worker logs land in the same viewer session when the viewer is reachable. For portable inspection and replay, prefer saved `.rrd` / `.mcap` artifacts.
 
 This generates `session.rrd` containing all flow I/O. If you also want an interchange artifact, mirror to `.mcap`:
 
@@ -292,8 +301,7 @@ To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 ```py
 # Inject recorded data into 'camera' flow
 pipe.replay(camera, path="session.rrd")  # `.mcap` works too
-pipe.step(dt=0.1)
-pipe.close_stepper()
+pipe.run(backend="in-process")
 ```
 
 ---
@@ -302,8 +310,10 @@ pipe.close_stepper()
 
 At runtime, each port behaves like an event stream:
 
-- `EventBuffer[T] = list[(timestamp, value)]` (finite history)
+- `retriever.flow.types.EventBuffer[T] = list[(timestamp, value)]` (finite runtime history)
 - Adapters sample buffers at time `now` to produce a value for the `Flow` input.
+- For collection/replay/export contracts, use `retriever.data_spec.EventBuffer` instead of the runtime buffer directly.
+- To bridge the two layers, use `retriever.data_spec.from_runtime_event_buffer(...)` and `retriever.data_spec.to_runtime_event_buffer(...)`.
 
 Important distinction:
 
@@ -352,7 +362,7 @@ Why this matters on Dora:
 
 ## 9) Canonical examples (run these first)
 
-### 9.1 Pipeline authoring ergonomics (017)
+### 9.1 Pipeline authoring ergonomics (A05)
 
 ```bash
 pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics --mode context --exec step
@@ -360,21 +370,15 @@ pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics 
 
 Module: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
-### 9.2 Webcam stepper + record/replay
+### 9.2 Dora perception demo (B06)
 
 ```bash
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
-pixi run demo-webcam-replay-mcap
+pixi run demo-webcam-detection
 ```
 
-Modules:
+Module: `examples/tutorial/b_ir_and_execution/06_dora_perception.py`
 
-- `examples/tutorial/c_debug_and_replay/03_debug_perception_stepper_real_camera.py`
-- `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`
-
-### 9.3 Request/response demo (010)
+### 9.3 Request/response demo (B07)
 
 ```bash
 pixi run demo-request-response
@@ -382,7 +386,7 @@ pixi run demo-request-response
 
 Module: `examples/tutorial/b_ir_and_execution/07_request_response.py`
 
-### 9.4 Closed-loop env + MPC demo (016)
+### 9.4 Closed-loop env + MPC demo (D01)
 
 ```bash
 pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend multiprocessing --hz 10 --duration 3
@@ -396,17 +400,25 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop
 
 ---
 
-## 10) Project structure
+## 10) Project structure (runtime vs legacy/system)
 
 Runtime/core “source of truth”:
 
 - `src/retriever/flow/*` — typed graph authoring
 - `src/retriever/ir/*` — validation + IR structs
 - `src/retriever/rt/*` — execution, backends, stepper/debugging helpers
-- `src/retriever/types/*` — shared typed payloads and registry-backed type helpers
+- `src/retriever/data_spec/*` — explicit event/data/export contracts
+- `src/retriever/robotics_typing/*` — typed robotics boundary payloads
 
-System integrations, robot SDK wrappers, and heavier application stacks should
-live in separate packages that build on top of the runtime/core surface.
+System/legacy folders still present (to move to golden repo):
+
+- `src/golden_retriever/models`, `src/golden_retriever/robots`, `src/golden_retriever/envs`,
+  `src/golden_retriever/mappers`, `src/golden_retriever/skills`, etc.
+
+Golden split templates in this repo:
+
+- runtime manifests: `pyproject.toml`, `pixi.toml`
+- system templates: `pyproject-golden.toml`, `pixi-golden.toml`
 
 ---
 

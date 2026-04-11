@@ -734,7 +734,7 @@ class Pipeline:
             inputs: List of source handles to replace with recorded data
 
         Example:
-            pipe.replay_from(path="session.rrd", inputs=[camera, lidar])
+            pipe.replay_from("session.rrd", inputs=[camera, lidar])
         """
         for handle in inputs:
             self.replay(handle, path=path)

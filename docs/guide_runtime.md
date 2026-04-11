@@ -46,7 +46,7 @@ add = AddOne() @ Rate(hz=10)
 pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
-# Or record to MCAP (uses the in-process stepper at logical-step / simulation speed):
+# Or record to MCAP (uses in-process backend):
 # pipe.run(duration=1.0, record="log.mcap")
 ```
 
@@ -72,12 +72,12 @@ More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
-For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")` or `pipe.run(record="log.rrd")`. Those helpers switch to the in-process stepper and advance logical steps as fast as possible; `duration=...` caps wall-clock run time rather than exact step count.
+For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")`.
 
-For exact logical step counts or granular control (e.g. recording specific flows during manual stepping), use:
+For granular control (e.g. recording specific flows during manual stepping), use:
 
 ```py
-pipe.record(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)  # single-stream legacy pickle capture
+pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
 pipe.replay(camera, path="logs/camera_recording.pkl.gz")
 ```
 
@@ -91,11 +91,9 @@ Flows communicate with typed `@io` classes. Each annotated field becomes a port.
 
 A `Flow` is a node that implements:
 
-- `reset()` (optional)
-- `step(input: I) -> O`
+- `init()` (optional)
+- `run(input: I) -> O`
 - `finalize()` (optional)
-
-`run()` and `init()` remain as deprecated compatibility aliases for older flows.
 
 ### Clocks (when a node executes)
 
@@ -160,9 +158,6 @@ but you can call it directly for debugging or inspection.
 - `in-process`: single-process wrapper for debugging/recording
 
 `execute_ir(...)` accepts either an `IR` or an `ExecutionGraph`.
-For `backend="in-process"`, you must supply a live `Pipeline` instance through
-`backend_config["pipeline_instance"]`; saved IR / IR-file execution is not
-currently supported for that backend.
 
 ### Dora backend config: native node overrides (Tier A.1)
 
@@ -182,8 +177,7 @@ pipe.run(
 )
 ```
 
-This is a reserved extension point for future native acceleration work; it is
-not required for normal runtime usage.
+Design details for native overrides are tracked in internal design notes rather than the public docs surface.
 
 ### Backend config: buffer engine (Tier B.3)
 
@@ -208,9 +202,10 @@ See `examples/tutorial/c_debug_and_replay/05_buffer_engine_demo.py` for a minima
 
 Each input port maintains a finite **timestamped buffer**:
 
-`EventBuffer[T] = list[tuple[float, T]]`
+`retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
 
 This is what `Subscriber.get_all()` returns and what Adapters sample.
+For collection/replay/export contracts, use `retriever.data_spec.EventBuffer` instead of the runtime tuple buffer.
 
 ### `EventStream`
 

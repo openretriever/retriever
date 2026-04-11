@@ -50,22 +50,17 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 
 ## 2) Canonical API
 
-### 2.1 Pipeline surface (Recommended)
-
-```python
-# Preferred script/API surface
-pipe.run(backend="multiprocessing", duration=10.0)
-```
-
-For REPL/notebook-style experiments, Retriever also exposes default-pipeline helpers:
+### 2.1 Unified (Recommended)
 
 ```python
 import retriever
 
-retriever.run(backend="multiprocessing", duration=10.0)
-```
+# Implicit execution of default pipeline
+retriever.run(backend="dora", duration=10.0)
 
-`retriever.run(...)` operates on the implicit default pipeline. Prefer `pipe.run(...)` in scripts, libraries, and checked-in examples.
+# With manual pipeline
+pipe.run(backend="dora", duration=10.0)
+```
 
 ### 2.2 Low-Level (IR Access)
 
@@ -78,7 +73,7 @@ pipe = Pipeline("demo")
 
 ir = pipe.validate()               # logical graph
 graph = pipe.build_execution()     # physical graph (partitions + placement)
-execute_ir(graph, backend="multiprocessing")  # runs the compiled graph
+execute_ir(graph, backend="dora")  # runs the compiled graph
 ```
 
 Notes:
@@ -88,17 +83,15 @@ Notes:
 
 ### 2.3 Unified Recording & Replay
 
-To record execution to an MCAP file, simply pass `record="..."`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based). The in-process recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock loop time rather than exact tick count. If you need an exact number of logical steps, use `pipe.record(..., steps=..., dt=...)` instead.
+To record execution, pass `record="..."` or a `RecordConfig(...)`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
 
 ```python
 pipe.run(
     duration=5.0,
-    record="session.mcap",
-    visualize="rerun"  # Optional: stream to a local Rerun viewer
+    record="session.rrd",
+    visualize="rerun"  # Optional: stream to Rerun live
 )
 ```
-
-`visualize="rerun"` is a local-desktop convenience surface. On multiprocessing and Dora backends, Retriever shares one Rerun recording id across worker processes so live logs appear in the same viewer session when the viewer is reachable. Use persisted `.rrd` / `.mcap` artifacts when you need a portable debugging record.
 
 `.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
 
@@ -115,8 +108,7 @@ To replay:
 ```python
 # Inject recorded data into a flow source
 pipe.replay(camera, path="session.rrd")  # `.mcap` works too
-pipe.step(dt=0.1)
-pipe.close_stepper()
+pipe.run(backend="in-process")
 ```
 
 ---
@@ -158,7 +150,7 @@ retriever.step(dt=0.1)
 retriever.step(dt=0.1)
 ```
 
-**Note**: `retriever.step` simulates execution in the current process. The in-process backend itself requires a live `Pipeline` instance and is not available from a saved IR file.
+**Note**: `retriever.step` simulates execution in the *current process*. It ignores the `backend` argument normally passed to `run()`.
 
 ---
 
@@ -183,11 +175,13 @@ This split (logical IR vs physical execution graph) is the foundation for:
 - backend selection per partition (e.g., local mp vs dora vs ray)
 - richer compilation (non-linear partitions, watermark-aware operators, explicit adapters)
 
+Internal design notes cover the longer-term execution-graph roadmap; this guide documents the supported public surface only.
+
 ## 7) Distributed Execution (Multi-Machine)
 
 Retriever supports distributing pipelines across multiple computers using the **Dora** backend. This is useful for splitting lighter controller logic (low latency) from heavy compute (GPU).
 
-### 7.1 `deploy(machine: str)`
+### 6.1 `deploy(machine: str)`
 
 You can map specific flows to machines using the `.deploy()` method:
 
@@ -201,8 +195,9 @@ vla_model = VLAFlow() @ Trigger("image")
 vla_model.deploy("machine_b")
 ```
 
+```
 
-### 7.2 Runtime Deployment Overrides (Preferred)
+### 6.2 Runtime Deployment Overrides (Preferred)
 
 Decouple your code from physical infrastructure by specifying deployment at runtime:
 
@@ -216,9 +211,9 @@ pipe.run(
 )
 ```
 
-### 7.3 Backend Configuration
+### 6.3 Backend Configuration
 
-For this to work, you must use the **Dora** backend and have a running Dora Coordinator. Retriever now raises if you pass `deploy=` or `.deploy(...)` to a non-Dora backend so placement intent does not fail silently.
+For this to work, you must use the **Dora** backend and have a running Dora Coordinator.
 
 1. **Configure Dora**: Define `machine_a` and `machine_b` in your `coordinator.yaml`.
 2. **Start Daemons**: Run `dora daemon --machine-id machine_a` on respective hosts.

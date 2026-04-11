@@ -17,10 +17,10 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 
-from retriever.flow import Flow, FlowConfig, Pipeline, Rate, flow_io
+from retriever.flow import Flow, FlowConfig, Pipeline, Rate, io
 
 
-@flow_io
+@io
 @dataclass
 class Val:
     x: float

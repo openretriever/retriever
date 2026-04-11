@@ -4,7 +4,7 @@ title: "Track E: Resource and Synchronization"
 
 # Track E: Resource and Synchronization
 
-Focus: canonical examples from `examples/tutorial/e_resource_and_sync/`.
+Focus: fan-in synchronization, multi-rate sampling, strict resource compatibility, and fusion constraints.
 
 ## Modules
 
@@ -12,14 +12,17 @@ Focus: canonical examples from `examples/tutorial/e_resource_and_sync/`.
 pixi run python -m examples.tutorial.e_resource_and_sync.01_multirate_window
 pixi run python -m examples.tutorial.e_resource_and_sync.02_synchronization
 pixi run python -m examples.tutorial.e_resource_and_sync.03_multirate_robot_system
-pixi run python -m examples.tutorial.e_resource_and_sync.04_strict_resource_fusion
-pixi run python -m examples.tutorial.e_resource_and_sync.05_resource_hints
-pixi run python -m examples.tutorial.e_resource_and_sync.06_functional_fanin_fanout
+pixi run python -m examples.tutorial.e_resource_and_sync.04_strict_resource_fusion --case compatible
+pixi run python -m examples.tutorial.e_resource_and_sync.05_resource_hints --print-ir
+pixi run python -m examples.tutorial.e_resource_and_sync.06_functional_fanin_fanout --steps 6 --dt 0.1
+pixi run python -m examples.tutorial.e_resource_and_sync.07_data_spec_multistream_join
 ```
 
 ## What To Observe
 
-- How multi-rate graphs stay coherent with explicit sync policies.
-- What strict synchronization vs windowed aggregation changes downstream.
-- Where resource hints belong and how they stay separate from logic.
-- How fan-in / fan-out composition behaves under nontrivial timing.
+- Buffer/adaptor behavior under mixed rates.
+- Synchronization tradeoffs (`Latest`, windows, event bundles).
+- How resource hints affect grouping policy outcomes.
+- Functional fan-in/fan-out wiring semantics with evidence artifacts.
+- Explicit bridge from runtime `EventBuffer` to `retriever.data_spec`.
+- Deterministic event-time join behavior across multiple streams.

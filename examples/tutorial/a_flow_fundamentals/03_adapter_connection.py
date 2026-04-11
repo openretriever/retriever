@@ -13,22 +13,22 @@ Run:
 
 from dataclasses import dataclass
 
-from retriever.flow import Flow, Pipeline, flow_io, Rate, Trigger, Latest, Hold, Window
+from retriever.flow import Flow, Pipeline, io, Rate, Trigger, Latest, Hold, Window
 
 
-@flow_io
+@io
 @dataclass
 class SensorData:
     temperature: float
 
 
-@flow_io
+@io
 @dataclass
 class ProcessInput:
     temp: float
 
 
-@flow_io
+@io
 @dataclass
 class ProcessedResult:
     value: float

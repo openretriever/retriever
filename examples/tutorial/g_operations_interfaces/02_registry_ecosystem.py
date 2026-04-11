@@ -20,7 +20,7 @@ import math
 from dataclasses import dataclass
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 
 
 # =============================================================================
@@ -28,7 +28,7 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, flow_io
 # =============================================================================
 
 @retriever.register_type("Frame", category="vision", description="Mock camera frame summary", tags=["mock"])
-@flow_io
+@io
 @dataclass
 class Frame:
     frame_id: int
@@ -36,7 +36,7 @@ class Frame:
 
 
 @retriever.register_type("Pose2D", category="geometry", description="Tiny 2D pose type", tags=["robotics", "spatial"])
-@flow_io
+@io
 @dataclass
 class Pose2D:
     x: float
@@ -44,7 +44,7 @@ class Pose2D:
 
 
 @retriever.register_type("RobotStatus", category="robotics", description="Toy robot status", tags=["status", "monitoring"])
-@flow_io
+@io
 @dataclass
 class RobotStatus:
     battery: float
@@ -195,6 +195,13 @@ def main() -> None:
     # Build IR via pipeline registry (factory → Pipeline.validate → IR)
     ir = retriever.build_ir("robot_localization", camera=args.camera)
     print(f"\n[IR] name={ir.metadata.name!r} nodes={len(ir.nodes)} edges={len(ir.edges)} camera={args.camera!r}")
+    surface = retriever.build_pipeline_surface("robot_localization", camera=args.camera)
+    print(
+        "[surface] inputs=",
+        [(port.node_type, port.port) for port in surface.inputs],
+        "outputs=",
+        [(port.node_type, port.port) for port in surface.outputs],
+    )
 
     # Debug-friendly execution: run in-process so breakpoints inside Flow.step() work.
     factory = retriever.get_pipeline_factory("robot_localization")

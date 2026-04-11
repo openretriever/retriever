@@ -42,16 +42,16 @@ import time
 from dataclasses import dataclass
 from typing import Any, cast
 
-from retriever.flow import Flow, Pipeline, Rate, Trigger, flow_io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
-@flow_io
+@io
 @dataclass
 class Action:
     action: float
 
 
-@flow_io
+@io
 @dataclass
 class Observation:
     transition: "Transition"

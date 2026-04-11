@@ -1,5 +1,8 @@
 # C Debug and Replay
 
+Walkthrough first:
+- `docs/tutorials/tutorial_integrated_debug_to_release.md`
+
 ## Tutorials
 
 - `01_debug_stepper.py`
@@ -14,23 +17,23 @@
 ## What To Expect
 
 - Use stepper workflows to isolate failures.
-- Record one session to `.rrd` plus a mirrored `.mcap`, then replay either artifact.
-- The webcam examples fall back to mock frames when no camera is available.
-- `stdout` is the documented cross-platform default; use `cv2` or `rerun` only on a local desktop session.
-- Run an incident-response replay drill and verify diagnosis consistency.
-- Inspect an MCAP session as a compact step/table artifact for later analysis. Use the module form with `--recording ...` only when you want a non-default file.
+- Record/replay traces and identify bottlenecks.
+- Run incident-response drills and verify replay diagnosis consistency.
 
 ## Run
 
 ```bash
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
 pixi run python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper
-pixi run demo-webcam-stepper
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
-pixi run demo-webcam-replay-mcap
+pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize cv2
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10 --visualize rerun
 pixi run python -m examples.tutorial.c_debug_and_replay.05_buffer_engine_demo
-pixi run demo-trace-contract
-pixi run demo-incident-replay
-pixi run demo-mcap-session-inspection
+pixi run python -m examples.tutorial.c_debug_and_replay.06_trace_contract_basics
+pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill
+pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
 ```
+
+Expected output reference:
+- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`

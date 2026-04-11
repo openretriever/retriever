@@ -9,10 +9,10 @@ Run:
 """
 
 from dataclasses import dataclass
-from retriever.flow import Flow, flow_io, Rate, Trigger, Hybrid
+from retriever.flow import Flow, io, Rate, Trigger, Hybrid
 
 
-@flow_io
+@io
 @dataclass
 class Data:
     value: int

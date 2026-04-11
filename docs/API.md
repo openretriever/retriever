@@ -27,7 +27,7 @@ Import path:
 ```py
 from retriever.flow import (
     Flow, Pipeline, PipelineBuilder, TemporalFlow,
-    io, flow_io, is_flow_io,
+    io,
     Rate, Tick, Trigger, Hybrid,
     Latest, Hold, Window, Events,
     handle_service, call_service,
@@ -35,7 +35,7 @@ from retriever.flow import (
 ```
 
 Key concepts:
-- `Flow[I, O]`: user-defined node logic (`step/reset/finalize`)
+- `Flow[I, O]`: user-defined node logic (`init/run/reset/finalize`)
 - `@io` classes: typed ports (each field is a port)
 - `flow @ clock`: produces a `TemporalFlow` (node instance with execution config)
 - `Pipeline`: explicit graph builder (recommended)
@@ -47,7 +47,7 @@ Guide: `docs/guide_flow.md`.
 
 ---
 
-## 2) Default-pipeline convenience API
+## 2) Unified High-Level API (Recommended)
 
 Import path:
 ```python
@@ -55,14 +55,12 @@ import retriever  # Global namespace
 from retriever.lib import Wrapper
 ```
 
-- **When to use this**: REPL/notebook experiments or very small scripts where an implicit default pipeline is acceptable. For library code and checked-in examples, prefer an explicit `Pipeline` and `pipe.run(...)`.
-
 - **Pipeline Construction**:
-    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s and records the edge on the implicit default pipeline.
+    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline.
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
 
 - **Execution**:
-    - `retriever.run(backend="multiprocessing", duration=10, record="log.mcap")`: Executes the implicit default pipeline (records if `record=` is set).
+    - `retriever.run(backend="dora", duration=10, record="log.mcap")`: Executes pipeline (records if record= set).
     - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
     - `retriever.reset()`: Resets the default pipeline state.
 
@@ -96,8 +94,7 @@ from retriever.rt import execute_ir
 Backends:
 - `multiprocessing`: (default)
 - `dora`: High-performance, zero-copy (Rust)
-- `in-process`: Debugging/recording (deterministic)
-- `in-process` requires a live `Pipeline` instance; it is not a saved-IR loader.
+- `in-process`: Debugging/recording (determinstic)
 
 Architecture: `docs/architecture.md`.
 
@@ -110,8 +107,7 @@ Preferred entry points:
 - `Pipeline.step(now=..., dt=...)` — one in-process debug step
 - `Pipeline.reset_stepper()` / `Pipeline.close_stepper()`
 - unified recording: `pipe.run(record="file.rrd")` or `pipe.run(record=RecordConfig(path="file.rrd", mirrors=("file.mcap",)))`
-- session recording/replay: `Pipeline.record(...)`, `Pipeline.view(...)` (local Rerun viewer when available), and `Pipeline.replay(...)`
-- legacy recording aliases remain available for older code, but new examples should prefer `Pipeline.record(handle, path, ...)`
+- record/replay: `Pipeline.record_to(...)` / `Pipeline.replay(...)` (legacy)
 
 Implementation lives in:
 - `retriever/rt/stepper.py`
@@ -133,7 +129,7 @@ from retriever.pipeline_registry import (
 )
 ```
 
-This enables external packages to register pipelines via entry points:
+This enables “system packages” (future golden repo) to register pipelines via entry points:
 - group: `retriever.plugins`
 
 See: `docs/architecture.md` (“Registry + plugins”).
