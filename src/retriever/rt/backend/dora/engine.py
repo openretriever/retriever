@@ -297,39 +297,46 @@ class DoraEngine(ExecutionEngine):
             self._destroy_dora_runtime()
             time.sleep(0.25)
 
-        try:
-            result = subprocess.run(
-                ["dora", "up"], capture_output=True, text=True, timeout=timeout
-            )
+        up_attempts = max(1, int(self.config.get("dora_up_attempts", 3 if fresh_runtime else 1)))
+        retry_delay = float(self.config.get("dora_up_retry_delay", 0.5))
 
-            if result.returncode == 0:
-                logger.info("Dora runtime started")
-            else:
+        for attempt in range(1, up_attempts + 1):
+            try:
+                result = subprocess.run(
+                    ["dora", "up"], capture_output=True, text=True, timeout=timeout
+                )
+
+                if result.returncode == 0:
+                    logger.info("Dora runtime started")
+                    break
+
                 if fresh_runtime:
                     logger.warning(
                         "dora up returned a non-zero exit code while requesting a fresh "
-                        "runtime; waiting for readiness anyway.\n"
+                        f"runtime (attempt {attempt}/{up_attempts}); waiting or retrying.\n"
                         f"stdout: {result.stdout}\n"
                         f"stderr: {result.stderr}"
                     )
-                # Runtime may already be running
+                    if attempt < up_attempts:
+                        time.sleep(retry_delay)
+                        continue
                 else:
                     logger.warning(
                         f"dora up returned {result.returncode} "
                         f"(may already be running): {result.stderr}"
                     )
+                break
 
-        # except FileNotFoundError:
-        #     raise FileNotFoundError(
-        #         "dora CLI not found. Ensure dora-rs-cli is installed: "
-        #         "pip install dora-rs-cli"
-        #     )
-
-        except subprocess.TimeoutExpired:
-            logger.warning(f"dora up timed out after {timeout}s")
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    f"dora up timed out after {timeout}s (attempt {attempt}/{up_attempts})"
+                )
+                if attempt < up_attempts:
+                    time.sleep(retry_delay)
+                    continue
+                break
 
         self._wait_for_dora_ready(timeout)
-
     def _wait_for_dora_ready(self, timeout: float) -> None:
         """Wait until `dora check` confirms the coordinator/daemon are reachable."""
         deadline = time.time() + timeout
