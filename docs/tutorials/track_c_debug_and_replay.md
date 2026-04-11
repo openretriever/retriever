@@ -55,3 +55,19 @@ PY
 2. Record one real sensor session to `.rrd`, with a mirrored `.mcap` artifact for interchange (`04_record_replay_perception record`).
 3. Replay the same captured session from `.rrd` or `.mcap` (`04_record_replay_perception replay`) for deterministic debugging.
 4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
+
+## Expected Artifacts
+
+- `logs/perception.rrd`
+- `logs/perception.mcap`
+- `logs/tutorial_trace/tut024_trace_envelopes.jsonl`
+- `logs/tutorial_trace/tut024_trace_report.json`
+- `logs/tutorial_incident/tut033_incident_report.json`
+- `logs/tutorial_incident/tut033_incident_checklist.md`
+- `logs/tutorial_mcap/tut036_mcap_session_summary.json`
+- `logs/tutorial_mcap/tut036_mcap_step_table.jsonl`
+
+Expected output references:
+- `examples/tutorial/expected_outputs/024_trace_contract_basics.md`
+- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
+- `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`
