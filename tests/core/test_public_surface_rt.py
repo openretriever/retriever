@@ -76,6 +76,9 @@ def test_data_package_keeps_root_surface_contract_only():
     assert data_pkg.streams is not None
     assert data_pkg.dataset is not None
     assert data_pkg.interop is not None
+    assert not hasattr(data_pkg, "StreamId")
+    assert not hasattr(data_pkg, "SchemaRef")
+    assert not hasattr(data_pkg, "ClockDomain")
     assert not hasattr(data_pkg, "hold")
     assert not hasattr(data_pkg, "build_dataset_manifest")
 

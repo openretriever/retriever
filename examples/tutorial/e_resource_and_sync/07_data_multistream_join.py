@@ -13,7 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.types.data import Event, EventBuffer, JoinPolicy, StreamId, WindowPolicy
+from retriever.types import StreamId
+from retriever.types.data import Event, EventBuffer, JoinPolicy, WindowPolicy
 from retriever.types.data.interop import from_runtime_event_buffer, to_runtime_event_buffer
 from retriever.types.data.streams import (
     align_exact,

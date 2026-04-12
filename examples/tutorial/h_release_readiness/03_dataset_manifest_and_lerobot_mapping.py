@@ -13,7 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
+from retriever.types import SchemaRef, StreamId
+from retriever.types.data import DataSpec, Event, EventBuffer, StreamSpec
 from retriever.types.data.dataset import (
     build_dataset_manifest,
     build_episode_manifest,

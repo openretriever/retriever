@@ -21,6 +21,7 @@ runtime executor internals.
 Preferred:
 
 ```python
+from retriever.types import SchemaRef, StreamId
 from retriever.types.data import DataSpec, Event, EventBuffer
 from retriever.types.data.dataset import build_dataset_manifest, build_episode_manifest
 from retriever.types.data.interop import from_runtime_event_buffer, to_lerobot_records
@@ -30,7 +31,8 @@ from retriever.types.data.streams import align_exact, hold, latest, window_agg
 Pinned path:
 
 ```python
-from retriever.types.data.v1 import Event, StreamId
+from retriever.types import StreamId
+from retriever.types.data.v1 import Event
 ```
 
 ## Two EventBuffer Layers
@@ -70,9 +72,6 @@ Root imports are for contracts only:
 - `Event[T]`
 - `EventRef`
 - `LineageRef`
-- `StreamId`
-- `ClockDomain`
-- `SchemaRef`
 - `EventBuffer[T]`
 - `MultiStreamBuffer`
 - `JoinPolicy`
@@ -80,6 +79,11 @@ Root imports are for contracts only:
 - `DataSpec`
 - `EpisodeManifest`
 - `DatasetManifest`
+
+Shared schema primitives live one level up under `retriever.types`:
+- `StreamId`
+- `ClockDomain`
+- `SchemaRef`
 
 ## Helper Modules
 

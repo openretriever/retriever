@@ -4,7 +4,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
+from retriever.types import SchemaRef, StreamId
+from retriever.types.data import DataSpec, Event, EventBuffer, StreamSpec
 from retriever.types.data.v1 import EventBuffer as PinnedEventBuffer
 
 

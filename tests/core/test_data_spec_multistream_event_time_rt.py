@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from retriever.types.data import Event, EventBuffer, JoinPolicy, StreamId
+from retriever.types import StreamId
+from retriever.types.data import Event, EventBuffer, JoinPolicy
 from retriever.types.data.streams import (
     align_exact,
     align_latest_before,

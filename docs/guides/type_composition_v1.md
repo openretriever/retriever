@@ -77,6 +77,7 @@ Do not create a new payload type just to adapt one pipeline to another.
 Keep the root import narrow:
 
 ```python
+from retriever.types import SchemaRef, StreamId
 from retriever.types.data import Event, EventBuffer, DataSpec
 ```
 

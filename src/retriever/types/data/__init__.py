@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from . import dataset, interop, streams, v1
 from .v1 import (
-    ClockDomain,
     DataSpec,
     DatasetManifest,
     EpisodeManifest,
@@ -27,8 +26,6 @@ from .v1 import (
     JoinPolicy,
     LineageRef,
     MultiStreamBuffer,
-    SchemaRef,
-    StreamId,
     StreamSpec,
     WatermarkPolicy,
     WindowAgg,
@@ -36,7 +33,6 @@ from .v1 import (
 )
 
 __all__ = [
-    "ClockDomain",
     "DataSpec",
     "DatasetManifest",
     "EpisodeManifest",
@@ -48,8 +44,6 @@ __all__ = [
     "JoinPolicy",
     "LineageRef",
     "MultiStreamBuffer",
-    "SchemaRef",
-    "StreamId",
     "StreamSpec",
     "WatermarkPolicy",
     "WindowAgg",
