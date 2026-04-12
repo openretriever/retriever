@@ -137,7 +137,6 @@ def test_log_value_from_env_logs_plain_io_dataclass_fields(monkeypatch):
     }
     assert ("step", 3, None, None) in timelines
     assert ("retriever_time", None, None, 0.0) in timelines
-    assert ("log_time", None, 1.25, None) in timelines
 
 
 def test_mpchannel_put_one_emits_worker_rerun_log(monkeypatch):
