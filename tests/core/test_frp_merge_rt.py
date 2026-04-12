@@ -2,20 +2,20 @@ from __future__ import annotations
 
 
 from retriever.flow import Flow, PipelineBuilder, Rate, Trigger, io, Latest
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 from retriever.flow.adapter import Events, Window
 from retriever.rt.step import IOStep
 
 
 def test_window_adapter_respects_now():
     adapter = Window(buffer_size=10, duration=1.0, agg="first")
-    buf = EventBuffer([(0.0, "old"), (99.2, "a"), (99.8, "b")])
+    buf = TimedBuffer([(0.0, "old"), (99.2, "a"), (99.8, "b")])
     assert adapter.sample(buf, now=100.0) == "a"
 
 
 def test_events_adapter_can_filter_by_duration_and_strip_timestamps():
     adapter = Events(buffer_size=10, duration=1.0, include_timestamps=False)
-    buf = EventBuffer([(0.0, "old"), (99.2, "a"), (99.8, "b")])
+    buf = TimedBuffer([(0.0, "old"), (99.2, "a"), (99.8, "b")])
     assert adapter.sample(buf, now=100.0) == ["a", "b"]
 
 
@@ -28,7 +28,7 @@ def test_signal_sampling_passes_now_to_adapter():
             return True
 
         def get_all(self):
-            return EventBuffer(self._buf)
+            return TimedBuffer(self._buf)
 
         def empty(self) -> bool:
             return len(self._buf) == 0

@@ -201,11 +201,11 @@ See `examples/tutorial/c_debug_and_replay/05_buffer_engine_demo.py` for a minima
 
 ## 4) Event/time model (FRP vocabulary)
 
-### `EventBuffer`
+### `TimedBuffer`
 
 Each input port maintains a finite **timestamped buffer**:
 
-`retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
+`retriever.flow.types.TimedBuffer[T] = list[tuple[float, T]]`
 
 This is what `Subscriber.get_all()` returns and what Adapters sample.
 For collection/replay/export contracts, use `retriever.types.data.EventBuffer` instead of the runtime tuple buffer.
@@ -215,9 +215,9 @@ For collection/replay/export contracts, use `retriever.types.data.EventBuffer` i
 `EventStream[T]` is a conceptual view over an event source. In the runtime:
 
 - each port is an EventStream
-- the runtime materializes only a finite `EventBuffer` per port
+- the runtime materializes only a finite `TimedBuffer` per port
 
-`EventStream.sample(adapter, now=...)` applies an Adapter to its `EventBuffer`.
+`EventStream.sample(adapter, now=...)` applies an Adapter to its `TimedBuffer`.
 
 ### `Behavior`
 
@@ -228,7 +228,7 @@ High-level combinators (`switch_behavior`, `until_event`) are available in `retr
 
 ### Adapters (sampling policy)
 
-Adapters decide how to interpret an `EventBuffer` at time `now`:
+Adapters decide how to interpret a `TimedBuffer` at time `now`:
 
 - `Latest()`: last value
 - `Hold(debounce=...)`: zero-order hold with debounce

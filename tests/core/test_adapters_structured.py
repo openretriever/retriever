@@ -1,11 +1,11 @@
 import pytest
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 from retriever.flow.adapter import Latest, Hold, Window, Events, Exact
 from retriever.error import FlowError
 
 @pytest.fixture
 def simple_buffer():
-    buf = EventBuffer()
+    buf = TimedBuffer()
     buf.append((1.0, "a"))
     buf.append((2.0, "b"))
     buf.append((3.0, "c"))
@@ -25,7 +25,7 @@ class TestWindow:
     def test_window_all(self, simple_buffer):
         # Window of 5s at time 4.0 covers [(-1.0), 4.0], so all events (1, 2, 3)
         # "mean" fails on strings, so let's use a numeric buffer for mean
-        num_buf = EventBuffer([(1.0, 10), (2.0, 20), (3.0, 30)])
+        num_buf = TimedBuffer([(1.0, 10), (2.0, 20), (3.0, 30)])
         
         # Test mean
         assert Window(buffer_size=10, duration=5.0, agg="mean")(num_buf, now=4.0) == 20.0
@@ -74,7 +74,7 @@ class TestHold:
 
     def test_hold_debounce(self):
         adapter = Hold(buffer_size=1, debounce=0.5)
-        buf = EventBuffer([(1.0, "a")])
+        buf = TimedBuffer([(1.0, "a")])
         
         # First call, sets state
         assert adapter(buf) == "a"

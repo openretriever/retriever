@@ -39,10 +39,10 @@ class EventStream(Generic[T]):
     `events()` returns a chronologically-ordered list of `(timestamp, value)`.
     """
 
-    events: Callable[[], "EventBuffer[T]"]
+    events: Callable[[], "TimedBuffer[T]"]
 
     @property
-    def stream(self) -> Callable[[], "EventBuffer[T]"]:
+    def stream(self) -> Callable[[], "TimedBuffer[T]"]:
         """
         Backward-compatible alias used by older FRP code (`stream()` returns events).
         """
@@ -51,12 +51,12 @@ class EventStream(Generic[T]):
     @staticmethod
     def empty() -> "EventStream[T]":
         """Create empty event stream."""
-        return EventStream(lambda: EventBuffer([]))
+        return EventStream(lambda: TimedBuffer([]))
 
     @staticmethod
     def single(timestamp: float, value: T) -> "EventStream[T]":
         """Create event stream with single event."""
-        return EventStream(lambda: EventBuffer([(timestamp, value)]))
+        return EventStream(lambda: TimedBuffer([(timestamp, value)]))
 
     @staticmethod
     def periodic(period: float, value_fn: Callable[[float], T]) -> "EventStream[T]":
@@ -68,11 +68,11 @@ class EventStream(Generic[T]):
         """
         start_time = time.time()
 
-        def periodic_stream_fn() -> EventBuffer[T]:
+        def periodic_stream_fn() -> TimedBuffer[T]:
             current_time = time.time()
             elapsed = current_time - start_time
 
-            events: EventBuffer[T] = EventBuffer()
+            events: TimedBuffer[T] = TimedBuffer()
             event_count = int(elapsed / period)
             for i in range(event_count + 1):
                 event_time = start_time + (i * period)
@@ -89,7 +89,7 @@ class EventStream(Generic[T]):
         Sample this event stream using an Adapter at time `now`.
 
         This is the single-stream equivalent of what executors do across ports:
-        they read an `EventBuffer` from a Subscriber, then apply an Adapter.
+        they read an `TimedBuffer` from a Subscriber, then apply an Adapter.
         """
         return adapter.sample(self.events(), now=now)
 
@@ -100,7 +100,7 @@ class EventStream(Generic[T]):
             return None
         return buf[-1][1]
 
-    def within(self, *, duration: float, now: float) -> "EventBuffer[T]":
+    def within(self, *, duration: float, now: float) -> "TimedBuffer[T]":
         """
         Return events within the time window [now - duration, now].
 
@@ -108,7 +108,7 @@ class EventStream(Generic[T]):
         range (including future events) are excluded.
         """
         start = now - duration
-        return EventBuffer([(ts, v) for ts, v in self.events() if start <= ts <= now])
+        return TimedBuffer([(ts, v) for ts, v in self.events() if start <= ts <= now])
 
     def map(self, fn: Callable[[T], U]) -> "EventStream[U]":
         """
@@ -120,7 +120,7 @@ class EventStream(Generic[T]):
         Example:
             temperatures_celsius = temperatures_fahrenheit.map(lambda f: (f - 32) * 5/9)
         """
-        return EventStream(lambda: EventBuffer([(ts, fn(v)) for ts, v in self.events()]))
+        return EventStream(lambda: TimedBuffer([(ts, fn(v)) for ts, v in self.events()]))
 
     def filter(self, pred: Callable[[T], bool]) -> "EventStream[T]":
         """
@@ -133,7 +133,7 @@ class EventStream(Generic[T]):
             positive_values = values.filter(lambda x: x > 0)
         """
         return EventStream(
-            lambda: EventBuffer([(ts, v) for ts, v in self.events() if pred(v)])
+            lambda: TimedBuffer([(ts, v) for ts, v in self.events() if pred(v)])
         )
 
     def merge(self, other: "EventStream[T]") -> "EventStream[T]":
@@ -147,10 +147,10 @@ class EventStream(Generic[T]):
         Example:
             all_inputs = keyboard_events.merge(mouse_events)
         """
-        def merged() -> EventBuffer[T]:
+        def merged() -> TimedBuffer[T]:
             buf = list(self.events()) + list(other.events())
             buf.sort(key=lambda x: x[0])
-            return EventBuffer(buf)
+            return TimedBuffer(buf)
         return EventStream(merged)
 
     def fold(self, initial: U, fn: Callable[[U, T], U]) -> "Behavior[U]":
@@ -189,8 +189,8 @@ class EventStream(Generic[T]):
             click_with_scroll = click_events.snapshot(scroll_position_behavior)
             # Result: stream of (ClickEvent, ScrollOffset) pairs
         """
-        def sampled() -> EventBuffer[Tuple[T, U]]:
-            return EventBuffer([(ts, (v, behavior.at(ts))) for ts, v in self.events()])
+        def sampled() -> TimedBuffer[Tuple[T, U]]:
+            return TimedBuffer([(ts, (v, behavior.at(ts))) for ts, v in self.events()])
         return EventStream(sampled)
 
     def delay(self, dt: float) -> "EventStream[T]":
@@ -208,8 +208,8 @@ class EventStream(Generic[T]):
         Example:
             delayed_commands = commands.delay(0.5)  # 500ms delay
         """
-        def delayed() -> EventBuffer[T]:
-            return EventBuffer([(ts + dt, v) for ts, v in self.events()])
+        def delayed() -> TimedBuffer[T]:
+            return TimedBuffer([(ts + dt, v) for ts, v in self.events()])
         return EventStream(delayed)
 
     def take(self, n: int) -> "EventStream[T]":
@@ -222,8 +222,8 @@ class EventStream(Generic[T]):
         Example:
             first_three_clicks = clicks.take(3)
         """
-        def taken() -> EventBuffer[T]:
-            return EventBuffer(self.events()[:n])
+        def taken() -> TimedBuffer[T]:
+            return TimedBuffer(self.events()[:n])
         return EventStream(taken)
 
     def drop(self, n: int) -> "EventStream[T]":
@@ -236,8 +236,8 @@ class EventStream(Generic[T]):
         Example:
             after_warmup = sensor_data.drop(100)  # Ignore first 100 readings
         """
-        def dropped() -> EventBuffer[T]:
-            return EventBuffer(self.events()[n:])
+        def dropped() -> TimedBuffer[T]:
+            return TimedBuffer(self.events()[n:])
         return EventStream(dropped)
 
     def zip_with(self, other: "EventStream[U]") -> "EventStream[Tuple[T, U]]":
@@ -254,12 +254,12 @@ class EventStream(Generic[T]):
         Example:
             questions_and_answers = questions.zip_with(answers)
         """
-        def zipped() -> EventBuffer[Tuple[T, U]]:
+        def zipped() -> TimedBuffer[Tuple[T, U]]:
             self_events = self.events()
             other_events = other.events()
             min_len = min(len(self_events), len(other_events))
             # Use the earlier timestamp of each pair
-            return EventBuffer([
+            return TimedBuffer([
                 (min(self_events[i][0], other_events[i][0]),
                  (self_events[i][1], other_events[i][1]))
                 for i in range(min_len)
@@ -282,11 +282,11 @@ class EventStream(Generic[T]):
             # Track both slider position and checkbox state
             combined = slider_changes.combine_latest(checkbox_changes)
         """
-        def combined() -> EventBuffer[Tuple[T, U]]:
+        def combined() -> TimedBuffer[Tuple[T, U]]:
             self_events = list(self.events())
             other_events = list(other.events())
             if not self_events or not other_events:
-                return EventBuffer([])
+                return TimedBuffer([])
 
             result: List[Tuple[float, Tuple[T, U]]] = []
             latest_self: Optional[T] = None
@@ -309,7 +309,7 @@ class EventStream(Generic[T]):
                 if latest_self is not None and latest_other is not None:
                     result.append((ts, (latest_self, latest_other)))
 
-            return EventBuffer(result)
+            return TimedBuffer(result)
         return EventStream(combined)
 
     def flat_map(self, fn: Callable[[T], "EventStream[U]"]) -> "EventStream[U]":
@@ -332,29 +332,29 @@ class EventStream(Generic[T]):
             # Each search query spawns a stream of results
             all_results = search_queries.flat_map(lambda query: search_api(query))
         """
-        def flattened() -> EventBuffer[U]:
+        def flattened() -> TimedBuffer[U]:
             result: List[Tuple[float, U]] = []
             for ts, v in self.events():
                 child_stream = fn(v)
                 result.extend(child_stream.events())
             result.sort(key=lambda x: x[0])
-            return EventBuffer(result)
+            return TimedBuffer(result)
         return EventStream(flattened)
 
 
-class EventBuffer(list, EventStream[T]):
+class TimedBuffer(list, EventStream[T]):
     """
     A concrete, immutable-ish snapshot of events: list of (timestamp, value) tuples.
 
-    EventBuffer is BOTH a list AND an EventStream. This dual inheritance means:
+    TimedBuffer is BOTH a list AND an EventStream. This dual inheritance means:
     - Use it like a list: `len(buf)`, `buf[0]`, `buf[-1]`, iteration, slicing
     - Use it like a stream: `.map()`, `.filter()`, `.merge()`, etc.
 
     Key distinction from EventStream:
     - EventStream is LAZY: wraps a callable, re-evaluates on each `.events()` call
-    - EventBuffer is EAGER: data is fixed at creation time
+    - TimedBuffer is EAGER: data is fixed at creation time
 
-    When you call transformation methods on EventBuffer, they return NEW EventBuffers
+    When you call transformation methods on TimedBuffer, they return NEW TimedBuffers
     (eager evaluation). This is efficient for finite, already-computed event lists.
     """
 
@@ -366,34 +366,34 @@ class EventBuffer(list, EventStream[T]):
         # EventStream expects a callable - we return self (identity)
         EventStream.__init__(self, events=lambda: self)
 
-    # Override transformation methods to return EventBuffer directly (eager)
+    # Override transformation methods to return TimedBuffer directly (eager)
     # This avoids the nested closure pattern and is more efficient for fixed data.
 
-    def map(self, fn: Callable[[T], U]) -> "EventBuffer[U]":
-        """Transform each value, returning a new EventBuffer (eager)."""
-        return EventBuffer([(ts, fn(v)) for ts, v in self])
+    def map(self, fn: Callable[[T], U]) -> "TimedBuffer[U]":
+        """Transform each value, returning a new TimedBuffer (eager)."""
+        return TimedBuffer([(ts, fn(v)) for ts, v in self])
 
-    def filter(self, pred: Callable[[T], bool]) -> "EventBuffer[T]":
-        """Keep matching events, returning a new EventBuffer (eager)."""
-        return EventBuffer([(ts, v) for ts, v in self if pred(v)])
+    def filter(self, pred: Callable[[T], bool]) -> "TimedBuffer[T]":
+        """Keep matching events, returning a new TimedBuffer (eager)."""
+        return TimedBuffer([(ts, v) for ts, v in self if pred(v)])
 
-    def merge(self, other: "EventBuffer[T]") -> "EventBuffer[T]":
+    def merge(self, other: "TimedBuffer[T]") -> "TimedBuffer[T]":
         """Merge with another buffer by timestamp (eager)."""
         combined = list(self) + list(other)
         combined.sort(key=lambda x: x[0])
-        return EventBuffer(combined)
+        return TimedBuffer(combined)
 
-    def delay(self, dt: float) -> "EventBuffer[T]":
+    def delay(self, dt: float) -> "TimedBuffer[T]":
         """Delay all events by dt seconds (eager)."""
-        return EventBuffer([(ts + dt, v) for ts, v in self])
+        return TimedBuffer([(ts + dt, v) for ts, v in self])
 
-    def take(self, n: int) -> "EventBuffer[T]":
+    def take(self, n: int) -> "TimedBuffer[T]":
         """Keep first N events (eager)."""
-        return EventBuffer(self[:n])
+        return TimedBuffer(self[:n])
 
-    def drop(self, n: int) -> "EventBuffer[T]":
+    def drop(self, n: int) -> "TimedBuffer[T]":
         """Skip first N events (eager)."""
-        return EventBuffer(self[n:])
+        return TimedBuffer(self[n:])
 
 
 @dataclass(frozen=True)
@@ -573,10 +573,10 @@ class Behavior(Generic[T]):
         """
         Convert a Behavior to an EventStream by emitting an event when `fn(value)` returns a value.
         """
-        buffer: EventBuffer[U] = EventBuffer()
+        buffer: TimedBuffer[U] = TimedBuffer()
         lock = threading.Lock()
 
-        def event_generator() -> EventBuffer[U]:
+        def event_generator() -> TimedBuffer[U]:
             now = time.time()
             value = self.sample(now)
             result = fn(value)
@@ -585,7 +585,7 @@ class Behavior(Generic[T]):
                 if result is not None:
                     buffer.append((now, result))
                     cutoff = now - 60.0
-                    buffer[:] = EventBuffer([(t, v) for t, v in buffer if t >= cutoff])
+                    buffer[:] = TimedBuffer([(t, v) for t, v in buffer if t >= cutoff])
                 return list(buffer)
 
         return EventStream(event_generator)
@@ -632,15 +632,15 @@ class EventManager:
 
     def create_merged_event_stream(self, *event_names: str) -> EventStream[Tuple[str, Any]]:
         """Create event stream that merges multiple named event streams."""
-        def merged_stream_fn() -> EventBuffer[Tuple[str, Any]]:
-            all_events: EventBuffer[Tuple[str, Any]] = EventBuffer([])
+        def merged_stream_fn() -> TimedBuffer[Tuple[str, Any]]:
+            all_events: TimedBuffer[Tuple[str, Any]] = TimedBuffer([])
             for name in event_names:
                 if name in self.event_streams:
                     stream_events = self.event_streams[name].events()
                     tagged_events = [(t, (name, v)) for t, v in stream_events]
                     all_events.extend(tagged_events)
 
-            return EventBuffer(sorted(all_events, key=lambda x: x[0]))
+            return TimedBuffer(sorted(all_events, key=lambda x: x[0]))
 
         return EventStream(merged_stream_fn)
 
@@ -654,5 +654,5 @@ def events_from_iter(events: Iterable[Tuple[float, T]]) -> EventStream[T]:
     """Convenience: wrap a static iterable as an EventStream."""
     buf = list(events)
     buf.sort(key=lambda x: x[0])
-    return EventStream(lambda: EventBuffer(buf))
+    return EventStream(lambda: TimedBuffer(buf))
 

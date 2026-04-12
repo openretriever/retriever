@@ -306,7 +306,7 @@ pipe.close_stepper()
 
 At runtime, each port behaves like an event stream:
 
-- `EventBuffer[T] = list[(timestamp, value)]` (finite history)
+- `TimedBuffer[T] = list[(timestamp, value)]` (finite history)
 - Adapters sample buffers at time `now` to produce a value for the `Flow` input.
 
 Important distinction:

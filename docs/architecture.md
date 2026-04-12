@@ -73,11 +73,11 @@ Backend boundary note:
 
 ## 2) Execution-step data model (FRP vocabulary)
 
-### 2.1 `EventBuffer`
+### 2.1 `TimedBuffer`
 
 Each input port is represented at runtime as a finite timestamped history:
 
-- `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
+- `retriever.flow.types.TimedBuffer[T] = list[tuple[float, T]]`
 
 For collection/replay/export contracts, `retriever.types.data.EventBuffer` is a separate layer with explicit lineage and nanosecond event time.
 
@@ -86,9 +86,9 @@ This is what `Subscriber.get_all()` returns.
 ### 2.2 `EventStream` and sampling
 
 `EventStream[T]` is a conceptual wrapper over a source of events. In the runtime, each port can be viewed as an
-EventStream whose `events()` returns the current `EventBuffer`.
+EventStream whose `events()` returns the current `TimedBuffer`.
 
-- `EventStream.sample(adapter, now=...)` applies an Adapter to the current EventBuffer.
+- `EventStream.sample(adapter, now=...)` applies an Adapter to the current TimedBuffer.
 - A `Behavior[T]` is a “continuous-time” sampler derived from an EventStream + Adapter.
 
 These live in `retriever/rt/frp.py`.
@@ -100,7 +100,7 @@ High-level user combinators (switch, until_event) live in `retriever/flow/frp.py
 
 It is the executor’s per-step helper:
 
-- sample (read per-port EventBuffers and apply Adapters at time `now`)
+- sample (read per-port TimedBuffers and apply Adapters at time `now`)
 - transform (call `flow.step(...)`)
 - publish (emit output values with the step timestamp)
 

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import collections
-from retriever.flow.adapter import EventBuffer
+from retriever.flow.adapter import TimedBuffer
 from retriever.rt.buffer_engine import PythonBufferEngine
 
-def test_event_buffer_is_list_and_stream():
-    buf = EventBuffer([(1.0, "a"), (2.0, "b")])
+def test_timed_buffer_is_list_and_stream():
+    buf = TimedBuffer([(1.0, "a"), (2.0, "b")])
     
     # Check List behavior
     assert isinstance(buf, list)
@@ -20,12 +20,12 @@ def test_event_buffer_is_list_and_stream():
     # Check self-reference
     assert buf.events() is buf
 
-def test_event_buffer_functional_methods():
-    buf = EventBuffer([(1.0, 1), (2.0, 2), (3.0, 3)])
+def test_timed_buffer_functional_methods():
+    buf = TimedBuffer([(1.0, 1), (2.0, 2), (3.0, 3)])
     
     # map
     mapped = buf.map(lambda x: x * 2)
-    assert isinstance(mapped, EventStream) # map returns EventStream, not necessarily EventBuffer directly unless realized
+    assert isinstance(mapped, EventStream) # map returns EventStream, not necessarily TimedBuffer directly unless realized
     assert mapped.events() == [(1.0, 2), (2.0, 4), (3.0, 6)]
     
     # filter
@@ -35,13 +35,13 @@ def test_event_buffer_functional_methods():
     # latest
     assert buf.latest() == 3
 
-def test_buffer_engine_returns_event_buffer():
+def test_buffer_engine_returns_timed_buffer():
     eng = PythonBufferEngine(buffer_size=10)
     eng.push(1.0, "a")
     eng.push(2.0, "b")
     
     events = eng.events()
-    assert isinstance(events, EventBuffer)
+    assert isinstance(events, TimedBuffer)
     assert events == [(1.0, "a"), (2.0, "b")]
     assert events.latest() == "b"
 

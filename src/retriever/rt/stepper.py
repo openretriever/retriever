@@ -25,7 +25,7 @@ from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
 from retriever.flow.adapter import Adapter, Latest
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.builder import PipelineBuilder
@@ -63,7 +63,7 @@ class InMemoryChannel:
         self._arrival_flag = True
 
     def get_all(self):
-        return EventBuffer(self._buffer)
+        return TimedBuffer(self._buffer)
 
     def new_arrival(self) -> bool:
         result = self._arrival_flag
@@ -377,9 +377,9 @@ class PipelineStepper:
 # Record / Replay (Stepper-first, debugger-friendly)
 # ======================================================================================
 
-def save_event_buffer(path: str | Path, buffer: EventBuffer[T]) -> None:
+def save_timed_buffer(path: str | Path, buffer: TimedBuffer[T]) -> None:
     """
-    Save a timestamped `EventBuffer[T] = list[(ts, value)]` to disk.
+    Save a timestamped `TimedBuffer[T] = list[(ts, value)]` to disk.
 
     Storage format: gzip+pickle (debug artifact, not a stable ABI).
     """
@@ -389,13 +389,13 @@ def save_event_buffer(path: str | Path, buffer: EventBuffer[T]) -> None:
         pickle.dump(buffer, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_event_buffer(path: str | Path) -> EventBuffer[Any]:
-    """Load an `EventBuffer` previously written by `save_event_buffer`."""
+def load_timed_buffer(path: str | Path) -> TimedBuffer[Any]:
+    """Load a `TimedBuffer` previously written by `save_timed_buffer`."""
     with gzip.open(Path(path), "rb") as f:
         return pickle.load(f)
 
 
-def replay_flow(buffer: EventBuffer[T], *, output_type: Type[T]) -> Flow[None, T]:
+def replay_flow(buffer: TimedBuffer[T], *, output_type: Type[T]) -> Flow[None, T]:
     """
     Create a replay source flow that outputs recorded items sequentially.
 
@@ -425,7 +425,7 @@ def replay_flow(buffer: EventBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     return _ReplayFlow()
 
 
-def replay_handle(buffer: EventBuffer[T], clock: Any, *, output_type: Type[T]) -> TemporalFlow:
+def replay_handle(buffer: TimedBuffer[T], clock: Any, *, output_type: Type[T]) -> TemporalFlow:
     """Convenience: bind `replay_flow(...)` to a clock via `@`."""
     return replay_flow(buffer, output_type=output_type) @ clock
 
@@ -435,7 +435,7 @@ class EventStreamRecorder(Generic[T]):
     Record a node's per-step outputs by calling `Pipeline.step()`.
 
     Conceptually, this records a finite retained history of a port/object-level
-    EventStream (an `EventBuffer`) suitable for replay in the stepper.
+    EventStream (an `TimedBuffer`) suitable for replay in the stepper.
     """
 
     def __init__(self, pipeline: Any, handle: TemporalFlow, *, name: str = "stream"):
@@ -445,7 +445,7 @@ class EventStreamRecorder(Generic[T]):
         self._output_type: Optional[Type[T]] = handle.flow.output_type  # type: ignore[assignment]
 
         self.name = name
-        self.buffer: EventBuffer[T] = []
+        self.buffer: TimedBuffer[T] = []
 
     @property
     def output_type(self) -> Type[T]:
@@ -467,7 +467,7 @@ class EventStreamRecorder(Generic[T]):
         steps: int,
         dt: Optional[float] = None,
         sleep_s: float = 0.0,
-    ) -> EventBuffer[T]:
+    ) -> TimedBuffer[T]:
         for _ in range(steps):
             self.step(dt=dt)
             if sleep_s > 0:
@@ -475,4 +475,4 @@ class EventStreamRecorder(Generic[T]):
         return self.buffer
 
     def save(self, path: str | Path) -> None:
-        save_event_buffer(path, self.buffer)
+        save_timed_buffer(path, self.buffer)

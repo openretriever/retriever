@@ -114,7 +114,7 @@ Time parameters:
 Retriever’s runtime model is:
 
 - each port is a discrete-time **EventStream**
-- concretely stored as a finite `retriever.flow.types.EventBuffer[T] = list[(timestamp, value)]`
+- concretely stored as a finite `retriever.flow.types.TimedBuffer[T] = list[(timestamp, value)]`
 - for collection/replay/export semantics, use `retriever.types.data.EventBuffer` instead of this runtime buffer
 - adapters sample buffers at time `now` to produce a value for the Flow input
 
@@ -212,7 +212,7 @@ Library helpers (stepper-first):
 
 - Preferred: `Pipeline.record(path, steps=..., dt=...)` and `Pipeline.replay(handle, path=...)`.
 - Legacy stream-only helper: `Pipeline.record_to(handle, path, ...)`.
-- Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
+- Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_timed_buffer`/`load_timed_buffer`, `replay_flow`.
 
 Perception example:
 - `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:

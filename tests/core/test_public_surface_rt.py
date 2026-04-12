@@ -83,6 +83,13 @@ def test_data_package_keeps_root_surface_contract_only():
     assert not hasattr(data_pkg, "build_dataset_manifest")
 
 
+def test_runtime_flow_types_use_timed_buffer_name_only():
+    import retriever.flow.types as flow_types
+
+    assert hasattr(flow_types, "TimedBuffer")
+    assert not hasattr(flow_types, "EventBuffer")
+
+
 def test_legacy_typing_namespace_modules_are_removed():
     for module_name in (
         "retriever.data_spec",

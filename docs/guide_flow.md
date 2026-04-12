@@ -221,7 +221,7 @@ Adapters define how a downstream samples its input **buffer**:
 
 Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
-`retriever.flow.types.EventBuffer[T] = list[(timestamp: float, value: T)]`
+`retriever.flow.types.TimedBuffer[T] = list[(timestamp: float, value: T)]`
 
 This runtime buffer is distinct from `retriever.types.data.EventBuffer`, which is used for explicit event/data/export contracts.
 

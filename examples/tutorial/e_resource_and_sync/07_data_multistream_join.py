@@ -1,7 +1,7 @@
 """Data multistream join tutorial.
 
 Covers:
-1) explicit bridge from runtime EventBuffer to retriever.types.data
+1) explicit bridge from runtime TimedBuffer to retriever.types.data
 2) deterministic event-time joins (`exact`, `latest_before`, `window`)
 3) processing-time profile helpers (`latest`, `hold`, `window_agg`)
 
@@ -24,7 +24,7 @@ from retriever.types.data.streams import (
     latest,
     window_agg,
 )
-from retriever.flow.types import EventBuffer as RuntimeEventBuffer
+from retriever.flow.types import TimedBuffer as RuntimeTimedBuffer
 
 from examples.tutorial._p0_utils import format_table, utc_now_iso, write_json
 
@@ -51,8 +51,8 @@ def _pairs(buffer: EventBuffer[tuple[float, float]]) -> list[list[str]]:
 def main() -> None:
     out_path = Path("logs/tutorial_data/tut038_multistream_join.json")
 
-    runtime_camera = RuntimeEventBuffer([(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)])
-    runtime_joint = RuntimeEventBuffer([(2.0, 100.0), (3.02, 110.0)])
+    runtime_camera = RuntimeTimedBuffer([(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)])
+    runtime_joint = RuntimeTimedBuffer([(2.0, 100.0), (3.02, 110.0)])
 
     camera = from_runtime_event_buffer(runtime_camera, stream_id="camera")
     joint = from_runtime_event_buffer(runtime_joint, stream_id="joint")

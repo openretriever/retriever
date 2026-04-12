@@ -4,7 +4,7 @@ Tests for adapter reset functionality.
 
 import pytest
 from retriever.flow.adapter import Latest, Hold, Events, Window
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 
 
 class TestAdapterReset:
@@ -22,7 +22,7 @@ class TestAdapterReset:
         adapter = Hold(debounce=0.5)
 
         # Simulate some state
-        buffer = EventBuffer([(1.0, "value1"), (2.0, "value2")])
+        buffer = TimedBuffer([(1.0, "value1"), (2.0, "value2")])
         result = adapter(buffer)
         assert result == "value2"
         assert adapter._last_value == "value2"
@@ -38,12 +38,12 @@ class TestAdapterReset:
         adapter = Hold(debounce=1.0)
 
         # First event
-        buffer1 = EventBuffer([(1.0, "first")])
+        buffer1 = TimedBuffer([(1.0, "first")])
         result1 = adapter(buffer1)
         assert result1 == "first"
 
         # Second event within debounce window (should be ignored normally)
-        buffer2 = EventBuffer([(1.5, "second")])
+        buffer2 = TimedBuffer([(1.5, "second")])
         result2 = adapter(buffer2)
         assert result2 == "first"  # Held due to debounce
 
@@ -51,7 +51,7 @@ class TestAdapterReset:
         adapter.reset()
 
         # After reset, new event should not be debounced
-        buffer3 = EventBuffer([(1.6, "third")])
+        buffer3 = TimedBuffer([(1.6, "third")])
         result3 = adapter(buffer3)
         assert result3 == "third"  # Not debounced because state was reset
 

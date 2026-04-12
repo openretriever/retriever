@@ -658,14 +658,14 @@ class Pipeline:
         Replace `handle` with an in-process replay source and return the new handle.
 
         Provide exactly one of:
-        - `buffer`: an `EventBuffer[T] = list[(ts, value)]`
+        - `buffer`: a `TimedBuffer[T] = list[(ts, value)]`
         - `path`: path to a recording (.mcap, .rrd, or .pkl.gz)
 
         The format is auto-detected from the file extension.
         `.mcap` and `.rrd` are replayable when they contain Retriever replay payloads.
         By default, the replay node reuses the replaced handle's clock and output type.
         """
-        from retriever.rt.stepper import load_event_buffer, replay_flow
+        from retriever.rt.stepper import load_timed_buffer, replay_flow
 
         if (buffer is None) == (path is None):
             raise ValueError("Provide exactly one of `buffer=` or `path=`.")
@@ -689,7 +689,7 @@ class Pipeline:
 
                 buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
             else:
-                buffer = load_event_buffer(path)
+                buffer = load_timed_buffer(path)
 
         replay = replay_flow(buffer, output_type=output_type) @ clock  # type: ignore[arg-type]
         self.replace(handle, replay)

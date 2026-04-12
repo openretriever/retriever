@@ -10,7 +10,7 @@ from queue import Empty
 from typing import Any, List, Optional
 
 from retriever.flow.adapter import Adapter
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
 from retriever.lib.rerun import log_value_from_env
 
@@ -114,7 +114,7 @@ class MPChannel:
                     return # Silent drop
             raise e
 
-    def get_all(self) -> EventBuffer[Any]:
+    def get_all(self) -> TimedBuffer[Any]:
         """
         Get all buffered messages (non-destructive).
 

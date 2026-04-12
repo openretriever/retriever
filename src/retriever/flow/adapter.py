@@ -11,13 +11,13 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional, Any, Iterable
 from typing import Type, List, Dict, Literal
 from retriever.error import FlowError, ErrCode
-from retriever.flow.types import Behavior, EventBuffer, EventStream
+from retriever.flow.types import Behavior, TimedBuffer, EventStream
 # Forward references
 T = TypeVar('T')
 U = TypeVar('U')
 
 # Backward-compat alias (older code/docs/tests may still refer to TBuffer).
-TBuffer = EventBuffer
+TBuffer = TimedBuffer
 
 # Global adapter registry
 _adapter_registry: Dict[str, Type['Adapter']] = {}
@@ -41,7 +41,7 @@ class Adapter(ABC, Generic[T]):
             )
 
     @abstractmethod
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
         """
         Apply sampling strategy to the buffer.
         
@@ -55,7 +55,7 @@ class Adapter(ABC, Generic[T]):
         """
         pass
 
-    def sample(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
+    def sample(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
         """
         Alias for __call__ to support explicit naming.
         """
@@ -147,7 +147,7 @@ class Latest(Adapter[T]):
     """Samples the most recent value from the buffer."""
     buffer_size: int = 1
 
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         if not buffer:
             raise IndexError("list index out of range")
         # Use declarative method (mypy: latest can return None if empty, guarded above)
@@ -197,9 +197,9 @@ class Hold(Adapter[T]):
         self._last_value: Optional[T] = None
         self._last_time: float = 0.0
 
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
 
-        # Safe access to latest event using EventBuffer API
+        # Safe access to latest event using TimedBuffer API
         timestamp, value = buffer[-1]
 
         # Fast-path: if no debounce, just return latest
@@ -253,7 +253,7 @@ class Window(Adapter[T]):
                 duration=self.duration
             )
 
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         current_time = time.time() if now is None else now
 
         # Declarative selection of relevant events
@@ -316,11 +316,11 @@ class Events(Adapter[T]):
                 duration=self.duration,
             )
 
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
-        events: EventBuffer[T]
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
+        events: TimedBuffer[T]
         if self.duration is None:
             # Return full buffer
-            events = EventBuffer(buffer)
+            events = TimedBuffer(buffer)
         else:
             current_time = time.time() if now is None else now
             # Use declarative within()
@@ -342,7 +342,7 @@ class Exact(Adapter[T]):
     buffer_size: int = 10
     tolerance: float = 1e-6
 
-    def __call__(self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         if now is None:
             # Fallback to latest if no time requested
             if not buffer:
@@ -379,7 +379,7 @@ class Linear(Adapter[float]):
     """
     buffer_size: int = 10
     
-    def __call__(self, buffer: EventBuffer[float], now: Optional[float] = None, **kwargs) -> float:
+    def __call__(self, buffer: TimedBuffer[float], now: Optional[float] = None, **kwargs) -> float:
         if not buffer:
             raise IndexError("Linear adapter needs data")
             
@@ -408,7 +408,7 @@ class Linear(Adapter[float]):
                 
         if prev_pt is None or next_pt is None:
             # Should be unreachable given bounds checks, unless buffer is weirdly unsorted 
-            # (which EventBuffer guarantees isn't true for appends but...)
+            # (which TimedBuffer guarantees isn't true for appends but...)
             # Fallback to nearest
             return buffer[-1][1]
             
@@ -456,7 +456,7 @@ class Chunking(Adapter[T]):
     dt: float = 0.1
 
     def __call__(
-        self, buffer: EventBuffer[T], now: Optional[float] = None, **kwargs
+        self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs
     ) -> Any:
         if not buffer:
             return None

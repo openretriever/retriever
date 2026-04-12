@@ -5,7 +5,7 @@ from retriever.types.data.interop import (
     is_runtime_event_buffer,
     to_runtime_event_buffer,
 )
-from retriever.flow.types import EventBuffer as RuntimeEventBuffer
+from retriever.flow.types import TimedBuffer as RuntimeTimedBuffer
 
 
 def test_runtime_buffer_roundtrip() -> None:
@@ -27,7 +27,7 @@ def test_runtime_buffer_shape_detection() -> None:
 
 
 def test_interop_with_runtime_eventbuffer_class() -> None:
-    runtime_buffer = RuntimeEventBuffer([(3.0, 33), (4.0, 44)])
+    runtime_buffer = RuntimeTimedBuffer([(3.0, 33), (4.0, 44)])
 
     typed = from_runtime_event_buffer(runtime_buffer, stream_id="imu")
     back = to_runtime_event_buffer(typed)

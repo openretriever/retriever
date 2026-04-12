@@ -10,7 +10,7 @@ Clocks define when a flow executes:
 from abc import ABC
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, List, Optional, Union
-from retriever.flow.types import EventStream, EventBuffer
+from retriever.flow.types import EventStream, TimedBuffer
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
@@ -448,7 +448,7 @@ class TimelineClock(Clock):
     """
     Schedule-driven clock.
 
-    Executes only at specific timestamps provided by a list or EventBuffer.
+    Executes only at specific timestamps provided by a list or TimedBuffer.
     
     This is useful for:
     - Replaying recorded event logs (use timestamps from log)
@@ -463,12 +463,12 @@ class TimelineClock(Clock):
     """
     timestamps: List[float]
 
-    def __init__(self, timestamps: Union[List[float], EventBuffer]):
+    def __init__(self, timestamps: Union[List[float], TimedBuffer]):
         from retriever.error import FlowError, ErrCode
         
-        # Extract timestamps if given an EventBuffer
+        # Extract timestamps if given a TimedBuffer
         if hasattr(timestamps, 'events'): # is an EventStream/buffer-like
-             # If it's an EventBuffer (list), iter it directly
+             # If it's a TimedBuffer (list), iterate it directly
              # If it's a generic stream, we can't know future times! 
              # So we assume it's an iterable of (ts, val) or just list of floats.
              pass
@@ -481,7 +481,7 @@ class TimelineClock(Clock):
              elif isinstance(timestamps[0], (int, float)):
                  data = sorted(list(timestamps))
              elif isinstance(timestamps[0], (tuple, list)) and len(timestamps[0]) >= 1:
-                 # Assume (ts, val) tuples from EventBuffer
+                 # Assume (ts, val) tuples from TimedBuffer
                  data = sorted([item[0] for item in timestamps])
         
         self.timestamps = data

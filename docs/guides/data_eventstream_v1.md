@@ -35,14 +35,14 @@ from retriever.types import StreamId
 from retriever.types.data.v1 import Event
 ```
 
-## Two EventBuffer Layers
+## TimedBuffer vs EventBuffer
 
 Retriever now has two distinct event-buffer concepts.
 
-### Runtime EventBuffer
+### Runtime TimedBuffer
 
 ```python
-retriever.flow.types.EventBuffer
+retriever.flow.types.TimedBuffer
 ```
 
 - current runtime abstraction
@@ -61,7 +61,7 @@ retriever.types.data.EventBuffer
 - carries lineage/schema/frame/unit metadata
 
 Chosen compatibility rule:
-- the runtime buffer stays unchanged
+- the runtime `TimedBuffer` stays unchanged
 - conversions are explicit via:
   - `from_runtime_event_buffer(...)`
   - `to_runtime_event_buffer(...)`

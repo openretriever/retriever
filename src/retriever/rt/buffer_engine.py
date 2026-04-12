@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Deque, Generic, Literal, Optional, TypeVar
 
 from retriever.flow.adapter import Adapter, Latest
-from retriever.flow.types import EventBuffer
+from retriever.flow.types import TimedBuffer
 
 T = TypeVar("T")
 
@@ -38,7 +38,7 @@ class BufferEngine(Generic[T]):
     def clear(self) -> None:  # pragma: no cover
         raise NotImplementedError
 
-    def events(self) -> EventBuffer[T]:  # pragma: no cover
+    def events(self) -> TimedBuffer[T]:  # pragma: no cover
         raise NotImplementedError
 
     def sample(self, adapter: Adapter[T], *, now: Optional[float] = None) -> Any:  # pragma: no cover
@@ -71,8 +71,8 @@ class PythonBufferEngine(BufferEngine[T]):
     def clear(self) -> None:
         self._buffer.clear()
 
-    def events(self) -> EventBuffer[T]:
-        return EventBuffer(self._buffer)
+    def events(self) -> TimedBuffer[T]:
+        return TimedBuffer(self._buffer)
 
     def sample(self, adapter: Adapter[T], *, now: Optional[float] = None) -> Any:
         if not self._buffer:
@@ -83,9 +83,9 @@ class PythonBufferEngine(BufferEngine[T]):
             return self._buffer[-1][1]
         
         # For complex adapters (Window, Events, Hold, Custom), delegate to the Adapter implementation.
-        # This ensures the Adapter class (and EventStream/EventBuffer definitions) is the single source of truth.
-        # Note: This involves converting deque -> EventBuffer (list copy), which is O(N).
-        return adapter.sample(EventBuffer(self._buffer), now=now)
+        # This ensures the Adapter class (and EventStream/TimedBuffer definitions) is the single source of truth.
+        # Note: This involves converting deque -> TimedBuffer (list copy), which is O(N).
+        return adapter.sample(TimedBuffer(self._buffer), now=now)
 
 
 def create_buffer_engine(kind: BufferEngineKind, *, buffer_size: int) -> BufferEngine[Any]:
