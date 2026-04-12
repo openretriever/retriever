@@ -81,7 +81,7 @@ pipe.close_stepper()
 
 ## 🚀 Key Features
 
-### ✅ Production Ready
+### ✅ Alpha, Runtime-First
 - **Type-Safe Composition**: Catch errors at development time, not runtime
 - **Multi-Backend Execution**: Local multiprocessing + dora-rs backend
 - **Registry + Plugins**: Entry-point based pipeline discovery (`retriever.plugins`)
@@ -92,7 +92,7 @@ pipe.close_stepper()
 - **"PyTorch for Robotics"**: Simple, composable abstractions
 - **Execution Flexibility**: Same code works from development to production
 - **Component Reusability**: Share and discover robotics components
-- **Production Path**: Direct migration from prototype to deployed system
+- **Runtime Path**: Clear progression from prototype to backend execution and replay/debug workflows
 
 ## 🏗️ Architecture Overview
 

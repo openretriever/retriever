@@ -75,12 +75,12 @@ pixi run python -m pip install -e '.[dev]'
 
 ### VS Code Configuration
 
-Launch configurations for common development tasks:
+Launch configurations in `.vscode/launch.json` target the maintained tutorial modules directly:
 
-- **Run: [Flow] Demo Pipeline** - Basic flow demonstration
-- **Run: [Planning] Oracle Example** - Complete planning example
-- **Test: [Core] Flow System** - Core framework tests
-- **Debug: [Integration] Full Pipeline** - End-to-end debugging
+- `examples.tutorial.c_debug_and_replay.01_debug_stepper`
+- `examples.tutorial.c_debug_and_replay.02_debug_perception_stepper`
+- `examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera`
+- `examples.tutorial.c_debug_and_replay.04_record_replay_perception`
 
 ### Pre-commit Setup
 
@@ -433,24 +433,13 @@ jobs:
 
 ### Adding Robot Integrations
 
-System-layer robot integrations belong under `src/golden_retriever/` or in an external package.
-Only runtime-agnostic interfaces and backend hooks should live in the core runtime repo.
+System-level robot integrations belong in external robot-integration packages.
+This runtime repository should only keep runtime-agnostic interfaces, typed payloads, adapters, clocks, builders, and backend hooks.
 
-1. **Create Robot Package**: `src/golden_retriever/robots/new_robot/`
-2. **Implement Robot Interface**:
-   ```python
-   class NewRobotInterface:
-       def move_to(self, pose: Pose3D) -> bool:
-           # Implementation
-           pass
-       
-       def get_state(self) -> RobotState:
-           # Implementation
-           pass
-   ```
-3. **Add Skills**: `src/golden_retriever/skills/new_robot/`
-4. **Create Tests**: `src/golden_retriever/tests/test_new_robot.py`
-5. **Update Configuration**: Add to robot registry
+A good extension boundary is:
+1. define typed payloads and registry metadata here only if they are runtime-generic
+2. wrap the external SDK or robot API in normal `Flow` classes outside this repo
+3. keep hardware-, simulator-, and model-stack code out of this repository
 
 ### Adding Execution Backends
 
@@ -495,11 +484,8 @@ def profile_pipeline():
 
 **Memory Usage Analysis**:
 ```bash
-# Monitor memory during execution
-pixi run python -m pytest --memray
-
-# Memory profiling for specific components
-python -m memray run --live examples/memory_test.py
+# This repo does not currently ship a blessed memray workflow.
+# Prefer cProfile for checked-in examples, or add a local profiler in your own environment.
 ```
 
 ### Extending the Runtime
@@ -511,9 +497,7 @@ For core runtime work, prefer explicit extension points over monkey-patching:
 - add builder/validation behavior in `src/retriever/flow/builder.py`
 - add runtime backends under `src/retriever/rt/backend/`
 
-External systems such as Ray, hardware SDKs, or model-serving stacks should usually live in
-`src/golden_retriever/` or external packages and integrate with the runtime through normal `Flow`
-wrappers and typed `@io` envelopes.
+External systems such as Ray, hardware SDKs, or model-serving stacks should usually live in external packages and integrate with the runtime through normal `Flow` wrappers and typed `@io` envelopes.
 
 ## Troubleshooting
 
@@ -525,7 +509,7 @@ wrappers and typed `@io` envelopes.
 pixi run python -m pip install -e .
 
 # Check Python path
-export PYTHONPATH=/path/to/Retriever:$PYTHONPATH
+export PYTHONPATH=/path/to/Retriever/src:$PYTHONPATH
 
 # Verify installation
 python -c "import retriever; print(retriever.__version__)"
@@ -548,19 +532,16 @@ python -c "import retriever; print(retriever.__version__)"
 **Performance Issues**:
 ```bash
 # Profile execution
-pixi run python -m pytest --profile
+pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
 
-# Check for memory leaks
-pixi run python -m pytest --memray
-
-# Benchmark against baseline
-pixi run python -m pytest --benchmark
+# Or run a focused test module under the debugger / profiler of your choice
+pixi run python -m pytest tests/core/test_pipeline_step_rt.py -v
 ```
 
 **Testing Failures**:
 ```bash
 # Run specific test module
-pixi run python -m pytest tests/core/test_flow.py
+pixi run python -m pytest tests/core/test_pipeline_step_rt.py
 
 # Run with verbose output
 pixi run python -m pytest -v
