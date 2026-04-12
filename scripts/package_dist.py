@@ -3,6 +3,50 @@ import subprocess
 from pathlib import Path
 
 
+_BUNDLE_ONLY_TASKS = {
+    "build",
+    "package",
+    "test",
+    "test-control",
+    "export-notebook-ready",
+    "check-notebook-ready",
+}
+
+
+def _strip_bundle_only_tasks(pixi_content: str) -> str:
+    """Remove maintainer-only Pixi tasks from the shipped distribution surface."""
+    lines = pixi_content.splitlines()
+    cleaned: list[str] = []
+    in_tasks = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_tasks = stripped == "[tasks]"
+            cleaned.append(line)
+            continue
+
+        if in_tasks:
+            if stripped in {
+                "# Build the wheel",
+                "# Run: pixi run build",
+                "# Create distribution bundle (Wheel + Examples + Config)",
+                "# Run: pixi run package",
+                "# Test tasks",
+            }:
+                continue
+
+            if "=" in line:
+                task_name = line.split("=", 1)[0].strip()
+                if task_name in _BUNDLE_ONLY_TASKS:
+                    continue
+
+        cleaned.append(line)
+
+    return "\n".join(cleaned) + "\n"
+
+
 def main():
     # 1. Build the wheel
     print("Building wheel...")
@@ -60,6 +104,7 @@ def main():
             target_str,
             f'retriever = {{ path = "./install/{wheel_name}", editable = false'
         )
+        pixi_patched = _strip_bundle_only_tasks(pixi_patched)
 
         with open(bundle_dir / "pixi.toml", "w") as f:
             f.write(pixi_patched)
