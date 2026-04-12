@@ -1,4 +1,4 @@
-"""Shared perception runtime helpers for examples, docs, and tests."""
+"""Repo-local perception helpers shared by examples, docs, and tests."""
 
 from __future__ import annotations
 

@@ -8,7 +8,7 @@ Focus: pipeline validation, IR structure, execution graph build, and backend beh
 
 Start here:
 - `02_ir_validation` if you want to inspect the IR directly.
-- `06_dora_perception` if you want a perception-shaped runtime example.
+- `06_dora_perception` if you want a perception-shaped runtime example. It now defaults to the safer in-process webcam path; pass `--backend dora --camera-mode mock` when you specifically want Dora.
 
 ## Modules
 
@@ -26,9 +26,12 @@ pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchm
 
 ## Generate an HTML View
 
+Run this from the repository root. The snippet imports a repo-local helper from
+`examples/shared/`, so `examples/` needs to be on the default Python path.
+
 ```bash
-pixi run env PYTHONPATH=src python - <<'PY'
-from retriever.example_support.perception_runtime import build_tutorial_perception_pipeline
+pixi run env PYTHONPATH=src:. python - <<'PY'
+from examples.shared.perception_runtime import build_tutorial_perception_pipeline
 
 path = build_tutorial_perception_pipeline(
     use_real_camera=False,
