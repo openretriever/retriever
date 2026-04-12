@@ -320,15 +320,13 @@ pipe.close_stepper()
 
 ```
 tests/
-├── core/                  # Core framework tests
-│   ├── test_flow.py      # Flow composition tests
-│   ├── test_executor.py  # Execution engine tests
-│   └── test_types.py     # Type system tests
-├── perception/            # Perception system tests
-├── planning/              # Planning system tests
-├── integration/           # End-to-end integration tests
-├── performance/           # Performance and benchmark tests
-└── fixtures/              # Shared test data and utilities
+├── core/                  # Runtime-facing regression tests (default pytest target)
+├── examples/              # Tutorial/example checks
+├── flow/                  # Flow composition and ergonomics tests
+├── integration/           # End-to-end runtime checks
+├── ir/                    # IR analysis / lowering / visualization checks
+├── planning/              # Planning-oriented tests
+└── images/                # Static image fixtures used by tests
 ```
 
 ### Writing Effective Tests
@@ -353,14 +351,13 @@ def test_complete_manipulation_pipeline():
     engine.stop()
 ```
 
-**Performance Tests**:
+**Focused Runtime Regression Tests**:
 ```python
-@pytest.mark.performance
-def test_pipeline_throughput():
-    """Test system performance under load."""
+def test_pipeline_runtime_regression():
+    """Keep the default runtime surface stable."""
     pipe = build_demo_pipeline()
-    for _ in range(100):
-        pipe.step(dt=0.02)
+    step = pipe.step(dt=0.02)
+    assert step.now is not None
     pipe.close_stepper()
 ```
 
@@ -386,8 +383,8 @@ jobs:
           pixi run black .
           pixi run mypy src/retriever
           pixi run python -m pytest
-      - name: Run performance tests
-        run: pixi run python -m pytest --performance
+      - name: Run focused runtime sweep
+        run: pixi run python -m pytest tests/core/test_public_surface_rt.py tests/core/test_pipeline_step_rt.py
 ```
 
 ## Contributing Guidelines
