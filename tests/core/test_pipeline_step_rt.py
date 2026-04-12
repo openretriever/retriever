@@ -154,6 +154,14 @@ def test_pipeline_record_config_can_emit_rrd_and_mcap(tmp_path):
     assert mcap_path.stat().st_size > 0
 
 
+def test_record_config_rejects_unsupported_session_paths(tmp_path):
+    with pytest.raises(ValueError, match=r"Use a \.mcap or \.rrd path"):
+        RecordConfig(path=tmp_path / "session.bin")
+
+    with pytest.raises(ValueError, match=r"Use a \.mcap or \.rrd path"):
+        RecordConfig(path=tmp_path / "session.rrd", mirrors=(tmp_path / "mirror.bin",))
+
+
 def test_pipeline_run_record_convenience_emits_session_artifacts(tmp_path):
     pytest.importorskip("rerun")
 

@@ -4,6 +4,7 @@ import inspect
 import pytest
 
 import retriever
+from retriever.config import RecordConfig, VizConfig, get_global_config
 from retriever.error import ERROR_MSGS, ErrCode
 from retriever.flow import EdgeConfig, Flow, Pipeline, PipelineEdge, PipelineGraph, PipelineNode, Rate, io
 from retriever.flow.pipeline import run as run_default_pipeline
@@ -33,6 +34,25 @@ def test_flow_module_exports_pipeline_graph_names_only():
 
 def test_top_level_retriever_exports_clear_default_pipeline():
     assert callable(retriever.clear_default_pipeline)
+
+
+def test_retriever_init_can_clear_optional_defaults(tmp_path):
+    retriever.init(
+        record=str(tmp_path / "session.mcap"),
+        default_sync=object(),
+        default_viz=VizConfig(hz=2.0),
+    )
+
+    config = get_global_config()
+    assert isinstance(config["record"], RecordConfig)
+    assert config["default_sync"] is not None
+    assert config["default_viz"] is not None
+
+    retriever.init(record=None, default_sync=None, default_viz=None)
+
+    assert config["record"] is None
+    assert config["default_sync"] is None
+    assert config["default_viz"] is None
 
 
 def test_context_module_imports_without_optional_mcp_runtime():

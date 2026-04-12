@@ -33,24 +33,25 @@ from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 
 from typing import Any, Optional, Union
-from retriever.config import RecordConfig, VizConfig, set_global_config
+from retriever.config import RecordConfig, VizConfig, _UNSET as _CONFIG_UNSET, set_global_config
 
 def init(
-    name: Optional[str] = None,
-    record: Optional[Union[str, RecordConfig]] = None,
-    backend: Optional[str] = None,
-    backend_config: Optional[dict] = None,
-    default_sync: Optional[Any] = None,
-    default_viz: Optional[VizConfig] = None,
+    name: Optional[str] | object = _CONFIG_UNSET,
+    record: Optional[Union[str, RecordConfig]] | object = _CONFIG_UNSET,
+    backend: Optional[str] | object = _CONFIG_UNSET,
+    backend_config: Optional[dict] | object = _CONFIG_UNSET,
+    default_sync: Optional[Any] | object = _CONFIG_UNSET,
+    default_viz: Optional[VizConfig] | object = _CONFIG_UNSET,
 ) -> None:
     """
     Set process-wide default configuration for convenience helpers.
 
     `retriever.init(...)` only updates global defaults used by the thread-local
     default pipeline and by `Pipeline.connect(...)` when `sync=` is omitted.
-    It does not build, reset, or run a pipeline by itself. For scripts and shared
-    examples, prefer an explicit `Pipeline(...)` object and pass runtime settings
-    directly to `pipe.run(...)`.
+    Pass `None` explicitly to clear optional defaults like `record`,
+    `default_sync`, or `default_viz`. It does not build, reset, or run a
+    pipeline by itself. For scripts and shared examples, prefer an explicit
+    `Pipeline(...)` object and pass runtime settings directly to `pipe.run(...)`.
 
     Args:
         name: Session name (useful for logging/recording)
@@ -60,7 +61,8 @@ def init(
         backend_config: Default backend configuration dict. Values are merged
                         with (and overridden by) `pipe.run(backend_config=...)`.
         default_sync: Default sync adapter for connections (e.g. Latest()).
-                      If None, every pipe.connect() must specify sync= explicitly.
+                      Pass None explicitly to clear it so every pipe.connect()
+                      must specify sync=.
         default_viz: Default visualization policy for all output ports that do not
                      have an explicit viz= on their .then() connection.
                      Example: retriever.init(default_viz=VizConfig(hz=5.0))
