@@ -11,6 +11,7 @@
 
 ## What To Expect
 
+- `03_unified_wrapper.py` shows an alternate ergonomic wrapper surface. Keep explicit `Pipeline(...)` authoring as the default mental model for the rest of the tutorials.
 - Use registries and wrappers to operate pipelines.
 - Understand extension points and runtime control surfaces.
 - See canonical spatial types used at typed flow boundaries.

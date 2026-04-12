@@ -3,7 +3,7 @@ Tests for Migrated Legacy Modules.
 
 Tests the modules migrated from golden_retriever/core into retriever core:
 - retriever.types.symbolic.skills (SkillSignature, GroundedSkill)
-- retriever.types.symbolic (Type, Predicate, Object, Variable, GroundAtom)
+- retriever.types.symbolic (ObjectType, Predicate, Object, Variable, GroundAtom)
 - retriever.ir.resources (ResourceSpec, ResourcePresets)
 - retriever.ir.temporal (ExecutionTimer, RateLimiter - analysis tools, NOT execution)
 - retriever.flow.coordination (EventManager, FRP utilities)
@@ -109,9 +109,9 @@ class TestSymbolicTypes:
 
     def test_object_and_variable(self):
         """Test Object and Variable creation."""
-        from retriever.types.symbolic import Type, Object, Variable
+        from retriever.types.symbolic import ObjectType, Object, Variable
         
-        cup_type = Type("cup")
+        cup_type = ObjectType("cup")
         
         # Create object (no ? prefix)
         obj = cup_type("red_cup_0")
@@ -126,10 +126,10 @@ class TestSymbolicTypes:
 
     def test_predicate_and_atom(self):
         """Test Predicate and Atom creation."""
-        from retriever.types.symbolic import Type, Predicate, State, GroundAtom
+        from retriever.types.symbolic import ObjectType, Predicate, State, GroundAtom
         
-        cup_type = Type("cup")
-        table_type = Type("table")
+        cup_type = ObjectType("cup")
+        table_type = ObjectType("table")
         
         # Define predicate
         on_predicate = Predicate(
@@ -150,9 +150,9 @@ class TestSymbolicTypes:
 
     def test_state_and_predicate_holds(self):
         """Test State and predicate evaluation."""
-        from retriever.types.symbolic import Type, Predicate, State, Object
+        from retriever.types.symbolic import ObjectType, Predicate, State, Object
         
-        obj_type = Type("object", feature_names=["x", "y"])
+        obj_type = ObjectType("object", feature_names=["x", "y"])
         
         def is_at_origin(state: State, objects):
             obj = objects[0]

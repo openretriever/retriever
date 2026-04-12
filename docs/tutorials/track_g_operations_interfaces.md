@@ -6,6 +6,8 @@ title: "Track G: Operations and Interfaces"
 
 Focus: registries, wrapper abstractions, and operational interaction surfaces.
 
+`03_unified_wrapper` is an alternate ergonomic surface; the rest of the track keeps explicit `Pipeline(...)` authoring primary.
+
 Start here:
 - `06_composable_pipelines` if you want reusable pipelines that can still be extended.
 

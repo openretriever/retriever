@@ -197,8 +197,6 @@ class GroundAtom(_Atom):
     def holds(self, state: State) -> bool:
         return self.predicate.holds(state, self.objects) 
 
-Type = ObjectType
-
 __all__ = [
     "GroundAtom",
     "LiftedAtom",
@@ -206,6 +204,5 @@ __all__ = [
     "ObjectType",
     "Predicate",
     "State",
-    "Type",
     "Variable",
 ]

@@ -6,7 +6,7 @@ The split is intentionally compact:
 - `skills`: language-facing skill signatures and grounded skills
 """
 
-from .objects import GroundAtom, LiftedAtom, Object, ObjectType, Predicate, State, Type, Variable
+from .objects import GroundAtom, LiftedAtom, Object, ObjectType, Predicate, State, Variable
 from .options import Action, Option, ParameterizedOption, Task
 from .skills import GroundedSkill, SkillSignature
 
@@ -23,6 +23,5 @@ __all__ = [
     "SkillSignature",
     "State",
     "Task",
-    "Type",
     "Variable",
 ]

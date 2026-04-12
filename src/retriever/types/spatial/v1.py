@@ -34,8 +34,8 @@ def _register_spatial_type(
 
 @_register_spatial_type(
     "Header",
-    description="Header for stamped robotics payloads",
-    tags=["spatial", "robotics", "v1", "header", "metadata"],
+    description="Header for stamped spatial payloads",
+    tags=["spatial", "v1", "header", "metadata"],
 )
 @dataclass(frozen=True)
 class Header:
@@ -47,7 +47,7 @@ class Header:
 @_register_spatial_type(
     "Vector3",
     description="3D vector payload",
-    tags=["spatial", "robotics", "v1", "geometry", "vector"],
+    tags=["spatial", "v1", "geometry", "vector"],
 )
 @dataclass(frozen=True)
 class Vector3:
@@ -59,7 +59,7 @@ class Vector3:
 @_register_spatial_type(
     "Quaternion",
     description="Quaternion rotation payload",
-    tags=["spatial", "robotics", "v1", "geometry", "quaternion"],
+    tags=["spatial", "v1", "geometry", "quaternion"],
 )
 @dataclass(frozen=True)
 class Quaternion:
@@ -78,7 +78,7 @@ class Quaternion:
 @_register_spatial_type(
     "SE3Pose",
     description="SE(3) pose payload",
-    tags=["spatial", "robotics", "v1", "geometry", "pose"],
+    tags=["spatial", "v1", "geometry", "pose"],
 )
 @dataclass(frozen=True)
 class SE3Pose:
@@ -89,7 +89,7 @@ class SE3Pose:
 @_register_spatial_type(
     "Twist",
     description="Spatial velocity payload",
-    tags=["spatial", "robotics", "v1", "motion", "twist"],
+    tags=["spatial", "v1", "motion", "twist"],
 )
 @dataclass(frozen=True)
 class Twist:
@@ -100,7 +100,7 @@ class Twist:
 @_register_spatial_type(
     "Wrench",
     description="Force and torque payload",
-    tags=["spatial", "robotics", "v1", "force", "wrench"],
+    tags=["spatial", "v1", "force", "wrench"],
 )
 @dataclass(frozen=True)
 class Wrench:
@@ -111,7 +111,7 @@ class Wrench:
 @_register_spatial_type(
     "JointState",
     description="Joint state payload",
-    tags=["spatial", "robotics", "v1", "joint", "state"],
+    tags=["spatial", "v1", "joint", "state"],
 )
 @dataclass(frozen=True)
 class JointState:
@@ -132,7 +132,7 @@ class JointState:
 @_register_spatial_type(
     "PoseStamped",
     description="Timestamped pose payload",
-    tags=["spatial", "robotics", "v1", "pose", "stamped"],
+    tags=["spatial", "v1", "pose", "stamped"],
 )
 @dataclass(frozen=True)
 class PoseStamped:
@@ -143,7 +143,7 @@ class PoseStamped:
 @_register_spatial_type(
     "TwistStamped",
     description="Timestamped twist payload",
-    tags=["spatial", "robotics", "v1", "twist", "stamped"],
+    tags=["spatial", "v1", "twist", "stamped"],
 )
 @dataclass(frozen=True)
 class TwistStamped:
@@ -154,7 +154,7 @@ class TwistStamped:
 @_register_spatial_type(
     "WrenchStamped",
     description="Timestamped wrench payload",
-    tags=["spatial", "robotics", "v1", "wrench", "stamped"],
+    tags=["spatial", "v1", "wrench", "stamped"],
 )
 @dataclass(frozen=True)
 class WrenchStamped:

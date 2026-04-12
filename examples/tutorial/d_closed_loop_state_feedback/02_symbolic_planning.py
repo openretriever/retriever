@@ -5,7 +5,7 @@ Demonstrates the PDDL-style symbolic types for task and motion planning.
 These symbolic types are part of the core `retriever.types` surface.
 
 Components:
-- Type: Define object types with inheritance
+- ObjectType: Define object types with inheritance
 - Object/Variable: Concrete vs lifted entities
 - Predicate: State classifiers
 - GroundAtom: Predicates with bound objects
@@ -14,21 +14,21 @@ Components:
 
 import numpy as np
 from retriever.types.symbolic import (
-    Type, Object, Variable, Predicate, State, GroundAtom, LiftedAtom
+    ObjectType, Object, Variable, Predicate, State, GroundAtom, LiftedAtom
 )
 from retriever.types.symbolic.skills import SkillSignature, GroundedSkill
 
 
 def main():
     print("=" * 60)
-    print("Part 1: Type Hierarchy")
+    print("Part 1: ObjectType Hierarchy")
     print("=" * 60)
     
     # Define a type hierarchy
-    thing = Type("thing")
-    container = Type("container", parent=thing)
-    cup = Type("cup", parent=container)
-    table = Type("table", parent=thing)
+    thing = ObjectType("thing")
+    container = ObjectType("container", parent=thing)
+    cup = ObjectType("cup", parent=container)
+    table = ObjectType("table", parent=thing)
     
     print(f"cup inherits from: {[t.name for t in cup.get_ancestors()]}")
     
@@ -70,7 +70,7 @@ def main():
     print("=" * 60)
     
     # Define type with features
-    obj_type = Type("object", feature_names=["x", "y", "z"])
+    obj_type = ObjectType("object", feature_names=["x", "y", "z"])
     
     # Define predicate that checks if object is at origin
     at_origin = Predicate(
@@ -125,7 +125,7 @@ def main():
     
     print("\n" + "=" * 60)
     print("Summary:")
-    print("  - Type: Define object categories with inheritance")
+    print("  - ObjectType: Define object categories with inheritance")
     print("  - Object: Concrete instances (no ? prefix)")
     print("  - Variable: Placeholders for lifted (? prefix)")
     print("  - Predicate: State -> bool classifiers")

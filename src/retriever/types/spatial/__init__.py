@@ -1,6 +1,35 @@
-"""Public surface for retriever.types.spatial."""
+"""Stable public surface for retriever.types.spatial."""
 
-from .v1 import *
-from .v1 import __all__ as _v1_all
+from .v1 import (
+    Header,
+    JointState,
+    PoseStamped,
+    Quaternion,
+    SE3Pose,
+    Twist,
+    TwistStamped,
+    Vector3,
+    Wrench,
+    WrenchStamped,
+    validate_header,
+    validate_joint_state,
+    validate_pose_stamped,
+    validate_quaternion,
+)
 
-__all__ = list(_v1_all)
+__all__ = [
+    "Header",
+    "JointState",
+    "PoseStamped",
+    "Quaternion",
+    "SE3Pose",
+    "Twist",
+    "TwistStamped",
+    "Vector3",
+    "Wrench",
+    "WrenchStamped",
+    "validate_header",
+    "validate_joint_state",
+    "validate_pose_stamped",
+    "validate_quaternion",
+]
