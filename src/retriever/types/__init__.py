@@ -28,7 +28,7 @@ from .symbolic import (
     Variable,
 )
 from . import data, spatial
-from .registry import (
+from retriever.registry.types import (
     TypeInfo,
     TypeRegistry,
     convert_from_arrow,

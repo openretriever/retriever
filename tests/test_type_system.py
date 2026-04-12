@@ -5,51 +5,49 @@ Tests the core type system, registry, and conversion functionality.
 """
 
 import pytest
-import numpy as np
 from retriever import get_type
-
-# Get types via registry
-RGBImage = get_type('RGBImage')
-Detection = get_type('Detection')
-BoundingBox = get_type('BoundingBox')
-from retriever.types.registry import (
+from retriever.types import (
     convert_to_arrow, convert_from_arrow, register_type,
     get_registered_types, get_global_registry
 )
+from retriever.types.spatial import Header, JointState, PoseStamped, Quaternion, SE3Pose, Vector3
+
+# Get canonical types via registry
+RegistryPoseStamped = get_type("PoseStamped")
+RegistryJointState = get_type("JointState")
 
 
 class TestCoreTypes:
-    """Test core robotics types."""
-    
-    def test_rgb_image_creation(self):
-        """Test creating RGBImage instances."""
-        img_data = np.zeros((480, 640, 3), dtype=np.uint8)
-        img = RGBImage(data=img_data)
-        
-        assert img.data.shape == (480, 640, 3)
-        assert img.data.dtype == np.uint8
-    
-    def test_bounding_box_creation(self):
-        """Test BoundingBox creation and properties."""
-        bbox = BoundingBox(x=10, y=20, width=90, height=180)
-        
-        assert bbox.x == 10
-        assert bbox.y == 20
-        assert bbox.width == 90
-        assert bbox.height == 180
-        
-        # Test center property
-        center = bbox.center
-        assert center == (55.0, 110.0)  # (10 + 90/2, 20 + 180/2)
-    
-    def test_detection_creation(self):
-        """Test Detection with BoundingBox."""
-        bbox = BoundingBox(x=10, y=20, width=90, height=180)
-        detection = Detection(label='test_object', confidence=0.9, bbox=bbox)
-        
-        assert detection.label == 'test_object'
-        assert detection.confidence == 0.9
-        assert detection.bbox == bbox
+    """Test canonical spatial types."""
+
+    def test_pose_stamped_creation(self):
+        """Test creating a stamped SE(3) pose."""
+        header = Header(stamp_ns=123, frame_id="world", source="test")
+        pose = SE3Pose(
+            position=Vector3(x=1.0, y=2.0, z=3.0),
+            orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
+        )
+        msg = PoseStamped(header=header, pose=pose)
+
+        assert msg.header.frame_id == "world"
+        assert msg.pose.position.x == 1.0
+        assert msg.pose.orientation.w == 1.0
+
+    def test_joint_state_alignment(self):
+        """Test joint-state alignment helper."""
+        joints = JointState(
+            names=("joint1", "joint2"),
+            positions=(0.1, 0.2),
+            velocities=(0.0, 0.0),
+            efforts=(1.0, 1.5),
+        )
+
+        assert joints.is_aligned()
+
+    def test_registry_exposes_canonical_spatial_types(self):
+        """Test canonical spatial types are reachable via registry."""
+        assert RegistryPoseStamped is PoseStamped
+        assert RegistryJointState is JointState
 
 
 class TestTypeRegistry:
@@ -141,25 +139,39 @@ class TestTypeSystemIntegration:
     
     def test_types_work_with_flows(self):
         """Test that custom types work properly in Flow pipelines."""
-        from retriever import Flow
-        
+        from retriever import Flow, io
+
         @register_type
         class FlowTestType:
             def __init__(self, value):
                 self.value = value
-        
-        def create_type(value):
-            return FlowTestType(value)
-        
-        def extract_value(obj):
-            return obj.value
-        
-        create_flow = Flow.from_module(create_type)
-        extract_flow = Flow.from_module(extract_value)
-        pipeline = create_flow >> extract_flow
-        
-        result = pipeline("test_input")
-        assert result == "test_input"
+
+        @io
+        class TextIn:
+            value: str
+
+        @io
+        class WrappedOut:
+            item: FlowTestType
+
+        @io
+        class TextOut:
+            value: str
+
+        class WrapValue(Flow[TextIn, WrappedOut]):
+            def step(self, data):
+                return WrappedOut(item=FlowTestType(data.value))
+
+        class ExtractValue(Flow[WrappedOut, TextOut]):
+            def step(self, data):
+                return TextOut(value=data.item.value)
+
+        wrap = WrapValue()
+        extract = ExtractValue()
+
+        intermediate = wrap.step(TextIn(value="test_input"))
+        result = extract.step(intermediate)
+        assert result.value == "test_input"
 
 
 if __name__ == "__main__":
