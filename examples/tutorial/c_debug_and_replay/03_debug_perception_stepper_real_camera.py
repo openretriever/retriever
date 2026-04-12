@@ -22,7 +22,7 @@ from __future__ import annotations
 import argparse
 import time
 
-from examples.shared.perception_runtime import CameraSource, ColorDetector, DisplayFlow
+from support.perception_runtime import CameraSource, ColorDetector, DisplayFlow
 from retriever.flow import Latest, Pipeline, Rate, Trigger
 
 

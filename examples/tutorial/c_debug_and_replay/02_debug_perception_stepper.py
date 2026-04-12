@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from examples.shared.perception_runtime import CameraData, ColorDetector, DetectionResults, Image
+from support.perception_runtime import CameraData, ColorDetector, DetectionResults, Image
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger
 
 

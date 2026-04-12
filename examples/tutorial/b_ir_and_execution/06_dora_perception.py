@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import argparse
 
-from examples.shared.perception_runtime import build_tutorial_perception_pipeline
+from support.perception_runtime import build_tutorial_perception_pipeline
 
 
 def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_camera: bool):
