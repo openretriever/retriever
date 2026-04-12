@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from retriever import Flow
 from retriever.error import FlowError, ErrCode
 from retriever.flow import io
-from retriever.context import MCPClient
+from .client import MCPClient
 
 import json
 
