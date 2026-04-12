@@ -21,7 +21,10 @@ runtime executor internals.
 Preferred:
 
 ```python
-from retriever.types.data import Event, EventBuffer, DataSpec
+from retriever.types.data import DataSpec, Event, EventBuffer
+from retriever.types.data.dataset import build_dataset_manifest, build_episode_manifest
+from retriever.types.data.interop import from_runtime_event_buffer, to_lerobot_records
+from retriever.types.data.streams import align_exact, hold, latest, window_agg
 ```
 
 Pinned path:
@@ -63,6 +66,7 @@ Chosen compatibility rule:
 
 ## Core Contracts
 
+Root imports are for contracts only:
 - `Event[T]`
 - `EventRef`
 - `LineageRef`
@@ -77,25 +81,27 @@ Chosen compatibility rule:
 - `EpisodeManifest`
 - `DatasetManifest`
 
-## Join and Sampling Profiles
+## Helper Modules
 
-Event-time operators:
+Use explicit submodules for operations and export helpers.
+
+`retriever.types.data.streams`
 - `align_exact`
 - `align_latest_before`
 - `align_window`
 - `join_with_policy`
-
-Processing-time helpers:
 - `latest`
 - `hold`
 - `window_agg`
 
-## Dataset and Export Layer
-
-For dataset/export work, `retriever.types.data` also provides:
+`retriever.types.data.dataset`
 - `build_episode_manifest(...)`
 - `build_dataset_manifest(...)`
 - `event_table_rows(...)`
+
+`retriever.types.data.interop`
+- `from_runtime_event_buffer(...)`
+- `to_runtime_event_buffer(...)`
 - `to_lerobot_records(...)`
 - `from_lerobot_records(...)`
 - `validate_lerobot_mapping(...)`

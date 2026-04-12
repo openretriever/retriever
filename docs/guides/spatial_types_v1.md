@@ -29,13 +29,7 @@ Pinned path:
 from retriever.types.spatial.v1 import PoseStamped
 ```
 
-Registry lookup:
-
-```python
-from retriever import get_type
-
-PoseStamped = get_type("PoseStamped")
-```
+Registry lookup exists for tooling and extensibility, but direct imports are the normal teaching path.
 
 ## Canonical v1 Types
 
@@ -71,10 +65,11 @@ class PoseEnvelope:
     pose: PoseStamped | None = None
 ```
 
-This keeps:
-- flow I/O compatibility explicit,
-- spatial payload semantics explicit,
-- boundary evolution controlled by a stable package.
+The important rule is:
+- `PoseStamped` carries the reusable domain meaning
+- `PoseEnvelope` is only a structural flow boundary
+
+Do not invent a new domain type just to rename the same pose payload again.
 
 ## Relationship to Flow Typing
 

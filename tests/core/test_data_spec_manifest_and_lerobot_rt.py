@@ -2,18 +2,15 @@ from __future__ import annotations
 
 import pytest
 
-from retriever.types.data import (
-    DataSpec,
-    Event,
-    EventBuffer,
-    SchemaRef,
-    StreamId,
-    StreamSpec,
+from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
+from retriever.types.data.dataset import (
     build_dataset_manifest,
     build_episode_manifest,
+    validate_dataset_manifest,
+)
+from retriever.types.data.interop import (
     from_lerobot_records,
     to_lerobot_records,
-    validate_dataset_manifest,
     validate_lerobot_mapping,
 )
 

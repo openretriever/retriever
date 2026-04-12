@@ -1,22 +1,20 @@
-"""Public surface for `retriever.types.data`.
+"""Canonical data/event type surface.
 
-This package is the canonical place for event/data/export contracts:
-- immutable event records and stream specs
-- event-time joins and processing-time helpers
-- dataset manifests and lightweight export adapters
+Keep the package root narrow:
+- import core contracts from `retriever.types.data`
+- import operators/helpers from explicit submodules:
+  - `retriever.types.data.streams`
+  - `retriever.types.data.dataset`
+  - `retriever.types.data.interop`
+
+This keeps the public front door type-first instead of turning it into a mixed
+bag of contracts, operators, and export helpers.
 """
 
 from __future__ import annotations
 
-from .dataset import (
-    EVENT_TABLE_COLUMNS,
-    build_dataset_manifest,
-    build_episode_manifest,
-    event_table_rows,
-    event_to_row,
-    validate_dataset_manifest,
-)
-from .events import (
+from . import dataset, interop, streams, v1
+from .v1 import (
     ClockDomain,
     DataSpec,
     DatasetManifest,
@@ -35,29 +33,6 @@ from .events import (
     WatermarkPolicy,
     WindowAgg,
     WindowPolicy,
-)
-from .interop import (
-    from_lerobot_records,
-    from_runtime_event_buffer,
-    is_runtime_event_buffer,
-    to_lerobot_records,
-    to_runtime_event_buffer,
-    validate_lerobot_mapping,
-)
-from .streams import (
-    align_exact,
-    align_latest_before,
-    align_window,
-    event_window,
-    from_events,
-    hold,
-    join_with_policy,
-    latest,
-    merge_sorted,
-    processing_window_agg,
-    watermark_prune,
-    window_agg,
-    window_values,
 )
 
 __all__ = [
@@ -79,29 +54,8 @@ __all__ = [
     "WatermarkPolicy",
     "WindowAgg",
     "WindowPolicy",
-    "EVENT_TABLE_COLUMNS",
-    "align_exact",
-    "align_latest_before",
-    "align_window",
-    "build_dataset_manifest",
-    "build_episode_manifest",
-    "event_table_rows",
-    "event_to_row",
-    "event_window",
-    "from_events",
-    "from_lerobot_records",
-    "from_runtime_event_buffer",
-    "hold",
-    "is_runtime_event_buffer",
-    "join_with_policy",
-    "latest",
-    "merge_sorted",
-    "processing_window_agg",
-    "to_lerobot_records",
-    "to_runtime_event_buffer",
-    "validate_dataset_manifest",
-    "validate_lerobot_mapping",
-    "watermark_prune",
-    "window_agg",
-    "window_values",
+    "dataset",
+    "interop",
+    "streams",
+    "v1",
 ]

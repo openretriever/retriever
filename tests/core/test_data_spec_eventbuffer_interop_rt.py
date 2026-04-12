@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from retriever.types.data import (
+from retriever.types.data.interop import (
     from_runtime_event_buffer,
     is_runtime_event_buffer,
     to_runtime_event_buffer,

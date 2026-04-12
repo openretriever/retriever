@@ -14,6 +14,7 @@ Summarize the current canonical type surfaces and:
 This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
+- `docs/guides/type_composition_v1.md`
 - `docs/guides/flow_typing_standard.md`
 
 ## Current State
@@ -48,6 +49,10 @@ Data layer:
 - `src/retriever/types/data/dataset.py`
 - `src/retriever/types/data/interop.py`
 - `src/retriever/types/data/v1.py`
+
+Canonical rule:
+- package root exports core contracts
+- explicit submodules export operators and export helpers
 
 ## Acceptance Checks
 

@@ -13,20 +13,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.types.data import (
-    DataSpec,
-    Event,
-    EventBuffer,
-    SchemaRef,
-    StreamId,
-    StreamSpec,
+from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
+from retriever.types.data.dataset import (
     build_dataset_manifest,
     build_episode_manifest,
     event_table_rows,
-    to_lerobot_records,
     validate_dataset_manifest,
-    validate_lerobot_mapping,
 )
+from retriever.types.data.interop import to_lerobot_records, validate_lerobot_mapping
 
 from examples.tutorial._p0_utils import format_table, utc_now_iso, write_json
 

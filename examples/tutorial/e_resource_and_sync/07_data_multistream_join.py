@@ -13,19 +13,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.types.data import (
-    Event,
-    EventBuffer,
-    JoinPolicy,
-    StreamId,
-    WindowPolicy,
+from retriever.types.data import Event, EventBuffer, JoinPolicy, StreamId, WindowPolicy
+from retriever.types.data.interop import from_runtime_event_buffer, to_runtime_event_buffer
+from retriever.types.data.streams import (
     align_exact,
     align_latest_before,
     align_window,
-    from_runtime_event_buffer,
     hold,
     latest,
-    to_runtime_event_buffer,
     window_agg,
 )
 from retriever.flow.types import EventBuffer as RuntimeEventBuffer

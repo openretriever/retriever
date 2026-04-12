@@ -69,6 +69,17 @@ def test_types_umbrella_exports_packages_not_registry_helpers():
     assert not hasattr(types_pkg, "register_type")
 
 
+def test_data_package_keeps_root_surface_contract_only():
+    import retriever.types.data as data_pkg
+
+    assert data_pkg.Event is not None
+    assert data_pkg.streams is not None
+    assert data_pkg.dataset is not None
+    assert data_pkg.interop is not None
+    assert not hasattr(data_pkg, "hold")
+    assert not hasattr(data_pkg, "build_dataset_manifest")
+
+
 def test_legacy_typing_namespace_modules_are_removed():
     for module_name in (
         "retriever.data_spec",
