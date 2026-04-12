@@ -33,7 +33,11 @@ Artifacts:
 - `logs/perception.rrd`
 - `logs/perception.mcap`
 
-If no webcam is available, this tutorial falls back to mock frames so you can still validate the recording pipeline.
+If no webcam is available, record with explicit mock frames so you can still validate the recording pipeline:
+
+```bash
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --camera-mode mock
+```
 
 ## Phase 3: Replay the Same Session
 

@@ -42,7 +42,7 @@ Run this from the repository root. The snippet imports a repo-local helper from
 
 ```bash
 pixi run env PYTHONPATH=src:. python - <<'PY'
-from examples.shared.perception_runtime import build_tutorial_perception_pipeline
+from examples.shared.perception_flows import build_tutorial_perception_pipeline
 
 path = build_tutorial_perception_pipeline(
     use_real_camera=False,

@@ -2,7 +2,7 @@
 Record + replay a perception camera stream (in-process stepper) for debugging.
 
 This is a stepper-first workflow:
-  - record once from a live camera (or mock fallback) to `.rrd` plus a mirrored `.mcap`
+  - record once from a live camera or deterministic mock frames to `.rrd` plus a mirrored `.mcap`
   - replay later (still in-process) so breakpoints inside `Flow.step()` work
   - optionally visualize replay in stdout, OpenCV, Rerun, or both
 

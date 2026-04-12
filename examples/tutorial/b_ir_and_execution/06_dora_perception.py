@@ -2,7 +2,7 @@
 Perception Runtime Demo - Live or Mock Camera to Object Detection
 
 Demonstrates perception pipeline with live or mock camera input:
-- Real camera via cv2.VideoCapture (with mock fallback)
+- Real camera via cv2.VideoCapture
 - Color-based object detection
 - Backend execution (in-process, multiprocessing, or dora)
 
@@ -20,6 +20,12 @@ Run:
 """
 
 from __future__ import annotations
+
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 import argparse
 
@@ -129,7 +135,7 @@ def main() -> None:
     if use_real_camera:
         print(
             "Tip: Show colored objects (red/blue) to your camera. "
-            "If no camera is available, this demo falls back to mock frames."
+            "If no camera is available, rerun with --camera-mode mock."
         )
     else:
         print(
@@ -151,7 +157,7 @@ def main() -> None:
     print("Camera Input:")
     if use_real_camera:
         print(f"  • Tries cv2.VideoCapture({args.camera_index}) for real camera")
-        print("  • Falls back to mock test pattern if no camera")
+        print("  • Raises clearly if no camera is available")
     else:
         print("  • Uses mock test pattern by default in worker backends")
     print("\nDetection:")
