@@ -36,7 +36,8 @@ engine.stop()
 
 Notes:
 - `blocking=False` returns immediately; you **must** stop the engine manually to avoid orphan processes.
-- `build=True` runs via an `ExecutionGraph` (grouping/placement) before execution; the default is `build=False`.
+- `Pipeline.run(...)` always executes the validated IR. Use `pipe.build_execution(...)`
+  separately when you want to inspect grouping / placement decisions.
 
 ---
 

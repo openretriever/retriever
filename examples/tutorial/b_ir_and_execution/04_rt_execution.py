@@ -4,8 +4,8 @@ Runtime Execution - Execute IR pipelines
 Run pipelines via `Pipeline.run(...)` (recommended).
 
 This example shows:
-  - Raw IR execution (`build=False`) -> one executor per node
-  - ExecutionGraph execution (`build=True`) -> grouping/co-location via `build_execution`
+  - Runtime execution via `Pipeline.run(...)`
+  - Pair this with `03_execution_build` when you want to inspect grouping/co-location
 
 Run:
   pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution --backend multiprocessing --duration 4
@@ -75,10 +75,9 @@ def build_pipeline() -> Pipeline:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Runtime execution demo (raw IR vs ExecutionGraph).")
+    p = argparse.ArgumentParser(description="Runtime execution demo.")
     p.add_argument("--backend", default="multiprocessing", choices=["multiprocessing", "dora"])
     p.add_argument("--duration", type=float, default=4.0)
-    p.add_argument("--build", action="store_true", help="Run via ExecutionGraph (grouping/co-location).")
     return p.parse_args()
 
 
@@ -88,9 +87,11 @@ def main() -> None:
     print("Building pipeline:")
     print("  Counter @ Rate(1Hz) → Multiply @ Trigger → Add @ Trigger → Print @ Trigger")
     print("  Formula: (counter × 2) + 10\n")
+    print("Inspect grouping separately with:")
+    print("  pixi run python -m examples.tutorial.b_ir_and_execution.03_execution_build\n")
 
     pipe = build_pipeline()
-    pipe.run(backend=args.backend, duration=args.duration, blocking=True, build=bool(args.build))
+    pipe.run(backend=args.backend, duration=args.duration, blocking=True)
 
 
 if __name__ == "__main__":

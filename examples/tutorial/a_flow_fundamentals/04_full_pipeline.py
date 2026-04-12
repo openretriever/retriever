@@ -6,7 +6,7 @@ Demonstrates all key features in one complete pipeline:
 • Different adapters (Latest, Window)
 • Different clocks (Rate, Trigger)
 • Feedback loops (cycles)
-• Execution build (grouping/co-location) via `Pipeline.run(build=True)`
+• Execution build inspection via `Pipeline.build_execution()`
 • Runtime execution via `Pipeline.run(...)`
 
 Run:
@@ -166,10 +166,9 @@ def build_pipeline() -> Pipeline:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Comprehensive pipeline demo (raw IR vs ExecutionGraph).")
+    p = argparse.ArgumentParser(description="Comprehensive pipeline demo.")
     p.add_argument("--backend", default="multiprocessing", choices=["multiprocessing", "dora"])
     p.add_argument("--duration", type=float, default=4.0)
-    p.add_argument("--build", action="store_true", help="Run via ExecutionGraph only (grouping/co-location).")
     return p.parse_args()
 
 
@@ -186,13 +185,13 @@ def demo_unoptimized(pipe: Pipeline, *, backend: str, duration: float):
     print("\nRunning for 4 seconds (expect ~3 sensor readings)...")
     print("-" * 70)
 
-    pipe.run(backend=backend, duration=duration, blocking=True, build=False)
+    pipe.run(backend=backend, duration=duration, blocking=True)
 
     print("-" * 70)
 
 
-def demo_optimized(pipe: Pipeline, *, backend: str, duration: float):
-    """Run via ExecutionGraph (grouping/co-location)."""
+def demo_optimized(pipe: Pipeline):
+    """Inspect the ExecutionGraph (grouping/co-location)."""
     print("\n" + "=" * 70)
     print("Demo 2: Compiled Execution Graph\n")
 
@@ -214,11 +213,8 @@ def demo_optimized(pipe: Pipeline, *, backend: str, duration: float):
     for node in optimized.nodes:
         print(f"  • {node.type}")
 
-    print("\nRunning for 4 seconds (expect ~3 sensor readings)...")
-    print("-" * 70)
-
-    pipe.run(backend=backend, duration=duration, blocking=True, build=True, policy="aggressive")
-
+    print("\nExecution build is an inspection/planning step.")
+    print("Run the pipeline normally with `Pipeline.run(...)` after reviewing the grouping.")
     print("-" * 70)
 
 
@@ -251,9 +247,9 @@ def demo_summary():
     print("  - Blocked by: cycles, Window adapters\n")
 
     print("✓ Runtime execution:")
-    print("  - Both optimized and unoptimized produce same results")
-    print("  - Optimized version has fewer processes")
-    print("  - Demonstrates end-to-end: Flow → IR → ExecutionGraph → Runtime")
+    print("  - Execute the authored pipeline with `Pipeline.run(...)`")
+    print("  - Use `Pipeline.build_execution(...)` to inspect grouping/placement")
+    print("  - Demonstrates end-to-end: Flow → IR → ExecutionGraph (inspection) → Runtime")
 
 
 if __name__ == "__main__":
@@ -267,9 +263,8 @@ if __name__ == "__main__":
     pipe = build_pipeline()
 
     # Run demos
-    if not args.build:
-        demo_unoptimized(pipe, backend=args.backend, duration=args.duration)
-    demo_optimized(pipe, backend=args.backend, duration=args.duration)
+    demo_unoptimized(pipe, backend=args.backend, duration=args.duration)
+    demo_optimized(pipe)
     demo_summary()
 
     print("\n" + "=" * 70)

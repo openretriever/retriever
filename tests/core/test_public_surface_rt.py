@@ -54,6 +54,8 @@ def test_legacy_typing_namespace_modules_are_removed():
 def test_public_run_helpers_default_to_multiprocessing():
     assert inspect.signature(run_default_pipeline).parameters["backend"].default == "multiprocessing"
     assert inspect.signature(run_pipeline).parameters["backend"].default == "multiprocessing"
+    assert "build" not in inspect.signature(run_default_pipeline).parameters
+    assert "build" not in inspect.signature(Pipeline.run).parameters
 
 
 def test_execute_ir_in_process_requires_live_pipeline_instance():

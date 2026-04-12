@@ -154,5 +154,5 @@ if __name__ == "__main__":
     print("                                       same_effective_rate, latest_adapter,")
     print("                                       compatible_resource, and more")
     print("\n" + "=" * 60)
-    print("Next: Run a Pipeline via `pipe.run(build=False)` (raw IR) or `pipe.run(build=True)` (ExecutionGraph)")
+    print("Next: Inspect grouping here, then run normally via `pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution`")
     print("=" * 60)

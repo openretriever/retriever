@@ -729,14 +729,10 @@ class Pipeline:
         blocking: bool = True,
         log_config: Optional[Any] = None,
         backend_config: Optional[Dict[str, Any]] = None,
-        policy: Any = "aggressive",
         deploy: Optional[Dict[Any, str]] = None,
-        build: bool = False,
-
         visualize: Optional[str] = None,
         record: Optional[Union[str, Any]] = None, # RecordConfig
         control: Optional[Any] = None,  # ControlConfig
-        **kwargs: Any,
     ):
         """
         Execute this pipeline on a runtime backend.
@@ -759,8 +755,6 @@ class Pipeline:
                      Example: control=ControlConfig(web_port=8080, keyboard=True)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
                     Only supported on the Dora backend.
-            build: If True, build an `ExecutionGraph` before execution.
-            **kwargs: Extra arguments.
         """
 
         from retriever.rt.runtime import execute_ir
@@ -884,23 +878,7 @@ class Pipeline:
             if "rerun_config" not in backend_config:
                  backend_config["rerun_config"] = {"mode": "spawn"}
 
-        ir = self._build_ir() if not build else None
-        # Note: 'build=True' path in original code calls build_execution.
-        # But for in-process, we mostly use IR or live instance.
-        # Standard execute_ir handles 'ir' being ExecutionGraph if passed.
-
-        
-        if build:
-             graph = self.build_execution(policy=policy, **kwargs)
-             return execute_ir(
-                graph,
-                backend=backend,
-                duration=duration,
-                blocking=blocking,
-                log_config=log_config,
-                backend_config=backend_config,
-            )
-
+        ir = self._build_ir()
         return execute_ir(
             ir,
             backend=backend,
@@ -1019,12 +997,10 @@ def run(
     blocking: bool = True,
     log_config: Optional[Any] = None,
     backend_config: Optional[Dict[str, Any]] = None,
-    policy: Any = "aggressive",
     deploy: Optional[Dict[Any, str]] = None,
-    build: bool = False,
-
-
-    **kwargs: Any,
+    visualize: Optional[str] = None,
+    record: Optional[Union[str, Any]] = None,
+    control: Optional[Any] = None,
 ):
     """
     Run the thread-local default pipeline.
@@ -1042,10 +1018,10 @@ def run(
         blocking=blocking,
         log_config=log_config,
         backend_config=backend_config,
-        policy=policy,
         deploy=deploy,
-        build=build,
-        **kwargs,
+        visualize=visualize,
+        record=record,
+        control=control,
     )
 
 
