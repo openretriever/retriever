@@ -52,6 +52,10 @@ def _install_fake_rerun(monkeypatch):
         "logs": [],
     }
 
+    # Keep tests isolated from prior elapsed-time state in the local rerun module.
+    if hasattr(rerun_lib, "reset_pipeline_time"):
+        rerun_lib.reset_pipeline_time()
+
     rerun_mod = types.ModuleType("rerun")
     archetypes_mod = types.ModuleType("rerun.archetypes")
 
