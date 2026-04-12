@@ -4,8 +4,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from retriever.data_spec import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
-from retriever.data_spec.v1 import EventBuffer as PinnedEventBuffer
+from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
+from retriever.types.data.v1 import EventBuffer as PinnedEventBuffer
 
 
 def _evt(stream: str, event_ns: int, ingest_ns: int, seq: int, value: int) -> Event[int]:

@@ -6,7 +6,7 @@
 - `02_registry_ecosystem.py`
 - `03_unified_wrapper.py`
 - `04_peripheral.py`
-- `05_robotics_typing_boundaries.py`
+- `05_spatial_type_boundaries.py`
 - `06_composable_pipelines.py`
 
 ## What To Expect
@@ -23,6 +23,6 @@ pixi run python -m examples.tutorial.g_operations_interfaces.01_registry_basics
 pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosystem
 pixi run python -m examples.tutorial.g_operations_interfaces.03_unified_wrapper
 pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
-pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
+pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
 ```

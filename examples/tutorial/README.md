@@ -32,8 +32,8 @@ Each track uses local numbering (`01_`, `02_`, ...) within that folder.
 - `e_resource_and_sync/06_functional_fanin_fanout.py`
 - `d_closed_loop_state_feedback/13_deadline_aware_mode_switch.py`
 - `c_debug_and_replay/08_mcap_session_inspection.py`
-- `g_operations_interfaces/05_robotics_typing_boundaries.py`
-- `e_resource_and_sync/07_data_spec_multistream_join.py`
+- `g_operations_interfaces/05_spatial_type_boundaries.py`
+- `e_resource_and_sync/07_data_multistream_join.py`
 - `h_release_readiness/03_dataset_manifest_and_lerobot_mapping.py`
 
 ## P0 Runner
@@ -54,8 +54,8 @@ pixi run p0-release-readiness
 - `expected_outputs/036_mcap_session_inspection.md`
 - `expected_outputs/032_backend_parity_benchmark.md`
 - `expected_outputs/033_incident_response_replay_drill.md`
-- `expected_outputs/037_robotics_typing_boundaries.md`
-- `expected_outputs/038_data_spec_multistream_join.md`
+- `expected_outputs/037_spatial_type_boundaries.md`
+- `expected_outputs/038_data_multistream_join.md`
 - `expected_outputs/039_dataset_manifest_and_lerobot_mapping.md`
 
 ## Reliability Gates

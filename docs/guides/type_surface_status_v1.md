@@ -7,13 +7,13 @@ title: Robotics Typing Carry-Back Status
 ## Purpose
 
 Track the mirror-native rollout of:
-- `retriever.robotics_typing`
-- `retriever.data_spec`
+- `retriever.types.spatial`
+- `retriever.types.data`
 - the flow typing contract carry-back that these packages rely on
 
 This page is implementation-status oriented. For user-facing usage, read:
-- `docs/guides/robotics_typing.md`
-- `docs/guides/data_spec_eventstream.md`
+- `docs/guides/spatial_types_v1.md`
+- `docs/guides/data_eventstream_v1.md`
 - `docs/guides/flow_typing_standard.md`
 
 ## Current State
@@ -71,15 +71,15 @@ PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q \
 Tutorial smoke checks:
 
 ```bash
-PYTHONPATH=src python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
-PYTHONPATH=src python -m examples.tutorial.e_resource_and_sync.07_data_spec_multistream_join
+PYTHONPATH=src python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
+PYTHONPATH=src python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
 PYTHONPATH=src python -m examples.tutorial.h_release_readiness.03_dataset_manifest_and_lerobot_mapping
 ```
 
 ## Tutorial Entry Points
 
-- `examples/tutorial/g_operations_interfaces/05_robotics_typing_boundaries.py`
-- `examples/tutorial/e_resource_and_sync/07_data_spec_multistream_join.py`
+- `examples/tutorial/g_operations_interfaces/05_spatial_type_boundaries.py`
+- `examples/tutorial/e_resource_and_sync/07_data_multistream_join.py`
 - `examples/tutorial/h_release_readiness/03_dataset_manifest_and_lerobot_mapping.py`
 
 ## Stale Assumptions Removed
@@ -90,5 +90,5 @@ This carry-back does not use:
 - old public `v2` naming
 
 Mirror-native public naming is:
-- `retriever.robotics_typing.v1`
-- `retriever.data_spec.v1`
+- `retriever.types.spatial.v1`
+- `retriever.types.data.v1`

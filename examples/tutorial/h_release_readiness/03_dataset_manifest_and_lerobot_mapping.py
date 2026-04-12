@@ -1,7 +1,7 @@
 """Dataset manifest and LeRobot mapping tutorial.
 
 Covers:
-1) declare a retriever.data_spec data contract
+1) declare a retriever.types.data data contract
 2) build episode/dataset manifests from per-stream events
 3) map canonical event rows to LeRobot-compatible records
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.data_spec import (
+from retriever.types.data import (
     DataSpec,
     Event,
     EventBuffer,

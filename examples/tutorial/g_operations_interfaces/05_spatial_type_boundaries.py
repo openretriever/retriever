@@ -6,7 +6,7 @@ Covers:
 3) a small typed boundary flow that rewrites frame metadata
 
 Run:
-  pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
+  pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import retriever
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
-from retriever.robotics_typing import (
+from retriever.types.spatial import (
     Header,
     PoseStamped,
     Quaternion,

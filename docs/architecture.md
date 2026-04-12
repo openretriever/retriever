@@ -19,7 +19,7 @@ Use this page plus `docs/guide_execution.md` for the supported architecture surf
 
 Code lives in `retriever/flow/`:
 
-- `Flow[I, O]`: user-defined node logic (`init()`, `run()`, `finalize()`)
+- `Flow[I, O]`: user-defined node logic (`reset()`, `run()`, `finalize()`)
 - `@io` classes: typed ports (each field is a port)
 - `Pipeline`: explicit graph builder (no context manager)
 - `PipelineBuilder`: lower-level validator/builder used by the registry and tooling
@@ -79,7 +79,7 @@ Each input port is represented at runtime as a finite timestamped history:
 
 - `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
 
-For collection/replay/export contracts, `retriever.data_spec.EventBuffer` is a separate layer with explicit lineage and nanosecond event time.
+For collection/replay/export contracts, `retriever.types.data.EventBuffer` is a separate layer with explicit lineage and nanosecond event time.
 
 This is what `Subscriber.get_all()` returns.
 

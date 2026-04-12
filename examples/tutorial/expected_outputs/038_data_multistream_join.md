@@ -3,7 +3,7 @@
 ## Run
 
 ```bash
-pixi run python -m examples.tutorial.e_resource_and_sync.07_data_spec_multistream_join
+pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
 ```
 
 ## Expected Console Signals

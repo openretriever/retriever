@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from retriever.data_spec import Event, EventBuffer, StreamId, WindowPolicy, hold, latest, window_agg
+from retriever.types.data import Event, EventBuffer, StreamId, WindowPolicy, hold, latest, window_agg
 
 
 def _evt(t: int, seq: int, value: float) -> Event[float]:

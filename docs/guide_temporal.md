@@ -24,7 +24,7 @@ graph LR
 
 - Every **port** behaves like a timestamped **event stream**.
 - The runtime stores a finite **event buffer** per port: `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`.
-- Dataset/export contracts use the separate `retriever.data_spec.EventBuffer` layer.
+- Dataset/export contracts use the separate `retriever.types.data.EventBuffer` layer.
 - An **executor step** happens at a specific wall-clock time `now`.
 - An **Adapter** samples the buffer at `now` (e.g., pick latest, interpolate, aggregate).
 - A **Clock** triggers the step (e.g., periodic Rate, event-driven Trigger).

@@ -4,7 +4,7 @@ This module defines a small recording abstraction above `Pipeline.step()`
 results and below concrete containers like MCAP and Rerun `.rrd`.
 
 The intent is:
-- keep `retriever.data_spec` as the canonical typed/event model
+- keep `retriever.types.data` as the canonical typed/event model
 - keep runtime `StepResult` / tuple-buffer semantics unchanged
 - make persisted recording targets pluggable
 

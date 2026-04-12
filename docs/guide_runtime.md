@@ -27,12 +27,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 
 
@@ -92,7 +92,7 @@ Use `@io` directly. Do not stack it with `@dataclass`.
 
 A `Flow` is a node that implements:
 
-- `init()` (optional)
+- `reset()` (optional)
 - `run(input: I) -> O`
 - `finalize()` (optional)
 
@@ -206,7 +206,7 @@ Each input port maintains a finite **timestamped buffer**:
 `retriever.flow.types.EventBuffer[T] = list[tuple[float, T]]`
 
 This is what `Subscriber.get_all()` returns and what Adapters sample.
-For collection/replay/export contracts, use `retriever.data_spec.EventBuffer` instead of the runtime tuple buffer.
+For collection/replay/export contracts, use `retriever.types.data.EventBuffer` instead of the runtime tuple buffer.
 
 ### `EventStream`
 

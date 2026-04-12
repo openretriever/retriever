@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from retriever.data_spec import (
+from retriever.types.data import (
     Event,
     EventBuffer,
     JoinPolicy,

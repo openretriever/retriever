@@ -69,8 +69,8 @@ pipe.close_stepper()
     - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
 - **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
 - **[Flow Typing Contract](guides/flow_typing_standard.md)** - tuple signatures, collision semantics, lifecycle ordering
-- **[Robotics Typing v1](guides/robotics_typing.md)** - stamped robotics boundary payloads and registry lookup
-- **[Data Spec and EventStream v1](guides/data_spec_eventstream.md)** - deterministic event records, joins, manifests, and export helpers
+- **[Spatial Types v1](guides/robotics_typing.md)** - stamped robotics boundary payloads and registry lookup
+- **[Data and EventStream v1](guides/data_spec_eventstream.md)** - deterministic event records, joins, manifests, and export helpers
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
     - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
 - **[Development Guide](guides/development.md)** - Dev workflow and architecture

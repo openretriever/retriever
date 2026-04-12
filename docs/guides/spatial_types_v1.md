@@ -1,12 +1,12 @@
 ---
-title: Robotics Typing v1
+title: Spatial Types v1
 ---
 
-# Robotics Typing v1
+# Spatial Types v1
 
 ## Purpose
 
-`retriever.robotics_typing` is the mirror-native package for stamped robotics
+`retriever.types.spatial` is the mirror-native package for stamped robotics
 boundary payloads.
 
 Use it when a flow boundary should explicitly carry:
@@ -20,13 +20,13 @@ Use it when a flow boundary should explicitly carry:
 Preferred:
 
 ```python
-from retriever.robotics_typing import PoseStamped, SE3Pose, Vector3, Quaternion
+from retriever.types.spatial import PoseStamped, SE3Pose, Vector3, Quaternion
 ```
 
 Pinned path:
 
 ```python
-from retriever.robotics_typing.v1 import PoseStamped
+from retriever.types.spatial.v1 import PoseStamped
 ```
 
 Registry lookup:
@@ -64,7 +64,7 @@ Typical pattern:
 
 ```python
 from retriever.flow import Flow, io
-from retriever.robotics_typing import PoseStamped
+from retriever.types.spatial import PoseStamped
 
 @io
 class PoseEnvelope:
@@ -79,7 +79,7 @@ This keeps:
 ## Relationship to Flow Typing
 
 `Flow[...]` defines composition shape.
-`retriever.robotics_typing` defines payload meaning.
+`retriever.types.spatial` defines payload meaning.
 
 Example:
 - `Flow[PoseEnvelope, PoseEnvelope]` tells Retriever how to connect nodes
@@ -90,5 +90,5 @@ Example:
 Runnable walkthrough:
 
 ```bash
-pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
+pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 ```

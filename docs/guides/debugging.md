@@ -114,7 +114,7 @@ Retriever’s runtime model is:
 
 - each port is a discrete-time **EventStream**
 - concretely stored as a finite `retriever.flow.types.EventBuffer[T] = list[(timestamp, value)]`
-- for collection/replay/export semantics, use `retriever.data_spec.EventBuffer` instead of this runtime buffer
+- for collection/replay/export semantics, use `retriever.types.data.EventBuffer` instead of this runtime buffer
 - adapters sample buffers at time `now` to produce a value for the Flow input
 
 In `Pipeline.step(...)`, buffers are in-process and the buffer size is derived from the adapter:

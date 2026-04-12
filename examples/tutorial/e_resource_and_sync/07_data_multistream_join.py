@@ -1,19 +1,19 @@
 """Data spec multistream join tutorial.
 
 Covers:
-1) explicit bridge from runtime EventBuffer to retriever.data_spec
+1) explicit bridge from runtime EventBuffer to retriever.types.data
 2) deterministic event-time joins (`exact`, `latest_before`, `window`)
 3) processing-time profile helpers (`latest`, `hold`, `window_agg`)
 
 Run:
-  pixi run python -m examples.tutorial.e_resource_and_sync.07_data_spec_multistream_join
+  pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from retriever.data_spec import (
+from retriever.types.data import (
     Event,
     EventBuffer,
     JoinPolicy,

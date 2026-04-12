@@ -3,7 +3,7 @@
 ## Run
 
 ```bash
-pixi run python -m examples.tutorial.g_operations_interfaces.05_robotics_typing_boundaries
+pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 ```
 
 ## Expected Console Signals

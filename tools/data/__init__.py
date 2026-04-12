@@ -1,4 +1,4 @@
-"""Standalone data_spec incubation package.
+"""Standalone data incubation package.
 
 This package is intentionally independent from ``retriever.*`` so it can be
 shared with data-focused collaborators for read/write workflow testing.

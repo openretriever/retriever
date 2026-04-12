@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from retriever import get_type
-from retriever.robotics_typing import (
+from retriever.types.spatial import (
     Header,
     JointState,
     PoseStamped,
@@ -13,8 +13,8 @@ from retriever.robotics_typing import (
     Wrench,
     WrenchStamped,
 )
-from retriever.robotics_typing.v1 import PoseStamped as PinnedPoseStamped
-from retriever.robotics_typing.v1 import SE3Pose as PinnedSE3Pose
+from retriever.types.spatial.v1 import PoseStamped as PinnedPoseStamped
+from retriever.types.spatial.v1 import SE3Pose as PinnedSE3Pose
 
 
 def test_registry_lookup_for_v1_types() -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from retriever.robotics_typing import (
+from retriever.types.spatial import (
     Header,
     JointState,
     PoseStamped,

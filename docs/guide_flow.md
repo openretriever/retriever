@@ -39,7 +39,7 @@ class DetectionsOut:
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - `@io` is standalone. Do not stack it with `@dataclass`.
-- Inside `Flow.run(...)`, use `input._signals` to see which fields are present.
+- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
 
 ---
 
@@ -47,11 +47,11 @@ Notes:
 
 A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
 
-- `__lazy_init__()` / `init()` / `finalize()` for resources (models, cameras, sockets)
+- `__lazy_init__()` / `reset()` / `finalize()` for resources (models, cameras, sockets)
 - `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
 
 Keep module top-level code and `__init__()` import-safe and lightweight. Acquire
-runtime-local resources in `__lazy_init__()` / `init()`.
+runtime-local resources in `__lazy_init__()` / `reset()`.
 
 ```py
 from retriever.flow import Flow, io
@@ -68,12 +68,12 @@ class AddOut:
 
 
 class Source(Flow[None, SrcOut]):
-    def run(self, _):  # type: ignore[override]
+    def step(self, _):  # type: ignore[override]
         return SrcOut(value=1)
 
 
 class AddOne(Flow[SrcOut, AddOut]):
-    def run(self, input: SrcOut) -> AddOut:
+    def step(self, input: SrcOut) -> AddOut:
         return AddOut(value=input.value + 1)
 ```
 
@@ -229,7 +229,7 @@ Adapters live in `retriever/flow/adapter.py`. The underlying buffer type is:
 
 `retriever.flow.types.EventBuffer[T] = list[(timestamp: float, value: T)]`
 
-This runtime buffer is distinct from `retriever.data_spec.EventBuffer`, which is used for explicit event/data/export contracts.
+This runtime buffer is distinct from `retriever.types.data.EventBuffer`, which is used for explicit event/data/export contracts.
 
 See: `docs/guide_temporal.md`.
 
@@ -250,7 +250,7 @@ pipe.run(duration=5.0, record="session.mcap")
 ### In-process single-step debugging
 
 `Pipeline.step(...)` runs the pipeline in the current Python process so you can use the VS Code debugger
-inside `Flow.run(...)`:
+inside `Flow.step(...)`:
 
 ```py
 pipe.step(dt=0.1)
@@ -296,7 +296,7 @@ Example:
 
 Gym-style env wrapper notes:
 - A Gym env is typically stateful and imperative; in Retriever you wrap it in a `Flow`:
-  - `init()` creates the env
+  - `reset()` creates the env
   - `run(Action)` performs `env.step(action)` and returns `Observation`
   - the flow can internally decide when to `reset()` (e.g. on `done=True`)
 - The closed-loop becomes a normal pipeline cycle (env↔controller), which can run on

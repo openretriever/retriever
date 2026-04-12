@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from retriever.data_spec import (
+from retriever.types.data import (
     DataSpec,
     Event,
     EventBuffer,

@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 from retriever import get_type_info, resolve_schema_ref
 from retriever.types import ClockDomain, SchemaRef, StreamId, get_type, register_type
-from retriever.data_spec import DataSpec, DatasetManifest, EventBuffer
-from retriever.data_spec import SchemaRef as DataSpecSchemaRef
-from retriever.data_spec import StreamId as DataSpecStreamId
-from retriever.robotics_typing import PoseStamped, SE3Pose, Vector3, Quaternion, Header
+from retriever.types.data import DataSpec, DatasetManifest, EventBuffer
+from retriever.types.data import SchemaRef as DataSpecSchemaRef
+from retriever.types.data import StreamId as DataSpecStreamId
+from retriever.types.spatial import PoseStamped, SE3Pose, Vector3, Quaternion, Header
 
 
 @register_type(

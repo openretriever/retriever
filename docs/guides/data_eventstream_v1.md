@@ -1,12 +1,12 @@
 ---
-title: Data Spec and EventStream v1
+title: Data and EventStream v1
 ---
 
-# Data Spec and EventStream v1
+# Data and EventStream v1
 
 ## Purpose
 
-`retriever.data_spec` defines the mirror-native contract for:
+`retriever.types.data` defines the mirror-native contract for:
 - deterministic event records,
 - multi-stream joins,
 - lineage,
@@ -21,13 +21,13 @@ runtime executor internals.
 Preferred:
 
 ```python
-from retriever.data_spec import Event, EventBuffer, DataSpec
+from retriever.types.data import Event, EventBuffer, DataSpec
 ```
 
 Pinned path:
 
 ```python
-from retriever.data_spec.v1 import Event, StreamId
+from retriever.types.data.v1 import Event, StreamId
 ```
 
 ## Two EventBuffer Layers
@@ -47,7 +47,7 @@ retriever.flow.types.EventBuffer
 ### Data Spec EventBuffer
 
 ```python
-retriever.data_spec.EventBuffer
+retriever.types.data.EventBuffer
 ```
 
 - typed event/data/export abstraction
@@ -92,7 +92,7 @@ Processing-time helpers:
 
 ## Dataset and Export Layer
 
-For dataset/export work, `retriever.data_spec` also provides:
+For dataset/export work, `retriever.types.data` also provides:
 - `build_episode_manifest(...)`
 - `build_dataset_manifest(...)`
 - `event_table_rows(...)`
@@ -108,7 +108,7 @@ LeRobot runtime dependency.
 Multistream join walkthrough:
 
 ```bash
-pixi run python -m examples.tutorial.e_resource_and_sync.07_data_spec_multistream_join
+pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
 ```
 
 Manifest/export walkthrough:

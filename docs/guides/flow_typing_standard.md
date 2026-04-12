@@ -15,9 +15,9 @@ Use this page for:
 - lifecycle ordering across stepper, multiprocessing, and dora.
 
 Related guides:
-- `docs/guides/robotics_typing.md`
-- `docs/guides/data_spec_eventstream.md`
-- `docs/guides/robotics_typing_carryback_status.md`
+- `docs/guides/spatial_types_v1.md`
+- `docs/guides/data_eventstream_v1.md`
+- `docs/guides/type_surface_status_v1.md`
 
 ## Supported Signature Forms
 
@@ -55,7 +55,7 @@ class Command:
 
 
 class Controller(Flow[Observation, Command]):
-    def run(self, input: Observation) -> Command:
+    def step(self, input: Observation) -> Command:
         return Command(action=input.value * 0.1)
 ```
 
@@ -82,7 +82,7 @@ Runtime initialization order is:
 
 1. instantiate from IR init config
 2. call `__lazy_init__()` if present
-3. call `init()`
+3. call `reset()`
 
 This applies across:
 - in-process stepper,
@@ -103,9 +103,9 @@ Strict mode (`--strict-single-io`):
 
 The flow typing contract is not the same thing as the domain typing layers:
 
-- `retriever.robotics_typing`
+- `retriever.types.spatial`
   - robotics boundary dataclasses and validation helpers
-- `retriever.data_spec`
+- `retriever.types.data`
   - event/data/export contracts for collection, replay, and dataset manifests
 
 Use the flow typing contract to describe how flows compose.

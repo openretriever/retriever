@@ -35,8 +35,8 @@ pixi run p0-release-readiness
   - `examples/tutorial/expected_outputs/025_run_manifest_and_lineage.md`
   - `examples/tutorial/expected_outputs/027_closed_loop_policy_backend_abstraction.md`
   - `examples/tutorial/expected_outputs/028_operator_mode_and_authority_fsm.md`
-  - `examples/tutorial/expected_outputs/037_robotics_typing_boundaries.md`
-  - `examples/tutorial/expected_outputs/038_data_spec_multistream_join.md`
+  - `examples/tutorial/expected_outputs/037_spatial_type_boundaries.md`
+  - `examples/tutorial/expected_outputs/038_data_multistream_join.md`
   - `examples/tutorial/expected_outputs/039_dataset_manifest_and_lerobot_mapping.md`
 - Notebook-ready export:
   - [Notebook-Ready Export](../tutorials/notebook_ready.md)
@@ -44,5 +44,5 @@ pixi run p0-release-readiness
   - `pixi run check-notebook-ready`
 - Advanced examples:
   - [Zero-Copy Guide](../guides/advanced_zero_copy.md)
-  - [Robotics Typing v1](../guides/robotics_typing.md)
-  - [Data Spec and EventStream v1](../guides/data_spec_eventstream.md)
+  - [Spatial Types v1](../guides/robotics_typing.md)
+  - [Data and EventStream v1](../guides/data_spec_eventstream.md)

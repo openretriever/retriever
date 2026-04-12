@@ -241,7 +241,7 @@ Guidelines:
 - module top-level: import-safe only
 - `__init__`: store lightweight, serializable configuration only
 - `init_config()`: return serializable reconstruction data only
-- `__lazy_init__()` / `init()`: acquire runtime-local resources
+- `__lazy_init__()` / `reset()`: acquire runtime-local resources
 
 Local resources include:
 
@@ -270,7 +270,7 @@ class Camera(Flow[None, Frame]):
     def init_config(self) -> dict:
         return {"device_id": self.device_id}
 
-    def init(self) -> None:
+    def reset(self) -> None:
         self._camera = open_camera(self.device_id)
 ```
 
