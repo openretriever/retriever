@@ -14,6 +14,7 @@ Summarize the current canonical type surfaces and:
 This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
+- `docs/guides/perception_types_v1.md`
 - `docs/guides/type_composition_v1.md`
 - `docs/guides/flow_typing_standard.md`
 
@@ -94,4 +95,5 @@ This carry-back does not use:
 Canonical public naming is:
 - `retriever.types` is a narrow umbrella, not the home for symbolic entities or registry helpers
 - `retriever.types.spatial` / `retriever.types.spatial.v1`
+- `retriever.types.perception` / `retriever.types.perception.v1`
 - `retriever.types.data` / `retriever.types.data.v1`

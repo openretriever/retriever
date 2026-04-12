@@ -74,6 +74,19 @@ If a composite pipeline needs a different external surface, use:
 
 Do not create a new payload type just to adapt one pipeline to another.
 
+## `retriever.types.perception` Rule
+
+Use `retriever.types.perception` for reusable media/perception payloads such as images, compressed images, encoded video, point clouds, detections, masks, and pointing targets.
+
+```python
+from retriever.types.perception import Image2D, DetectionBatch, PointTarget2D
+
+class PointingFlow(Flow[(Image2D, DetectionBatch), PointTarget2D]):
+    ...
+```
+
+A stream of `Image2D` frames is semantically a video. Keep encoded multi-frame artifacts separate as `EncodedVideo`.
+
 ## `retriever.types.data` Rule
 
 Keep the root import narrow:
