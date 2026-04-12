@@ -67,10 +67,8 @@ Command conventions:
 # Core development tools (inside Pixi env)
 pixi run python -m pip install -e '.[dev]'
 
-# Full system stack (models/robots/training/Ray) is being split into a separate
-# Golden Retriever repository. Templates live in:
-# - pixi-golden.toml
-# - pyproject-golden.toml
+# Additional system-level repos may carry their own environment templates.
+# This repository documents only the runtime/core development surface.
 ```
 
 ## Development Environment

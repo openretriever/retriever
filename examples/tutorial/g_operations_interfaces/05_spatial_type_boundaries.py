@@ -78,7 +78,7 @@ def main() -> None:
     print("=== Registry Parity ===")
     print(f"PoseStamped import == get_type('PoseStamped'): {public_cls is registry_cls}")
 
-    pipe = Pipeline("tut037_robotics_typing")
+    pipe = Pipeline("tut037_spatial_types")
     src = PoseSource() @ Rate(hz=5)
     projector = CameraToBase() @ Trigger("pose")
     pipe.connect(src, projector, sync=Latest())

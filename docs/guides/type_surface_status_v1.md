@@ -36,21 +36,18 @@ Flow typing contract:
 - `src/retriever/rt/lifecycle.py`
 - `scripts/validate_flow_typing.py`
 
-Robotics typing:
+Spatial types:
 - `src/retriever/types/spatial/__init__.py`
 - `src/retriever/types/spatial/v1.py`
-- compatibility shim via `src/retriever/robotics_typing/`
-- registry via `src/retriever/types_registry.py`
+- registry via `src/retriever/registry/types.py`
 
-Data spec:
+Data layer:
 - `src/retriever/types/data/__init__.py`
+- `src/retriever/types/data/events.py`
+- `src/retriever/types/data/streams.py`
+- `src/retriever/types/data/dataset.py`
+- `src/retriever/types/data/interop.py`
 - `src/retriever/types/data/v1.py`
-- `src/retriever/types/data/buffer.py`
-- `src/retriever/types/data/join.py`
-- `src/retriever/types/data/window.py`
-- `src/retriever/types/data/dataset_manifest.py`
-- `src/retriever/types/data/lerobot_bridge.py`
-- `src/retriever/types/data/interop_flow_types.py`
 
 ## Acceptance Checks
 
@@ -86,7 +83,7 @@ PYTHONPATH=src python -m examples.tutorial.h_release_readiness.03_dataset_manife
 
 This carry-back does not use:
 - the old nested registry path layout
-- Golden-only import paths
+- the removed placeholder package trees that previously duplicated data/spatial imports
 - old public `v2` naming
 
 Canonical public naming is:

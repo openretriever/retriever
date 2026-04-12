@@ -209,13 +209,14 @@ The stepper is useful for “record once, debug many times” workflows:
 
 Library helpers (stepper-first):
 
-- High-level: `Pipeline.record_to(handle, path, ...)` and `Pipeline.replay(handle, path=...)`.
+- Preferred: `Pipeline.record(path, steps=..., dt=...)` and `Pipeline.replay(handle, path=...)`.
+- Legacy stream-only helper: `Pipeline.record_to(handle, path, ...)`.
 - Low-level: `retriever.rt.stepper.EventStreamRecorder`, `save_event_buffer`/`load_event_buffer`, `replay_flow`.
 
 Perception example:
 - `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
-  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize cv2`
+  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize stdout`
 
 The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
 Replay accepts either artifact.

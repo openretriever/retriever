@@ -11,13 +11,6 @@ This guide describes the **refactored** Flow authoring surface used by the runti
 Older pre-runtime-authoring material is not part of the public release docs in this repo.
 Use the tutorial tracks and `docs/handbook.md` as the supported source of truth.
 
-Quick checks (Dora lag policy):
-
-- Warn + drop missed ticks: `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag warn`
-- Panic (alias for `error`): `pixi run python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env --env toy --backend dora --hz 50 --duration 2 --on-lag panic`
-
----
-
 ## 1) Define typed ports with `@io`
 
 Flows communicate using `@io` classes. Each annotated field becomes a **port**.
@@ -47,8 +40,9 @@ Notes:
 
 A `Flow` is a typed node. Implement `step(...)` and optionally lifecycle hooks:
 
-- `__lazy_init__()` / `reset()` / `finalize()` for resources (models, cameras, sockets)
-- `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
+- `__lazy_init__()` for backend-local heavy resources
+- `reset()` for per-run or per-stepper state initialization
+- `finalize()` for cleanup
 
 Keep module top-level code and `__init__()` import-safe and lightweight. Acquire
 runtime-local resources in `__lazy_init__()` / `reset()`.
@@ -145,15 +139,15 @@ Pipeline-wide default:
 
 ### Global Defaults
 
-You can set a global default adapter at startup:
+For scripts and libraries, prefer explicit `sync=...` on each `pipe.connect(...)`.
+If you are prototyping in a notebook or REPL, you can still set a global default adapter:
 
 ```python
 import retriever
 from retriever.flow import Latest
 
-retriever.init(
-    default_sync=Latest(),
-)
+# Optional notebook/REPL convenience, not the preferred shared-example surface.
+retriever.init(default_sync=Latest())
 ```
 
 Use `Pipeline(..., on_lag=...)` or `pipe.set_on_lag(...)` to set lag policy defaults for a graph.
@@ -189,7 +183,7 @@ pipe = Pipeline("demo")
 src = Source() @ Rate(hz=10)
 add = AddOne() @ Rate(hz=10)
 
-pipe.connect(src, add, sync=Latest())  # default adapter is Latest()
+pipe.connect(src, add, sync=Latest())  # explicit adapter for this edge
 ```
 
 ### `then(...)` and `>>`

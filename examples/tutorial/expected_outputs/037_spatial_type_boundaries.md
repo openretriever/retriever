@@ -1,4 +1,4 @@
-# Expected Output: TUT-037 Robotics Typing Boundaries
+# Expected Output: TUT-037 Spatial Type Boundaries
 
 ## Run
 
@@ -13,4 +13,4 @@ pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_bou
 
 ## Expected Artifact
 
-- `logs/tutorial_robotics_typing/tut037_robotics_typing_summary.json`
+- `logs/tutorial_spatial_types/tut037_spatial_type_summary.json`

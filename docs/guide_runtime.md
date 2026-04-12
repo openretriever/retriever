@@ -36,10 +36,6 @@ class AddOne(Flow[SrcOut, AddOut]):
         return AddOut(value=input.value + 1)
 
 
-# Set global default (recommended)
-import retriever
-retriever.init(default_sync=Latest())
-
 pipe = Pipeline("quickstart")
 src = Source() @ Rate(hz=10)
 add = AddOne() @ Rate(hz=10)
@@ -74,11 +70,11 @@ More details: `docs/guides/debugging.md`.
 
 For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")`.
 
-For granular control (e.g. recording specific flows during manual stepping), use:
+For explicit stepper-driven recording and replay, use:
 
 ```py
-pipe.record_to(camera, "logs/camera_recording.pkl.gz", steps=10, dt=0.05)
-pipe.replay(camera, path="logs/camera_recording.pkl.gz")
+pipe.record("logs/camera_recording.rrd", steps=10, dt=0.05)
+pipe.replay(camera, path="logs/camera_recording.rrd")
 ```
 
 ## 2) Core concepts
@@ -93,7 +89,7 @@ Use `@io` directly. Do not stack it with `@dataclass`.
 A `Flow` is a node that implements:
 
 - `reset()` (optional)
-- `run(input: I) -> O`
+- `step(input: I) -> O`
 - `finalize()` (optional)
 
 ### Clocks (when a node executes)
@@ -156,7 +152,7 @@ but you can call it directly for debugging or inspection.
 
 - `multiprocessing`: local Python multiprocessing backend
 - `dora`: dora-rs backend (requires compatible dora CLI + deps)
-- `in-process`: single-process wrapper for debugging/recording
+- `in-process`: single-process wrapper for debugging/recording around a live `Pipeline`
 
 `execute_ir(...)` accepts either an `IR` or an `ExecutionGraph`.
 

@@ -87,7 +87,7 @@ pipe.close_stepper()
 ## The Three Rules That Matter Most
 
 1. Always define public flow inputs and outputs with `@io`.
-2. Always provide `sync=...` on `pipe.connect(...)`, or set a global default with `retriever.init(default_sync=Latest())`.
+2. Always provide `sync=...` on `pipe.connect(...)`. Use a global default only for lightweight REPL or notebook experiments.
 3. Start with `Rate` and `Trigger`; reach for more advanced clocks or adapters only when you have a concrete need.
 
 ## Try The Camera Path

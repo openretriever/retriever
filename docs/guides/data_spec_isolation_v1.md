@@ -1,12 +1,13 @@
-# Data Spec Isolation v1
+# Data Tooling Boundary v1
 
 ## Summary
 
-`data_spec` is promising as a typed exchange surface, but it is not yet the right abstraction to make central to Retriever runtime.
+This note is historical context for why Retriever keeps dataset/export contracts in
+`retriever.types.data` while keeping runtime execution semantics elsewhere.
 
 The near-term recommendation is:
 
-1. Keep Retriever runtime independent from `data_spec`.
+1. Keep Retriever runtime independent from large external data-tool layers.
 2. Isolate a small read tool and a mock data write tool outside the main Retriever runtime package.
 3. Treat those tools as a small standalone test surface for data workflows.
 4. Keep only a narrow adapter boundary inside Retriever for any integration points that are genuinely useful today.
@@ -15,14 +16,17 @@ This lets data-focused collaborators experiment on a simpler surface without hav
 
 ## Why Isolate This
 
-Today, the strongest use cases for `data_spec` are around:
+Today, the strongest use cases for the data contract layer are around:
 
 - typed stream identifiers and schema references
 - recording and replay utilities
 - offline data exchange and dataset tooling
 - experiments that do not need the full runtime
 
-The weaker use case is trying to make `data_spec` the main execution model for Retriever itself. The current runtime already has working flow, step, and replay semantics. Forcing `data_spec` into the core runtime too early would create unnecessary coupling.
+The weaker use case is trying to make the data contract layer the main execution
+model for Retriever itself. The current runtime already has working flow, step,
+and replay semantics. Forcing data/export concerns into the core runtime would
+create unnecessary coupling.
 
 In practice, the current shape suggests three layers:
 
@@ -40,7 +44,7 @@ Only the last two need to be shared with external collaborators at this stage.
 
 ### 1. Keep In Retriever
 
-These belong in the main repo and should not depend on a broad `data_spec` package:
+These belong in the main repo and should not depend on a broad all-in-one data layer:
 
 - runtime stepping and flow execution
 - backend-specific transport and scheduling
@@ -140,7 +144,7 @@ That keeps the boundary clean:
 
 ### Phase 1
 
-- keep `data_spec` out of main runtime merges
+- keep broad data/export experiments out of main runtime merges
 - define a tiny shared type surface
 - extract or rewrite a standalone read tool
 - extract or rewrite a standalone mock data write tool
@@ -160,8 +164,8 @@ That keeps the boundary clean:
 For the current Retriever branch strategy:
 
 - merge runtime, perception, recording, and replay improvements separately
-- do **not** force `data_spec` into the mainline yet
-- keep `robotics_typing` and `data_spec` review separate from runtime merges
+- keep `retriever.types.data` focused on collection/replay/export contracts
+- avoid forcing data/export concerns into the execution core
 
 This reduces risk and preserves room to redesign the data surface with external collaborators before locking it into Retriever.
 

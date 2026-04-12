@@ -108,4 +108,4 @@ The flow typing contract is not the same thing as the domain typing layers:
   - event/data/export contracts for collection, replay, and dataset manifests
 
 Use the flow typing contract to describe how flows compose.
-Use robotics typing and data spec to describe what the payloads mean.
+Use `retriever.types.spatial` and `retriever.types.data` to describe what those payloads mean.

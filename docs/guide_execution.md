@@ -50,17 +50,15 @@ general so we can later support non-linear subgraphs and multi-node deployment.
 
 ## 2) Canonical API
 
-### 2.1 Unified (Recommended)
+### 2.1 Pipeline surface (Recommended)
 
 ```python
-import retriever
-
-# Implicit execution of default pipeline
-retriever.run(backend="dora", duration=10.0)
-
-# With manual pipeline
 pipe.run(backend="dora", duration=10.0)
 ```
+
+`retriever.run(...)` still exists as a convenience wrapper around the thread-local
+default pipeline. Use an explicit `Pipeline` object for review code, scripts, and
+reusable examples.
 
 ### 2.2 Low-Level (IR Access)
 
@@ -181,7 +179,7 @@ Internal design notes cover the longer-term execution-graph roadmap; this guide 
 
 Retriever supports distributing pipelines across multiple computers using the **Dora** backend. This is useful for splitting lighter controller logic (low latency) from heavy compute (GPU).
 
-### 6.1 `deploy(machine: str)`
+### 7.1 `deploy(machine: str)`
 
 You can map specific flows to machines using the `.deploy()` method:
 
@@ -195,9 +193,8 @@ vla_model = VLAFlow() @ Trigger("image")
 vla_model.deploy("machine_b")
 ```
 
-```
-
 ### 6.2 Runtime Deployment Overrides (Preferred)
+### 7.2 Runtime Deployment Overrides (Preferred)
 
 Decouple your code from physical infrastructure by specifying deployment at runtime:
 
@@ -211,7 +208,7 @@ pipe.run(
 )
 ```
 
-### 6.3 Backend Configuration
+### 7.3 Backend Configuration
 
 For this to work, you must use the **Dora** backend and have a running Dora Coordinator.
 

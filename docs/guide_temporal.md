@@ -45,9 +45,17 @@ Retriever implements a pragmatic variation of Functional Reactive Programming:
 
 Every connection in `Pipeline.connect()` requires a **sync policy**. This prevents subtle bugs from implicit behavior.
 
-### A. Global Default (Recommended)
+### A. Explicit per-connection (Preferred)
 
-Set a default policy once at startup to keep your pipeline code clean.
+Prefer explicit `sync=...` on each connection in scripts and shared examples.
+
+```python
+pipe.connect(sensor, controller, sync=Latest())
+```
+
+### B. Optional global default
+
+If you are iterating in a REPL or notebook, you can set a process-wide default policy once at startup.
 
 ```python
 import retriever
@@ -56,7 +64,10 @@ from retriever.flow import Latest
 retriever.init(default_sync=Latest())
 ```
 
-### B. Per-Connection Override
+Do not rely on this in shared examples or reusable libraries. Prefer explicit
+`sync=...` on each connection once the graph shape is settled.
+
+### C. Per-Connection Override
 
 Override the default for specific connections that need different handling (e.g., rate limiting).
 
@@ -67,7 +78,7 @@ from retriever.flow import Hold
 pipe.connect(sensor, controller, sync=Hold(debounce=0.01))
 ```
 
-### C. Per-Port Sync
+### D. Per-Port Sync
 
 Use a dictionary to specify different adapters for different output ports of the source node.
 

@@ -155,7 +155,8 @@ pipe.connect(src, add, sync=Latest())
 ```
 
 Notes:
-- `sync=...` is **required** unless you set a global default: `retriever.init(default_sync=Latest())`.
+- Prefer explicit `sync=...` on each connection in scripts and shared examples.
+- `retriever.init(default_sync=...)` is optional convenience for notebooks/REPL work.
 - `map={"*": "*"}` is the default port mapping.
 
 You can also use a `Pipeline` as a context manager to enable `then(...)` / `>>` wiring:
