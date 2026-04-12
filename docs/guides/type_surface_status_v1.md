@@ -92,5 +92,6 @@ This carry-back does not use:
 - old public `v2` naming
 
 Canonical public naming is:
+- `retriever.types` is a narrow umbrella, not the home for symbolic entities or registry helpers
 - `retriever.types.spatial` / `retriever.types.spatial.v1`
 - `retriever.types.data` / `retriever.types.data.v1`

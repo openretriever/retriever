@@ -62,11 +62,15 @@ def test_context_module_imports_without_optional_mcp_runtime():
 
 def test_types_umbrella_exports_packages_not_registry_helpers():
     import retriever.types as types_pkg
+    from retriever.types.symbolic import Object, ObjectType
 
     assert types_pkg.data is not None
     assert types_pkg.spatial is not None
     assert types_pkg.symbolic is not None
     assert not hasattr(types_pkg, "register_type")
+    assert not hasattr(types_pkg, "Object")
+    assert Object is not None
+    assert ObjectType is not None
 
 
 def test_data_package_keeps_root_surface_contract_only():
