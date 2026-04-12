@@ -10,7 +10,8 @@ from typing import Dict, List, Any, Optional
 from multiprocessing import Queue
 import multiprocessing
 
-from retriever.ir.core import IR, IRNode, IREdge
+from retriever.config import get_global_config
+from retriever.ir.core import IR, IRNode, IREdge, IRVizPolicy
 from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.backend.multiprocessing.channel import MPChannel
 from retriever.rt.backend.multiprocessing.executor import MPExecutor
@@ -94,6 +95,7 @@ class MPEngine(ExecutionEngine):
     def _create_executors(self):
         """Create MPExecutor for each node."""
         for node in self.ir.nodes:
+            resolved_viz_policy = self._resolve_node_viz_policy(node)
             # Load clock from config
             clock = IRNode.instantiate_clock(node.config)
 
@@ -131,9 +133,16 @@ class MPEngine(ExecutionEngine):
                     # Support broadcasting
                     if port_name not in outputs:
                         outputs[port_name] = []
-                        channel.rerun_path = f"flows/{node.id}/output/{port_name}"
+                        root_path = (
+                            resolved_viz_policy.path
+                            if resolved_viz_policy is not None and resolved_viz_policy.path
+                            else f"flows/{node.id}/output"
+                        )
+                        channel.rerun_path = f"{root_path}/{port_name}"
+                        channel.rerun_policy = resolved_viz_policy
                     else:
                         channel.rerun_path = None
+                        channel.rerun_policy = None
                     outputs[port_name].append(channel)
 
             # Create executor with logging params
@@ -182,6 +191,19 @@ class MPEngine(ExecutionEngine):
 
             self.executors.append(executor)
             logger.debug(f"Created executor for {node.id}")
+
+    def _resolve_node_viz_policy(self, node: IRNode) -> Optional[IRVizPolicy]:
+        if node.viz_policy is not None:
+            return node.viz_policy
+        default_viz = get_global_config().get("default_viz")
+        if default_viz is None:
+            return None
+        return IRVizPolicy(
+            enabled=True,
+            hz=default_viz.hz,
+            fields=list(default_viz.fields) if default_viz.fields is not None else None,
+            path=default_viz.path,
+        )
 
     def start(self):
         """Start all executors."""

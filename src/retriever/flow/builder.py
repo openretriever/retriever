@@ -26,6 +26,7 @@ from retriever.ir.core import (
     IREdgeDestination,
     IRServiceHandler,
     IRServiceCaller,
+    IRVizPolicy,
     IRMetadata,
     IRTopology,
 )
@@ -588,15 +589,16 @@ class PipelineBuilder:
             # viz_policy is False when the user explicitly suppressed visualization.
             # viz_policy is a VizConfig when the user declared an explicit policy.
             viz_policy = handle.viz_policy
+            ir_viz_policy = None
             if viz_policy is False:
-                config["viz_policy"] = {"enabled": False}
+                ir_viz_policy = IRVizPolicy(enabled=False)
             elif viz_policy is not None:
-                config["viz_policy"] = {
-                    "enabled": True,
-                    "hz": viz_policy.hz,
-                    "fields": viz_policy.fields,
-                    "path": viz_policy.path,
-                }
+                ir_viz_policy = IRVizPolicy(
+                    enabled=True,
+                    hz=viz_policy.hz,
+                    fields=list(viz_policy.fields) if viz_policy.fields is not None else None,
+                    path=viz_policy.path,
+                )
 
             ir_node = IRNode(
                 id=node_id,
@@ -604,6 +606,7 @@ class PipelineBuilder:
                 module=flow_class.__module__,
                 init_config=init_config,
                 config=config,
+                viz_policy=ir_viz_policy,
                 inputs={
                     name: type_to_str(typ) for name, typ in node.input_ports.items()
                 },
@@ -846,6 +849,7 @@ class PipelineBuilder:
             module=node.module,
             init_config=deepcopy(node.init_config),
             config=config,
+            viz_policy=deepcopy(node.viz_policy),
             inputs={
                 self._rename_embedded_node_refs(port, node_map): typ
                 for port, typ in node.inputs.items()

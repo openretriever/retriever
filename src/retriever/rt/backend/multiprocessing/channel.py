@@ -7,10 +7,11 @@ Wraps multiprocessing.Queue and maintains temporal buffer for history.
 from multiprocessing import Queue
 from multiprocessing.connection import Connection
 from queue import Empty
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from retriever.flow.adapter import Adapter
 from retriever.flow.types import TimedBuffer
+from retriever.ir.core import IRVizPolicy
 from retriever.rt.buffer_engine import BufferEngineKind, create_buffer_engine
 from retriever.lib.rerun import log_value_from_env
 
@@ -40,6 +41,8 @@ class MPChannel:
         self.arrival_flag = False
         self.on_full = on_full
         self.rerun_path: Optional[str] = None
+        self.rerun_policy: Optional[IRVizPolicy] = None
+        self._last_rerun_log_time: Optional[float] = None
 
     @property
     def queue(self) -> Queue:
@@ -101,8 +104,16 @@ class MPChannel:
             timestamp: Sender timestamp
             block: Block until space available
         """
-        if self.rerun_path:
-            log_value_from_env(self.rerun_path, value, time_seconds=timestamp)
+        if self.rerun_path and self._should_log_rerun(timestamp):
+            fields: Optional[Iterable[str]] = None
+            if self.rerun_policy is not None:
+                fields = self.rerun_policy.fields
+            log_value_from_env(
+                self.rerun_path,
+                value,
+                time_seconds=timestamp,
+                fields=fields,
+            )
 
         try:
             self.queue.put((timestamp, value), block=block)
@@ -130,6 +141,20 @@ class MPChannel:
     def clear(self) -> None:
         """Remove all buffered messages."""
         self._engine.clear()
+
+    def _should_log_rerun(self, timestamp: float) -> bool:
+        policy = self.rerun_policy
+        if policy is None:
+            return True
+        if not policy.enabled:
+            return False
+        if policy.hz is None:
+            return True
+        if self._last_rerun_log_time is not None:
+            if (timestamp - self._last_rerun_log_time) < (1.0 / policy.hz):
+                return False
+        self._last_rerun_log_time = timestamp
+        return True
 
     def __repr__(self) -> str:
         """String representation for debugging."""

@@ -12,9 +12,10 @@ import dora
 import multiprocessing
 from typing import Dict, List, Optional, Any, Generator
 
+from retriever.config import get_global_config
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock
-from retriever.ir.core import IRNode
+from retriever.ir.core import IRNode, IRVizPolicy
 from retriever.rt.step import IOStep
 from retriever.flow.adapter import Adapter
 from retriever.flow.service import ServiceCall, parse_service_id
@@ -257,6 +258,19 @@ class DoraExecutor(multiprocessing.Process, Executor):
                 adapter.reset()
                 logger.debug(f"[{self.node_id}] Reset adapter for '{port_name}'")
 
+    def _resolve_node_viz_policy(self) -> Optional[IRVizPolicy]:
+        if self.flow_node is not None and self.flow_node.viz_policy is not None:
+            return self.flow_node.viz_policy
+        default_viz = get_global_config().get("default_viz")
+        if default_viz is None:
+            return None
+        return IRVizPolicy(
+            enabled=True,
+            hz=default_viz.hz,
+            fields=list(default_viz.fields) if default_viz.fields is not None else None,
+            path=default_viz.path,
+        )
+
     def run(self) -> None:
         """
         Main process loop.
@@ -338,12 +352,18 @@ class DoraExecutor(multiprocessing.Process, Executor):
             }
 
             # Create output publishers
+            resolved_viz_policy = self._resolve_node_viz_policy()
             self.outputs = {
                 port: [
                     DoraPublisher(
                         self._send_output,
                         port,
-                        rerun_path=f"flows/{self.node_id}/output/{port}",
+                        rerun_path=(
+                            f"{resolved_viz_policy.path}/{port}"
+                            if resolved_viz_policy is not None and resolved_viz_policy.path
+                            else f"flows/{self.node_id}/output/{port}"
+                        ),
+                        rerun_policy=resolved_viz_policy,
                     )
                 ]
                 for port in self.output_ports

@@ -15,7 +15,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from retriever.ir.core import IR, IRNode, IREdge
+from retriever.config import get_global_config
+from retriever.ir.core import IR, IRNode, IREdge, IRVizPolicy
 from retriever.rt.backend.dora.compiler import compile_and_validate, get_node_paths
 from retriever.rt.backend.dora.executor import DoraExecutor
 from retriever.rt.backend.interface import ExecutionEngine
@@ -153,6 +154,7 @@ class DoraEngine(ExecutionEngine):
 
     def _create_executor(self, node) -> DoraExecutor:
         """Create DoraExecutor for each node."""
+        node = self._resolve_node_viz_policy(node)
         # Load clock from config
         clock = IRNode.instantiate_clock(node.config)
 
@@ -246,6 +248,32 @@ class DoraEngine(ExecutionEngine):
 
         logger.debug(f"Created executor for {node.id}")
         return executor
+
+    def _resolve_node_viz_policy(self, node: IRNode) -> IRNode:
+        if node.viz_policy is not None:
+            return node
+        default_viz = get_global_config().get("default_viz")
+        if default_viz is None:
+            return node
+        return IRNode(
+            id=node.id,
+            type=node.type,
+            module=node.module,
+            init_config=node.init_config,
+            config=node.config,
+            viz_policy=IRVizPolicy(
+                enabled=True,
+                hz=default_viz.hz,
+                fields=list(default_viz.fields) if default_viz.fields is not None else None,
+                path=default_viz.path,
+            ),
+            inputs=node.inputs,
+            outputs=node.outputs,
+            successors=node.successors,
+            predecessors=node.predecessors,
+            service_handlers=node.service_handlers,
+            service_callers=node.service_callers,
+        )
 
     def start(self) -> None:
         """Start dora dataflow and all executors."""

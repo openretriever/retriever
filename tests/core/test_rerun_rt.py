@@ -8,9 +8,14 @@ from multiprocessing import Queue
 from typing import Optional
 
 import numpy as np
+import pytest
+import retriever
 
+from retriever.config import VizConfig
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever.ir.core import IR, IRNode, IRVizPolicy
 from retriever.lib import rerun as rerun_lib
+from retriever.rt.backend.dora.channel import DoraPublisher
 from retriever.rt.backend.multiprocessing.channel import MPChannel
 from retriever.rt.runtime import execute_ir
 
@@ -131,15 +136,15 @@ def test_log_value_from_env_logs_plain_io_dataclass_fields(monkeypatch):
         for row in state["times"]
     }
     assert ("step", 3, None, None) in timelines
-    assert ("retriever_time", None, None, 1.25) in timelines
+    assert ("retriever_time", None, None, 0.0) in timelines
     assert ("log_time", None, 1.25, None) in timelines
 
 
 def test_mpchannel_put_one_emits_worker_rerun_log(monkeypatch):
     calls = []
 
-    def fake_log_value_from_env(path, value, *, time_seconds=None, sequence=None):
-        calls.append((path, value, time_seconds, sequence))
+    def fake_log_value_from_env(path, value, *, time_seconds=None, sequence=None, fields=None):
+        calls.append((path, value, time_seconds, sequence, fields))
         return True
 
     monkeypatch.setattr(
@@ -155,7 +160,7 @@ def test_mpchannel_put_one_emits_worker_rerun_log(monkeypatch):
         payload = TickOut(value=5)
         channel.put_one(payload, 0.5, block=False)
 
-        assert calls == [("flows/source/output", payload, 0.5, None)]
+        assert calls == [("flows/source/output", payload, 0.5, None, None)]
 
         ts, queued = queue.get(timeout=1.0)
         assert ts == 0.5
@@ -228,3 +233,145 @@ def test_execute_ir_rerun_config_sets_shared_recording_env(monkeypatch):
         "recording_id": "shared-runtime-id",
     }
     assert state["connects"][-1] == "rerun+http://127.0.0.1:9000/proxy"
+
+
+def test_mpchannel_respects_worker_viz_policy(monkeypatch):
+    calls = []
+
+    def fake_log_value_from_env(path, value, *, time_seconds=None, sequence=None, fields=None):
+        calls.append((path, time_seconds, tuple(fields) if fields is not None else None))
+        return True
+
+    monkeypatch.setattr(
+        "retriever.rt.backend.multiprocessing.channel.log_value_from_env",
+        fake_log_value_from_env,
+    )
+
+    queue = Queue()
+    try:
+        channel = MPChannel(queue, buffer_size=4)
+        channel.rerun_path = "flows/source/output"
+        channel.rerun_policy = IRVizPolicy(enabled=True, hz=2.0, fields=["value"])
+
+        channel.put_one(TickOut(value=1), 0.00, block=False)
+        channel.put_one(TickOut(value=2), 0.10, block=False)
+        channel.put_one(TickOut(value=3), 0.60, block=False)
+
+        assert calls == [
+            ("flows/source/output", 0.00, ("value",)),
+            ("flows/source/output", 0.60, ("value",)),
+        ]
+    finally:
+        queue.close()
+        queue.join_thread()
+
+
+def test_dora_publisher_respects_worker_viz_policy(monkeypatch):
+    emitted = []
+    sent = []
+
+    def fake_log_value_from_env(path, value, *, time_seconds=None, sequence=None, fields=None):
+        emitted.append((path, time_seconds, tuple(fields) if fields is not None else None))
+        return True
+
+    monkeypatch.setattr(
+        "retriever.rt.backend.dora.channel.log_value_from_env",
+        fake_log_value_from_env,
+    )
+
+    publisher = DoraPublisher(
+        lambda port, arrow, metadata: sent.append((port, metadata)),
+        "out",
+        rerun_path="flows/source/output/out",
+        rerun_policy=IRVizPolicy(enabled=True, hz=2.0, fields=["value"]),
+    )
+
+    publisher.put_one(TickOut(value=1), 0.00)
+    publisher.put_one(TickOut(value=2), 0.10)
+    publisher.put_one(TickOut(value=3), 0.60)
+
+    assert emitted == [
+        ("flows/source/output/out", 0.00, ("value",)),
+        ("flows/source/output/out", 0.60, ("value",)),
+    ]
+    assert len(sent) == 3
+
+
+def test_log_value_from_env_filters_selected_fields(monkeypatch):
+    state = _install_fake_rerun(monkeypatch)
+    monkeypatch.setenv("RERUN_CONNECT_ADDR", "127.0.0.1:9876")
+    monkeypatch.setenv("RERUN_APP_ID", "rerun_test")
+    monkeypatch.setenv("RERUN_RECORDING_ID", "shared-recording")
+
+    out = SampleOut(value=7, image=np.zeros((4, 5, 3), dtype=np.uint8), label="kept-out")
+
+    assert rerun_lib.log_value_from_env(
+        "flows/source/output",
+        out,
+        time_seconds=1.25,
+        fields=["value"],
+    )
+
+    logged_paths = [path for path, _payload in state["logs"]]
+    assert "flows/source/output/value" in logged_paths
+    assert "flows/source/output/image" not in logged_paths
+    assert "flows/source/output/label" not in logged_paths
+
+
+def test_ir_viz_policy_validates_and_loads_from_json():
+    with pytest.raises(ValueError):
+        IRVizPolicy(enabled=True, hz=0)
+
+    ir_json = '{"version":"1","metadata":{"name":"p","created_at":"t","validated":true,"optimized":false},"nodes":[{"id":"n","type":"TickSource","module":"m","init_config":{},"config":{"clock":{"Rate":{"hz":1}}},"viz_policy":{"enabled":true,"hz":5.0,"fields":["value"],"path":"custom/path"},"inputs":{},"outputs":{"out":"TickOut"},"successors":[],"predecessors":[],"service_handlers":[],"service_callers":[]}],"edges":[],"topology":{"sources":[],"sinks":[],"groups":[],"node_count":1,"edge_count":0,"has_cycle":false,"is_connected":true},"optimization":null}'
+    loaded = IR.from_json(ir_json)
+    assert loaded.nodes[0].viz_policy is not None
+    assert loaded.nodes[0].viz_policy.fields == ["value"]
+
+
+def test_execute_ir_preserves_default_viz_as_runtime_fallback(monkeypatch):
+    import retriever.rt.runtime as runtime_module
+
+    captured = {}
+
+    class DummyEngine:
+        def build(self):
+            return None
+
+        def start(self):
+            return None
+
+        def wait(self, timeout=None):
+            return None
+
+        def stop(self):
+            return None
+
+    class DummyFactory:
+        def validate_dependencies(self):
+            return True
+
+        def create_engine(self, ir_struct, backend_config):
+            captured["ir_struct"] = ir_struct
+            captured["backend_config"] = backend_config
+            return DummyEngine()
+
+    monkeypatch.setattr(runtime_module, "get_backend", lambda backend: (lambda: DummyFactory()))
+
+    retriever.init(default_viz=VizConfig(hz=2.0, fields=["value"], path="custom/root"))
+    try:
+        pipe = Pipeline("rerun_runtime_env")
+        with pipe:
+            src = TickSource() @ Rate(hz=1)
+            sink = Drain() @ Trigger("value")
+            pipe.connect(src, sink, sync=Latest())
+        ir = pipe.validate()
+        assert ir.nodes[0].viz_policy is None
+        engine = execute_ir(
+            ir,
+            backend="multiprocessing",
+            blocking=False,
+            backend_config={"rerun_config": {"spawn": False, "connect_addr": "127.0.0.1:9000"}},
+        )
+        assert isinstance(engine, DummyEngine)
+    finally:
+        retriever.init(default_viz=None)

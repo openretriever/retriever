@@ -46,12 +46,33 @@ class IRServiceCaller:
     target_node: str
 
 @dataclass
+class IRVizPolicy:
+    """Validated, typed visualization policy attached to an IR node."""
+
+    enabled: bool = True
+    hz: Optional[float] = None
+    fields: Optional[List[str]] = None
+    path: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.hz is not None and self.hz <= 0:
+            raise ValueError(f"IRVizPolicy.hz must be positive, got {self.hz}")
+        if self.fields is not None:
+            if not isinstance(self.fields, list) or not all(
+                isinstance(name, str) and name for name in self.fields
+            ):
+                raise ValueError("IRVizPolicy.fields must be a list[str] when provided")
+        if self.path is not None and not isinstance(self.path, str):
+            raise ValueError("IRVizPolicy.path must be a string when provided")
+
+@dataclass
 class IRNode:
     id: str
     type: str
     module: str
     init_config: Dict[str, Any]
     config: Dict[str, Any]
+    viz_policy: Optional[IRVizPolicy]
     inputs: Dict[str, str]
     outputs: Dict[str, str]
     successors: List[str]
@@ -219,7 +240,10 @@ class IR:
                 type=n['type'],
                 module=n['module'],
                 init_config=n.get('init_config', {}),
-                config=n['config'],
+                config={k: v for k, v in n['config'].items() if k != 'viz_policy'},
+                viz_policy=IRVizPolicy(**viz_policy_dict) if (
+                    (viz_policy_dict := n.get('viz_policy') or n['config'].get('viz_policy'))
+                ) is not None else None,
                 inputs=n['inputs'],
                 outputs=n['outputs'],
                 successors=n['successors'],
@@ -386,6 +410,7 @@ class IR:
                 "fused_nodes": [asdict(self.get_node(nid)) for nid in node_ids if self.get_node(nid)],
                 "internal_edges": internal_edges_data
             },
+            viz_policy=None,
             inputs=first.inputs,
             outputs=last.outputs,
             successors=[], predecessors=[], service_handlers=[], service_callers=[]
