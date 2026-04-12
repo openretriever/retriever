@@ -4,8 +4,13 @@ import argparse
 import importlib
 import json
 from pathlib import Path
+import sys
 
 import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from retriever.config import RecordConfig
 from retriever.registry.pipeline import build_ir, list_pipelines
