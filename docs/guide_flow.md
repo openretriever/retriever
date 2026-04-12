@@ -238,7 +238,7 @@ pipe.run(backend="multiprocessing", duration=1.0)
 pipe.run(backend="dora", duration=10.0)
 
 # Record to file (uses in-process backend)
-pipe.run(duration=5.0, record="session.mcap")
+pipe.record("session.mcap", steps=50, dt=0.1)
 ```
 
 ### In-process single-step debugging

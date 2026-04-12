@@ -42,8 +42,8 @@ add = AddOne() @ Rate(hz=10)
 pipe.connect(src, add, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
-# Or record to MCAP (uses in-process backend):
-# pipe.run(duration=1.0, record="log.mcap")
+# Or record deterministic local steps explicitly:
+# pipe.record("log.mcap", steps=10, dt=0.1)
 ```
 
 ### Async full run (non-blocking)
@@ -68,7 +68,13 @@ More details: `docs/guides/debugging.md`.
 
 ### Record + replay (stepper-first)
 
-For unified full-pipeline recording, prefer `pipe.run(record="log.mcap")`.
+For deterministic persisted recording, prefer `pipe.record(...)`.
+
+If you use `pipe.run(record=...)`, you must opt into the in-process backend explicitly:
+
+```py
+pipe.run(backend="in-process", duration=1.0, record="log.mcap")
+```
 
 For explicit stepper-driven recording and replay, use:
 

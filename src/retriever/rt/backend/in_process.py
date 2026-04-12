@@ -37,7 +37,7 @@ class InProcessEngine(ExecutionEngine):
             raise ValueError(
                 "The in-process backend is a live-Pipeline debug/recording surface. "
                 "Pass backend_config['pipeline_instance'] or use Pipeline.step(), "
-                "pipe.run(record=...), or execute the saved IR on multiprocessing or dora."
+                "pipe.record(...), pipe.run(backend='in-process', record=...), or execute the saved IR on multiprocessing or dora."
             )
 
         # Setup recording

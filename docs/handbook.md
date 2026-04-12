@@ -269,15 +269,12 @@ Notes:
 Retriever supports a unified API to run and debug pipelines.
 
 ### 6.1 Recording execution
-You can record any execution to a Rerun `.rrd` file (optionally mirrored to `.mcap`) by passing `record=...`.
-This automatically switches to the **in-process** backend to ensure deterministic recording. The recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock run time rather than exact tick count. Use `pipe.record(..., steps=..., dt=...)` when you need an exact number of logical steps.
+For deterministic persisted recordings, prefer `pipe.record(..., steps=..., dt=...)`.
+If you use `pipe.run(record=...)`, you must choose `backend="in-process"` explicitly.
+The recorder advances logical steps at simulation speed, so `duration=...` limits wall-clock run time rather than exact tick count.
 
 ```py
-pipe.run(
-    duration=5.0,
-    record="session.rrd",
-    visualize="rerun"  # Optional: stream to a local Rerun viewer
-)
+pipe.record("session.rrd", steps=50, dt=0.1, visualize=True)
 ```
 
 Live Rerun viewing is a local-desktop convenience. On multiprocessing and Dora backends, Retriever reuses one shared recording id so worker logs land in the same viewer session when the viewer is reachable. For portable inspection and replay, prefer saved `.rrd` / `.mcap` artifacts.
@@ -287,10 +284,7 @@ This generates `session.rrd` containing all flow I/O. If you also want an interc
 ```py
 from retriever import RecordConfig
 
-pipe.run(
-    duration=5.0,
-    record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
-)
+pipe.record(RecordConfig(path="session.rrd", mirrors=("session.mcap",)), steps=50, dt=0.1)
 ```
 
 ### 6.2 Replay

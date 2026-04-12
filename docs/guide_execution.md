@@ -81,14 +81,10 @@ Notes:
 
 ### 2.3 Unified Recording & Replay
 
-To record execution, pass `record="..."` or a `RecordConfig(...)`. This automatically selects the **in-process** backend to ensure deterministic, reproducible results (stepper-based).
+For deterministic persisted recordings, prefer the explicit stepper surface:
 
 ```python
-pipe.run(
-    duration=5.0,
-    record="session.rrd",
-    visualize="rerun"  # Optional: stream to Rerun live
-)
+pipe.record("session.rrd", steps=50, dt=0.1, visualize=True)
 ```
 
 `.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
@@ -96,7 +92,14 @@ pipe.run(
 ```python
 from retriever import RecordConfig
 
+pipe.record(RecordConfig(path="session.rrd", mirrors=("session.mcap",)), steps=50, dt=0.1)
+```
+
+If you want a wall-clock-bounded in-process run that also persists artifacts, be explicit:
+
+```python
 pipe.run(
+    backend="in-process",
     duration=5.0,
     record=RecordConfig(path="session.rrd", mirrors=("session.mcap",)),
 )

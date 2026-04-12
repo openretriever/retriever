@@ -109,8 +109,9 @@ Preferred entry points:
 
 - `Pipeline.step(now=..., dt=...)` — one in-process debug step
 - `Pipeline.reset_stepper()` / `Pipeline.close_stepper()`
-- unified recording: `pipe.run(record="file.mcap")` (preferred)
 - explicit stepper recording: `Pipeline.record(...)` / `Pipeline.replay(...)`
+- `pipe.run(backend="in-process", record="file.mcap")` remains available when
+  you want a wall-clock-bounded in-process run that also persists artifacts
 
 Implementation lives in:
 - `retriever/rt/stepper.py`

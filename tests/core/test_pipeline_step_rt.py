@@ -167,7 +167,7 @@ def test_pipeline_run_record_convenience_emits_session_artifacts(tmp_path):
     node_id = pipe.get_node_id(src)
 
     pipe.run(
-        backend="multiprocessing",
+        backend="in-process",
         duration=0.2,
         blocking=True,
         record=RecordConfig(path=rrd_path, mirrors=(mcap_path,)),
@@ -201,7 +201,7 @@ def test_pipeline_run_record_warns_that_duration_is_wall_clock(tmp_path, monkeyp
 
     caplog.set_level("WARNING")
     pipe.run(
-        backend="multiprocessing",
+        backend="in-process",
         duration=1.0,
         blocking=True,
         record=str(tmp_path / "session.mcap"),
@@ -215,7 +215,7 @@ def test_pipeline_run_record_warns_that_duration_is_wall_clock(tmp_path, monkeyp
     assert "wall-clock run time, not step count" in caplog.text
 
 
-def test_pipeline_run_record_ignores_authored_host_affinity(tmp_path, monkeypatch, caplog):
+def test_pipeline_run_record_rejects_authored_host_affinity(tmp_path, monkeypatch):
     import retriever.rt.runtime as runtime_module
 
     calls = []
@@ -231,17 +231,15 @@ def test_pipeline_run_record_ignores_authored_host_affinity(tmp_path, monkeypatc
     drain = Recorder() @ Trigger("value")
     pipe.connect(src, drain, sync=Latest())
 
-    caplog.set_level("WARNING")
-    pipe.run(
-        backend="multiprocessing",
-        duration=0.1,
-        blocking=True,
-        record=str(tmp_path / "session.mcap"),
-    )
+    with pytest.raises(ValueError, match="Deployment affinity is not supported with pipe.run\\(record=\\.\\.\\.\\)"):
+        pipe.run(
+            backend="in-process",
+            duration=0.1,
+            blocking=True,
+            record=str(tmp_path / "session.mcap"),
+        )
 
-    assert calls
-    assert calls[0]["backend"] == "in-process"
-    assert "Ignoring authored host affinity" in caplog.text
+    assert not calls
 
 
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])

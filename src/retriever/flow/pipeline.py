@@ -750,10 +750,11 @@ class Pipeline:
             log_config: Optional LogConfig.
             visualize: Currently only `"rerun"` is supported here for live streaming.
             record: Path (str) or RecordConfig to enable recording.
-                    Forces backend="in-process" currently. When combined with
-                    `duration=...`, the in-process loop advances logical steps as
-                    fast as possible; `duration` limits wall-clock run time, not
-                    exact step count.
+                    Requires `backend="in-process"`. When combined with
+                    `duration=...`, the in-process loop advances logical steps
+                    as fast as possible; `duration` limits wall-clock run time,
+                    not exact step count. Prefer `pipe.record(...)` when you
+                    need explicit logical-step recording.
             control: ControlConfig for pause/resume/reset control.
                      Example: control=ControlConfig(web_port=8080, keyboard=True)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
@@ -767,6 +768,7 @@ class Pipeline:
 
         # Resolve global config defaults
         glob = get_global_config()
+        backend_was_explicit = backend is not None
         if backend is None:
             backend = glob.get("backend", "multiprocessing")
 
@@ -789,14 +791,13 @@ class Pipeline:
              # Global default
              record_cfg = glob["record"]
 
-        # Handling "in-process" enforcement for recording
         if record_cfg and backend != "in-process":
-            # Unified persisted recording is currently stepper/in-process first.
-            import logging
-            logging.getLogger("retriever").info(
-                f"Recording enabled ({record_cfg.path}); switching backend to 'in-process'."
+            current = backend if backend_was_explicit else f"default backend '{backend}'"
+            raise ValueError(
+                "pipe.run(record=...) requires backend='in-process'. "
+                f"Got {current}. Use pipe.record(...) for explicit stepper recording "
+                "or pass backend='in-process' directly."
             )
-            backend = "in-process"
 
         # Prepare backend config: merge global defaults with local overrides
         global_backend_config = glob.get("backend_config", {})
@@ -821,16 +822,10 @@ class Pipeline:
 
         if (deploy or affinity_overrides) and backend != "dora":
             if record_cfg is not None:
-                if deploy:
-                    logger.warning(
-                        "Ignoring deploy=... because record=... forces backend='in-process' for local recording."
-                    )
-                    deploy = None
-                if affinity_overrides:
-                    logger.warning(
-                        "Ignoring authored host affinity because record=... forces backend='in-process' for local recording."
-                    )
-                    affinity_overrides = {}
+                raise ValueError(
+                    "Deployment affinity is not supported with pipe.run(record=...). "
+                    "Use pipe.record(...) for local recording without deploy()/host affinity."
+                )
             else:
                 raise ValueError(
                     "Deployment affinity is only supported with backend='dora'. Remove deploy()/deploy= or run with backend='dora'."

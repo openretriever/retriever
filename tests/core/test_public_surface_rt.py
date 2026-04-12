@@ -91,3 +91,12 @@ def test_pipeline_run_rejects_host_affinity_on_non_dora_backend():
 
     with pytest.raises(ValueError, match="backend='dora'"):
         pipe.run(backend="multiprocessing", duration=0.1)
+
+
+def test_pipeline_run_record_requires_explicit_in_process_backend(tmp_path):
+    pipe = Pipeline("record_backend_guard")
+    with pipe:
+        TickSource() @ Rate(hz=1)
+
+    with pytest.raises(ValueError, match="requires backend='in-process'"):
+        pipe.run(duration=0.1, record=str(tmp_path / "session.mcap"))
