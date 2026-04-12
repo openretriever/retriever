@@ -583,6 +583,21 @@ class PipelineBuilder:
                     )
                 config["viz"] = viz_metadata
 
+            # Handle-level viz policy declared at .then(viz=...) time.
+            # viz_policy is None when no declaration was made (inherit default_viz).
+            # viz_policy is False when the user explicitly suppressed visualization.
+            # viz_policy is a VizConfig when the user declared an explicit policy.
+            viz_policy = handle.viz_policy
+            if viz_policy is False:
+                config["viz_policy"] = {"enabled": False}
+            elif viz_policy is not None:
+                config["viz_policy"] = {
+                    "enabled": True,
+                    "hz": viz_policy.hz,
+                    "fields": viz_policy.fields,
+                    "path": viz_policy.path,
+                }
+
             ir_node = IRNode(
                 id=node_id,
                 type=flow_class.__name__,

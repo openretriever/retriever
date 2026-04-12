@@ -8,7 +8,7 @@ in the dataflow graph that can be connected to other nodes.
 import keyword
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Dict
+from typing import TYPE_CHECKING, Optional, Dict, Union
 
 if TYPE_CHECKING:
     from retriever.flow.base import Flow
@@ -16,9 +16,14 @@ if TYPE_CHECKING:
     from retriever.flow.clock import Clock
     from retriever.flow.adapter import Adapter
     from retriever.flow.pipeline import Pipeline
+    from retriever.config import VizConfig
 
 
 _FLOW_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+# Sentinel: viz= was not passed to any .then() from this source port.
+# Distinct from False (explicit suppress) and VizConfig (explicit policy).
+_VIZ_NOT_SET = object()
 
 
 @dataclass
@@ -32,6 +37,11 @@ class TemporalFlow:
 
     def __post_init__(self) -> None:
         """Attach standalone handles created inside an active Pipeline/Builder context."""
+        # Visualization policy for this handle's output port.
+        # Set by .then(viz=...). _VIZ_NOT_SET means not declared; falls back to
+        # retriever.init(default_viz=...) at log time.
+        self._viz_config = _VIZ_NOT_SET
+
         from retriever.flow.builder import PipelineBuilder
 
         ctx = PipelineBuilder.active()
@@ -127,6 +137,13 @@ class TemporalFlow:
                 conn.dst_node_id = new_name
         builder._graph = None  # type: ignore[attr-defined]
 
+    @property
+    def viz_policy(self) -> "Union[VizConfig, bool, None]":
+        """Return the declared viz policy, or None if not declared via .then(viz=...)."""
+        if self._viz_config is _VIZ_NOT_SET:
+            return None
+        return self._viz_config  # type: ignore[return-value]
+
     def then(
         self,
         next: "TemporalFlow",
@@ -135,6 +152,7 @@ class TemporalFlow:
         qsize: int = 10,
         on_full: Optional[str] = None,
         edge_config: Optional[Dict[str, "EdgeConfig"]] = None,
+        viz: "Union[VizConfig, bool, None]" = None,
     ) -> "TemporalFlow":
         """
         Connect this flow to another flow.
@@ -169,6 +187,23 @@ class TemporalFlow:
         """
         from retriever.flow.adapter import Latest
         from retriever.error import FlowError, ErrCode
+
+        # Viz policy belongs to the source output port, not the edge.
+        # Declaring it on multiple .then() calls from the same source is fine only
+        # when all declarations agree; conflicting values raise immediately.
+        if viz is not None:
+            if (
+                self._viz_config is not _VIZ_NOT_SET
+                and self._viz_config is not viz
+            ):
+                raise FlowError(
+                    ErrCode.FLOW_CONNECTION_INVALID,
+                    f"Conflicting viz= declarations on '{self.display_name}'. "
+                    "The viz policy belongs to the source output port and must be "
+                    "consistent across all .then() calls from the same source. "
+                    "Declare viz= only once, or use the same value on every call.",
+                )
+            self._viz_config = viz
 
         if map is None:
             map = {"*": "*"}

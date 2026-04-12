@@ -384,6 +384,10 @@ class RerunManager:
         self._initialized = False
         self._recording_path: Optional[Path] = None
         self._step_count = 0
+        # Per-node viz policies: {node_id: {"enabled": bool, "hz": float, ...}}
+        self._node_viz_policies: Dict[str, dict] = {}
+        # Per-node last-log timestamps for Hz rate-limiting
+        self._last_log_times: Dict[str, float] = {}
 
     def init(self) -> None:
         """Initialize Rerun in the current process."""
@@ -505,6 +509,61 @@ class RerunManager:
                     self._log_auto(f"{path}/{f.name}", field_val)
             return
 
+    def set_node_viz_policies(self, policies: Dict[str, dict]) -> None:
+        """
+        Set per-node viz policies extracted from pipeline IR node configs.
+
+        Called by enable_rerun_logging after the IR is available.  Each value
+        is a dict produced from VizConfig: {"enabled": True, "hz": 5.0, ...}.
+        Nodes with no entry here fall back to the global default_viz setting.
+        """
+        self._node_viz_policies = dict(policies)
+
+    def _should_log_node(self, node_id: str, now: Optional[float]) -> bool:
+        """
+        Return True when the node's output should be logged at the current step.
+
+        Resolution order:
+        1. Per-node policy from .then(viz=...) (stored in IR, passed to this manager).
+        2. Global default_viz from retriever.init(default_viz=...).
+        3. No policy → skip (nothing logged by default).
+
+        Rate-limiting is applied based on the resolved hz value and the step's
+        logical timestamp.  When now is None, every allowed step is logged.
+        """
+        from retriever.config import get_global_config
+
+        policy = self._node_viz_policies.get(node_id)
+
+        if policy is not None:
+            if not policy.get("enabled", True):
+                return False
+            hz = policy.get("hz", 5.0)
+        else:
+            default_viz = get_global_config().get("default_viz")
+            if default_viz is None:
+                return False
+            hz = default_viz.hz
+
+        # Hz-based rate limiter
+        if now is not None and hz > 0:
+            min_interval = 1.0 / hz
+            last = self._last_log_times.get(node_id, -1e9)
+            if (now - last) < min_interval:
+                return False
+            self._last_log_times[node_id] = now
+
+        return True
+
+    def _node_log_path(self, node_id: str) -> str:
+        """Return the Rerun entity path for a node's output."""
+        policy = self._node_viz_policies.get(node_id)
+        if policy:
+            custom = policy.get("path")
+            if custom:
+                return custom
+        return f"flows/{node_id}/output"
+
     def log_step_result(self, result: Any, step_idx: int) -> None:
         """
         Log a StepResult from Pipeline.step().
@@ -521,22 +580,26 @@ class RerunManager:
         # Set time for this step
         _set_time_sequence_compat(rr, "step", step_idx)
 
+        now: Optional[float] = None
         if hasattr(result, "now") and result.now is not None:
-            _set_time_seconds_compat(rr, result.now)
+            now = result.now
+            _set_time_seconds_compat(rr, now)
 
         # Log executed flows
         if hasattr(result, "executed") and result.executed:
             rr.log("step/executed", rr.TextLog(", ".join(result.executed)))
 
-        # Log inputs
+        # Log inputs (no rate-limiting — inputs are structural metadata)
         if self.config.log_inputs and hasattr(result, "inputs"):
             for node_id, value in result.inputs.items():
                 self.log(f"flows/{node_id}/input", value)
 
-        # Log outputs
+        # Log outputs with per-node viz policy and Hz rate-limiting
         if self.config.log_outputs and hasattr(result, "outputs"):
             for node_id, value in result.outputs.items():
-                self.log(f"flows/{node_id}/output", value)
+                if not self._should_log_node(node_id, now):
+                    continue
+                self.log(self._node_log_path(node_id), value)
 
         self._step_count += 1
 
@@ -631,6 +694,26 @@ def enable_rerun_logging(
 
     manager = RerunManager(config, app_id=name)
     manager.init()
+
+    # Extract per-node viz policies from the IR if available.
+    # PipelineStepper exposes .ir; Pipeline exposes ._builder.
+    ir = None
+    if hasattr(pipeline_or_stepper, "ir"):
+        ir = pipeline_or_stepper.ir
+    elif hasattr(pipeline_or_stepper, "_builder"):
+        try:
+            ir = pipeline_or_stepper._builder.build_ir()
+        except Exception:
+            pass
+
+    if ir is not None:
+        policies: Dict[str, dict] = {}
+        for node in ir.nodes:
+            vp = node.config.get("viz_policy")
+            if vp is not None:
+                policies[node.id] = vp
+        if policies:
+            manager.set_node_viz_policies(policies)
 
     return manager
 

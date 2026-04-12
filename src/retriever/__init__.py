@@ -31,7 +31,7 @@ from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 
 from typing import Any, Optional, Union
-from retriever.config import RecordConfig, set_global_config
+from retriever.config import RecordConfig, VizConfig, set_global_config
 
 def init(
     name: Optional[str] = None,
@@ -39,6 +39,7 @@ def init(
     backend: Optional[str] = None,
     backend_config: Optional[dict] = None,
     default_sync: Optional[Any] = None,
+    default_viz: Optional[VizConfig] = None,
 ) -> None:
     """
     Initialize the global retriever environment.
@@ -52,8 +53,19 @@ def init(
                         with (and overridden by) `pipe.run(backend_config=...)`.
         default_sync: Default sync adapter for connections (e.g. Latest()).
                       If None, every pipe.connect() must specify sync= explicitly.
+        default_viz: Default visualization policy for all output ports that do not
+                     have an explicit viz= on their .then() connection.
+                     Example: retriever.init(default_viz=VizConfig(hz=5.0))
+                     enables lightweight visualization across the whole pipeline.
     """
-    set_global_config(name=name, record=record, backend=backend, backend_config=backend_config, default_sync=default_sync)
+    set_global_config(
+        name=name,
+        record=record,
+        backend=backend,
+        backend_config=backend_config,
+        default_sync=default_sync,
+        default_viz=default_viz,
+    )
 
 
 
@@ -108,6 +120,7 @@ __all__ = [
     "view",
     "init",
     "RecordConfig",
+    "VizConfig",
     "io",
     "TemporalFlow",
     "PipelineBuilder",
