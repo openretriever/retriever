@@ -220,7 +220,7 @@ class Pipeline:
             if sync is None:
                 raise FlowError(
                     ErrCode.FLOW_CONNECTION_INVALID,
-                    "sync= is required. Set globally via retriever.set_global_config(default_sync=...) "
+                    "sync= is required. Set a shared default with retriever.init(default_sync=...) "
                     "or pass sync= to each connect() call.",
                     src=src.flow.__class__.__name__,
                     dst=dst.flow.__class__.__name__,
@@ -936,12 +936,6 @@ def connect(
     1. If a PipelineBuilder is active (via `with Pipeline():` or `with PipelineBuilder():`), use it.
     2. Otherwise, use `retriever.default_pipeline()`.
     """
-    # Fallback for raw PipelineBuilder (manual defaults)
-    from retriever.flow.adapter import Latest
-
-    if sync is None:
-        sync = Latest()
-
     # Check for active context
     ctx = PipelineBuilder.active()
 
@@ -972,6 +966,20 @@ def connect(
             qsize=qsize,
             on_full=on_full,
         )
+
+    if sync is None:
+        from retriever.config import get_global_config
+        from retriever.error import FlowError, ErrCode
+
+        sync = get_global_config().get("default_sync")
+        if sync is None:
+            raise FlowError(
+                ErrCode.FLOW_CONNECTION_INVALID,
+                "sync= is required. Set a shared default with retriever.init(default_sync=...) "
+                "or pass sync= to each connect() call.",
+                src=src.flow.__class__.__name__,
+                dst=dst.flow.__class__.__name__,
+            )
 
     ctx.register_connection(
         src,

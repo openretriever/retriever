@@ -56,7 +56,7 @@ from retriever.lib import Wrapper
 ```
 
 - **Pipeline Construction**:
-    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline.
+    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline, but still requires either explicit `sync=` or a shared default from `retriever.init(default_sync=...)`.
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
 
 - **Execution**:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 
 from retriever.flow import Flow, Pipeline, Rate, Latest, io
 
@@ -111,6 +112,7 @@ def test_retriever_connect_uses_default_pipeline_by_default():
     from retriever.flow.pipeline import reset_default_pipeline
 
     reset_default_pipeline()
+    retriever.init(default_sync=Latest())
 
     src = Source() @ Rate(hz=10)
     add = AddOne() @ Rate(hz=10)
@@ -131,6 +133,7 @@ def test_retriever_connect_respects_active_pipeline_context():
     from retriever.flow.pipeline import reset_default_pipeline
 
     reset_default_pipeline()
+    retriever.init(default_sync=Latest())
     default = retriever.default_pipeline()
 
     pipe = Pipeline("demo")
@@ -150,6 +153,7 @@ def test_reset_default_pipeline_clears_accumulated_graph():
     from retriever.flow.pipeline import reset_default_pipeline
 
     reset_default_pipeline()
+    retriever.init(default_sync=Latest())
     old = retriever.default_pipeline()
 
     src = Source() @ Rate(hz=10)
@@ -163,3 +167,19 @@ def test_reset_default_pipeline_clears_accumulated_graph():
     assert new is not old
     assert len(new.get_handles()) == 0
     assert len(new.get_connections()) == 0
+
+
+def test_retriever_connect_requires_sync_or_global_default():
+    import retriever
+    from retriever.config import get_global_config
+    from retriever.error import FlowError
+    from retriever.flow.pipeline import reset_default_pipeline
+
+    reset_default_pipeline()
+    get_global_config()["default_sync"] = None
+
+    src = Source() @ Rate(hz=10)
+    add = AddOne() @ Rate(hz=10)
+
+    with pytest.raises(FlowError, match="sync= is required"):
+        retriever.connect(src, add)

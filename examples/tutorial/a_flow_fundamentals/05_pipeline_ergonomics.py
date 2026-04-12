@@ -6,9 +6,9 @@ This example shows three equivalent ways to build the same graph:
   Source @ Rate -> Double @ Trigger -> Sink @ Rate
 
 Modes:
-  1) explicit:      `pipe.connect(a, b)`
+  1) explicit:      `pipe.connect(a, b, sync=Latest())`
   2) context:       `with pipe: a >> b` (then keep chaining outside the context)
-  3) functional:    `retriever.connect(a, b)` (thread-local default pipeline)
+  3) functional:    `retriever.connect(a, b)` (thread-local default pipeline with a shared default sync)
 
 Run:
   pixi run python -m examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics --mode context --exec step
@@ -21,7 +21,7 @@ from __future__ import annotations
 import argparse
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io
@@ -55,8 +55,8 @@ def build_explicit() -> Pipeline:
     b = Double() @ Trigger("value")
     c = Sink() @ Rate(hz=10)
 
-    pipe.connect(a, b)
-    pipe.connect(b, c)
+    pipe.connect(a, b, sync=Latest())
+    pipe.connect(b, c, sync=Latest())
     return pipe
 
 
@@ -76,6 +76,7 @@ def build_context() -> Pipeline:
 def build_functional() -> Pipeline:
     # Reset default pipeline
     retriever.clear_default_pipeline()
+    retriever.init(default_sync=Latest())
 
     a = Source() @ Rate(hz=10)
     b = Double() @ Trigger("value")
@@ -128,4 +129,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

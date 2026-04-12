@@ -243,7 +243,7 @@ Retriever maintains a thread-local **default pipeline**:
 
 ```py
 import retriever
-from retriever.flow import Rate
+from retriever.flow import Latest, Rate
 
 # Start a fresh pipeline
 # (For scripts, we recommend 'with Pipeline():' instead of global state)
@@ -252,6 +252,7 @@ retriever.clear_default_pipeline()
 a = Source() @ Rate(hz=10)
 b = AddOne() @ Rate(hz=10)
 
+retriever.init(default_sync=Latest())
 retriever.connect(a, b)
 
 # Run the accumulated default pipeline
@@ -260,6 +261,8 @@ retriever.default_pipeline().run(backend="multiprocessing", duration=1.0)
 
 Notes:
 - `retriever.connect(...)` respects an active `with Pipeline(...):` context.
+- `retriever.connect(...)` does not inject `Latest()` implicitly; either pass `sync=...`
+  or set a shared default with `retriever.init(default_sync=...)`.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---
