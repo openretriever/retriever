@@ -31,7 +31,7 @@ from retriever.ir.core import (
 )
 from retriever.error import IRError
 from retriever.flow.service import ServiceMethod
-from retriever.utils import type_to_str
+from retriever._internal import type_to_str
 from datetime import datetime
 
 import logging
@@ -308,7 +308,7 @@ class PipelineBuilder:
         self, graph: PipelineGraph, src_id: str, dst_id: str, conn: Pipe
     ) -> None:
         """Create edges for connection with adapter and qsize metadata."""
-        from retriever.utils import as_tagged
+        from retriever._internal import as_tagged
 
         def resolve_port_config(port: str):
             """Resolve qsize, on_full, and adapter for a specific port."""

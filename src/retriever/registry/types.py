@@ -19,7 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, TypeVar
 
-from retriever.utils import load_plugins
+from retriever._internal import load_plugins
 
 logger = logging.getLogger(__name__)
 _plugins_load_warning_emitted = False

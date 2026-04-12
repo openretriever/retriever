@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, Optional, Union, Iterable, Tuple, Litera
 
 from retriever.flow.builder import PipelineBuilder
 from retriever.ir import IR
-from retriever.utils import load_plugins
+from retriever._internal import load_plugins
 
 PipelineFactory = Callable[..., Union[IR, PipelineBuilder]]
 logger = logging.getLogger(__name__)

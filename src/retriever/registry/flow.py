@@ -15,7 +15,7 @@ from collections import defaultdict
 import logging
 
 from retriever.flow.base import Flow as FlowBase
-from retriever.utils import load_plugins
+from retriever._internal import load_plugins
 
 logger = logging.getLogger(__name__)
 _plugins_load_warning_emitted = False

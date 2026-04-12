@@ -211,7 +211,7 @@ class FlowConfig:
         Returns:
             Dict with clock converted to dict format
         """
-        from retriever.utils import as_tagged
+        from retriever._internal import as_tagged
         return {
             'clock': as_tagged(self.clock),
             'resources': self.resources.to_dict() if self.resources else None
