@@ -899,14 +899,15 @@ _default_pipeline_var: ContextVar[Optional[Pipeline]] = ContextVar(
 
 
 def reset_default_pipeline() -> Pipeline:
-    """
-    Reset and return a fresh default pipeline.
-
-    Useful for interactive sessions (notebooks) to clear state.
-    """
+    """Reset and return a fresh default pipeline."""
     pipe = Pipeline("default")
     _default_pipeline_var.set(pipe)
     return pipe
+
+
+def clear_default_pipeline() -> None:
+    """Clear the thread-local default pipeline so the next access recreates it."""
+    _default_pipeline_var.set(None)
 
 
 def default_pipeline() -> Pipeline:

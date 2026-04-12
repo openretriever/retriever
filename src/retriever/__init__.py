@@ -20,6 +20,7 @@ from retriever.flow import Flow, Rate, Clock
 from retriever.flow.adapter import Latest
 from retriever.flow.pipeline import (
     Pipeline,
+    clear_default_pipeline,
     connect,
     default_pipeline,
     reset_default_pipeline,
@@ -28,7 +29,6 @@ from retriever.flow.pipeline import (
     reset,
     view,
 )
-from retriever.flow.functional import clear_default_pipeline
 from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 

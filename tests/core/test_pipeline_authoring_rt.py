@@ -128,6 +128,19 @@ def test_retriever_connect_uses_default_pipeline_by_default():
     assert len(ir.edges) == 1
 
 
+def test_flow_and_top_level_default_pipeline_share_one_context():
+    import retriever
+    from retriever.flow import default_pipeline as flow_default_pipeline
+    from retriever.flow.pipeline import reset_default_pipeline
+
+    reset_default_pipeline()
+
+    top = retriever.default_pipeline()
+    flow = flow_default_pipeline()
+
+    assert top is flow
+
+
 def test_retriever_connect_respects_active_pipeline_context():
     import retriever
     from retriever.flow.pipeline import reset_default_pipeline
