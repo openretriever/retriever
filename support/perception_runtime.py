@@ -84,22 +84,21 @@ def _send_perception_blueprint(rr_module: Any) -> None:
         )
         # Spatial2DView is correct for rr.Image data (TensorView is for rr.Tensor).
         # Fall back to TensorView for older Rerun SDK versions that lack Spatial2DView.
-        # Spatial2DView requires origin to be a spatial root (one that holds image data).
-        # Using origin="/" with content filters lets Rerun find the images wherever
-        # they are logged under /flows; using the namespace /flows as origin causes
-        # "query did not match" because /flows itself has no spatial components.
+        # Spatial2DView requires origin to be the direct parent (or the entity itself)
+        # in the spatial tree. Wildcard origins like "/" or "/flows" don't work because
+        # images at different paths are in disconnected spatial trees — Rerun can't
+        # compose them. Point origin at each specific output path instead.
+        # Node IDs come from class names: CameraSource, ColorDetector (see builder.py).
         _ImageView = getattr(rrb, "Spatial2DView", None) or getattr(rrb, "TensorView")
         blueprint = rrb.Blueprint(
             rrb.Horizontal(
                 rrb.Tabs(
                     _ImageView(
-                        origin="/",
-                        contents="+ /flows/**/output/overlay",
+                        origin="/flows/ColorDetector/output",
                         name="Detections",
                     ),
                     _ImageView(
-                        origin="/",
-                        contents="+ /flows/**/output/image",
+                        origin="/flows/CameraSource/output",
                         name="Raw Camera",
                     ),
                     active_tab="Detections",
