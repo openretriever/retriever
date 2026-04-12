@@ -76,14 +76,12 @@ def build_context() -> Pipeline:
 def build_functional() -> Pipeline:
     # Reset default pipeline
     retriever.clear_default_pipeline()
-    retriever.init(default_sync=Latest())
-
     a = Source() @ Rate(hz=10)
     b = Double() @ Trigger("value")
     c = Sink() @ Rate(hz=10)
 
-    retriever.connect(a, b)
-    retriever.connect(b, c)
+    retriever.connect(a, b, sync=Latest())
+    retriever.connect(b, c, sync=Latest())
     return retriever.default_pipeline()
 
 

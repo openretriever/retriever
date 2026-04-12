@@ -103,9 +103,9 @@ def build_pipeline(*, hz: float) -> Pipeline:
     replanner = Replanner() @ Trigger("reason")
     printer = PrintPlan() @ Trigger("command")
 
-    pipe.connect(sim, monitor)      # state -> monitor
-    pipe.connect(monitor, replanner)  # request -> plan (event-driven via publish-on-signal)
-    pipe.connect(replanner, printer)  # plan -> stdout
+    pipe.connect(sim, monitor, sync=Latest())      # state -> monitor
+    pipe.connect(monitor, replanner, sync=Latest())  # request -> plan (event-driven via publish-on-signal)
+    pipe.connect(replanner, printer, sync=Latest())  # plan -> stdout
 
     return pipe
 

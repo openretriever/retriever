@@ -71,7 +71,7 @@ def build_pipeline() -> Pipeline:
     pipe = Pipeline("keyboard_pipeline")
     keyboard = KeyboardInputFlow() @ Rate(hz=30)
     echo = EchoFlow() @ Trigger("text")
-    pipe.connect(keyboard, echo)
+    pipe.connect(keyboard, echo, sync=Latest())
     return pipe
 
 def main() -> None:
