@@ -77,6 +77,10 @@ pixi run python -m pip install -e '.[dev]'
 
 Launch configurations in `.vscode/launch.json` target the maintained tutorial modules directly:
 
+Use VS Code's Python interpreter selector to point those launch configs at the environment you actually installed:
+- Pixi users: the interpreter inside `.pixi/envs/default`
+- uv/pip users: your activated venv/conda interpreter
+
 - `examples.tutorial.c_debug_and_replay.01_debug_stepper`
 - `examples.tutorial.c_debug_and_replay.02_debug_perception_stepper`
 - `examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera`

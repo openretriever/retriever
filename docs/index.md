@@ -11,7 +11,8 @@ slug: "intro"
   <strong>Retriever</strong>
 </div>
 
-Retriever is a type-safe, composable runtime for building robotics dataflow pipelines, with pluggable execution backends.
+Retriever is the runtime/core package for typed robotics dataflow pipelines, with pluggable execution backends.
+Robot integrations, simulator stacks, and heavier model packages belong in companion repositories or external packages.
 
 ## Quick Start
 
@@ -90,7 +91,7 @@ pipe.close_stepper()
 
 ### 🎯 Framework Benefits
 - **"PyTorch for Robotics"**: Simple, composable abstractions
-- **Execution Flexibility**: Same code works from development to production
+- **Execution Flexibility**: One authoring model across stepper, multiprocessing, and dora-rs execution
 - **Component Reusability**: Share and discover robotics components
 - **Runtime Path**: Clear progression from prototype to backend execution and replay/debug workflows
 
@@ -109,7 +110,7 @@ pipe.run(backend="multiprocessing")
 ### Multi-Backend Execution
 - **Development**: In-process stepping (`Pipeline.step`) for debugging
 - **Local execution**: Python multiprocessing backend
-- **Production-ish**: dora-rs backend (multi-process, coordinator + message passing)
+- **Backend execution**: dora-rs backend (multi-process, coordinator + message passing)
 
 ### Registry System
 ```python
