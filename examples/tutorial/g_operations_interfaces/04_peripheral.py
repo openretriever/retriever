@@ -4,7 +4,7 @@ import argparse
 import threading
 from pynput import keyboard
 from typing import Optional
-from retriever.flow import Flow, Pipeline, Rate, Trigger, io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io

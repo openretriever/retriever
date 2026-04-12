@@ -17,7 +17,7 @@ Run these in order:
 
 Use these later:
 - `02_registry_ecosystem`
-- `03_unified_wrapper`
+- `03_unified_wrapper` (optional external env: `gymnasium` + `torch`)
 - `04_peripheral`
 
 ## Modules
@@ -25,11 +25,12 @@ Use these later:
 ```bash
 pixi run python -m examples.tutorial.g_operations_interfaces.01_registry_basics
 pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosystem
-pixi run python -m examples.tutorial.g_operations_interfaces.03_unified_wrapper
 pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
 pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
 ```
+
+`03_unified_wrapper` is intentionally not in the default Pixi tutorial surface. It needs `gymnasium` and `torch` in your own environment.
 
 ## Generate An HTML View
 
