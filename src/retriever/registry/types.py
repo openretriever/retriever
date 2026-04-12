@@ -22,15 +22,22 @@ from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, TypeVar
 from retriever.utils import load_plugins
 
 logger = logging.getLogger(__name__)
+_plugins_load_warning_emitted = False
 
 T = TypeVar("T")
 
 
 def _ensure_plugins_loaded() -> None:
+    global _plugins_load_warning_emitted
     try:
         load_plugins()
     except Exception:
-        pass
+        if not _plugins_load_warning_emitted:
+            logger.warning(
+                "Failed to load retriever type plugins; continuing with local registry only.",
+                exc_info=True,
+            )
+            _plugins_load_warning_emitted = True
 
 
 @dataclass(frozen=True)

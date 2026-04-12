@@ -9,6 +9,7 @@ and reused locally.
 from __future__ import annotations
 
 import keyword
+import logging
 import re
 import time
 from dataclasses import dataclass, field, make_dataclass, replace
@@ -19,15 +20,22 @@ from retriever.ir import IR
 from retriever.utils import load_plugins
 
 PipelineFactory = Callable[..., Union[IR, PipelineBuilder]]
+logger = logging.getLogger(__name__)
+_plugins_load_warning_emitted = False
 
 
 def _ensure_plugins_loaded() -> None:
+    global _plugins_load_warning_emitted
     # Best-effort plugin loading: enables external packages to register pipelines.
     try:
         load_plugins()
     except Exception:
-        # Plugins are optional and should not prevent using local code.
-        pass
+        if not _plugins_load_warning_emitted:
+            logger.warning(
+                "Failed to load retriever pipeline plugins; continuing with local registry only.",
+                exc_info=True,
+            )
+            _plugins_load_warning_emitted = True
 
 
 @dataclass(frozen=True)
