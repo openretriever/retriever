@@ -44,6 +44,13 @@ python -m pip install -U pip
 python -m pip install -e ".[demo,dora,recording]"
 ```
 
+Optional extras:
+
+```bash
+# MCP / connector integration
+python -m pip install -e ".[mcp]"
+```
+
 Then run tutorials directly:
 
 ```bash
