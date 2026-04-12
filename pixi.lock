@@ -9536,7 +9536,7 @@ packages:
 - pypi: ./
   name: retriever
   version: 0.0.0
-  sha256: 3cdf6116cd719dcdbb2624c884b6814f7c83a362443e475f325d95608f054f26
+  sha256: 0ed1ff07b5942e11776295e2d5d36afeda174b7fed8d401a40e49987a2bcaabf
   requires_dist:
   - numpy ; extra == 'demo'
   - opencv-python>=4.10 ; extra == 'demo'
@@ -9544,6 +9544,9 @@ packages:
   - pandas ; extra == 'demo'
   - pynput ; extra == 'demo'
   - mcap>=1.0.0 ; extra == 'recording'
+  - numpy ; extra == 'recording'
+  - rerun-sdk>=0.21.0 ; extra == 'recording'
+  - mcp>=1.25.0,<2 ; extra == 'mcp'
   - jax ; extra == 'jax'
   - jaxlib ; extra == 'jax'
   - flax ; extra == 'jax'
