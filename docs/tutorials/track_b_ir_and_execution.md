@@ -37,7 +37,7 @@ pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchm
 ## Generate An HTML View
 
 Run this from the repository root. The snippet imports a repo-local helper from
-`examples/shared/`, so `examples/` needs to be on the default Python path.
+`support/`, so the repository root needs to be on the default Python path.
 
 ```bash
 pixi run env PYTHONPATH=src:. python - <<'PY'
