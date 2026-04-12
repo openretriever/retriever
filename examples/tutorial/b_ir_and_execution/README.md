@@ -1,38 +1,19 @@
 # B IR and Execution
 
-## Tutorials
+## Start Here
 
-- `01_context_graph.py`
+Run these first:
+- `04_rt_execution.py`
 - `02_ir_validation.py`
 - `03_execution_build.py`
-- `04_rt_execution.py`
+
+Use these later:
 - `05_dora_simple.py`
-- `06_dora_perception.py` (historical filename; backend-neutral public perception runtime demo)
-- `07_request_response.py`
-- `08_detection_window_stats.py`
+- `06_dora_perception.py`
 - `09_backend_parity_benchmark.py`
 
 ## What To Expect
 
 - Inspect IR structure and runtime topology.
-- Run pipelines across multiprocessing and Dora backends. `06_dora_perception.py` defaults to the safer in-process webcam path; opt into `--backend dora --camera-mode mock` when you specifically want Dora.
-- Validate perception/execution behavior end-to-end.
-- Hard-gate backend parity with reproducible artifacts under `logs/tutorial_parity/`.
-
-## Run
-
-```bash
-pixi run python -m examples.tutorial.b_ir_and_execution.01_context_graph
-pixi run python -m examples.tutorial.b_ir_and_execution.02_ir_validation
-pixi run python -m examples.tutorial.b_ir_and_execution.03_execution_build
-pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
-pixi run python -m examples.tutorial.b_ir_and_execution.05_dora_simple
-pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --visualize stdout
-pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --camera-mode mock --visualize rerun
-pixi run python -m examples.tutorial.b_ir_and_execution.07_request_response
-pixi run python -m examples.tutorial.b_ir_and_execution.08_detection_window_stats --backend multiprocessing --duration 3
-pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
-```
-
-Expected output reference:
-- `examples/tutorial/expected_outputs/032_backend_parity_benchmark.md`
+- Separate basic execution from backend-specific behavior.
+- Use the Dora/perception examples only after the core execution model is clear.

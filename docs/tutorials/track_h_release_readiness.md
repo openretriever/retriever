@@ -6,7 +6,16 @@ title: "Track H: Release Readiness"
 
 Focus: manifest lineage, acceptance-gate evidence, and go/no-go decisions.
 
-Start here:
+This track is for packaging and verification after the runtime basics are already familiar.
+
+## Start Here
+
+Run these in order:
+- `01_run_manifest_and_lineage demo`
+- `02_release_readiness_walkthrough`
+- `03_dataset_manifest_and_lerobot_mapping`
+
+If you want one longer narrative first:
 - [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
 
 ## Modules
@@ -21,6 +30,4 @@ pixi run python -m examples.tutorial.h_release_readiness.03_dataset_manifest_and
 
 - Reproducibility contracts between runs.
 - Evidence mapping to acceptance gates.
-- Deterministic release decision summary (`GO` or `NO-GO`).
-- Dataset manifests and export contracts as explicit release artifacts.
-- LeRobot-compatible mapping without changing core runtime transport.
+- Dataset manifests and export mappings as explicit release artifacts.

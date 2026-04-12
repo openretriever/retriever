@@ -6,9 +6,20 @@ title: "Track C: Debug and Replay"
 
 Focus: stepper-first debugging, deterministic replay, and trace diagnostics.
 
-Start here:
+## Start Here
+
+Run these in order:
+- `01_debug_stepper`
+- `04_record_replay_perception`
+- `07_incident_response_replay_drill`
+
+Use these when you want deeper local inspection:
+- `02_debug_perception_stepper`
+- `03_debug_perception_stepper_real_camera`
+- `08_mcap_session_inspection`
+
+If you want one longer story instead of small modules, start with:
 - [Integrated Tutorial: Debug to Release](tutorial_integrated_debug_to_release.md)
-- `02_debug_perception_stepper` for breakpoint-friendly local stepping.
 
 ## Modules
 
@@ -24,9 +35,7 @@ pixi run python -m examples.tutorial.c_debug_and_replay.07_incident_response_rep
 pixi run python -m examples.tutorial.c_debug_and_replay.08_mcap_session_inspection --recording logs/perception.mcap
 ```
 
-## Generate an HTML View
-
-Before stepping or replaying the perception pipeline, generate a static HTML view:
+## Generate An HTML View
 
 Run this from the repository root. The snippet imports a repo-local helper from
 `examples/shared/`, so `examples/` needs to be on the default Python path.
@@ -46,31 +55,6 @@ PY
 
 ## What To Observe
 
-- In-process stepper behavior vs backend run behavior.
-- Replay workflows that isolate regressions.
-- Edge latency + queue depth bottleneck identification.
-- Incident triage with replay signature consistency checks.
-- MCAP session inspection outputs for notebook-ready analysis.
-
-## Core Feature Flow
-
-1. Step pipeline in-process (`01_debug_stepper`) to debug logic with breakpoints.
-2. Record one real sensor session to `.rrd`, with a mirrored `.mcap` artifact for interchange (`04_record_replay_perception record`).
-3. Replay the same captured session from `.rrd` or `.mcap` (`04_record_replay_perception replay`) for deterministic debugging.
-4. Run incident drill (`07_incident_response_replay_drill`) and verify diagnosis consistency.
-
-## Expected Artifacts
-
-- `logs/perception.rrd`
-- `logs/perception.mcap`
-- `logs/tutorial_trace/tut024_trace_envelopes.jsonl`
-- `logs/tutorial_trace/tut024_trace_report.json`
-- `logs/tutorial_incident/tut033_incident_report.json`
-- `logs/tutorial_incident/tut033_incident_checklist.md`
-- `logs/tutorial_mcap/tut036_mcap_session_summary.json`
-- `logs/tutorial_mcap/tut036_mcap_step_table.jsonl`
-
-Expected output references:
-- `examples/tutorial/expected_outputs/024_trace_contract_basics.md`
-- `examples/tutorial/expected_outputs/033_incident_response_replay_drill.md`
-- `examples/tutorial/expected_outputs/036_mcap_session_inspection.md`
+- In-process stepping vs backend execution.
+- Recording one sensor or mock session, then replaying it deterministically.
+- Using replay artifacts to isolate regressions instead of guessing at live state.

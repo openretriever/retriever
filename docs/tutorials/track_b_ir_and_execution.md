@@ -6,9 +6,19 @@ title: "Track B: IR and Execution"
 
 Focus: pipeline validation, IR structure, execution graph build, and backend behavior.
 
-Start here:
-- `02_ir_validation` if you want to inspect the IR directly.
-- `06_dora_perception` if you want a perception-shaped runtime example. It now defaults to the safer in-process webcam path; pass `--backend dora --camera-mode mock` when you specifically want Dora.
+## Start Here
+
+Run these in order:
+- `04_rt_execution`
+- `02_ir_validation`
+- `03_execution_build`
+
+Use these later, once the basic execution story is clear:
+- `05_dora_simple`
+- `06_dora_perception`
+- `09_backend_parity_benchmark`
+
+`06_dora_perception` keeps a historical filename. The public learning path is backend-neutral; Dora is optional and should be requested explicitly.
 
 ## Modules
 
@@ -24,7 +34,7 @@ pixi run python -m examples.tutorial.b_ir_and_execution.08_detection_window_stat
 pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
 ```
 
-## Generate an HTML View
+## Generate An HTML View
 
 Run this from the repository root. The snippet imports a repo-local helper from
 `examples/shared/`, so `examples/` needs to be on the default Python path.
@@ -45,6 +55,5 @@ PY
 ## What To Observe
 
 - Graph-level validation and error surfaces.
-- Runtime differences between multiprocessing and Dora.
-- Perception and request/response in the same contract model.
-- Backend parity as a verification check after the structure is already clear.
+- The difference between “inspect the graph” and “run the graph”.
+- Backend differences only after the basic runtime model is clear.

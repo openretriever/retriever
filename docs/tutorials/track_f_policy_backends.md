@@ -4,7 +4,9 @@ title: "Track F: Policy Backends"
 
 # Track F: Policy Backends
 
-Focus: backend abstraction for closed-loop policy execution (`openpi_pi05`, `lerobot`, `mock`).
+Focus: one graph contract with multiple policy implementations.
+
+This is a specialized track. It makes more sense after the basics in Tracks D and G are already clear.
 
 ## Module
 
@@ -14,10 +16,5 @@ pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_bac
 
 ## What To Observe
 
-- Graph topology remains unchanged while backend switches.
-- Timing/chunk metrics vary by backend implementation.
-
-## Expected Artifacts (P0)
-
-- `logs/tutorial_policy/tut027_backend_metrics.csv`
-- `logs/tutorial_policy/tut027_backend_metrics.json`
+- Graph topology remains unchanged while the policy implementation changes.
+- Backend-specific latency and chunking differences live behind one typed boundary.

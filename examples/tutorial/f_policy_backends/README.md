@@ -1,16 +1,13 @@
 # F Policy Backends
 
-## Tutorials
+This is a specialized track.
+Read it after the basics in stateful feedback and composition are already clear.
+
+## Module
 
 - `01_closed_loop_policy_backend_abstraction.py`
 
 ## What To Expect
 
-- Switch policy backends by config only.
-- Keep one graph contract across backend choices.
-
-## Run
-
-```bash
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
-```
+- Switch policy implementations without changing the graph contract.
+- Measure backend-specific timing behind one typed boundary.

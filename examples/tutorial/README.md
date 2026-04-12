@@ -1,75 +1,34 @@
-# tutorial (Canonical Runtime Examples)
+# tutorial
 
-Tutorials are organized as one-level ordered topic tracks under `examples/tutorial/`.
-Each track uses local numbering (`01_`, `02_`, ...) within that folder.
+This directory is the runnable source tree for Retriever tutorials.
 
-## Tracks
+If you are learning Retriever, start with `docs/tutorials/index.md`.
+This README is a source map, not the main learning front door.
 
-- `a_flow_fundamentals/`
-- `b_ir_and_execution/`
-- `c_debug_and_replay/`
-- `d_closed_loop_state_feedback/`
-- `e_resource_and_sync/`
-- `f_policy_backends/`
-- `g_operations_interfaces/`
-- `h_release_readiness/`
+## Recommended Short Path
 
-## P0 Release-Readiness Modules
+Run these first:
 
-- `c_debug_and_replay/06_trace_contract_basics.py`
-- `h_release_readiness/01_run_manifest_and_lineage.py`
-- `f_policy_backends/01_closed_loop_policy_backend_abstraction.py`
-- `d_closed_loop_state_feedback/03_operator_mode_and_authority_fsm.py`
-- `h_release_readiness/02_release_readiness_walkthrough.py`
+- `a_flow_fundamentals/01_basic_flow.py`
+- `a_flow_fundamentals/03_adapter_connection.py`
+- `b_ir_and_execution/04_rt_execution.py`
+- `c_debug_and_replay/01_debug_stepper.py`
+- `c_debug_and_replay/04_record_replay_perception.py`
+- `g_operations_interfaces/06_composable_pipelines.py`
 
-## P1 Reliability Hardening Modules
+## Track Map
 
-- `b_ir_and_execution/09_backend_parity_benchmark.py`
-- `c_debug_and_replay/07_incident_response_replay_drill.py`
+- `a_flow_fundamentals/`: authoring, clocks, adapters, ergonomics
+- `b_ir_and_execution/`: IR inspection, execution graphs, backends
+- `c_debug_and_replay/`: stepper, traces, `.rrd` / `.mcap`, replay
+- `d_closed_loop_state_feedback/`: stateful flows, feedback, authority, replanning
+- `e_resource_and_sync/`: synchronization, fan-in/fan-out, event joins
+- `f_policy_backends/`: backend swapping behind one graph contract
+- `g_operations_interfaces/`: registries, composition, typed boundaries
+- `h_release_readiness/`: manifests, evidence, dataset export contracts
 
-## Advanced Extension Modules
+## Notes
 
-- `e_resource_and_sync/06_functional_fanin_fanout.py`
-- `d_closed_loop_state_feedback/13_deadline_aware_mode_switch.py`
-- `c_debug_and_replay/08_mcap_session_inspection.py`
-- `g_operations_interfaces/05_spatial_type_boundaries.py`
-- `e_resource_and_sync/07_data_multistream_join.py`
-- `h_release_readiness/03_dataset_manifest_and_lerobot_mapping.py`
-
-## P0 Runner
-
-```bash
-./scripts/run_p0_release_readiness.sh
-pixi run p0-release-readiness
-```
-
-## Expected Outputs
-
-- `expected_outputs/024_trace_contract_basics.md`
-- `expected_outputs/025_run_manifest_and_lineage.md`
-- `expected_outputs/027_closed_loop_policy_backend_abstraction.md`
-- `expected_outputs/028_operator_mode_and_authority_fsm.md`
-- `expected_outputs/034_functional_fanin_fanout.md`
-- `expected_outputs/035_deadline_aware_mode_switch.md`
-- `expected_outputs/036_mcap_session_inspection.md`
-- `expected_outputs/032_backend_parity_benchmark.md`
-- `expected_outputs/033_incident_response_replay_drill.md`
-- `expected_outputs/037_spatial_type_boundaries.md`
-- `expected_outputs/038_data_multistream_join.md`
-- `expected_outputs/039_dataset_manifest_and_lerobot_mapping.md`
-
-## Reliability Gates
-
-```bash
-pixi run p1-reliability-gates
-pixi run verify-backend-parity
-pixi run verify-incident-replay
-```
-
-## Notebook-Ready Export
-
-```bash
-pixi run demo-mcap-session-inspection
-pixi run export-notebook-ready
-pixi run check-notebook-ready
-```
+- Track numbering is local to each folder.
+- Keep non-hardware and mock-safe paths first when teaching new users.
+- Expected outputs live under `expected_outputs/`.

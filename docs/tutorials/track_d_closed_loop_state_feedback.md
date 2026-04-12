@@ -6,6 +6,23 @@ title: "Track D: Closed-Loop, State, and Feedback"
 
 Focus: stateful control patterns, feedback loops, authority transitions, and intervention semantics.
 
+## Start Here
+
+Run these in order:
+- `04_stateful_flow_reset`
+- `07_feedback_intro`
+- `03_operator_mode_and_authority_fsm`
+
+Use these later, once the runtime/state story is clear:
+- `05_belief_updater`
+- `12_stateful_replanning`
+- `13_deadline_aware_mode_switch`
+
+These are deeper or more domain-specific and should not be your first stop:
+- `01_closed_loop_env`
+- `02_symbolic_planning`
+- `18_advanced_time_patterns`
+
 ## Modules
 
 ```bash
@@ -31,15 +48,6 @@ pixi run python -m examples.tutorial.d_closed_loop_state_feedback.18_advanced_ti
 
 ## What To Observe
 
-- Closed-loop dynamics under different scheduler choices.
-- State reset and persistence boundaries.
-- Valid vs invalid authority-mode transitions.
-- Deadline-driven mode transitions (`NOMINAL <-> SAFE`) under periodic overload.
-- Conditional, timeout, and recurring timer patterns with deterministic triggers.
-
-## Expected Artifacts (P0)
-
-- `logs/tutorial_authority/tut028_authority_log.json`
-
-Advanced extension artifact:
-- `logs/tutorial_deadline/tut035_deadline_mode_switch.json`
+- How state enters a flow and how `reset()` defines state boundaries.
+- How feedback changes control behavior over time.
+- How authority and intervention markers fit into the same typed runtime model.
