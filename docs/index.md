@@ -71,6 +71,7 @@ pipe.close_stepper()
 - **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
 - **[Flow Typing Contract](guides/flow_typing_standard.md)** - tuple signatures, collision semantics, lifecycle ordering
 - **[Spatial Types v1](guides/spatial_types_v1.md)** - stamped robotics boundary payloads and registry lookup
+- **[Perception Types v1](guides/perception_types_v1.md)** - canonical images, encoded video artifacts, point clouds, detections, and masks
 - **[Data and EventStream v1](guides/data_eventstream_v1.md)** - canonical event/data contracts plus explicit helper modules
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
     - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
