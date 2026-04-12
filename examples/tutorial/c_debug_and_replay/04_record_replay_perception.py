@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 
 from retriever.config import RecordConfig
-from examples.shared.perception_runtime import (
+from examples.shared.perception_flows import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,

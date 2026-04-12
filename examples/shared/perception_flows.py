@@ -1,151 +1,46 @@
-"""Repo-local perception helpers shared by examples, docs, and tests."""
+"""
+Tutorial perception flows and pipeline factories.
+
+Defines the concrete Flow subclasses and Pipeline builders used by the
+tutorial examples. Data types and visualization helpers live in
+`retriever.lib.perception` so they can be imported without pulling in
+the full example stack.
+"""
 
 from __future__ import annotations
 
 import json
 import os
 import time
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Optional
 
-try:
-    import numpy as np  # type: ignore[import-not-found]
-except Exception:  # pragma: no cover - optional dependency
-    np = None  # type: ignore[assignment]
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever.lib.perception import (
+    BBox,
+    CameraData,
+    Detection,
+    DetectionResults,
+    Image,
+    PerceptionDisplayMode,
+    PERCEPTION_DISPLAY_MODES,
+    optional_cv2,
+    render_detection_overlay,
+    require_demo_deps,
+    send_perception_blueprint,
+)
+from retriever.recording import detect_recording_format, open_recording_reader
+from retriever.registry.pipeline import register_pipeline
 
 try:
     import rerun as rr  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover - optional dependency
     rr = None
 
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
-from retriever.recording import detect_recording_format, open_recording_reader
-from retriever.registry.pipeline import register_pipeline
 
-_PERCEPTION_BLUEPRINT_SENT = False
-_CV2_MODULE: Any = None
-_CV2_ATTEMPTED = False
-PerceptionDisplayMode = Literal["none", "stdout", "cv2"]
-PERCEPTION_DISPLAY_MODES: tuple[PerceptionDisplayMode, ...] = ("none", "stdout", "cv2")
-
-
-def _optional_cv2() -> Any:
-    global _CV2_MODULE, _CV2_ATTEMPTED
-    if not _CV2_ATTEMPTED:
-        _CV2_ATTEMPTED = True
-        try:
-            import cv2 as _cv2  # type: ignore[import-not-found]
-        except Exception:
-            _CV2_MODULE = None
-        else:
-            _CV2_MODULE = _cv2
-    return _CV2_MODULE
-
-
-def _require_demo_deps(*, require_cv2: bool = False) -> None:
-    if np is None:
-        raise RuntimeError(
-            "tutorial.perception requires demo dependencies (numpy). "
-            "Install retriever with the demo extras to use this pipeline."
-        )
-    if require_cv2 and _optional_cv2() is None:
-        raise RuntimeError(
-            "tutorial.perception requires OpenCV for live camera capture and cv2 windows. "
-            "Install retriever with the demo extras to use those paths."
-        )
-
-
-def _send_perception_blueprint(rr_module: Any) -> None:
-    global _PERCEPTION_BLUEPRINT_SENT
-
-    if _PERCEPTION_BLUEPRINT_SENT:
-        return
-    if not hasattr(rr_module, "send_blueprint") or not hasattr(rr_module, "blueprint"):
-        return
-
-    try:
-        rrb = rr_module.blueprint
-        rr_module.log(
-            "docs/perception",
-            rr_module.TextDocument(
-                (
-                    "# Perception Demo\n\n"
-                    "- Main view: annotated detector overlay image.\n"
-                    "- `.../output/overlay`: RGB frame with boxes already rendered.\n"
-                    "- `.../output/image`: raw camera stream.\n"
-                    "- `.../output/bbox`: raw box geometry.\n"
-                    "- `ColorDetector/.../output/count`: number of detections.\n"
-                    "- `.../mode`: `real` camera vs `mock` fallback.\n"
-                ),
-                media_type=rr_module.MediaType.MARKDOWN,
-            ),
-            static=True,
-        )
-        # Spatial2DView is correct for rr.Image data (TensorView is for rr.Tensor).
-        # Fall back to TensorView for older Rerun SDK versions that lack Spatial2DView.
-        # Spatial2DView requires origin to be the direct parent (or the entity itself)
-        # in the spatial tree. Wildcard origins like "/" or "/flows" don't work because
-        # images at different paths are in disconnected spatial trees — Rerun can't
-        # compose them. Point origin at each specific output path instead.
-        # Node IDs come from class names: CameraSource, ColorDetector (see builder.py).
-        _ImageView = getattr(rrb, "Spatial2DView", None) or getattr(rrb, "TensorView")
-        blueprint = rrb.Blueprint(
-            rrb.Horizontal(
-                rrb.Tabs(
-                    _ImageView(
-                        origin="/flows/ColorDetector/output",
-                        name="Detections",
-                    ),
-                    _ImageView(
-                        origin="/flows/CameraSource/output",
-                        name="Raw Camera",
-                    ),
-                    active_tab="Detections",
-                ),
-                rrb.Vertical(
-                    rrb.TimeSeriesView(
-                        origin="/flows/ColorDetector/output/count",
-                        name="Detection Count",
-                    ),
-                    rrb.TextDocumentView(
-                        origin="docs/perception",
-                        name="Legend",
-                    ),
-                    row_shares=[0.55, 0.45],
-                ),
-                column_shares=[0.72, 0.28],
-            ),
-            collapse_panels=True,
-        )
-        rr_module.send_blueprint(blueprint)
-        _PERCEPTION_BLUEPRINT_SENT = True
-    except Exception as exc:
-        print(f"[Perception Demo] Failed to send Rerun blueprint: {exc}")
-
-
-def _render_detection_overlay(frame_rgb: Any, detections: List["Detection"]) -> Any:
-    cv2 = _optional_cv2()
-    if cv2 is None or frame_rgb is None:
-        return frame_rgb
-
-    overlay_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR).copy()
-    for det in detections:
-        bbox = det.bbox
-        x, y = int(bbox.x), int(bbox.y)
-        w, h = int(bbox.width), int(bbox.height)
-        color = (0, 0, 255) if "red" in det.label else (255, 0, 0)
-        cv2.rectangle(overlay_bgr, (x, y), (x + w, y + h), color, 2)
-        cv2.putText(
-            overlay_bgr,
-            f"{det.label} {det.confidence:.2f}",
-            (x, max(20, y - 8)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.55,
-            color,
-            2,
-        )
-    return cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
+# ---------------------------------------------------------------------------
+# Event streaming helpers
+# ---------------------------------------------------------------------------
 
 
 def _stream_path() -> Optional[Path]:
@@ -199,76 +94,9 @@ def emit_replay_finished(*, recording_path: str, steps_completed: int) -> None:
     )
 
 
-@dataclass
-class BBox:
-    x: float
-    y: float
-    width: float
-    height: float
-
-
-@dataclass
-class Image:
-    frame: Any
-    frame_id: int
-
-
-@dataclass
-class Detection:
-    label: str
-    confidence: float
-    bbox: BBox
-
-
-@io
-class CameraData:
-    image: Image
-    mode: str = "unknown"
-
-    def log_to_rerun(self, path: str) -> None:
-        if rr is None:
-            return
-        rr.log(f"{path}/image", rr.Image(self.image.frame))
-        rr.log(f"{path}/frame_id", rr.TextLog(str(self.image.frame_id)))
-        rr.log(f"{path}/mode", rr.TextLog(self.mode))
-
-
-@io
-class DetectionResults:
-    image: Image
-    detections: List[Detection]
-    mode: str = "unknown"
-
-    def log_to_rerun(self, path: str) -> None:
-        if rr is None:
-            return
-
-        rr.log(f"{path}/image", rr.Image(self.image.frame))
-        rr.log(f"{path}/overlay", rr.Image(_render_detection_overlay(self.image.frame, self.detections)))
-        rr.log(f"{path}/count", rr.Scalars([len(self.detections)]))
-        rr.log(f"{path}/mode", rr.TextLog(self.mode))
-        if not self.detections:
-            rr.log(f"{path}/bbox", rr.Boxes2D([], labels=[]))
-            return
-
-        boxes = []
-        labels = []
-        class_ids = []
-        for det in self.detections:
-            bbox = det.bbox
-            boxes.append([bbox.x, bbox.y, bbox.width, bbox.height])
-            labels.append(f"{det.label} {det.confidence:.2f}")
-            class_ids.append(1 if "red" in det.label else 2)
-
-        rr.log(
-            f"{path}/bbox",
-            rr.Boxes2D(
-                array=np.array(boxes),
-                array_format=rr.Box2DFormat.XYWH,
-                labels=labels,
-                class_ids=class_ids,
-            ),
-        )
+# ---------------------------------------------------------------------------
+# Flows
+# ---------------------------------------------------------------------------
 
 
 class CameraSource(Flow[None, CameraData]):
@@ -301,21 +129,21 @@ class CameraSource(Flow[None, CameraData]):
         }
 
     def reset(self) -> None:
-        _require_demo_deps()
+        require_demo_deps()
         if self.cap is not None:
             self.cap.release()
             self.cap = None
         if rr is not None and hasattr(rr, "get_global_data_recording"):
             try:
                 if rr.get_global_data_recording() is not None:
-                    _send_perception_blueprint(rr)
+                    send_perception_blueprint(rr)
             except Exception:
                 pass
         self.frame_count = 0
         self._initialized = True
         self.mode = "mock"
         if self.use_real_camera:
-            cv2 = _optional_cv2()
+            cv2 = optional_cv2()
             if cv2 is None:
                 raise RuntimeError(
                     "CameraSource requires OpenCV for real camera capture. "
@@ -359,10 +187,12 @@ class CameraSource(Flow[None, CameraData]):
     def step(self, _) -> CameraData:
         if not self._initialized:
             self.reset()
-        _require_demo_deps()
+        require_demo_deps()
         self.frame_count += 1
 
-        cv2 = _optional_cv2()
+        import numpy as np
+
+        cv2 = optional_cv2()
         if self.mode == "real" and self.cap is not None and self.cap.isOpened() and cv2 is not None:
             ret, frame = self.cap.read()
             if ret and frame is not None:
@@ -400,12 +230,14 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
         return {"min_confidence": self.min_confidence}
 
     def step(self, input: CameraData) -> DetectionResults:
-        _require_demo_deps()
+        require_demo_deps()
         camera = _as_camera_data(input)
         if camera is None:
             return DetectionResults()
         detections: List[Detection] = []
         frame = camera.image.frame
+
+        import numpy as np
 
         red_mask = (
             (frame[:, :, 0] > 180) & (frame[:, :, 1] < 120) & (frame[:, :, 2] < 120)
@@ -434,6 +266,8 @@ class ColorDetector(Flow[CameraData, DetectionResults]):
         return DetectionResults(image=camera.image, detections=filtered, mode=str(camera.mode or "unknown"))
 
     def _detect_from_mask(self, mask: Any, label: str) -> List[Detection]:
+        import numpy as np
+
         y_coords, x_coords = np.where(mask)
         if len(x_coords) < 50:
             return []
@@ -470,7 +304,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
     def reset(self) -> None:
         if self.display != "cv2":
             return
-        cv2 = _optional_cv2()
+        cv2 = optional_cv2()
         if cv2 is None:
             raise RuntimeError("OpenCV UI is not available; install demo dependencies to use --visualize cv2.")
         try:
@@ -480,7 +314,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
             raise RuntimeError(f"Failed to create OpenCV window for perception replay: {exc}") from exc
 
     def finalize(self) -> None:
-        cv2 = _optional_cv2()
+        cv2 = optional_cv2()
         if self.display == "cv2" and cv2 is not None:
             cv2.destroyAllWindows()
 
@@ -498,7 +332,7 @@ class DisplayFlow(Flow[DetectionResults, None]):
         elif self.display == "stdout":
             print(f"  Frame {frame_id}: No objects")
 
-        cv2 = _optional_cv2()
+        cv2 = optional_cv2()
         if self.display == "cv2" and cv2 is not None:
             display_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR).copy()
             for det in detections:
@@ -533,6 +367,11 @@ class DisplayFlow(Flow[DetectionResults, None]):
 class Drain(Flow[CameraData, None]):
     def step(self, _input: CameraData) -> None:
         return None
+
+
+# ---------------------------------------------------------------------------
+# Pipeline factories
+# ---------------------------------------------------------------------------
 
 
 def build_tutorial_perception_pipeline(
@@ -606,6 +445,11 @@ def build_replay_pipeline(
     pipe.connect(camera, detector, sync=Latest())
     pipe.connect(detector, display_flow, sync=Latest())
     return pipe, camera
+
+
+# ---------------------------------------------------------------------------
+# Recording / replay utilities
+# ---------------------------------------------------------------------------
 
 
 def _as_camera_data(obj: object) -> CameraData | None:
@@ -698,19 +542,24 @@ def load_camera_buffer_from_recording(path: Path) -> list[tuple[float, CameraDat
 
 
 __all__ = [
+    # Re-exported types (convenience for examples that only import from here)
     "BBox",
     "CameraData",
-    "CameraSource",
-    "ColorDetector",
     "Detection",
     "DetectionResults",
-    "DisplayFlow",
     "Image",
     "PERCEPTION_DISPLAY_MODES",
     "PerceptionDisplayMode",
+    # Flows
+    "CameraSource",
+    "ColorDetector",
+    "DisplayFlow",
+    "Drain",
+    # Pipelines
     "build_record_pipeline",
     "build_replay_pipeline",
     "build_tutorial_perception_pipeline",
+    # Replay utils
     "emit_replay_finished",
     "emit_replay_started",
     "load_camera_buffer_from_recording",

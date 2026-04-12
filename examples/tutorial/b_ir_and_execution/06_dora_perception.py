@@ -21,15 +21,9 @@ Run:
 
 from __future__ import annotations
 
-if __package__ in {None, ""}:
-    import sys
-    from pathlib import Path
-
-    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-
 import argparse
 
-from examples.shared.perception_runtime import build_tutorial_perception_pipeline
+from examples.shared.perception_flows import build_tutorial_perception_pipeline
 
 
 def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_camera: bool):
@@ -55,9 +49,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")
     parser.add_argument(
         "--camera-mode",
-        default="auto",
-        choices=["auto", "real", "mock"],
-        help="Use 'real' to request a live camera, 'mock' for synthetic frames, or 'auto' for backend-safe defaults.",
+        default="real",
+        choices=["real", "mock"],
+        help="Use 'real' (default) for a live camera — raises if no camera found. Use 'mock' for synthetic frames.",
     )
     parser.add_argument(
         "--visualize",
@@ -107,12 +101,7 @@ def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
 
 
 def _resolve_camera_mode(args: argparse.Namespace) -> bool:
-    if args.camera_mode == "real":
-        return True
-    if args.camera_mode == "mock":
-        return False
-    # auto: always try real camera; CameraSource raises clearly if unavailable
-    return True
+    return args.camera_mode != "mock"
 
 
 def main() -> None:

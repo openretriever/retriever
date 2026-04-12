@@ -28,7 +28,7 @@ if __package__ in {None, ""}:
 import argparse
 import time
 
-from examples.shared.perception_runtime import CameraSource, ColorDetector, DisplayFlow
+from examples.shared.perception_flows import CameraSource, ColorDetector, DisplayFlow
 from retriever.flow import Latest, Pipeline, Rate, Trigger
 
 
