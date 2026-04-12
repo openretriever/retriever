@@ -524,9 +524,9 @@ class RerunManager:
         Return True when the node's output should be logged at the current step.
 
         Resolution order:
-        1. Per-node policy from .then(viz=...) (stored in IR, passed to this manager).
-        2. Global default_viz from retriever.init(default_viz=...).
-        3. No policy → skip (nothing logged by default).
+        1. Per-node policy from .then(viz=...) — explicit suppress (False) or Hz cap.
+        2. Global default_viz from retriever.init(default_viz=...) — Hz cap for all nodes.
+        3. No policy set → log everything (backward-compatible default).
 
         Rate-limiting is applied based on the resolved hz value and the step's
         logical timestamp.  When now is None, every allowed step is logged.
@@ -536,13 +536,15 @@ class RerunManager:
         policy = self._node_viz_policies.get(node_id)
 
         if policy is not None:
+            # viz=False → explicit suppression
             if not policy.get("enabled", True):
                 return False
             hz = policy.get("hz", 5.0)
         else:
             default_viz = get_global_config().get("default_viz")
             if default_viz is None:
-                return False
+                # No policy anywhere → log everything (backward-compatible)
+                return True
             hz = default_viz.hz
 
         # Hz-based rate limiter

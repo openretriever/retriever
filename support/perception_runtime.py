@@ -82,15 +82,18 @@ def _send_perception_blueprint(rr_module: Any) -> None:
             ),
             static=True,
         )
+        # Spatial2DView is correct for rr.Image data (TensorView is for rr.Tensor).
+        # Fall back to TensorView for older Rerun SDK versions that lack Spatial2DView.
+        _ImageView = getattr(rrb, "Spatial2DView", None) or getattr(rrb, "TensorView")
         blueprint = rrb.Blueprint(
             rrb.Horizontal(
                 rrb.Tabs(
-                    rrb.TensorView(
+                    _ImageView(
                         origin="/flows",
                         contents="+ /flows/**/output/overlay",
                         name="Detections",
                     ),
-                    rrb.TensorView(
+                    _ImageView(
                         origin="/flows",
                         contents="+ /flows/**/output/image",
                         name="Raw Camera",
