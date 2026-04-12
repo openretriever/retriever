@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from retriever import get_type_info, resolve_schema_ref
-from retriever.types import ClockDomain, SchemaRef, StreamId, get_type, register_type
+from retriever import get_type, get_type_info, resolve_schema_ref
+from retriever.registry.types import register_type
+from retriever.types import ClockDomain, SchemaRef, StreamId
 from retriever.types.data import DataSpec, DatasetManifest, EventBuffer
 from retriever.types.data.v1 import DataSpec as PinnedDataSpec
 from retriever.types.spatial import Header, PoseStamped, Quaternion, SE3Pose, Vector3

@@ -40,6 +40,15 @@ def test_context_module_imports_without_optional_mcp_runtime():
     assert context.MCPConfig is not None
 
 
+def test_types_umbrella_exports_packages_not_registry_helpers():
+    import retriever.types as types_pkg
+
+    assert types_pkg.data is not None
+    assert types_pkg.spatial is not None
+    assert types_pkg.symbolic is not None
+    assert not hasattr(types_pkg, "register_type")
+
+
 def test_legacy_typing_namespace_modules_are_removed():
     for module_name in (
         "retriever.data_spec",

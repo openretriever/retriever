@@ -7,7 +7,7 @@ basic functionality works properly.
 
 import pytest
 from retriever import Flow, Pipeline, ExecutionEngine
-from retriever.types import register_type, get_registered_types
+from retriever.registry.types import get_registered_types, register_type
 
 
 class TestFlowComposition:

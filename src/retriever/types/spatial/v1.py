@@ -8,12 +8,12 @@ from typing import Final, Iterable
 
 from retriever.registry.types import register_type
 
-_ROBOTICS_CATEGORY: Final[str] = "spatial"
-_ROBOTICS_NAMESPACE: Final[str] = "spatial"
-_ROBOTICS_VERSION: Final[str] = "v1"
+_SPATIAL_CATEGORY: Final[str] = "spatial"
+_SPATIAL_NAMESPACE: Final[str] = "spatial"
+_SPATIAL_VERSION: Final[str] = "v1"
 
 
-def _register_robotics_type(
+def _register_spatial_type(
     name: str,
     *,
     description: str,
@@ -22,17 +22,17 @@ def _register_robotics_type(
     return register_type(
         name,
         description=description,
-        category=_ROBOTICS_CATEGORY,
-        namespace=_ROBOTICS_NAMESPACE,
-        version=_ROBOTICS_VERSION,
+        category=_SPATIAL_CATEGORY,
+        namespace=_SPATIAL_NAMESPACE,
+        version=_SPATIAL_VERSION,
         kind="payload",
         tags=tags,
         schema_name=f"spatial/{name}",
-        schema_version=_ROBOTICS_VERSION,
+        schema_version=_SPATIAL_VERSION,
     )
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "Header",
     description="Header for stamped robotics payloads",
     tags=["spatial", "robotics", "v1", "header", "metadata"],
@@ -44,7 +44,7 @@ class Header:
     source: str = "unknown"
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "Vector3",
     description="3D vector payload",
     tags=["spatial", "robotics", "v1", "geometry", "vector"],
@@ -56,7 +56,7 @@ class Vector3:
     z: float
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "Quaternion",
     description="Quaternion rotation payload",
     tags=["spatial", "robotics", "v1", "geometry", "quaternion"],
@@ -75,7 +75,7 @@ class Quaternion:
         return abs(self.norm() - 1.0) <= tol
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "SE3Pose",
     description="SE(3) pose payload",
     tags=["spatial", "robotics", "v1", "geometry", "pose"],
@@ -86,7 +86,7 @@ class SE3Pose:
     orientation: Quaternion
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "Twist",
     description="Spatial velocity payload",
     tags=["spatial", "robotics", "v1", "motion", "twist"],
@@ -97,7 +97,7 @@ class Twist:
     angular: Vector3
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "Wrench",
     description="Force and torque payload",
     tags=["spatial", "robotics", "v1", "force", "wrench"],
@@ -108,7 +108,7 @@ class Wrench:
     torque: Vector3
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "JointState",
     description="Joint state payload",
     tags=["spatial", "robotics", "v1", "joint", "state"],
@@ -129,7 +129,7 @@ class JointState:
         )
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "PoseStamped",
     description="Timestamped pose payload",
     tags=["spatial", "robotics", "v1", "pose", "stamped"],
@@ -140,7 +140,7 @@ class PoseStamped:
     pose: SE3Pose
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "TwistStamped",
     description="Timestamped twist payload",
     tags=["spatial", "robotics", "v1", "twist", "stamped"],
@@ -151,7 +151,7 @@ class TwistStamped:
     twist: Twist
 
 
-@_register_robotics_type(
+@_register_spatial_type(
     "WrenchStamped",
     description="Timestamped wrench payload",
     tags=["spatial", "robotics", "v1", "wrench", "stamped"],

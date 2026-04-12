@@ -6,9 +6,12 @@ Tests the core type system, registry, and conversion functionality.
 
 import pytest
 from retriever import get_type
-from retriever.types import (
-    convert_to_arrow, convert_from_arrow, register_type,
-    get_registered_types, get_global_registry
+from retriever.registry.types import (
+    convert_to_arrow,
+    convert_from_arrow,
+    get_global_registry,
+    get_registered_types,
+    register_type,
 )
 from retriever.types.spatial import Header, JointState, PoseStamped, Quaternion, SE3Pose, Vector3
 
