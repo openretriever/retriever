@@ -17,9 +17,15 @@ Run:
 
 from __future__ import annotations
 
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
 import numpy as np
 
-from support.perception_runtime import CameraData, ColorDetector, DetectionResults, Image
+from examples.shared.perception_runtime import CameraData, ColorDetector, DetectionResults, Image
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger
 
 

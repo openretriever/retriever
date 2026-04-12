@@ -21,9 +21,15 @@ Run:
 
 from __future__ import annotations
 
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
 import argparse
 
-from support.perception_runtime import build_tutorial_perception_pipeline
+from examples.shared.perception_runtime import build_tutorial_perception_pipeline
 
 
 def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_camera: bool):
@@ -78,7 +84,14 @@ def parse_args() -> argparse.Namespace:
 def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
     mode = args.visualize
     if mode == "auto":
-        mode = "stdout"
+        # Default to rerun so new users see live visualization out of the box.
+        # Falls back to stdout if rerun-sdk is not installed.
+        try:
+            import importlib
+            importlib.import_module("rerun")
+            mode = "rerun"
+        except ImportError:
+            mode = "stdout"
 
     show_window = mode in {"window", "both"}
     use_rerun = mode in {"rerun", "both"}

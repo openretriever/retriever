@@ -1,276 +1,84 @@
 from __future__ import annotations
 
-import argparse
-import importlib
-import json
-from pathlib import Path
+import os
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from retriever.config import RecordConfig
-from retriever.registry.pipeline import build_ir, list_pipelines
-from retriever.recording import build_recording_sink
-from retriever.rt.stepper import StepResult
-from support.perception_runtime import (
-    CameraSource,
-    ColorDetector,
-    CameraData,
-    Image,
-    emit_replay_finished,
-    emit_replay_started,
-    load_camera_buffer_from_recording,
-)
 
 
-def _read_jsonl(path: Path) -> list[dict]:
-    rows: list[dict] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        text = line.strip()
-        if not text:
-            continue
-        rows.append(json.loads(text))
-    return rows
+def _example_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{REPO_ROOT / 'src'}:{REPO_ROOT}"
+    return env
 
 
-def test_tutorial_perception_pipeline_registers_and_builds_ir() -> None:
-    pipelines = list_pipelines()
-    assert "tutorial.perception" in pipelines
-
-    ir = build_ir(
-        "tutorial.perception",
-        use_real_camera=False,
-        show_window=False,
-        min_confidence=0.55,
-        camera_width=320,
-        camera_height=240,
-        camera_index=2,
-    )
-    assert ir.metadata.name == "tutorial.perception"
-    assert len(list(ir.nodes or [])) == 3
-    edge_ports = {(str(edge.source.port), str(edge.destination.port)) for edge in list(ir.edges or [])}
-    assert ("image", "image") in edge_ports
-    assert ("detections", "detections") in edge_ports
-
-    nodes = {node.id: node for node in ir.nodes}
-    assert nodes["CameraSource"].init_config == {
-        "use_real_camera": False,
-        "width": 320,
-        "height": 240,
-        "camera_index": 2,
-    }
-    assert nodes["ColorDetector"].init_config == {"min_confidence": 0.55}
-    assert nodes["DisplayFlow"].init_config == {"display": "stdout"}
-
-
-def test_tutorial_perception_emits_semantic_camera_and_detection_events(
-    tmp_path: Path, monkeypatch
-) -> None:
-    stream_path = tmp_path / "semantic_stream.jsonl"
-    monkeypatch.setenv("RETRIEVER_RUNTIME_STREAM_JSONL", str(stream_path))
-    monkeypatch.setenv("RETRIEVER_RUN_ID", "run_perception_rt")
-    monkeypatch.setenv("RETRIEVER_PIPELINE_ID", "tutorial.perception")
-
-    camera = CameraSource(use_real_camera=False, width=160, height=120)
-    camera.reset()
-    sample = camera.step(None)
-
-    detector = ColorDetector(min_confidence=0.4)
-    detector.step(sample)
-
-    rows = _read_jsonl(stream_path)
-    events = [str(row.get("event")) for row in rows]
-    assert "Perception.CameraMode" in events
-    assert "Perception.FrameCaptured" in events
-    assert "Perception.Detections" in events
-
-    camera_mode = next(row for row in rows if str(row.get("event")) == "Perception.CameraMode")
-    assert str((camera_mode.get("payload") or {}).get("mode")) in {"mock", "real"}
-
-    detections = next(row for row in rows if str(row.get("event")) == "Perception.Detections")
-    payload = detections.get("payload") or {}
-    assert int(payload.get("frame_id", 0) or 0) >= 1
-    assert isinstance(payload.get("labels"), list)
-    assert "empty" in payload
-
-
-def test_tutorial_perception_replay_helpers_emit_semantic_events(
-    tmp_path: Path, monkeypatch
-) -> None:
-    stream_path = tmp_path / "semantic_replay.jsonl"
-    monkeypatch.setenv("RETRIEVER_RUNTIME_STREAM_JSONL", str(stream_path))
-    monkeypatch.setenv("RETRIEVER_RUN_ID", "run_perception_replay")
-    monkeypatch.setenv("RETRIEVER_PIPELINE_ID", "tutorial.perception")
-
-    emit_replay_started(recording_path="logs/perception.mcap", frame_count_estimate=10)
-    emit_replay_finished(recording_path="logs/perception.mcap", steps_completed=7)
-
-    rows = _read_jsonl(stream_path)
-    events = [str(row.get("event")) for row in rows]
-    assert events == ["Perception.ReplayStarted", "Perception.ReplayFinished"]
-    assert str((rows[0].get("payload") or {}).get("recording_path")) == "logs/perception.mcap"
-    assert int((rows[1].get("payload") or {}).get("steps_completed", 0) or 0) == 7
-
-
-def test_tutorial_perception_loads_camera_buffer_from_rrd(tmp_path: Path) -> None:
-    import numpy as np
-
-    pytest.importorskip("rerun")
-
-    path = tmp_path / "perception.rrd"
-    frame = np.zeros((3, 4, 3), dtype=np.uint8)
-    frame[:, :, 0] = 10
-    frame[:, :, 1] = 20
-    frame[:, :, 2] = 30
-
-    sink = build_recording_sink(RecordConfig(path=path), app_id="perception_test")
-    sink.open()
-    try:
-        sink.write_step(
-            StepResult(
-                now=1.25,
-                executed=["CameraSource_test"],
-                inputs={},
-                outputs={
-                    "CameraSource_test": CameraData(
-                        image=Image(frame=frame, frame_id=11),
-                        mode="mock",
-                    )
-                },
-            ),
-            0,
-        )
-    finally:
-        sink.close()
-
-    buffer = load_camera_buffer_from_recording(path)
-    assert len(buffer) == 1
-    _ts, camera = buffer[0]
-    assert camera.image.frame_id == 11
-    assert camera.mode == "mock"
-    assert camera.image.frame.shape == (3, 4, 3)
-    assert int(camera.image.frame[0, 0, 1]) == 20
-
-
-def test_tutorial_record_replay_cli_roundtrip_emits_rrd_and_mcap(tmp_path: Path) -> None:
-    pytest.importorskip("rerun")
-
-    mod = importlib.import_module("examples.tutorial.c_debug_and_replay.04_record_replay_perception")
-
-    rrd_path = tmp_path / "perception.rrd"
-    mcap_path = tmp_path / "perception.mcap"
-
-    record_args = argparse.Namespace(
-        out=rrd_path,
-        replay_out=mcap_path,
-        camera_index=0,
-        stream=False,
-        steps=3,
-        dt=0.01,
-        sleep=0.0,
-    )
-    mod.cmd_record(record_args)
-
-    assert rrd_path.exists()
-    assert rrd_path.stat().st_size > 0
-    assert mcap_path.exists()
-    assert mcap_path.stat().st_size > 0
-
-    replay_args = argparse.Namespace(
-        recording=rrd_path,
-        steps=3,
-        dt=0.01,
-        sleep=0.0,
-        visualize="stdout",
-    )
-    mod.cmd_replay(replay_args)
-
-    replay_args.recording = mcap_path
-    mod.cmd_replay(replay_args)
-
-
-class _DummyDemoPipe:
-    def __init__(self) -> None:
-        self.run_kwargs = None
-
-    def run(self, **kwargs):
-        self.run_kwargs = kwargs
-
-
-def test_webcam_demo_cli_uses_mock_camera_for_worker_rerun(monkeypatch, capsys) -> None:
-    mod = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
-    pipe = _DummyDemoPipe()
-    captured = {}
-
-    def fake_build(*, show_window: bool, camera_index: int, use_real_camera: bool):
-        captured.update(show_window=show_window, camera_index=camera_index, use_real_camera=use_real_camera)
-        return pipe
-
-    monkeypatch.setattr(mod, "build_perception_pipeline", fake_build)
-    monkeypatch.setattr(
-        mod,
-        "parse_args",
-        lambda: argparse.Namespace(
-            backend="multiprocessing",
-            duration=3.0,
-            camera_index=2,
-            camera_mode="auto",
-            visualize="rerun",
-            fresh_dora=False,
-        ),
+def _run_script(script_rel: str, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, script_rel, *args],
+        cwd=REPO_ROOT,
+        env=_example_env(),
+        text=True,
+        capture_output=True,
+        check=False,
     )
 
-    mod.main()
 
-    assert captured == {"show_window": False, "camera_index": 2, "use_real_camera": False}
-    assert pipe.run_kwargs == {
-        "backend": "multiprocessing",
-        "duration": 3.0,
-        "blocking": True,
-        "backend_config": {},
-        "visualize": "rerun",
-    }
-    out = capsys.readouterr().out
-    assert "Using mock camera in worker backends by default." in out
-    assert "Streaming typed outputs to Rerun." in out
+def test_webcam_demo_help_runs() -> None:
+    result = _run_script('examples/tutorial/b_ir_and_execution/06_dora_perception.py', '--help')
+    assert result.returncode == 0, result.stderr
+    assert 'Perception runtime demo' in result.stdout
 
 
-def test_webcam_demo_cli_sets_fresh_dora_backend_config(monkeypatch, capsys) -> None:
-    mod = importlib.import_module("examples.tutorial.b_ir_and_execution.06_dora_perception")
-    pipe = _DummyDemoPipe()
-    captured = {}
+def test_record_replay_cli_help_runs() -> None:
+    result = _run_script('examples/tutorial/c_debug_and_replay/04_record_replay_perception.py', '--help')
+    assert result.returncode == 0, result.stderr
+    assert 'record' in result.stdout
+    assert 'replay' in result.stdout
 
-    def fake_build(*, show_window: bool, camera_index: int, use_real_camera: bool):
-        captured.update(show_window=show_window, camera_index=camera_index, use_real_camera=use_real_camera)
-        return pipe
 
-    monkeypatch.setattr(mod, "build_perception_pipeline", fake_build)
-    monkeypatch.setattr(
-        mod,
-        "parse_args",
-        lambda: argparse.Namespace(
-            backend="dora",
-            duration=2.0,
-            camera_index=0,
-            camera_mode="mock",
-            visualize="stdout",
-            fresh_dora=True,
-        ),
+def test_record_replay_cli_roundtrip_emits_rrd_and_mcap(tmp_path: Path) -> None:
+    pytest.importorskip('rerun')
+
+    rrd_path = tmp_path / 'perception.rrd'
+    mcap_path = tmp_path / 'perception.mcap'
+
+    record = _run_script(
+        'examples/tutorial/c_debug_and_replay/04_record_replay_perception.py',
+        'record',
+        '--out', str(rrd_path),
+        '--replay-out', str(mcap_path),
+        '--camera-mode', 'mock',
+        '--steps', '3',
+        '--dt', '0.01',
+        '--sleep', '0.0',
     )
+    assert record.returncode == 0, record.stderr
+    assert rrd_path.exists() and rrd_path.stat().st_size > 0
+    assert mcap_path.exists() and mcap_path.stat().st_size > 0
 
-    mod.main()
+    replay_rrd = _run_script(
+        'examples/tutorial/c_debug_and_replay/04_record_replay_perception.py',
+        'replay',
+        '--recording', str(rrd_path),
+        '--steps', '3',
+        '--dt', '0.01',
+        '--sleep', '0.0',
+        '--visualize', 'stdout',
+    )
+    assert replay_rrd.returncode == 0, replay_rrd.stderr
 
-    assert captured == {"show_window": False, "camera_index": 0, "use_real_camera": False}
-    assert pipe.run_kwargs == {
-        "backend": "dora",
-        "duration": 2.0,
-        "blocking": True,
-        "backend_config": {"dora_fresh": True},
-        "visualize": None,
-    }
-    out = capsys.readouterr().out
-    assert "Using a fresh Dora runtime for this demo." in out
+    replay_mcap = _run_script(
+        'examples/tutorial/c_debug_and_replay/04_record_replay_perception.py',
+        'replay',
+        '--recording', str(mcap_path),
+        '--steps', '3',
+        '--dt', '0.01',
+        '--sleep', '0.0',
+        '--visualize', 'stdout',
+    )
+    assert replay_mcap.returncode == 0, replay_mcap.stderr

@@ -105,8 +105,7 @@ def _send_perception_blueprint(rr_module: Any) -> None:
                 ),
                 rrb.Vertical(
                     rrb.TimeSeriesView(
-                        origin="/flows",
-                        contents="+ /flows/**/output/count",
+                        origin="/flows/ColorDetector/output/count",
                         name="Detection Count",
                     ),
                     rrb.TextDocumentView(
@@ -588,9 +587,9 @@ def _register_tutorial_perception_pipeline(
     )
 
 
-def build_record_pipeline(*, camera_index: int = 0) -> tuple[Pipeline, object]:
+def build_record_pipeline(*, camera_index: int = 0, use_real_camera: bool = True) -> tuple[Pipeline, object]:
     pipe = Pipeline("tutorial.perception.record")
-    camera = CameraSource(use_real_camera=True, width=640, height=480, camera_index=camera_index) @ Rate(hz=20)
+    camera = CameraSource(use_real_camera=use_real_camera, width=640, height=480, camera_index=camera_index) @ Rate(hz=20)
     drain = Drain() @ Trigger("image")
     pipe.connect(camera, drain, sync=Latest())
     return pipe, camera

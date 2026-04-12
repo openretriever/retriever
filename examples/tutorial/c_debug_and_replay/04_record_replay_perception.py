@@ -16,12 +16,18 @@ Run:
 
 from __future__ import annotations
 
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
 import argparse
 import time
 from pathlib import Path
 
 from retriever.config import RecordConfig
-from support.perception_runtime import (
+from examples.shared.perception_runtime import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,
@@ -48,6 +54,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional replay artifact path (.mcap recommended for portable replay).",
     )
     record.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")
+    record.add_argument(
+        "--camera-mode",
+        choices=("real", "mock"),
+        default="real",
+        help="Record from a real camera or use deterministic mock frames.",
+    )
     record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
     record.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")
@@ -76,7 +88,10 @@ def parse_args() -> argparse.Namespace:
 def cmd_record(args: argparse.Namespace) -> None:
     if args.out.expanduser().resolve() == args.replay_out.expanduser().resolve():
         raise SystemExit("--out and --replay-out must be different artifact paths.")
-    pipe, _camera = build_record_pipeline(camera_index=args.camera_index)
+    pipe, _camera = build_record_pipeline(
+        camera_index=args.camera_index,
+        use_real_camera=args.camera_mode == "real",
+    )
     cfg = RecordConfig(path=args.out, mirrors=(args.replay_out,))
     try:
         pipe.record(
@@ -91,7 +106,10 @@ def cmd_record(args: argparse.Namespace) -> None:
         pipe.close_stepper()
     outputs = ", ".join(str(path) for path in cfg.artifact_paths())
     print(f"[Recording] saved {args.steps} steps to {outputs}")
-    print("[Recording] if no camera is available, the tutorial pipeline uses mock frames so the artifact flow still works.")
+    if args.camera_mode == "mock":
+        print("[Recording] mock frame mode was used for deterministic artifact generation.")
+    else:
+        print("[Recording] recorded from the live camera path.")
 
 
 def _resolve_recording_path(path: Path) -> Path:

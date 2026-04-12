@@ -19,10 +19,16 @@ Run:
 
 from __future__ import annotations
 
+if __package__ in {None, ""}:
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
 import argparse
 import time
 
-from support.perception_runtime import CameraSource, ColorDetector, DisplayFlow
+from examples.shared.perception_runtime import CameraSource, ColorDetector, DisplayFlow
 from retriever.flow import Latest, Pipeline, Rate, Trigger
 
 
