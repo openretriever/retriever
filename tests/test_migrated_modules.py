@@ -1,7 +1,7 @@
 """
-Tests for Migrated Legacy Modules.
+Tests for migrated legacy modules now owned by retriever core.
 
-Tests the modules migrated from golden_retriever/core into retriever core:
+These tests cover the legacy surfaces that were folded into retriever core:
 - retriever.types.symbolic.skills (SkillSignature, GroundedSkill)
 - retriever.types.symbolic (ObjectType, Predicate, Object, Variable, GroundAtom)
 - retriever.ir.resources (ResourceSpec, ResourcePresets)
