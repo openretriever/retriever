@@ -66,6 +66,7 @@ def test_types_umbrella_exports_packages_not_registry_helpers():
     from retriever.types.symbolic import Object, ObjectType
 
     assert types_pkg.data is not None
+    assert types_pkg.perception is not None
     assert types_pkg.spatial is not None
     assert types_pkg.symbolic is not None
     assert not hasattr(types_pkg, "register_type")
