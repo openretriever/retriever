@@ -2,7 +2,7 @@
 
 `retriever.types` is the umbrella for:
 - shared schema/stream identity primitives: `ClockDomain`, `SchemaRef`, `StreamId`
-- runtime/language primitives: `Eff`, symbolic objects, skills
+- lightweight type primitives: `Eff`, symbolic objects, skills
 - the schema-aware type registry: `register_type`, `get_type`, ...
 - domain type subpackages:
   - `retriever.types.data`     — event/data contracts, manifests, join policies
@@ -27,7 +27,6 @@ from .symbolic import (
     Task,
     Variable,
 )
-from .compat import FRPConfig
 from . import data, spatial
 from .registry import (
     TypeInfo,
@@ -50,7 +49,6 @@ __all__ = [
     "Action",
     "ClockDomain",
     "Eff",
-    "FRPConfig",
     "GroundAtom",
     "GroundedSkill",
     "LiftedAtom",
