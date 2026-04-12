@@ -100,7 +100,7 @@ class TypeRegistry:
             @register_type
             class MyType: ...
 
-            @register_type("PoseStamped", category="robotics", schema_name="robotics/PoseStamped")
+            @register_type("PoseStamped", category="spatial", schema_name="spatial/PoseStamped")
             class PoseStamped: ...
         """
 

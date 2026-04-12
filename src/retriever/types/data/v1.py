@@ -17,8 +17,8 @@ T = TypeVar("T")
 JoinMode = Literal["exact", "latest_before", "window"]
 WindowAgg = Literal["first", "last", "max", "min", "mean"]
 
-_DATA_SPEC_CATEGORY = "data_spec"
-_DATA_SPEC_NAMESPACE = "data_spec"
+_DATA_SPEC_CATEGORY = "data"
+_DATA_SPEC_NAMESPACE = "data"
 _DATA_SPEC_VERSION = "v1"
 
 
@@ -26,7 +26,7 @@ def _register_data_contract(
     name: str,
     *,
     kind: str = "contract",
-    tags: tuple[str, ...] = ("data_spec", "v1"),
+    tags: tuple[str, ...] = ("data", "v1"),
 ):
     return register_type(
         name,
@@ -35,7 +35,7 @@ def _register_data_contract(
         version=_DATA_SPEC_VERSION,
         kind=kind,
         tags=tags,
-        schema_name=f"data_spec/{name}",
+        schema_name=f"data/{name}",
         schema_version=_DATA_SPEC_VERSION,
         description=f"retriever.types.data {name} contract",
     )

@@ -1,4 +1,4 @@
-"""Mirror-native robotics typing standard v1."""
+"""Canonical spatial payload standard v1."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from typing import Final, Iterable
 
 from retriever.types_registry import register_type
 
-_ROBOTICS_CATEGORY: Final[str] = "robotics"
-_ROBOTICS_NAMESPACE: Final[str] = "robotics_typing"
+_ROBOTICS_CATEGORY: Final[str] = "spatial"
+_ROBOTICS_NAMESPACE: Final[str] = "spatial"
 _ROBOTICS_VERSION: Final[str] = "v1"
 
 
@@ -27,7 +27,7 @@ def _register_robotics_type(
         version=_ROBOTICS_VERSION,
         kind="payload",
         tags=tags,
-        schema_name=f"robotics/{name}",
+        schema_name=f"spatial/{name}",
         schema_version=_ROBOTICS_VERSION,
     )
 
