@@ -75,6 +75,26 @@ def test_pipeline_step_propagates_values_in_process():
     assert res2.now > res1.now
 
 
+def test_pipeline_stepper_reset_restarts_logical_time():
+    pipe = Pipeline("reset_time_demo")
+
+    src = Counter() @ Rate(hz=10)
+    sink = Recorder() @ Trigger("value")
+    pipe.connect(src, sink, sync=Latest())
+
+    try:
+        first = pipe.step(dt=0.5)
+        second = pipe.step(dt=0.5)
+        assert second.now > first.now
+
+        pipe.reset_stepper()
+
+        restarted = pipe.step(dt=0.5)
+        assert restarted.now == pytest.approx(first.now)
+    finally:
+        pipe.close_stepper()
+
+
 def test_pipeline_record_to_and_replay_helpers(tmp_path):
     rec_path = tmp_path / "recording.pkl.gz"
 

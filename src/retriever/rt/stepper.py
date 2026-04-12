@@ -111,6 +111,7 @@ class PipelineStepper:
 
         self._initialized = False
         self._now: Optional[float] = None
+        self._logical_start_time: Optional[float] = None
 
         self._build_io()
 
@@ -155,6 +156,8 @@ class PipelineStepper:
                 handle.flow.reset()
             except Exception:
                 pass
+        self._now = None
+        _CURRENT_STEP_TIME.set(None)
         self.reset_buffers()
 
     def _ensure_initialized(self) -> None:
@@ -225,12 +228,15 @@ class PipelineStepper:
             return self._now
 
         if dt is not None:
+            if self._logical_start_time is None:
+                self._logical_start_time = time.time()
             if self._now is None:
-                self._now = time.time()
+                self._now = self._logical_start_time
             self._now = self._now + float(dt)
             return self._now
 
         self._now = time.time()
+        self._logical_start_time = self._now
         return self._now
 
     def inject_input(
