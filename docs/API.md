@@ -30,6 +30,7 @@ from retriever.flow import (
     io,
     Rate, Tick, Trigger, Hybrid,
     Latest, Hold, Window, Events,
+    EdgeConfig,
     handle_service, call_service,
 )
 ```
@@ -58,6 +59,9 @@ from retriever.lib import Wrapper
 - **Pipeline Construction**:
     - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline, but still requires either explicit `sync=` or a shared default from `retriever.init(default_sync=...)`.
     - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
+    - `retriever.default_pipeline()`: Returns the current thread-local default pipeline, creating one lazily if needed.
+    - `retriever.clear_default_pipeline()`: Clears the thread-local pipeline handle. The next `retriever.connect(...)` or `retriever.default_pipeline()` call will create a new pipeline lazily.
+    - `retriever.reset_default_pipeline()`: Eagerly creates and returns a fresh empty default pipeline immediately.
 
 - **Execution**:
     - `retriever.run(...)`: Executes the thread-local default-pipeline convenience surface.
@@ -66,6 +70,9 @@ from retriever.lib import Wrapper
 
 Use this surface for notebooks and lightweight experiments. For scripts and shared
 examples, prefer `pipe.run(...)`, `pipe.step(...)`, and `pipe.reset_stepper()`.
+
+If you need a clean slate before wiring new notebook cells, prefer `retriever.reset_default_pipeline()`.
+If you only want to drop the current thread-local handle and let Retriever recreate it later, use `retriever.clear_default_pipeline()`.
 
 ---
 

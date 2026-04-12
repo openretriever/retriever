@@ -34,6 +34,7 @@ def test_flow_module_exports_pipeline_graph_names_only():
 
 def test_top_level_retriever_exports_clear_default_pipeline():
     assert callable(retriever.clear_default_pipeline)
+    assert callable(retriever.reset_default_pipeline)
 
 
 def test_retriever_init_can_clear_optional_defaults(tmp_path):

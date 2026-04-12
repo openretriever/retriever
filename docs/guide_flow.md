@@ -112,6 +112,29 @@ Clocks decide when a node runs; adapters decide how each connected input buffer 
 - `Hybrid(hz=..., trigger=[...])` combines periodic execution with immediate trigger-driven runs.
 
 For per-edge buffering and sampling behavior, configure adapters with `sync=...` and edge policies with `edge_config=...`.
+Use `sync=...` for the common case where one adapter policy applies to all inputs on an edge.
+Use `edge_config=...` when you need per-port queue settings or per-port adapter overrides.
+
+Example:
+
+```python
+from retriever.flow import EdgeConfig, Hold, Latest
+
+pipe.connect(
+    camera,
+    planner,
+    sync={"status": Hold(debounce=0.1)},
+    edge_config={
+        "*": EdgeConfig(qsize=32, on_full="drop"),
+        "frame": EdgeConfig(qsize=4, adapter=Latest()),
+    },
+)
+```
+
+Rules:
+- `{"*": EdgeConfig(...)}` sets defaults for every port on that edge.
+- A named port entry like `"frame": EdgeConfig(...)` overrides the wildcard defaults for that port.
+- Do not specify an adapter in both `sync` and `edge_config` for the same port. Retriever rejects that configuration instead of guessing which one should win.
 
 ### Lag handling (`Rate.on_lag=...`)
 

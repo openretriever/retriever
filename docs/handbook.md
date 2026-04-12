@@ -245,9 +245,9 @@ Retriever maintains a thread-local **default pipeline**:
 import retriever
 from retriever.flow import Latest, Rate
 
-# Start a fresh pipeline
+# Start a fresh pipeline immediately
 # (For scripts, we recommend 'with Pipeline():' instead of global state)
-retriever.clear_default_pipeline()
+retriever.reset_default_pipeline()
 
 a = Source() @ Rate(hz=10)
 b = AddOne() @ Rate(hz=10)
@@ -263,6 +263,8 @@ Notes:
 - `retriever.connect(...)` respects an active `with Pipeline(...):` context.
 - `retriever.connect(...)` does not inject `Latest()` implicitly; either pass `sync=...`
   or set a shared default with `retriever.init(default_sync=...)`.
+- `retriever.reset_default_pipeline()` eagerly replaces the current thread-local pipeline with a fresh empty one.
+- `retriever.clear_default_pipeline()` only clears the current thread-local handle; Retriever recreates a new pipeline lazily on the next access.
 - Canonical demo: `examples/tutorial/a_flow_fundamentals/05_pipeline_ergonomics.py`
 
 ---

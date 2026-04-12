@@ -92,6 +92,31 @@ pipe.connect(source, sink, sync={
 })
 ```
 
+### E. Advanced per-port edge configuration
+
+Use `edge_config=...` when you need queue policy and adapter policy together on the same edge.
+
+```python
+from retriever.flow import EdgeConfig, Hold, Latest
+
+pipe.connect(
+    source,
+    sink,
+    sync={"status_flag": Hold(debounce=0.1)},
+    edge_config={
+        "*": EdgeConfig(qsize=32, on_full="drop"),
+        "high_freq_data": EdgeConfig(qsize=4, adapter=Latest()),
+    },
+)
+```
+
+Rules:
+- `sync=...` remains the primary public surface for adapter selection.
+- `edge_config={"*": EdgeConfig(...)}` sets defaults for every port on the edge.
+- Named ports override the wildcard entry.
+- `edge_config.adapter` is the advanced escape hatch for a per-port adapter override.
+- Do not set an adapter for the same port in both `sync` and `edge_config`. Retriever treats that as an invalid authoring conflict.
+
 ---
 
 ## 3. Built-in Adapters

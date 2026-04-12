@@ -119,6 +119,7 @@ __all__ = [
     "Pipeline",
     "connect",
     "default_pipeline",
+    "reset_default_pipeline",
     "clear_default_pipeline",
     "run",
     "step",
