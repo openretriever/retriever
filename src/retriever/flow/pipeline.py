@@ -332,36 +332,6 @@ class Pipeline:
         self._stepper = None
         return self
 
-    def inject_input(
-        self,
-        node_id: str,
-        port: str,
-        value: Any,
-        *,
-        timestamp: Optional[float] = None,
-    ) -> "Pipeline":
-        """Inject one external input into the in-process stepper."""
-        from retriever.rt.stepper import PipelineStepper
-
-        if self._stepper is None:
-            self._stepper = PipelineStepper(self)
-        self._stepper.inject_input(node_id, port, value, timestamp=timestamp)
-        return self
-
-    def inject_inputs(
-        self,
-        values: Dict[str, Dict[str, Any]],
-        *,
-        timestamp: Optional[float] = None,
-    ) -> "Pipeline":
-        """Inject a batch of external inputs into the in-process stepper."""
-        from retriever.rt.stepper import PipelineStepper
-
-        if self._stepper is None:
-            self._stepper = PipelineStepper(self)
-        self._stepper.inject_inputs(values, timestamp=timestamp)
-        return self
-
     def _build_ir(self):
         """Build backend-ready IR (Internal)."""
         return self.validate(lower_composite_flows=True)
