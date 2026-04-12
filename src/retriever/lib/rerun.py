@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import (
     Any,
     Dict,
+    Iterable,
     Literal,
     Optional,
     Protocol,
@@ -90,20 +91,32 @@ def _connect_rerun(rr_module, address: str) -> None:
         raise AttributeError("rerun has no connect or connect_grpc")
 
 
+_PIPELINE_START_WALL: Optional[float] = None
+
+
+def reset_pipeline_time() -> None:
+    """Reset the elapsed-time origin. Call once when a pipeline run starts."""
+    global _PIPELINE_START_WALL
+    _PIPELINE_START_WALL = None
+
+
 def _set_time_seconds_compat(rr_module, time_seconds: float) -> None:
     """
-    Mirror Retriever's wall-clock timeline onto both Retriever's own timeline and
-    Rerun's default `log_time` timeline.
+    Set Retriever's own `retriever_time` timeline (elapsed seconds from first frame).
 
-    The viewer often defaults to `log_time`; mirroring here keeps image/tensor views
-    populated even when the user hasn't switched timelines manually.
+    We intentionally do NOT override Rerun's built-in `log_time` timeline.
+    Rerun manages `log_time` internally as its recording clock; overriding it
+    with unix timestamps breaks the viewer's live-follow behaviour on that timeline.
     """
+    global _PIPELINE_START_WALL
+    if _PIPELINE_START_WALL is None:
+        _PIPELINE_START_WALL = time_seconds
+    elapsed = time_seconds - _PIPELINE_START_WALL
+
     if hasattr(rr_module, "set_time"):
-        rr_module.set_time("retriever_time", duration=time_seconds)
-        rr_module.set_time("log_time", timestamp=time_seconds)
+        rr_module.set_time("retriever_time", duration=elapsed)
     else:
-        rr_module.set_time_seconds("retriever_time", time_seconds)
-        rr_module.set_time_seconds("log_time", time_seconds)
+        rr_module.set_time_seconds("retriever_time", elapsed)
 
 
 def _set_time_sequence_compat(rr_module, timeline: str, sequence: int) -> None:
@@ -151,6 +164,7 @@ def log_value_from_env(
     *,
     time_seconds: Optional[float] = None,
     sequence: Optional[int] = None,
+    fields: Optional[Iterable[str]] = None,
 ) -> bool:
     """
     Log a value to Rerun using worker/runtime environment variables.
@@ -173,10 +187,10 @@ def log_value_from_env(
         if time_seconds is not None:
             _set_time_seconds_compat(rr_module, time_seconds)
 
-        if isinstance(value, RerunLoggable):
+        if fields is None and isinstance(value, RerunLoggable):
             value.log_to_rerun(path)
         else:
-            _log_auto_detect(rr_module, path, value)
+            _log_auto_detect(rr_module, path, value, fields=fields)
         return True
     except Exception as exc:
         logger.debug("Failed to log value to Rerun at %s: %s", path, exc)
@@ -288,8 +302,15 @@ def _log_with_archetype(rr, path: str, value: Any, archetype: str) -> None:
         _log_auto_detect(rr, path, value)
 
 
-def _log_auto_detect(rr, path: str, value: Any) -> None:
+def _log_auto_detect(
+    rr,
+    path: str,
+    value: Any,
+    *,
+    fields: Optional[Iterable[str]] = None,
+) -> None:
     """Auto-detect value type and log appropriately."""
+    selected_fields = set(fields) if fields is not None else None
     try:
         import numpy as np
 
@@ -316,10 +337,14 @@ def _log_auto_detect(rr, path: str, value: Any) -> None:
             rr.log(path, rr.TextLog(str(value)))
     elif isinstance(value, dict):
         for k, v in value.items():
+            if selected_fields is not None and k not in selected_fields:
+                continue
             _log_auto_detect(rr, f"{path}/{k}", v)
     elif is_dataclass(value) and not isinstance(value, type):
         # @io types and plain dataclasses: log each field at {path}/{field_name}
         for f in dataclass_fields(value):
+            if selected_fields is not None and f.name not in selected_fields:
+                continue
             field_val = getattr(value, f.name, None)
             if field_val is not None:
                 _log_auto_detect(rr, f"{path}/{f.name}", field_val)
@@ -384,8 +409,8 @@ class RerunManager:
         self._initialized = False
         self._recording_path: Optional[Path] = None
         self._step_count = 0
-        # Per-node viz policies: {node_id: {"enabled": bool, "hz": float, ...}}
-        self._node_viz_policies: Dict[str, dict] = {}
+        # Per-node viz policies keyed by IR node id.
+        self._node_viz_policies: Dict[str, Any] = {}
         # Per-node last-log timestamps for Hz rate-limiting
         self._last_log_times: Dict[str, float] = {}
 
@@ -393,6 +418,9 @@ class RerunManager:
         """Initialize Rerun in the current process."""
         if not self.config.enabled or self._initialized:
             return
+
+        # Reset the elapsed-time origin so retriever_time starts at 0 for this run.
+        reset_pipeline_time()
 
         import os
         rr = _ensure_rerun()
@@ -435,7 +463,14 @@ class RerunManager:
         rr.init(self.app_id, recording_id=recording_id)
         _connect_rerun(rr, self.config.address)
 
-    def log(self, path: str, value: Any, time_seconds: Optional[float] = None) -> None:
+    def log(
+        self,
+        path: str,
+        value: Any,
+        time_seconds: Optional[float] = None,
+        *,
+        fields: Optional[Iterable[str]] = None,
+    ) -> None:
         """
         Log a value to Rerun.
 
@@ -451,16 +486,23 @@ class RerunManager:
             _set_time_seconds_compat(rr, time_seconds)
 
         # Use protocol if available
-        if isinstance(value, RerunLoggable):
+        if fields is None and isinstance(value, RerunLoggable):
             value.log_to_rerun(path)
             return
 
         # Fallback: try common types
-        self._log_auto(path, value)
+        self._log_auto(path, value, fields=fields)
 
-    def _log_auto(self, path: str, value: Any) -> None:
+    def _log_auto(
+        self,
+        path: str,
+        value: Any,
+        *,
+        fields: Optional[Iterable[str]] = None,
+    ) -> None:
         """Auto-detect and log common types."""
         rr = _ensure_rerun()
+        selected_fields = set(fields) if fields is not None else None
 
         # numpy array -> Image or Tensor
         try:
@@ -498,18 +540,22 @@ class RerunManager:
         # Dict -> log each key
         if isinstance(value, dict):
             for k, v in value.items():
+                if selected_fields is not None and k not in selected_fields:
+                    continue
                 self._log_auto(f"{path}/{k}", v)
             return
 
         # @io types and plain dataclasses: log each field at {path}/{field_name}
         if is_dataclass(value) and not isinstance(value, type):
             for f in dataclass_fields(value):
+                if selected_fields is not None and f.name not in selected_fields:
+                    continue
                 field_val = getattr(value, f.name, None)
                 if field_val is not None:
                     self._log_auto(f"{path}/{f.name}", field_val)
             return
 
-    def set_node_viz_policies(self, policies: Dict[str, dict]) -> None:
+    def set_node_viz_policies(self, policies: Dict[str, Any]) -> None:
         """
         Set per-node viz policies extracted from pipeline IR node configs.
 
@@ -518,6 +564,26 @@ class RerunManager:
         Nodes with no entry here fall back to the global default_viz setting.
         """
         self._node_viz_policies = dict(policies)
+
+    def _policy_enabled(self, policy: Any) -> bool:
+        if hasattr(policy, "enabled"):
+            return bool(policy.enabled)
+        return bool(policy.get("enabled", True))
+
+    def _policy_hz(self, policy: Any) -> Optional[float]:
+        if hasattr(policy, "hz"):
+            return policy.hz
+        return policy.get("hz")
+
+    def _policy_path(self, policy: Any) -> Optional[str]:
+        if hasattr(policy, "path"):
+            return policy.path
+        return policy.get("path")
+
+    def _policy_fields(self, policy: Any) -> Optional[Iterable[str]]:
+        if hasattr(policy, "fields"):
+            return policy.fields
+        return policy.get("fields")
 
     def _should_log_node(self, node_id: str, now: Optional[float]) -> bool:
         """
@@ -537,9 +603,9 @@ class RerunManager:
 
         if policy is not None:
             # viz=False → explicit suppression
-            if not policy.get("enabled", True):
+            if not self._policy_enabled(policy):
                 return False
-            hz = policy.get("hz", 5.0)
+            hz = self._policy_hz(policy) or 5.0
         else:
             default_viz = get_global_config().get("default_viz")
             if default_viz is None:
@@ -561,7 +627,7 @@ class RerunManager:
         """Return the Rerun entity path for a node's output."""
         policy = self._node_viz_policies.get(node_id)
         if policy:
-            custom = policy.get("path")
+            custom = self._policy_path(policy)
             if custom:
                 return custom
         return f"flows/{node_id}/output"
@@ -601,7 +667,12 @@ class RerunManager:
             for node_id, value in result.outputs.items():
                 if not self._should_log_node(node_id, now):
                     continue
-                self.log(self._node_log_path(node_id), value)
+                policy = self._node_viz_policies.get(node_id)
+                self.log(
+                    self._node_log_path(node_id),
+                    value,
+                    fields=self._policy_fields(policy) if policy is not None else None,
+                )
 
         self._step_count += 1
 
@@ -709,9 +780,9 @@ def enable_rerun_logging(
             pass
 
     if ir is not None:
-        policies: Dict[str, dict] = {}
+        policies: Dict[str, Any] = {}
         for node in ir.nodes:
-            vp = node.config.get("viz_policy")
+            vp = getattr(node, "viz_policy", None)
             if vp is not None:
                 policies[node.id] = vp
         if policies:
