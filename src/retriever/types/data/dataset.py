@@ -1,4 +1,8 @@
-"""Dataset manifest helpers for retriever.types.data."""
+"""Dataset manifest helpers for `retriever.types.data`.
+
+These helpers operate on metadata and plain Python rows. They do not validate
+payload schemas deeply and they do not write files by themselves.
+"""
 
 from __future__ import annotations
 
@@ -55,6 +59,7 @@ def event_to_row(event: Event[Any], *, episode_id: str) -> dict[str, Any]:
 
 
 def event_table_rows(events: EventBuffer[Any], *, episode_id: str) -> list[dict[str, Any]]:
+    """Convert one event buffer into stable row dictionaries for export/inspection."""
     return [event_to_row(event, episode_id=episode_id) for event in events.sorted()]
 
 
@@ -96,6 +101,7 @@ def build_dataset_manifest(
     created_at_ns: int | None = None,
     metadata: Mapping[str, str] | None = None,
 ) -> DatasetManifest:
+    """Build dataset-level metadata from an explicit spec and episode list."""
     if created_at_ns is None:
         created_at_ns = time.time_ns()
     return DatasetManifest(
@@ -109,6 +115,7 @@ def build_dataset_manifest(
 
 
 def validate_dataset_manifest(manifest: DatasetManifest) -> None:
+    """Check that each episode references only streams declared in the spec."""
     spec_streams = set(manifest.spec.stream_map().keys())
     for episode in manifest.episodes:
         for stream_id in episode.stream_ids:

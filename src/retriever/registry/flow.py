@@ -1,20 +1,12 @@
-"""
-Flow Registry System for Component Discovery and Substitution
+"""Registry for discoverable `Flow` classes.
 
-Enables PyTorch-style component substitution and automatic discovery:
-- @register_flow("camera") decorator for easy registration
-- get_flow("camera") for type-safe component access  
-- Automatic discovery on import (no import * needed)
-- Component substitution: swap algorithms like PyTorch models
+Use this registry when a flow should be selectable by name rather than imported
+directly. The public contract is intentionally small:
 
-Example:
-    @register_flow("camera", category="vision")
-    class WebcamFlow(Flow[None, RGBImage]):
-        def step(self, _): return capture_webcam()
-    
-    # Usage
-    camera = get_flow("camera")  # Returns WebcamFlow instance
-    # Or substitute: register_flow("camera")(MockCameraFlow)
+- `@register_flow("camera")` to publish a class
+- `get_flow("camera")` to construct a fresh instance
+- `get_flow_class("camera")` to inspect the class itself
+- optional best-effort plugin loading via `retriever.plugins`
 """
 
 from typing import Dict, Type, Optional, Callable, TypeVar, TYPE_CHECKING
@@ -65,7 +57,7 @@ class FlowInfo:
 
 
 class FlowRegistry:
-    """Global registry for Flow components - enables PyTorch-style substitution."""
+    """Registry of named `Flow` classes and their lightweight metadata."""
     
     def __init__(self):
         self._flows: Dict[str, FlowInfo] = {}
@@ -154,7 +146,7 @@ class FlowRegistry:
     
     def get_flow(self, name: str, **kwargs) -> 'Flow':
         """
-        Get a Flow instance by name with type safety.
+        Get a newly constructed Flow instance by registered name.
         
         Args:
             name: Registered name of the flow
@@ -176,7 +168,7 @@ class FlowRegistry:
         return flow_info.flow_class(**kwargs)
     
     def get_flow_class(self, name: str) -> Type['Flow']:
-        """Get the Flow class (not instance) by name."""
+        """Get the registered Flow class itself (without constructing it)."""
         _ensure_plugins_loaded()
         if name not in self._flows:
             available = list(self._flows.keys())

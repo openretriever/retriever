@@ -1,13 +1,14 @@
-"""Schema-aware type registry for Retriever payload and contract discovery.
+"""Schema-aware registry for Retriever payload and contract types.
 
-This registry sits between canonical domain packages such as `retriever.types.spatial`
-and `retriever.types.data`, and downstream consumers such as recording/export
-layers. It intentionally stays lightweight:
+Canonical domain packages such as `retriever.types.spatial`,
+`retriever.types.data`, and `retriever.types.symbolic` register their exported
+classes here so downstream systems can discover them dynamically. The registry
+tracks:
 
-- register Python classes under stable names
-- carry optional schema metadata for recording/export
-- support simple discovery and category/tag filtering
-- preserve older decorator ergonomics used by legacy tests/examples
+- stable names and aliases
+- category/namespace metadata
+- optional schema metadata for recording/export
+- optional Arrow conversion hooks
 """
 
 from __future__ import annotations
@@ -70,7 +71,12 @@ class TypeInfo:
 
 
 class TypeRegistry:
-    """Global registry for Retriever payload and contract types."""
+    """Registry for named Retriever payload and contract types.
+
+    Canonical callers should import domain packages such as `retriever.types.data`,
+    `retriever.types.spatial`, or `retriever.types.symbolic` first, then use
+    registry lookups only when they need dynamic discovery rather than direct imports.
+    """
 
     def __init__(self) -> None:
         self._types: Dict[str, TypeInfo] = {}

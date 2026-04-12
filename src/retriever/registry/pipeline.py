@@ -1,17 +1,9 @@
-"""
-Pipeline registry (IR-first).
+"""Registry for discoverable pipeline factories.
 
-This registry is designed for the refactored runtime:
-  FlowContext -> validate(...) -> IR -> execute_ir(...)
-
-It registers *pipeline factories* (callables) that return either:
-  - IR (preferred), or
-  - FlowContext (will be validated to IR).
-
-This enables:
-  - Discoverable pipelines (for a future `retriever` CLI)
-  - Plugin-based extensibility via entry points (see `retriever.plugins`)
-  - Flow-like pipeline surfaces inferred from unused external ports
+Pipeline factories are IR-first: they should return either a `Pipeline`/builder
+that validates to IR, or an IR directly. The registry can also infer a
+flow-like external surface from a pipeline so composed pipelines can be wrapped
+and reused locally.
 """
 
 from __future__ import annotations
@@ -81,7 +73,7 @@ class PipelineSurfaceBinding:
 
 
 class PipelineRegistry:
-    """Global registry of pipeline factories."""
+    """Registry of named pipeline factories and their exposed external surfaces."""
 
     def __init__(self) -> None:
         self._pipelines: Dict[str, PipelineInfo] = {}
@@ -148,7 +140,7 @@ class PipelineRegistry:
         )
 
     def build_surface(self, name: str, **kwargs: Any) -> PipelineSurface:
-        """Build a flow-like surface from a registered pipeline."""
+        """Build the inferred external input/output surface for a registered pipeline."""
         info = self.get(name)
         ir = self.build_ir(name, **kwargs)
         return _build_pipeline_surface_from_ir(
@@ -159,7 +151,12 @@ class PipelineRegistry:
         )
 
     def build_flow(self, name: str, **kwargs: Any):
-        """Build an in-process composite Flow wrapper from a registered pipeline."""
+        """Build an in-process-only composite Flow wrapper from a registered pipeline.
+
+        The returned wrapper executes a live authored pipeline in the current
+        Python process. It is marked in-process-only and cannot be sent to worker
+        backends such as multiprocessing or Dora.
+        """
         info = self.get(name)
         live_ctx = _build_live_pipeline_context(info, **kwargs)
         ir = live_ctx.validate()
@@ -197,10 +194,10 @@ def register_pipeline(
 
     Example:
         @register_pipeline("perception_demo", category="examples")
-        def build() -> IR:
-            with FlowContext("perception_demo") as ctx:
-                ...
-                return validate(ctx)
+        def build() -> Pipeline:
+            pipe = Pipeline("perception_demo")
+            ...
+            return pipe
     """
 
     def decorator(factory: PipelineFactory) -> PipelineFactory:
@@ -231,17 +228,17 @@ def list_pipelines(category: Optional[str] = None) -> Dict[str, PipelineInfo]:
 
 
 def build_ir(name: str, **kwargs: Any) -> IR:
-    """Build a pipeline IR by name."""
+    """Build and validate a registered pipeline into IR."""
     return _global_pipeline_registry.build_ir(name, **kwargs)
 
 
 def build_pipeline_surface(name: str, **kwargs: Any) -> PipelineSurface:
-    """Infer the external flow-like surface for a registered pipeline."""
+    """Infer the external input/output surface for a registered pipeline."""
     return _global_pipeline_registry.build_surface(name, **kwargs)
 
 
 def build_pipeline_flow(name: str, **kwargs: Any):
-    """Build an in-process composite Flow from a registered pipeline surface."""
+    """Build an in-process-only composite Flow wrapper from a registered pipeline."""
     return _global_pipeline_registry.build_flow(name, **kwargs)
 
 

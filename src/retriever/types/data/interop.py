@@ -1,4 +1,10 @@
-"""Interop adapters for runtime event buffers and LeRobot-style row exports."""
+"""Interop adapters for runtime event buffers and LeRobot-style row exports.
+
+These helpers bridge between:
+- runtime tuple buffers: `list[(timestamp_seconds, value)]`
+- canonical `retriever.types.data.EventBuffer`
+- plain row dictionaries for export tooling
+"""
 
 from __future__ import annotations
 
@@ -16,6 +22,11 @@ def from_runtime_event_buffer(
     units: Optional[str] = None,
     ingest_offset_ns: int = 0,
 ) -> EventBuffer[Any]:
+    """Convert a runtime tuple buffer into a typed data-event buffer.
+
+    This is a structural adapter. It preserves order and timestamps, but it does
+    not infer schemas beyond the provided stream/frame/unit metadata.
+    """
     if ingest_offset_ns < 0:
         raise ValueError("ingest_offset_ns must be >= 0")
 
@@ -55,6 +66,7 @@ def is_runtime_event_buffer(value: Any) -> bool:
 
 
 def to_lerobot_records(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project plain event rows into LeRobot-style episode/frame records."""
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         grouped[(row["episode_id"], row["stream_id"])].append(row)
@@ -94,6 +106,7 @@ def to_lerobot_records(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def from_lerobot_records(records: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert LeRobot-style records back into plain event-row dictionaries."""
     rows = []
     for record in records:
         metadata = record.get("metadata", {})
@@ -125,6 +138,7 @@ def from_lerobot_records(records: Sequence[dict[str, Any]]) -> list[dict[str, An
 
 
 def validate_lerobot_mapping(records: Sequence[dict[str, Any]]) -> None:
+    """Validate the minimal row-shape invariants expected by the LeRobot adapters."""
     required = {
         "episode_id",
         "stream_id",

@@ -1,9 +1,8 @@
-"""
-Pipeline - Functional graph builder without a global FlowContext.
+"""Explicit pipeline authoring surface.
 
-`Pipeline` is the preferred authoring surface when you don't want an ambient
-context manager. It reuses the same underlying graph/IR machinery as
-`FlowContext`, but the graph lives on the Pipeline instance.
+`Pipeline` is the canonical way to build Retriever graphs in scripts, examples,
+and tests. It owns the graph directly, validates to IR, and can either run on a
+backend or step in-process for debugging and recording.
 """
 
 from __future__ import annotations
@@ -21,13 +20,14 @@ logger = logging.getLogger(__name__)
 
 class Pipeline:
     """
-    A FlowContext-compatible graph builder with an explicit owner object.
+    Explicit owner for an authored Retriever graph.
 
-    `Pipeline` intentionally provides a small ergonomic surface:
-    - connect flows with `handle.then(...)` (outside of FlowContext)
-    - or connect explicitly with `pipeline.connect(a, b, ...)`
-    - build artifacts: `pipeline.validate()`, `pipeline.build_execution()`
-    - run on a backend: `pipeline.run(...)`
+    Use `Pipeline` when you want a crisp launch point:
+    - author nodes and edges directly on one object
+    - validate into IR with `pipeline.validate(...)`
+    - optionally lower composed pipeline wrappers during validation
+    - run on a backend with `pipeline.run(...)`
+    - or debug locally with `pipeline.step(...)`
     """
 
     def __init__(self, name: str = "pipeline", *, on_lag: Optional[str] = None):
@@ -92,7 +92,14 @@ class Pipeline:
                 clock.on_lag = desired
 
     def validate(self, *, lower_composite_flows: bool = True):
-        """Validate the pipeline and compile it to IR."""
+        """Validate the authored graph and compile it to IR.
+
+        Args:
+            lower_composite_flows: If True, replace in-process composite
+                pipeline wrappers with their lowered child graph in the emitted
+                IR. Keep this enabled for normal execution; disable only when
+                you intentionally want to inspect wrapper nodes before lowering.
+        """
         self._apply_clock_defaults()
         return self._builder.validate(lower_composite_flows=lower_composite_flows)
 
@@ -195,8 +202,8 @@ class Pipeline:
             sync: Sync adapter(s). Can be:
                   - Single adapter: applied to all edges (e.g., `Latest()`)
                   - Dict[str, Adapter]: per-port adapters (e.g., `{"a": Hold(), "b": Latest()}`)
-                  If None, uses `retriever.set_global_config(default_sync=...)`.
-                  If no global default, raises FlowError.
+                  If None, falls back to `retriever.init(default_sync=...)`.
+                  Shared examples should prefer explicit `sync=` on every edge.
             edge_config: Optional per-port queue/adapter overrides.
             qsize: Queue size for buffering.
             on_full: Optional queue-full policy for edges from this connection.
@@ -766,11 +773,12 @@ class Pipeline:
 
         Args:
             backend: Backend name ("multiprocessing", "dora", "in-process").
-                     Defaults to "multiprocessing" usually, unless recording.
+                     Defaults to the global `retriever.init(backend=...)` value
+                     when set, otherwise "multiprocessing".
             duration: Optional duration in seconds (None = run indefinitely).
             blocking: If True, wait for completion.
             log_config: Optional LogConfig.
-            visualize: "rerun" for live streaming.
+            visualize: Currently only `"rerun"` is supported here for live streaming.
             record: Path (str) or RecordConfig to enable recording.
                     Forces backend="in-process" currently. When combined with
                     `duration=...`, the in-process loop advances logical steps as
@@ -779,6 +787,8 @@ class Pipeline:
             control: ControlConfig for pause/resume/reset control.
                      Example: control=ControlConfig(web_port=8080, keyboard=True)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
+                    Only supported on the Dora backend.
+            build: If True, build an `ExecutionGraph` before execution.
             **kwargs: Extra arguments.
         """
 
@@ -1052,10 +1062,14 @@ def run(
     **kwargs: Any,
 ):
     """
-    Run the default pipeline.
+    Run the thread-local default pipeline.
 
     Equivalent to:
         retriever.default_pipeline().run(...)
+
+    This is a convenience surface for notebooks and small experiments. Shared
+    scripts should usually keep an explicit `Pipeline` object and call
+    `pipe.run(...)` directly.
     """
     return default_pipeline().run(
         backend=backend,

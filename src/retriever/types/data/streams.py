@@ -1,4 +1,9 @@
-"""Event stream helpers and multi-stream joins."""
+"""Helpers for event buffers, joins, and processing-time sampling.
+
+This module contains pure data-layer helpers. It does not schedule runtime nodes
+or mutate backend buffers; it operates on `retriever.types.data.EventBuffer`
+values after they have already been materialized.
+"""
 
 from __future__ import annotations
 

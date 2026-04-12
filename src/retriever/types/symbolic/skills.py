@@ -1,3 +1,10 @@
+"""Language-facing symbolic skill contracts.
+
+These types sit above object-centric predicates/options. They are useful when a
+planner or agent reasons in natural-language-like action templates and then
+grounds those templates against perceived object ids.
+"""
+
 from __future__ import annotations
 
 import re
@@ -8,15 +15,10 @@ from typing import Dict, List
 
 @dataclass(frozen=True)
 class SkillSignature:
-    """
-    Defines the signature of a skill in a flexible, language-centric way.
-    The parameters are implicitly defined by placeholders in the template.
+    """Template-level skill vocabulary for language-facing planning.
 
-    This serves as the "vocabulary" for an LLM-based planner. For example:
-    SkillSignature(
-        name="put_on",
-        template="put {target} on {destination}",
-    )
+    Parameters are inferred from `{placeholder}` entries in the template string,
+    so the signature stays compact while remaining inspectable.
     """
 
     name: str
@@ -34,15 +36,7 @@ class SkillSignature:
 
 @dataclass(frozen=True)
 class GroundedSkill:
-    """
-    Represents a SkillSignature grounded with concrete object IDs from perception.
-
-    This is the structured output expected from an LLM-based planner. For example:
-    GroundedSkill(
-        signature=put_on_signature,
-        grounded_params={"target": "red_cup_0", "destination": "table_1"}
-    )
-    """
+    """A `SkillSignature` grounded with concrete perceived object ids."""
 
     signature: SkillSignature
     grounded_params: Dict[str, str]  # param name -> object_id

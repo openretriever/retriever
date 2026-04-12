@@ -1,3 +1,5 @@
+"""Action, option, and task contracts for object-centric planning."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -29,14 +31,14 @@ class Action:
 
 @dataclass
 class Option:
-    """Struct defining an option (temporally extended action/skill).
+    """Grounded symbolic option (temporally extended action/skill).
 
     An option consists of:
     - Policy: State -> Action
     - Initiation Set: State -> bool (Can this option start?)
     - Termination Condition: State -> bool (Should this option stop?)
 
-    This matches the specific Option definition from Predicators.
+    This follows the Predicators-style option contract.
 
     Note: To support pickling for multiprocessing backends, we store
     the parent ParameterizedOption reference and call its methods
@@ -75,7 +77,7 @@ class Option:
 
 @dataclass(frozen=True)
 class ParameterizedOption:
-    """Struct defining a parameterized option.
+    """Factory for grounded symbolic options.
 
     This acts as a factory for Options. It takes specific objects and parameters
     to "ground" into a concrete Option execution unit.
@@ -115,7 +117,7 @@ class ParameterizedOption:
 
 @dataclass
 class Task:
-    """Struct defining a planning task."""
+    """Symbolic planning task with one initial state and a goal atom set."""
 
     init: State
     goal: Set[GroundAtom]

@@ -18,7 +18,12 @@ from numpy.typing import NDArray
 
 @dataclass(frozen=True, order=True)
 class ObjectType:
-    """Struct defining a type."""
+    """Object-category declaration with optional feature names and a parent type.
+
+    This follows the compact object-centric planning style used in bilevel
+    planning systems: object types define admissible entities and optional
+    continuous feature slots, but do not impose a full ontology layer.
+    """
     name: str
     feature_names: Sequence[str] = field(default_factory=list, repr=False)
     parent: Optional[ObjectType] = field(default=None, repr=False)
@@ -95,7 +100,7 @@ class Variable(_TypedEntity):
 
 @dataclass
 class State:
-    """A mapping from objects to their state feature vectors."""
+    """Object-centric state: a map from concrete objects to feature vectors."""
     data: dict[Object, NDArray]
 
     def __getitem__(self, key: Object) -> NDArray:
@@ -107,7 +112,7 @@ class State:
 
 @dataclass(frozen=True, order=False, repr=False)
 class Predicate:
-    """A classifier over states."""
+    """Boolean relation over a state and a typed tuple of entities."""
     name: str
     types: Sequence[ObjectType]
     _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)

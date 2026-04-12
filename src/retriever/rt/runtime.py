@@ -1,7 +1,10 @@
-"""
-Runtime - Entry point for running pipelines with backend selection.
+"""Backend execution entry points.
 
-Provides high-level API for executing pipelines using different backends.
+This module is the bridge from authored `Pipeline` / validated IR objects to a
+runtime backend. The contract is backend-sensitive:
+
+- `multiprocessing` and `dora` execute compiled IR / execution graphs
+- `in-process` is a live-pipeline debug and recording surface
 """
 
 import logging
@@ -43,15 +46,19 @@ def execute_ir(
     backend_config: Optional[Dict[str, Any]] = None,
 ) -> ExecutionEngine:
     """
-    Execute pipeline from IR or IR file with backend selection.
+    Execute an IR or ExecutionGraph on a runtime backend.
 
     Args:
-        ir: Either IR instance or path to IR JSON file
+        ir: Either an `IR`, an `ExecutionGraph`, or a path to serialized IR JSON.
         backend: Backend name ('multiprocessing', 'dora', or 'in-process')
         duration: Optional duration in seconds (None = run indefinitely)
         blocking: If True, wait for completion/duration. If False, return immediately.
         log_config: Logging configuration (optional, uses defaults if None)
-        backend_config: Backend-specific configuration (optional)
+        backend_config: Backend-specific configuration (optional). For
+            `backend="in-process"` this must include
+            `backend_config["pipeline_instance"]`, because the in-process path
+            debugs or records a live authored `Pipeline` rather than a detached
+            serialized graph.
 
     Returns:
         ExecutionEngine instance (can be used to stop pipeline)

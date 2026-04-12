@@ -7,6 +7,7 @@
 - domain type subpackages:
   - `retriever.types.data`     — event/data contracts, manifests, join policies
   - `retriever.types.spatial`  — spatial payload standard (PoseStamped, JointState, ...)
+  - `retriever.types.symbolic` — object-centric planning contracts (objects, options, skills)
 """
 
 from .core import Eff, pure, Module

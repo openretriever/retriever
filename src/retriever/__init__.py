@@ -1,10 +1,12 @@
-"""
-Retriever: Robot Decision-Making Runtime with Functional Composition.
+"""Top-level convenience surface for Retriever.
 
-Core modules:
-- flow: Declarative dataflow computation framework
-- ir: Intermediate representation for pipeline graphs
-- rt: Runtime execution backends
+`retriever` re-exports the most common runtime/core entry points so notebooks and
+small scripts can stay terse. The preferred explicit surfaces still live in:
+
+- `retriever.flow` for authoring `Flow` and `Pipeline`
+- `retriever.rt` for backend execution
+- `retriever.registry` for discoverable flows, pipelines, and types
+- `retriever.types` for shared payload and contract definitions
 """
 
 from importlib.metadata import PackageNotFoundError, version as _package_version
@@ -42,7 +44,13 @@ def init(
     default_viz: Optional[VizConfig] = None,
 ) -> None:
     """
-    Initialize the global retriever environment.
+    Set process-wide default configuration for convenience helpers.
+
+    `retriever.init(...)` only updates global defaults used by the thread-local
+    default pipeline and by `Pipeline.connect(...)` when `sync=` is omitted.
+    It does not build, reset, or run a pipeline by itself. For scripts and shared
+    examples, prefer an explicit `Pipeline(...)` object and pass runtime settings
+    directly to `pipe.run(...)`.
 
     Args:
         name: Session name (useful for logging/recording)

@@ -1,4 +1,10 @@
-"""Public surface for retriever.types.data."""
+"""Public surface for `retriever.types.data`.
+
+This package is the canonical place for event/data/export contracts:
+- immutable event records and stream specs
+- event-time joins and processing-time helpers
+- dataset manifests and lightweight export adapters
+"""
 
 from __future__ import annotations
 

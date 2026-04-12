@@ -257,6 +257,11 @@ class FieldSpec:
 @_register_data_contract("StreamSpec", kind="spec", tags=("data", "v1", "spec", "stream"))
 @dataclass(frozen=True)
 class StreamSpec:
+    """Schema declaration for one named stream in a data contract.
+
+    `StreamSpec` is metadata only. It does not store event payloads; it describes
+    the expected schema, clock domain, and optional per-field boundary metadata.
+    """
     stream_id: StreamId
     schema: SchemaRef
     clock_domain: ClockDomain = ClockDomain("event_time")
@@ -270,6 +275,11 @@ class StreamSpec:
 @_register_data_contract("DataSpec", kind="spec", tags=("data", "v1", "spec"))
 @dataclass(frozen=True)
 class DataSpec:
+    """Top-level declaration for a family of related streams.
+
+    Use this to describe a replay/export contract or dataset boundary, not as a
+    replacement for the runtime's in-memory execution graph.
+    """
     name: str
     version: str
     streams: tuple[StreamSpec, ...]
@@ -289,6 +299,7 @@ class DataSpec:
 @_register_data_contract("EpisodeManifest", kind="manifest", tags=("data", "v1", "manifest", "episode"))
 @dataclass(frozen=True)
 class EpisodeManifest:
+    """Summary metadata for one bounded recording or replay episode."""
     episode_id: str
     stream_ids: tuple[str, ...]
     start_event_time_ns: int
@@ -314,6 +325,7 @@ class EpisodeManifest:
 @_register_data_contract("DatasetManifest", kind="manifest", tags=("data", "v1", "manifest", "dataset"))
 @dataclass(frozen=True)
 class DatasetManifest:
+    """Summary metadata for a collection of recorded episodes under one spec."""
     dataset_id: str
     spec: DataSpec
     episodes: tuple[EpisodeManifest, ...]
