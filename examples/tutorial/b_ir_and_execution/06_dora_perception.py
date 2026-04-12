@@ -98,19 +98,8 @@ def _resolve_camera_mode(args: argparse.Namespace) -> bool:
         return True
     if args.camera_mode == "mock":
         return False
-
-    if args.backend == "in-process":
-        print(
-            "[Perception Demo] Using live camera with mock fallback in-process by default.\n"
-            "[Perception Demo] Pass --camera-mode mock if you want a deterministic synthetic stream instead."
-        )
-        return True
-
-    print(
-        "[Perception Demo] Using mock camera in worker backends by default.\n"
-        "[Perception Demo] Use --backend in-process or demo-webcam-stepper when you explicitly want live capture."
-    )
-    return False
+    # auto: always try real camera; CameraSource raises clearly if unavailable
+    return True
 
 
 def main() -> None:

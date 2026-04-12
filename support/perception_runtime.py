@@ -318,22 +318,27 @@ class CameraSource(Flow[None, CameraData]):
         if self.use_real_camera:
             cv2 = _optional_cv2()
             if cv2 is None:
-                print("[CameraSource] OpenCV camera support unavailable, using mock")
-            else:
-                self.cap = cv2.VideoCapture(self.camera_index)
-                if self.cap.isOpened():
-                    ret, test_frame = self.cap.read()
-                    if ret and test_frame is not None:
-                        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-                        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-                        self.mode = "real"
-                        print(f"[CameraSource] Using real camera (index {self.camera_index})")
-                    else:
-                        print("[CameraSource] Camera read failed, using mock")
-                        self.cap.release()
-                        self.cap = None
-                else:
-                    print("[CameraSource] No camera found, using mock")
+                raise RuntimeError(
+                    "CameraSource requires OpenCV for real camera capture. "
+                    "Install demo dependencies: pip install opencv-python"
+                )
+            self.cap = cv2.VideoCapture(self.camera_index)
+            if not self.cap.isOpened():
+                raise RuntimeError(
+                    f"Camera index {self.camera_index} could not be opened. "
+                    "Check that a webcam is connected, or use use_real_camera=False for mock frames."
+                )
+            ret, test_frame = self.cap.read()
+            if not ret or test_frame is None:
+                self.cap.release()
+                self.cap = None
+                raise RuntimeError(
+                    f"Camera index {self.camera_index} opened but failed to read a frame."
+                )
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+            self.mode = "real"
+            print(f"[CameraSource] Using real camera (index {self.camera_index})")
 
         _emit_perception_event(
             node="camera",
