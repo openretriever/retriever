@@ -116,12 +116,12 @@ Guide: `docs/guides/debugging.md`.
 
 ---
 
-## 6) Pipelines registry + plugins (`retriever.pipeline_registry`)
+## 6) Pipelines registry + plugins (`retriever.registry.pipeline`)
 
 Import path:
 
 ```py
-from retriever.pipeline_registry import (
+from retriever.registry.pipeline import (
     register_pipeline,
     list_pipelines,
     build_ir,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from retriever.types_registry import register_type
+from retriever.registry.types import register_type
 
 _TYPES_CATEGORY = "types"
 _TYPES_NAMESPACE = "types"

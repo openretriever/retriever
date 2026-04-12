@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, Sequence, Set
 from numpy.typing import NDArray
 
 from retriever.flow import io
-from retriever.types.symbolic import GroundAtom, Object, ObjectType, State
+from .objects import GroundAtom, Object, ObjectType, State
 
 
 @io
@@ -119,3 +119,6 @@ class Task:
 
     init: State
     goal: Set[GroundAtom]
+
+
+__all__ = ["Action", "Option", "ParameterizedOption", "Task"]

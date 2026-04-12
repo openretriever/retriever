@@ -1,12 +1,12 @@
-"""Dataset manifest helpers for retriever.types.data.v1."""
+"""Dataset manifest helpers for retriever.types.data."""
 
 from __future__ import annotations
 
 import time
 from typing import Any, Mapping, Sequence
 
-from .buffer import merge_sorted
-from .v1 import DataSpec, DatasetManifest, EpisodeManifest, Event, EventBuffer, LineageRef
+from .events import DataSpec, DatasetManifest, EpisodeManifest, Event, EventBuffer, LineageRef
+from .streams import merge_sorted
 
 EVENT_TABLE_COLUMNS = (
     "episode_id",

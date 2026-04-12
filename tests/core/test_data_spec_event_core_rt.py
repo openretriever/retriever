@@ -6,7 +6,6 @@ import pytest
 
 from retriever.types.data import DataSpec, Event, EventBuffer, SchemaRef, StreamId, StreamSpec
 from retriever.types.data.v1 import EventBuffer as PinnedEventBuffer
-from retriever.data_spec import EventBuffer as CompatEventBuffer
 
 
 def _evt(stream: str, event_ns: int, ingest_ns: int, seq: int, value: int) -> Event[int]:
@@ -22,7 +21,6 @@ def _evt(stream: str, event_ns: int, ingest_ns: int, seq: int, value: int) -> Ev
 
 def test_import_contract_event_buffer_surface() -> None:
     assert EventBuffer is PinnedEventBuffer
-    assert CompatEventBuffer is EventBuffer
 
 
 def test_deterministic_ordering_key_and_sort() -> None:

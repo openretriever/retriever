@@ -1,3 +1,11 @@
+"""Object-centric symbolic state and predicate structures.
+
+This stays intentionally compact. The package-level split is:
+- `objects.py`: entity, state, predicate, and atom structures
+- `options.py`: action / option / task contracts
+- `skills.py`: language-oriented grounded skill surfaces
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -183,3 +191,16 @@ class GroundAtom(_Atom):
 
     def holds(self, state: State) -> bool:
         return self.predicate.holds(state, self.objects) 
+
+Type = ObjectType
+
+__all__ = [
+    "GroundAtom",
+    "LiftedAtom",
+    "Object",
+    "ObjectType",
+    "Predicate",
+    "State",
+    "Type",
+    "Variable",
+]

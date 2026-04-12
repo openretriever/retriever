@@ -2,7 +2,7 @@
 Tests for Migrated Legacy Modules.
 
 Tests the modules migrated from golden_retriever/core into retriever core:
-- retriever.types.skills (SkillSignature, GroundedSkill)
+- retriever.types.symbolic.skills (SkillSignature, GroundedSkill)
 - retriever.types.symbolic (Type, Predicate, Object, Variable, GroundAtom)
 - retriever.ir.resources (ResourceSpec, ResourcePresets)
 - retriever.ir.temporal (ExecutionTimer, RateLimiter - analysis tools, NOT execution)
@@ -15,7 +15,7 @@ import numpy as np
 
 
 # =============================================================================
-# Tests for retriever.types.skills
+# Tests for retriever.types.symbolic.skills
 # =============================================================================
 
 class TestSkillTypes:
@@ -23,7 +23,7 @@ class TestSkillTypes:
 
     def test_skill_signature_creation(self):
         """Test basic SkillSignature creation."""
-        from retriever.types.skills import SkillSignature
+        from retriever.types.symbolic.skills import SkillSignature
         
         sig = SkillSignature(
             name="pick_up",
@@ -36,7 +36,7 @@ class TestSkillTypes:
 
     def test_skill_signature_no_params(self):
         """Test SkillSignature with no parameters."""
-        from retriever.types.skills import SkillSignature
+        from retriever.types.symbolic.skills import SkillSignature
         
         sig = SkillSignature(name="stop", template="stop moving")
         assert sig.parameters == []
@@ -44,7 +44,7 @@ class TestSkillTypes:
 
     def test_grounded_skill_creation(self):
         """Test GroundedSkill creation and validation."""
-        from retriever.types.skills import SkillSignature, GroundedSkill
+        from retriever.types.symbolic.skills import SkillSignature, GroundedSkill
         
         sig = SkillSignature(
             name="put_on",
@@ -60,7 +60,7 @@ class TestSkillTypes:
 
     def test_grounded_skill_param_mismatch(self):
         """Test that GroundedSkill raises error on param mismatch."""
-        from retriever.types.skills import SkillSignature, GroundedSkill
+        from retriever.types.symbolic.skills import SkillSignature, GroundedSkill
         
         sig = SkillSignature(name="pick", template="pick {object}")
         
@@ -69,7 +69,7 @@ class TestSkillTypes:
 
     def test_grounded_skill_validate_grounding(self):
         """Test validate_grounding method."""
-        from retriever.types.skills import SkillSignature, GroundedSkill
+        from retriever.types.symbolic.skills import SkillSignature, GroundedSkill
         
         sig = SkillSignature(name="move", template="move to {location}")
         grounded = GroundedSkill(signature=sig, grounded_params={"location": "waypoint_1"})

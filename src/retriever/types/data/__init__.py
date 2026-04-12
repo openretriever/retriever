@@ -2,16 +2,7 @@
 
 from __future__ import annotations
 
-from .buffer import (
-    from_events,
-    hold,
-    latest,
-    merge_sorted,
-    watermark_prune,
-    window_agg,
-    window_values,
-)
-from .dataset_manifest import (
+from .dataset import (
     EVENT_TABLE_COLUMNS,
     build_dataset_manifest,
     build_episode_manifest,
@@ -19,18 +10,7 @@ from .dataset_manifest import (
     event_to_row,
     validate_dataset_manifest,
 )
-from .interop_flow_types import (
-    from_runtime_event_buffer,
-    is_runtime_event_buffer,
-    to_runtime_event_buffer,
-)
-from .join import align_exact, align_latest_before, align_window, join_with_policy
-from .lerobot_bridge import (
-    from_lerobot_records,
-    to_lerobot_records,
-    validate_lerobot_mapping,
-)
-from .v1 import (
+from .events import (
     ClockDomain,
     DataSpec,
     DatasetManifest,
@@ -50,7 +30,29 @@ from .v1 import (
     WindowAgg,
     WindowPolicy,
 )
-from .window import event_window, processing_window_agg
+from .interop import (
+    from_lerobot_records,
+    from_runtime_event_buffer,
+    is_runtime_event_buffer,
+    to_lerobot_records,
+    to_runtime_event_buffer,
+    validate_lerobot_mapping,
+)
+from .streams import (
+    align_exact,
+    align_latest_before,
+    align_window,
+    event_window,
+    from_events,
+    hold,
+    join_with_policy,
+    latest,
+    merge_sorted,
+    processing_window_agg,
+    watermark_prune,
+    window_agg,
+    window_values,
+)
 
 __all__ = [
     "ClockDomain",

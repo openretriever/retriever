@@ -1,14 +1,108 @@
-"""Multi-stream event-time join operators."""
+"""Event stream helpers and multi-stream joins."""
 
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, List, TypeVar
+from typing import Any, Dict, Iterable, List, Optional, TypeVar
 
-from .v1 import Event, EventBuffer, JoinPolicy, LineageRef, StreamId
+from .events import Event, EventBuffer, JoinPolicy, LineageRef, StreamId, WatermarkPolicy, WindowPolicy
 
 A = TypeVar("A")
 B = TypeVar("B")
+
+
+def merge_sorted(*buffers: EventBuffer[Any]) -> EventBuffer[Any]:
+    merged = []
+    for buffer in buffers:
+        merged.extend(buffer.events)
+    return EventBuffer(tuple(sorted(merged, key=lambda event: event.ordering_key())))
+
+
+def watermark_prune(buffer: EventBuffer[Any], policy: WatermarkPolicy) -> EventBuffer[Any]:
+    threshold = policy.watermark_ns - policy.allowed_lateness_ns
+    if not policy.drop_late:
+        return buffer
+    return EventBuffer(tuple(event for event in buffer.events if event.event_time_ns >= threshold))
+
+
+def latest(buffer: EventBuffer[Any]) -> Any:
+    event = buffer.latest_event()
+    if event is None:
+        raise IndexError("cannot sample latest from empty buffer")
+    return event.value
+
+
+def hold(buffer: EventBuffer[Any], *, now_ns: int, last_value: Optional[Any] = None) -> Optional[Any]:
+    if now_ns < 0:
+        raise ValueError("now_ns must be >= 0")
+
+    candidates = [event for event in buffer.events if event.event_time_ns <= now_ns]
+    if not candidates:
+        return last_value
+    return sorted(candidates, key=lambda event: event.ordering_key())[-1].value
+
+
+def window_values(buffer: EventBuffer[Any], *, now_ns: int, duration_ns: int) -> tuple[Any, ...]:
+    if duration_ns <= 0:
+        raise ValueError("duration_ns must be > 0")
+    start = now_ns - duration_ns
+    window = buffer.within(start_ns=start, end_ns=now_ns)
+    ordered = window.sorted()
+    return ordered.values()
+
+
+def window_agg(
+    buffer: EventBuffer[Any],
+    *,
+    now_ns: int,
+    policy: WindowPolicy,
+    fallback: Optional[Any] = None,
+) -> Any:
+    values = window_values(buffer, now_ns=now_ns, duration_ns=policy.duration_ns)
+    if not values:
+        return fallback
+
+    if policy.agg == "first":
+        return values[0]
+    if policy.agg == "last":
+        return values[-1]
+    if policy.agg == "max":
+        return max(values)
+    if policy.agg == "min":
+        return min(values)
+    if policy.agg == "mean":
+        total = 0.0
+        for value in values:
+            total += float(value)
+        return total / len(values)
+
+    raise ValueError(f"unsupported aggregation: {policy.agg}")
+
+
+def event_window(
+    buffer: EventBuffer[Any],
+    *,
+    now_ns: int,
+    duration_ns: int,
+) -> EventBuffer[Any]:
+    if duration_ns <= 0:
+        raise ValueError("duration_ns must be > 0")
+    start_ns = now_ns - duration_ns
+    return buffer.within(start_ns=start_ns, end_ns=now_ns).sorted()
+
+
+def processing_window_agg(
+    buffer: EventBuffer[Any],
+    *,
+    now_ns: int,
+    policy: WindowPolicy,
+    fallback: Optional[Any] = None,
+) -> Any:
+    return window_agg(buffer, now_ns=now_ns, policy=policy, fallback=fallback)
+
+
+def from_events(events: Iterable[Event[Any]]) -> EventBuffer[Any]:
+    return EventBuffer(tuple(events)).sorted()
 
 
 def _joined_event(
@@ -192,5 +286,14 @@ __all__ = [
     "align_exact",
     "align_latest_before",
     "align_window",
+    "event_window",
+    "from_events",
+    "hold",
     "join_with_policy",
+    "latest",
+    "merge_sorted",
+    "processing_window_agg",
+    "watermark_prune",
+    "window_agg",
+    "window_values",
 ]

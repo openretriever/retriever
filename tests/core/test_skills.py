@@ -1,6 +1,6 @@
 import pytest
 
-from retriever.skills import GroundedSkill, SkillSignature
+from retriever.types.symbolic.skills import GroundedSkill, SkillSignature
 
 
 def test_skill_signature_parsing_and_str():

@@ -7,29 +7,27 @@
 - domain type subpackages:
   - `retriever.types.data`     — event/data contracts, manifests, join policies
   - `retriever.types.spatial`  — spatial payload standard (PoseStamped, JointState, ...)
-
-Compatibility aliases still exist during review:
-- `retriever.types.data_spec`
-- `retriever.types.robotics`
-- `retriever.types.data`
-- `retriever.types.spatial`
-- `retriever.data_spec`
-- `retriever.robotics_typing`
 """
 
 from .core import Eff, pure, Module
 from .schema import ClockDomain, SchemaRef, StreamId
 from .symbolic import (
+    Action,
     GroundAtom,
+    GroundedSkill,
     LiftedAtom,
     Object,
     ObjectType,
+    Option,
+    ParameterizedOption,
     Predicate,
+    SkillSignature,
     State,
+    Task,
     Variable,
 )
-from .skills import SkillSignature, GroundedSkill
 from .compat import FRPConfig
+from . import data, spatial
 from .registry import (
     TypeInfo,
     TypeRegistry,
@@ -48,6 +46,7 @@ from .registry import (
 )
 
 __all__ = [
+    "Action",
     "ClockDomain",
     "Eff",
     "FRPConfig",
@@ -57,14 +56,19 @@ __all__ = [
     "Module",
     "Object",
     "ObjectType",
+    "Option",
+    "ParameterizedOption",
     "Predicate",
     "SchemaRef",
     "SkillSignature",
     "State",
+    "Task",
     "StreamId",
     "TypeInfo",
     "TypeRegistry",
     "Variable",
+    "data",
+    "spatial",
     "convert_from_arrow",
     "convert_to_arrow",
     "find_types",

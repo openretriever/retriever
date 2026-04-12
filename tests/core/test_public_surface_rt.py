@@ -1,3 +1,4 @@
+import importlib
 import inspect
 
 import pytest
@@ -6,7 +7,7 @@ import retriever
 from retriever.error import ERROR_MSGS, ErrCode
 from retriever.flow import EdgeConfig, Flow, Pipeline, PipelineEdge, PipelineGraph, PipelineNode, Rate, io
 from retriever.flow.pipeline import run as run_default_pipeline
-from retriever.pipeline_registry import run_pipeline
+from retriever.registry.pipeline import run_pipeline
 from retriever.rt import execute_ir
 
 
@@ -32,6 +33,22 @@ def test_flow_module_exports_pipeline_graph_names_only():
 
 def test_top_level_retriever_exports_clear_default_pipeline():
     assert callable(retriever.clear_default_pipeline)
+
+
+def test_context_module_imports_without_optional_mcp_runtime():
+    context = importlib.import_module("retriever.context")
+    assert context.MCPConfig is not None
+
+
+def test_legacy_typing_namespace_modules_are_removed():
+    for module_name in (
+        "retriever.data_spec",
+        "retriever.robotics_typing",
+        "retriever.types.data_spec",
+        "retriever.types.robotics",
+    ):
+        with pytest.raises(ModuleNotFoundError):
+            importlib.import_module(module_name)
 
 
 def test_public_run_helpers_default_to_multiprocessing():

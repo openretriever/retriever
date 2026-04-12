@@ -1,7 +1,7 @@
-"""Retriever data/event specification v1.
+"""Retriever data/event contracts.
 
-This module defines immutable contracts for event records, stream policies,
-and dataset manifests used by collection/replay/export workflows.
+This module holds the immutable event, policy, and manifest contracts.
+Concrete stream operations live in `retriever.types.data.streams`.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Generic, Mapping, Optional, TypeVar, Literal
 
-from retriever.types_registry import register_type
+from retriever.registry.types import register_type
 from retriever.types.schema import ClockDomain, SchemaRef, StreamId  # canonical definitions
 
 T = TypeVar("T")
@@ -334,8 +334,6 @@ class DatasetManifest:
     @property
     def event_count(self) -> int:
         return sum(episode.event_count for episode in self.episodes)
-
-
 __all__ = [
     "ClockDomain",
     "DataSpec",

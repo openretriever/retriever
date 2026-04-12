@@ -237,7 +237,7 @@ Adapters decide how to interpret an `EventBuffer` at time `now`:
 
 ### Register a pipeline factory
 
-Use `retriever.pipeline_registry.register_pipeline` to register a pipeline builder that returns:
+Use `retriever.registry.pipeline.register_pipeline` to register a pipeline builder that returns:
 
 - an `IR`, or
 - a `PipelineBuilder` / `Pipeline` (it will be validated automatically)

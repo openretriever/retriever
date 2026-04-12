@@ -70,3 +70,5 @@ class GroundedSkill:
         for obj_id in self.grounded_params.values():
             if obj_id not in perceived_objects:
                 raise ValueError(f"Grounded object ID '{obj_id}' not found.") 
+
+__all__ = ["GroundedSkill", "SkillSignature"]

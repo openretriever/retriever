@@ -6,7 +6,7 @@ from pathlib import Path
 from retriever.flow import Flow, Pipeline, Rate, Latest, io
 from retriever.ir.core import IR, IRAnalysis
 from retriever.ir.execution import ExecutionGraph
-from retriever.pipeline_registry import build_pipeline_flow, register_pipeline
+from retriever.registry.pipeline import build_pipeline_flow, register_pipeline
 
 
 # Simple test pipeline

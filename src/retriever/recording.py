@@ -29,7 +29,7 @@ from typing import Any, Literal, Optional, Protocol, Sequence, Type, Union, get_
 import numpy as np
 
 from retriever.types.schema import ClockDomain, SchemaRef, StreamId
-from retriever.types_registry import resolve_schema_ref
+from retriever.registry.types import resolve_schema_ref
 
 RecordingFormat = Literal["mcap", "rrd"]
 _RRD_REPLAY_CODEC = "retriever.json-zlib-v1"

@@ -114,7 +114,7 @@ pipe.run(backend="multiprocessing")
 ### Registry System
 ```python
 # IR-first pipeline registry
-from retriever.pipeline_registry import register_pipeline, build_ir
+from retriever.registry.pipeline import register_pipeline, build_ir
 from retriever.flow import Pipeline
 
 @register_pipeline("my_pipeline", overwrite=True)

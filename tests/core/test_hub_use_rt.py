@@ -189,11 +189,11 @@ class GreeterFlow(Flow[GreeterInput, GreeterOutput]):
         super().__init__()
         self.prefix = prefix
 
-    def run(self, input: GreeterInput) -> GreeterOutput:
+    def step(self, input: GreeterInput) -> GreeterOutput:
         return GreeterOutput(greeting=f"{self.prefix}, {input.name}!")
 """,
         "test_mod/pipeline.py": """from retriever.flow import Flow, Pipeline, Rate, Latest, io
-from retriever.pipeline_registry import register_pipeline, build_pipeline_flow
+from retriever.registry.pipeline import register_pipeline, build_pipeline_flow
 
 
 @io
@@ -214,7 +214,7 @@ class ProcOut:
 
 
 class TestSource(Flow[None, SourceOut]):
-    def init(self) -> None:
+    def reset(self) -> None:
         self.count = 0
 
     def step(self, _):  # type: ignore[override]
@@ -545,7 +545,7 @@ class TestHubUse:
             GreeterOutput = hub.use("test-org/test-mod:GreeterOutput")
 
             greeter = GreeterFlow(prefix="Hi")
-            out = greeter.run(GreeterInput(name="Retriever"))
+            out = greeter.step(GreeterInput(name="Retriever"))
 
             assert greeter.input_type is GreeterInput
             assert greeter.output_type is GreeterOutput

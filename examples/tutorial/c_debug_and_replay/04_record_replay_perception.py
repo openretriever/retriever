@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 from retriever.config import RecordConfig
-from retriever.tutorials.perception import (
+from retriever.example_support.perception_runtime import (
     build_record_pipeline,
     build_replay_pipeline,
     emit_replay_finished,

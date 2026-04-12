@@ -70,14 +70,12 @@ def init(
 
 
 # Registry Exports
-from retriever.flow_registry import (
+from retriever.registry import (
     register_flow,
     get_flow,
     get_flow_class,
     list_flows,
     find_flows,
-)
-from retriever.pipeline_registry import (
     register_pipeline,
     get_pipeline,
     get_pipeline_factory,
@@ -86,8 +84,6 @@ from retriever.pipeline_registry import (
     build_ir,
     build_pipeline_flow,
     build_pipeline_surface,
-)
-from retriever.types_registry import (
     get_type_info,
     get_registered_types,
     register_type,
@@ -102,8 +98,8 @@ from retriever.types_registry import (
 from retriever.types import ClockDomain as _ClockDomain, SchemaRef as _SchemaRef, StreamId as _StreamId  # noqa: F401
 from retriever import hub  # noqa: F401
 # Import built-in domain typing packages so registry lookups are stable after plain `import retriever`.
-from retriever.types import data_spec as _data_spec  # noqa: F401
-from retriever.types import robotics as _robotics_typing  # noqa: F401
+from retriever.types import data as _data  # noqa: F401
+from retriever.types import spatial as _spatial  # noqa: F401
 
 __all__ = [
     "Flow",

@@ -5,7 +5,7 @@ import pytest
 from retriever.error import IRError
 from retriever.flow import Flow, Hold, Pipeline, PipelineBuilder, Rate, io, Latest
 from retriever.ir.core import IR
-from retriever.pipeline_registry import (
+from retriever.registry.pipeline import (
     build_ir,
     build_pipeline_flow,
     build_pipeline_surface,

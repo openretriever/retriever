@@ -28,7 +28,7 @@ pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchm
 
 ```bash
 pixi run env PYTHONPATH=src python - <<'PY'
-from retriever.tutorials.perception import build_tutorial_perception_pipeline
+from retriever.example_support.perception_runtime import build_tutorial_perception_pipeline
 
 path = build_tutorial_perception_pipeline(
     use_real_camera=False,

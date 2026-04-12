@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from retriever.config import RecordConfig
-from retriever.pipeline_registry import build_ir, list_pipelines
+from retriever.registry.pipeline import build_ir, list_pipelines
 from retriever.recording import build_recording_sink
 from retriever.rt.stepper import StepResult
-from retriever.tutorials.perception import (
+from retriever.example_support.perception_runtime import (
     CameraSource,
     ColorDetector,
     CameraData,

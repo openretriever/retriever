@@ -16,7 +16,7 @@ import numpy as np
 from retriever.types.symbolic import (
     Type, Object, Variable, Predicate, State, GroundAtom, LiftedAtom
 )
-from retriever.types.skills import SkillSignature, GroundedSkill
+from retriever.types.symbolic.skills import SkillSignature, GroundedSkill
 
 
 def main():

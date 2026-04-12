@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from math import sqrt
 from typing import Final, Iterable
 
-from retriever.types_registry import register_type
+from retriever.registry.types import register_type
 
 _ROBOTICS_CATEGORY: Final[str] = "spatial"
 _ROBOTICS_NAMESPACE: Final[str] = "spatial"

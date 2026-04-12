@@ -15,7 +15,6 @@ from retriever.types.spatial import (
 )
 from retriever.types.spatial.v1 import PoseStamped as PinnedPoseStamped
 from retriever.types.spatial.v1 import SE3Pose as PinnedSE3Pose
-from retriever.robotics_typing import PoseStamped as CompatPoseStamped
 
 
 def test_registry_lookup_for_v1_types() -> None:
@@ -40,5 +39,3 @@ def test_public_package_surface_matches_pinned_v1() -> None:
     assert SE3Pose is PinnedSE3Pose
 
 
-def test_compat_robotics_alias_matches_spatial_surface() -> None:
-    assert CompatPoseStamped is PoseStamped
