@@ -166,8 +166,8 @@ with pipe:
 - **`src/retriever/flow/`**: authoring surface, clocks, adapters, pipeline wiring
 - **`src/retriever/ir/`**: logical IR and execution graph structures
 - **`src/retriever/rt/`**: runtime execution, stepper, multiprocessing, dora
-- **`src/retriever/data_spec/`**: explicit dataset/event/export contracts
-- **`src/retriever/robotics_typing/`**: typed robotics boundary payloads
+- **`src/retriever/types/data/`**: explicit dataset/event/export contracts
+- **`src/retriever/types/spatial/`**: typed spatial boundary payloads
 - **`examples/tutorial/`**: public runnable examples for the runtime release
 
 ## Development Workflow

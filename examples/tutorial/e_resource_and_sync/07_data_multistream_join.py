@@ -1,4 +1,4 @@
-"""Data spec multistream join tutorial.
+"""Data multistream join tutorial.
 
 Covers:
 1) explicit bridge from runtime EventBuffer to retriever.types.data
@@ -53,7 +53,7 @@ def _pairs(buffer: EventBuffer[tuple[float, float]]) -> list[list[str]]:
 
 
 def main() -> None:
-    out_path = Path("logs/tutorial_data_spec/tut038_multistream_join.json")
+    out_path = Path("logs/tutorial_data/tut038_multistream_join.json")
 
     runtime_camera = RuntimeEventBuffer([(1.0, 10.0), (2.0, 20.0), (3.0, 30.0)])
     runtime_joint = RuntimeEventBuffer([(2.0, 100.0), (3.02, 110.0)])

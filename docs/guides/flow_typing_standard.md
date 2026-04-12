@@ -17,7 +17,6 @@ Use this page for:
 Related guides:
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
-- `docs/guides/type_surface_status_v1.md`
 
 ## Supported Signature Forms
 

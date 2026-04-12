@@ -23,6 +23,5 @@ Key references:
 - `docs/guides/flow_typing_standard.md`
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
-- `docs/guides/type_surface_status_v1.md`
 
 For runtime/core work, prefer `docs/handbook.md`. The other guides are focused references, not draft placeholders.

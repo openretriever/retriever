@@ -13,7 +13,7 @@
 
 - Use registries and wrappers to operate pipelines.
 - Understand extension points and runtime control surfaces.
-- See mirror-native robotics typing used at typed flow boundaries.
+- See canonical spatial types used at typed flow boundaries.
 - Compose registered pipelines as reusable stages and still extend live graphs.
 
 ## Run

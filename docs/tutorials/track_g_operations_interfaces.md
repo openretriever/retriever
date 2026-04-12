@@ -36,7 +36,7 @@ PY
 
 - Registry extension patterns.
 - Unified wrapper patterns and operator-facing workflows.
-- Mirror-native robotics typing imports and registry lookup parity.
+- Canonical spatial type imports and registry lookup parity.
 - Typed boundary payloads carrying frame/time/source metadata.
 - Registered pipelines used both as live graphs and as reusable flow stages.
 - Nested pipeline stages rendered as boxed nodes with surfaced ports and inner-flow summaries.

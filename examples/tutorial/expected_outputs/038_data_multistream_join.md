@@ -14,4 +14,4 @@ pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_joi
 
 ## Expected Artifact
 
-- `logs/tutorial_data_spec/tut038_multistream_join.json`
+- `logs/tutorial_data/tut038_multistream_join.json`

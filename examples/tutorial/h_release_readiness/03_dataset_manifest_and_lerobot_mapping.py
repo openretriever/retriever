@@ -1,7 +1,7 @@
 """Dataset manifest and LeRobot mapping tutorial.
 
 Covers:
-1) declare a retriever.types.data data contract
+1) declare a canonical retriever.types.data contract
 2) build episode/dataset manifests from per-stream events
 3) map canonical event rows to LeRobot-compatible records
 

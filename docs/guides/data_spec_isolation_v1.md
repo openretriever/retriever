@@ -8,7 +8,7 @@ The near-term recommendation is:
 
 1. Keep Retriever runtime independent from `data_spec`.
 2. Isolate a small read tool and a mock data write tool outside the main Retriever runtime package.
-3. Treat those tools as a collaborator-facing test surface for data workflows.
+3. Treat those tools as a small standalone test surface for data workflows.
 4. Keep only a narrow adapter boundary inside Retriever for any integration points that are genuinely useful today.
 
 This lets data-focused collaborators experiment on a simpler surface without having to absorb the full Retriever runtime model.
@@ -20,7 +20,7 @@ Today, the strongest use cases for `data_spec` are around:
 - typed stream identifiers and schema references
 - recording and replay utilities
 - offline data exchange and dataset tooling
-- collaborator-facing experiments that do not need the full runtime
+- experiments that do not need the full runtime
 
 The weaker use case is trying to make `data_spec` the main execution model for Retriever itself. The current runtime already has working flow, step, and replay semantics. Forcing `data_spec` into the core runtime too early would create unnecessary coupling.
 

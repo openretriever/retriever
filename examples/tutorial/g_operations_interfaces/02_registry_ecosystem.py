@@ -33,14 +33,14 @@ class Frame:
     brightness: float
 
 
-@retriever.register_type("Pose2D", category="geometry", description="Tiny 2D pose type", tags=["robotics", "spatial"])
+@retriever.register_type("Pose2D", category="spatial", description="Tiny 2D pose type", tags=["geometry", "spatial"])
 @io
 class Pose2D:
     x: float
     y: float
 
 
-@retriever.register_type("RobotStatus", category="robotics", description="Toy robot status", tags=["status", "monitoring"])
+@retriever.register_type("RobotStatus", category="spatial", description="Toy robot status", tags=["status", "monitoring"])
 @io
 class RobotStatus:
     battery: float
@@ -178,7 +178,7 @@ def main() -> None:
 
     print("=== Types ===")
     print("geometry:", sorted(retriever.list_types(category="geometry").keys()))
-    print("robotics:", sorted(retriever.find_types(category="robotics", tags=["status"]).keys()))
+    print("spatial:", sorted(retriever.find_types(category="spatial", tags=["status"]).keys()))
 
     print("\n=== Flows ===")
     print("vision flows:", sorted(retriever.list_flows(category="vision").keys()))

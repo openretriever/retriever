@@ -45,7 +45,7 @@ Notes:
 
 ## 2) Implement a `Flow[I, O]`
 
-A `Flow` is a typed node. Implement `run(...)` and optionally lifecycle hooks:
+A `Flow` is a typed node. Implement `step(...)` and optionally lifecycle hooks:
 
 - `__lazy_init__()` / `reset()` / `finalize()` for resources (models, cameras, sockets)
 - `reset()` for “gym-like” stateful flows (optional; mostly a hook for the future)
@@ -78,7 +78,7 @@ class AddOne(Flow[SrcOut, AddOut]):
 ```
 
 
-- `Flow.step(...)` and `Flow.forward(...)` are aliases for `run(...)`. This keeps the word “run” available for backend execution (`Pipeline.run`).
+- Override `step(...)` in new code. `run(...)` is the deprecated backwards-compat alias, and `forward(...)` is a PyTorch-style alias for `step(...)`.
 
 ## 2.1) Wrapper Factory (Torch/Gym)
 

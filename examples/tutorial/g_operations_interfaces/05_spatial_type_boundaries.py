@@ -1,7 +1,7 @@
-"""Robotics typing boundaries tutorial.
+"""Spatial type boundaries tutorial.
 
 Covers:
-1) mirror-native robotics typing imports
+1) canonical spatial type imports
 2) registry lookup parity for typed boundary payloads
 3) a small typed boundary flow that rewrites frame metadata
 
@@ -71,7 +71,7 @@ class CameraToBase(Flow[PoseEnvelope, PoseEnvelope]):
 
 
 def main() -> None:
-    out_path = Path("logs/tutorial_robotics_typing/tut037_robotics_typing_summary.json")
+    out_path = Path("logs/tutorial_spatial_types/tut037_spatial_type_summary.json")
 
     public_cls = PoseStamped
     registry_cls = retriever.get_type("PoseStamped")

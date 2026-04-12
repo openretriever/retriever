@@ -1,17 +1,17 @@
 ---
-title: Robotics Typing Carry-Back Status
+title: Type Surface Status v1
 ---
 
-# Robotics Typing Carry-Back Status
+# Type Surface Status v1
 
 ## Purpose
 
-Track the mirror-native rollout of:
+Summarize the current canonical type surfaces and:
 - `retriever.types.spatial`
 - `retriever.types.data`
 - the flow typing contract carry-back that these packages rely on
 
-This page is implementation-status oriented. For user-facing usage, read:
+This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
 - `docs/guides/flow_typing_standard.md`
@@ -21,8 +21,8 @@ This page is implementation-status oriented. For user-facing usage, read:
 The mirror carry-back now targets the modern tutorial/runtime branch line and includes:
 
 1. flow typing contract support for tuple-literal and tuple-output signatures,
-2. mirror-native robotics typing package,
-3. mirror-native data-spec package,
+2. canonical `retriever.types.spatial` package,
+3. canonical `retriever.types.data` package,
 4. tutorial-track exposure under existing one-level tracks.
 
 ## Runtime File Map
@@ -37,20 +37,20 @@ Flow typing contract:
 - `scripts/validate_flow_typing.py`
 
 Robotics typing:
-- `src/retriever/robotics_typing/__init__.py`
-- `src/retriever/robotics_typing/v1.py`
-- bootstrap via `src/retriever/__init__.py`
+- `src/retriever/types/spatial/__init__.py`
+- `src/retriever/types/spatial/v1.py`
+- compatibility shim via `src/retriever/robotics_typing/`
 - registry via `src/retriever/types_registry.py`
 
 Data spec:
-- `src/retriever/data_spec/__init__.py`
-- `src/retriever/data_spec/v1.py`
-- `src/retriever/data_spec/buffer.py`
-- `src/retriever/data_spec/join.py`
-- `src/retriever/data_spec/window.py`
-- `src/retriever/data_spec/dataset_manifest.py`
-- `src/retriever/data_spec/lerobot_bridge.py`
-- `src/retriever/data_spec/interop_flow_types.py`
+- `src/retriever/types/data/__init__.py`
+- `src/retriever/types/data/v1.py`
+- `src/retriever/types/data/buffer.py`
+- `src/retriever/types/data/join.py`
+- `src/retriever/types/data/window.py`
+- `src/retriever/types/data/dataset_manifest.py`
+- `src/retriever/types/data/lerobot_bridge.py`
+- `src/retriever/types/data/interop_flow_types.py`
 
 ## Acceptance Checks
 
@@ -89,6 +89,6 @@ This carry-back does not use:
 - Golden-only import paths
 - old public `v2` naming
 
-Mirror-native public naming is:
-- `retriever.types.spatial.v1`
-- `retriever.types.data.v1`
+Canonical public naming is:
+- `retriever.types.spatial` / `retriever.types.spatial.v1`
+- `retriever.types.data` / `retriever.types.data.v1`

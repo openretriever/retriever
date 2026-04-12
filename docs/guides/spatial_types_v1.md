@@ -6,7 +6,7 @@ title: Spatial Types v1
 
 ## Purpose
 
-`retriever.types.spatial` is the mirror-native package for stamped robotics
+`retriever.types.spatial` is the canonical package for stamped robotics
 boundary payloads.
 
 Use it when a flow boundary should explicitly carry:
@@ -58,7 +58,7 @@ Validation helpers:
 
 ## Recommended Usage
 
-Use robotics typing at flow boundaries where frame/time semantics matter.
+Use canonical spatial types at flow boundaries where frame/time semantics matter.
 
 Typical pattern:
 
@@ -73,7 +73,7 @@ class PoseEnvelope:
 
 This keeps:
 - flow I/O compatibility explicit,
-- robotics payload semantics explicit,
+- spatial payload semantics explicit,
 - boundary evolution controlled by a stable package.
 
 ## Relationship to Flow Typing

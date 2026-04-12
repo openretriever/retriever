@@ -6,7 +6,7 @@ title: Data and EventStream v1
 
 ## Purpose
 
-`retriever.types.data` defines the mirror-native contract for:
+`retriever.types.data` defines the canonical contract for:
 - deterministic event records,
 - multi-stream joins,
 - lineage,

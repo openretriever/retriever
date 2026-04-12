@@ -44,5 +44,5 @@ pixi run p0-release-readiness
   - `pixi run check-notebook-ready`
 - Advanced examples:
   - [Zero-Copy Guide](../guides/advanced_zero_copy.md)
-  - [Spatial Types v1](../guides/robotics_typing.md)
-  - [Data and EventStream v1](../guides/data_spec_eventstream.md)
+  - [Spatial Types v1](../guides/spatial_types_v1.md)
+  - [Data and EventStream v1](../guides/data_eventstream_v1.md)
