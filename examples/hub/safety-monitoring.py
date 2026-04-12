@@ -5,7 +5,7 @@ Hub module chosen by `RETRIEVER_HUB_SAFETY_MONITOR_MODULE`. `SafetyScenario`
 is defined locally because it is the demo-specific signal source.
 
 Run:
-    RETRIEVER_HUB_SAFETY_MONITOR_MODULE=company-abc/safety-monitor     pixi run python examples/hub/safety-monitoring.py --steps 12 --dt 0.1
+    RETRIEVER_HUB_SAFETY_MONITOR_MODULE=your-org/safety-monitor     pixi run python examples/hub/safety-monitoring.py --steps 12 --dt 0.1
 """
 
 from __future__ import annotations

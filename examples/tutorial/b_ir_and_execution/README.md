@@ -7,7 +7,7 @@
 - `03_execution_build.py`
 - `04_rt_execution.py`
 - `05_dora_simple.py`
-- `06_dora_perception.py`
+- `06_dora_perception.py` (historical filename; backend-neutral public perception runtime demo)
 - `07_request_response.py`
 - `08_detection_window_stats.py`
 - `09_backend_parity_benchmark.py`

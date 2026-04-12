@@ -1,14 +1,16 @@
 """
-Perception Pipeline - Live Camera to Object Detection
+Perception Runtime Demo - Live or Mock Camera to Object Detection
 
 Demonstrates perception pipeline with live or mock camera input:
 - Real camera via cv2.VideoCapture (with mock fallback)
 - Color-based object detection
 - Backend execution (in-process, multiprocessing, or dora)
 
-The default public task uses the in-process backend so a local webcam path works
-reliably across desktop platforms. Dora and multiprocessing remain available as
-explicit mock-camera variants when you want worker backends or live Rerun views.
+Historical note: the filename still says `dora_perception`, but the public
+surface is backend-neutral. The default task uses the in-process backend so a
+local webcam path works reliably across desktop platforms. Dora and
+multiprocessing remain explicit mock-camera variants when you want worker
+backends or live Rerun views.
 
 Run:
   pixi run demo-webcam-detection
@@ -41,7 +43,7 @@ def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Perception demo (camera -> detection -> display)")
+    parser = argparse.ArgumentParser(description="Perception runtime demo (camera -> detection -> display)")
     parser.add_argument("--backend", default="in-process", choices=["dora", "multiprocessing", "in-process"])
     parser.add_argument("--duration", type=float, default=20.0)
     parser.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")

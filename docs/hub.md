@@ -7,21 +7,21 @@ from retriever import hub
 from retriever.flow import Pipeline, Rate, Latest
 
 # Share one flow
-LidarSlam = hub.use("company-abc/lidar-slam:LidarSlamFlow")
+LidarSlam = hub.use("your-org/lidar-slam:LidarSlamFlow")
 slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
 
 # Share a live pipeline factory you can still extend
-build_slam = hub.use("company-abc/lidar-slam:BuildSlamPipeline")
+build_slam = hub.use("your-org/lidar-slam:BuildSlamPipeline")
 pipe = build_slam()
 pipe.select_flow("frontend")
 
 # Share a pipeline-flow factory for hierarchical in-process composition
-build_slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")
+build_slam_stage = hub.use("your-org/lidar-slam:BuildSlamPipelineFlow")
 slam_stage = build_slam_stage(resolution=0.05) @ Rate(hz=10)
 
 # Share a type or a representation transform
-SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
-pose_to_matrix = hub.use("company-abc/lidar-slam:pose_to_matrix")
+SE3Pose = hub.use("your-org/lidar-slam:SE3Pose")
+pose_to_matrix = hub.use("your-org/lidar-slam:pose_to_matrix")
 ```
 
 Examples in this repo:
@@ -29,7 +29,7 @@ Examples in this repo:
 - `examples/hub/hello-world.py`: whole-module import through `ModuleProxy`, then use exported flow/type symbols
 - `examples/hub/hello-world-explicit.py`: explicit `hub.use("org/name:Export")` imports against a live module
 - `examples/hub/detection-window.py`: import flows/types from Hub and compose them into a local pipeline
-- `examples/hub/composable-pipeline-template.py`: copy-paste template for imported live pipelines, pipeline-flow wrappers, and shared transforms
+- `examples/hub/_composable_pipeline_template.py`: copy-paste template for imported live pipelines, pipeline-flow wrappers, and shared transforms
 
 Module reference format:
 
@@ -40,9 +40,9 @@ Module reference format:
 Examples:
 
 ```python
-hub.use("company-abc/lidar-slam")
-hub.use("company-abc/lidar-slam:LidarSlamFlow")
-hub.use("company-abc/lidar-slam:BuildSlamPipeline@0.1.0")
+hub.use("your-org/lidar-slam")
+hub.use("your-org/lidar-slam:LidarSlamFlow")
+hub.use("your-org/lidar-slam:BuildSlamPipeline@0.1.0")
 ```
 
 ## Loading semantics
@@ -122,7 +122,7 @@ Two export patterns matter for reusable pipelines:
 Use this when downstream code wants to inspect or extend the imported graph.
 
 ```python
-pipe = hub.use("company-abc/lidar-slam:BuildSlamPipeline")()
+pipe = hub.use("your-org/lidar-slam:BuildSlamPipeline")()
 frontend = pipe.select_flow("frontend")
 pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 ```
@@ -132,7 +132,7 @@ pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 Use this when downstream code wants to treat the whole sub-pipeline as one flow stage.
 
 ```python
-slam_stage = hub.use("company-abc/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
+slam_stage = hub.use("your-org/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
 camera.then(slam_stage, sync=Latest())
 ```
 
@@ -147,9 +147,9 @@ Important boundary:
 Shared types and transforms compose with these factories the same way:
 
 ```python
-SE3Pose = hub.use("company-abc/lidar-slam:SE3Pose")
-pose_to_threshold = hub.use("company-abc/lidar-slam:pose_to_threshold")
-build_slam = hub.use("company-abc/lidar-slam:BuildSlamPipeline")
+SE3Pose = hub.use("your-org/lidar-slam:SE3Pose")
+pose_to_threshold = hub.use("your-org/lidar-slam:pose_to_threshold")
+build_slam = hub.use("your-org/lidar-slam:BuildSlamPipeline")
 
 pipe = build_slam()  # `SE3Pose` can be a plain shared representation type
 threshold = pose_to_threshold(SE3Pose(x=1.0, y=2.0, z=3.0))
@@ -286,7 +286,7 @@ Example:
 
 ```toml
 [module]
-repo = "https://github.com/company-abc/lidar-slam"
+repo = "https://github.com/your-org/lidar-slam"
 description = "LiDAR SLAM pipeline"
 author = "Company ABC"
 license = "MIT"

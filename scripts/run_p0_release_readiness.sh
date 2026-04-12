@@ -45,7 +45,7 @@ if [[ ! -f "$SUMMARY_JSON" ]]; then
   exit 3
 fi
 
-DECISION="$(python - <<'JSONPY' "$SUMMARY_JSON"
+DECISION="$("${RUNNER[@]}" - <<'JSONPY' "$SUMMARY_JSON"
 import json
 import sys
 p = sys.argv[1]

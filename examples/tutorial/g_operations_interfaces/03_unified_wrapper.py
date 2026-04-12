@@ -1,29 +1,34 @@
 """
 Unified Wrapper Tutorial (Simplified)
 =====================================
-Demonstrates the High-Level API without boilerplate:
-1. `Wrapper` Factory Class for Gym and Torch.
-2. `retriever.connect` (Implicit Default Pipeline).
-3. `retriever.run` (Global Execution).
+Demonstrates lightweight wrapping without hiding the pipeline surface:
+1. `Wrapper` turns Gym/Torch objects into `Flow`s.
+2. `Pipeline.connect(..., sync=Latest())` keeps graph construction explicit.
+3. `pipe.run(...)`, `pipe.reset_stepper()`, and `pipe.step(...)` stay the
+   primary execution/debugging surface.
 
 API Design:
 - Wrappers: Create Flows from objects.
-- Connect: Declarative wiring.
-- Run: Execute the default pipeline.
+- Connect: Declarative wiring on an explicit pipeline.
+- Run: Execute or step that pipeline directly.
 
 Run:
-    pixi run python examples/tutorial/g_operations_interfaces/03_unified_wrapper.py
+    pixi run python -m examples.tutorial.g_operations_interfaces.03_unified_wrapper
+
+Dependencies:
+    This tutorial requires `gymnasium` and `torch`, which are not part of the
+    lightweight default demo surface.
 """
 
 import argparse
 import logging
+
 import gymnasium as gym
 import torch
 import torch.nn as nn
 
 # Standard imports (assuming retriever is installed)
-import retriever
-from retriever.flow import Rate
+from retriever.flow import Latest, Pipeline, Rate
 from retriever.lib import Wrapper
 
 logging.basicConfig(level=logging.INFO)
@@ -71,33 +76,33 @@ def main():
     agent = Wrapper(LinearPolicy()) @ Rate(30)
     
     # ------------------------------------------------------------------------
-    # B. CONNECT (IMPLICIT DEFAULT PIPELINE)
+    # B. CONNECT (EXPLICIT PIPELINE)
     # ------------------------------------------------------------------------
-    # No `with Pipeline()` needed!
-    retriever.connect(env, agent, map={"obs": "inp"})
-    retriever.connect(agent, env, map={"inp": "action"})
+    pipe = Pipeline("unified_wrapper_demo")
+    pipe.connect(env, agent, map={"obs": "inp"}, sync=Latest())
+    pipe.connect(agent, env, map={"inp": "action"}, sync=Latest())
         
     # ------------------------------------------------------------------------
     # C. RUN (GLOBAL)
     # ------------------------------------------------------------------------
-    print("Starting Unified Wrapper Demo (Global Run)...")
+    print("Starting Unified Wrapper Demo...")
     try:
-        retriever.run(backend=args.backend, duration=args.duration)
+        pipe.run(backend=args.backend, duration=args.duration)
     except KeyboardInterrupt:
         pass
         
     # ------------------------------------------------------------------------
     # D. MANUAL STEPPING (INTERACTIVE DEBUGGING)
     # ------------------------------------------------------------------------
-    # 'step()' runs the graph in the CURRENT process (simulating parallelism).
-    # It is independent of the 'backend' used in 'run()'.
-    
+    # `Pipeline.step()` runs the graph in the current process, independent of the
+    # worker backend used by `run()`.
+
     print("\nResetting for Manual Stepping Demo...")
-    retriever.reset()
-    
+    pipe.reset_stepper()
+
     print("Stepping manually for 5 steps...")
     for i in range(5):
-        retriever.step(dt=0.1)
+        pipe.step(dt=0.1)
         print(f"  Step {i+1} complete.")
 
 

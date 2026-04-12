@@ -102,10 +102,10 @@ Pixi manages its own env. If you prefer `uv`/`pip`, use a separate conda/venv to
 
 Full installation (Pixi/conda/uv), dora CLI notes, and troubleshooting: `docs/getting_started/install.md`.
 
-Golden/system split prep:
+Runtime/core manifests in this repo:
 
-- Runtime/core manifests: `pyproject.toml`, `pixi.toml`
-- Golden/system templates (to be moved to a separate repo): `pyproject-golden.toml`, `pixi-golden.toml`
+- `pyproject.toml`
+- `pixi.toml`
 
 ## Development
 

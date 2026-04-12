@@ -7,7 +7,7 @@ Set `RETRIEVER_HUB_HELLO_WORLD_MODULE` to a module available in your index
 before running this example.
 
 Run:
-    RETRIEVER_HUB_HELLO_WORLD_MODULE=company-abc/hello-world     pixi run python examples/hub/hello-world.py
+    RETRIEVER_HUB_HELLO_WORLD_MODULE=your-org/hello-world     pixi run python examples/hub/hello-world.py
 """
 
 from __future__ import annotations

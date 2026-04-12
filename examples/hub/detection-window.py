@@ -2,13 +2,13 @@
 
 This example demonstrates whole-module import plus local pipeline assembly.
 It does not import a pre-registered pipeline from Hub; see
-`examples/hub/composable-pipeline-template.py` for that shape.
+`examples/hub/_composable_pipeline_template.py` for that shape.
 
 Set `RETRIEVER_HUB_DETECTION_WINDOW_MODULE` to a module available in your
 index before running this example.
 
 Run:
-    RETRIEVER_HUB_DETECTION_WINDOW_MODULE=company-abc/detection-window-demo     pixi run python examples/hub/detection-window.py
+    RETRIEVER_HUB_DETECTION_WINDOW_MODULE=your-org/detection-window-demo     pixi run python examples/hub/detection-window.py
 """
 
 from __future__ import annotations
@@ -39,10 +39,10 @@ class SaveFrame(Flow[dw.CameraData, Empty]):
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
     def step(self, input: dw.CameraData) -> Empty:
-        from PIL import Image
+        import cv2
 
-        img = Image.fromarray(input.frame)
-        img.save(self._output_dir / f'frame_{input.frame_id:04d}.png')
+        path = self._output_dir / f'frame_{input.frame_id:04d}.png'
+        cv2.imwrite(str(path), cv2.cvtColor(input.frame, cv2.COLOR_RGB2BGR))
         return Empty()
 
 pipe = Pipeline('vision_detection_window')

@@ -21,7 +21,7 @@ def _require_mcp() -> None:
     if _MCP_IMPORT_ERROR is not None:
         raise ModuleNotFoundError(
             "retriever.context requires the optional 'mcp' dependency. "
-            "Install retriever with MCP support or add 'mcp' to your environment."
+            "Install the Python 'mcp' package in your environment before using retriever.context."
         ) from _MCP_IMPORT_ERROR
 
 

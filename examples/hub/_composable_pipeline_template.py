@@ -2,21 +2,18 @@
 
 This file is a copy-paste template, not a guaranteed runnable demo as-is.
 Replace the placeholder module/export names with your actual Hub module.
-
-Run after editing:
-    pixi run python examples/hub/composable-pipeline-template.py
 """
 
 from retriever import hub
 from retriever.flow import Latest, Pipeline, Rate
 
-MODULE = "company-abc/lidar-slam"
+MODULE = "your-org/lidar-slam"
 
 
 def main() -> None:
-    if MODULE.startswith("company-abc/"):
+    if MODULE.startswith("your-org/"):
         raise SystemExit(
-            "Edit MODULE and export names in examples/hub/composable-pipeline-template.py first."
+            "Copy this template, then replace MODULE and export names before running it."
         )
 
     mod = hub.use(MODULE)

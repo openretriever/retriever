@@ -125,20 +125,20 @@ Backends attach a concrete “execution time” to a step:
 
 ---
 
-## 4) Registry + plugins (pipelines and systems)
+## 4) Registry + plugins
 
-To support “system packages” (and the future split into runtime vs golden system repos), the runtime has:
+Retriever exposes registry surfaces for flows, pipelines, and shared types:
 
 ### 4.1 Pipeline registry (IR-first)
 
-`retriever/pipeline_registry.py` registers **pipeline factories** that return:
+`retriever.registry.pipeline` registers **pipeline factories** that return:
 
 - `IR` (preferred), or
 - `PipelineBuilder` / `Pipeline` (validated to IR automatically)
 
 ### 4.2 Plugin discovery (entry points)
 
-`retriever/plugins.py` supports loading entry points so external packages can register pipelines/components.
+`retriever.plugins` supports loading entry points so external packages can register pipelines/components.
 
 Entry point group:
 
