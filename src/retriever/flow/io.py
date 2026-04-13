@@ -173,3 +173,52 @@ def get_flow_io_fields(cls) -> list[str]:
             f"Class '{cls.__name__}' is not decorated with @io",
         )
     return list(cls.__dataclass_fields__.keys())
+
+
+def compose(name: str, **field_types: type):
+    """
+    Dynamically create a named ``@io`` type from a mapping of field names to types.
+
+    Equivalent to writing::
+
+        @io
+        @dataclass
+        class <name>:
+            field1: Type1
+            field2: Type2
+
+    Example::
+
+        SE3Pose = compose("SE3Pose", position=Vector3, orientation=Quaternion)
+        Twist   = compose("Twist",   linear=Vector3,   angular=Vector3)
+    """
+    annotations = dict(field_types)
+    cls = type(name, (), {"__annotations__": annotations})
+    cls = dataclass(cls, frozen=False)
+    return io(cls)
+
+
+def select(source: type, *fields: str, name: str | None = None):
+    """
+    Create a subset ``@io`` type projecting specific fields from an existing ``@io`` type.
+
+    Field types are taken from ``source.__flow_io_original_types__`` (unwrapped,
+    so the resulting type behaves exactly like any ``compose()``-created type).
+
+    Example::
+
+        PosOnly = select(SE3Pose, "position", name="PosOnly")
+    """
+    if not is_flow_io(source):
+        raise FlowError(
+            ErrCode.FLOW_IO_INVALID,
+            f"select() source '{source.__name__}' must be decorated with @io",
+        )
+    original = source.__flow_io_original_types__
+    missing = [f for f in fields if f not in original]
+    if missing:
+        raise FlowError(
+            ErrCode.FLOW_IO_FIELD_NOT_FOUND,
+            f"Fields {missing} not found in '{source.__name__}'",
+        )
+    return compose(name or f"{source.__name__}Subset", **{f: original[f] for f in fields})

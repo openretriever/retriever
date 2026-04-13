@@ -7,6 +7,7 @@ from math import sqrt
 from typing import Final, Iterable
 
 from retriever.flow import io
+from retriever.flow.io import compose
 from retriever.registry.types import register_type
 
 _SPATIAL_CATEGORY: Final[str] = "spatial"
@@ -79,40 +80,23 @@ class Quaternion:
         return abs(self.norm() - 1.0) <= tol
 
 
-@_register_spatial_type(
+SE3Pose = _register_spatial_type(
     "SE3Pose",
     description="SE(3) pose payload",
     tags=["spatial", "v1", "geometry", "pose"],
-)
-@io
-@dataclass(frozen=True)
-class SE3Pose:
-    position: Vector3
-    orientation: Quaternion
+)(compose("SE3Pose", position=Vector3, orientation=Quaternion))
 
-
-@_register_spatial_type(
+Twist = _register_spatial_type(
     "Twist",
     description="Spatial velocity payload",
     tags=["spatial", "v1", "motion", "twist"],
-)
-@io
-@dataclass(frozen=True)
-class Twist:
-    linear: Vector3
-    angular: Vector3
+)(compose("Twist", linear=Vector3, angular=Vector3))
 
-
-@_register_spatial_type(
+Wrench = _register_spatial_type(
     "Wrench",
     description="Force and torque payload",
     tags=["spatial", "v1", "force", "wrench"],
-)
-@io
-@dataclass(frozen=True)
-class Wrench:
-    force: Vector3
-    torque: Vector3
+)(compose("Wrench", force=Vector3, torque=Vector3))
 
 
 @_register_spatial_type(
@@ -139,40 +123,23 @@ class JointState:
         )
 
 
-@_register_spatial_type(
+PoseStamped = _register_spatial_type(
     "PoseStamped",
     description="Timestamped pose payload",
     tags=["spatial", "v1", "pose", "stamped"],
-)
-@io
-@dataclass(frozen=True)
-class PoseStamped:
-    header: Header
-    pose: SE3Pose
+)(compose("PoseStamped", header=Header, pose=SE3Pose))
 
-
-@_register_spatial_type(
+TwistStamped = _register_spatial_type(
     "TwistStamped",
     description="Timestamped twist payload",
     tags=["spatial", "v1", "twist", "stamped"],
-)
-@io
-@dataclass(frozen=True)
-class TwistStamped:
-    header: Header
-    twist: Twist
+)(compose("TwistStamped", header=Header, twist=Twist))
 
-
-@_register_spatial_type(
+WrenchStamped = _register_spatial_type(
     "WrenchStamped",
     description="Timestamped wrench payload",
     tags=["spatial", "v1", "wrench", "stamped"],
-)
-@io
-@dataclass(frozen=True)
-class WrenchStamped:
-    header: Header
-    wrench: Wrench
+)(compose("WrenchStamped", header=Header, wrench=Wrench))
 
 
 def validate_header(header: Header) -> None:
