@@ -24,7 +24,7 @@ import argparse
 import math
 import time
 
-from retriever.flow import Flow, Pipeline, Rate, io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, io
 
 
 @io
