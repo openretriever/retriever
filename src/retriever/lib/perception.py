@@ -124,7 +124,7 @@ class CameraData:
         rr = _rr_module
         if rr is None:
             return
-        rr.log(f"{path}/image", rr.Image(self.image.frame))
+        rr.log(f"{path}/image", rr.Image(self.image.frame).compress(jpeg_quality=85))
         rr.log(f"{path}/frame_id", rr.TextLog(str(self.image.frame_id)))
         rr.log(f"{path}/mode", rr.TextLog(self.mode))
 
@@ -140,8 +140,8 @@ class DetectionResults:
         if rr is None:
             return
 
-        rr.log(f"{path}/image", rr.Image(self.image.frame))
-        rr.log(f"{path}/overlay", rr.Image(render_detection_overlay(self.image.frame, self.detections)))
+        rr.log(f"{path}/image", rr.Image(self.image.frame).compress(jpeg_quality=85))
+        rr.log(f"{path}/overlay", rr.Image(render_detection_overlay(self.image.frame, self.detections)).compress(jpeg_quality=85))
         rr.log(f"{path}/count", rr.Scalars([len(self.detections)]))
         rr.log(f"{path}/mode", rr.TextLog(self.mode))
         if not self.detections:

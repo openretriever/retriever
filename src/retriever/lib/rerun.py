@@ -273,10 +273,15 @@ def rerun_loggable(field_loggers: Dict[str, str] = None):
     return decorator
 
 
+def _log_image(rr, path: str, value: Any) -> None:
+    """Log a numpy array as a JPEG-compressed Rerun image."""
+    rr.log(path, rr.Image(value).compress(jpeg_quality=85))
+
+
 def _log_with_archetype(rr, path: str, value: Any, archetype: str) -> None:
     """Log value with specified Rerun archetype."""
     if archetype == "Image":
-        rr.log(path, rr.Image(value))
+        _log_image(rr, path, value)
     elif archetype == "Scalar":
         from rerun.archetypes import Scalars
         rr.log(path, Scalars(value))
@@ -316,9 +321,9 @@ def _log_auto_detect(
 
         if isinstance(value, np.ndarray):
             if value.ndim == 3 and value.shape[2] in (3, 4):  # HWC image
-                rr.log(path, rr.Image(value))
+                _log_image(rr, path, value)
             elif value.ndim == 2 and value.shape[0] > 10 and value.shape[1] > 10:
-                rr.log(path, rr.Image(value))
+                _log_image(rr, path, value)
             else:
                 rr.log(path, rr.Tensor(value))
             return
@@ -510,11 +515,11 @@ class RerunManager:
 
             if isinstance(value, np.ndarray):
                 if value.ndim == 3 and value.shape[2] in (3, 4):  # HWC image
-                    rr.log(path, rr.Image(value))
+                    _log_image(rr, path, value)
                 elif (
                     value.ndim == 2 and value.shape[0] > 10 and value.shape[1] > 10
                 ):  # Likely image
-                    rr.log(path, rr.Image(value))
+                    _log_image(rr, path, value)
                 else:
                     rr.log(path, rr.Tensor(value))
                 return

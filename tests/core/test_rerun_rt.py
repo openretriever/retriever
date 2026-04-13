@@ -88,7 +88,14 @@ def _install_fake_rerun(monkeypatch):
     rerun_mod.connect_grpc = connect_grpc
     rerun_mod.set_time = set_time
     rerun_mod.log = log
-    rerun_mod.Image = lambda value: ("Image", np.asarray(value).shape)
+    class _FakeImage:
+        def __init__(self, value):
+            self._shape = np.asarray(value).shape
+        def compress(self, **kwargs):
+            return ("Image", self._shape)
+        def __iter__(self):
+            return iter(("Image", self._shape))
+    rerun_mod.Image = _FakeImage
     rerun_mod.Tensor = lambda value: ("Tensor", np.asarray(value).shape)
     rerun_mod.TextLog = lambda value: ("TextLog", str(value))
     rerun_mod.BarChart = lambda value: ("BarChart", list(value))
