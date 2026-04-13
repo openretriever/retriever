@@ -2,7 +2,7 @@ import dataclasses
 import pytest
 from dataclasses import dataclass
 
-from retriever.flow import io
+from retriever.flow import io, compose, select
 from retriever.error import FlowError
 
 def test_io_auto_dataclass():
@@ -60,6 +60,46 @@ def test_io_helpers():
     # Error handling
     with pytest.raises(FlowError):
         obj._get_signal("nonexistent")
+
+
+def test_compose_creates_named_io_dataclass():
+    Vec2 = compose("Vec2", x=float, y=float)
+
+    assert dataclasses.is_dataclass(Vec2)
+    assert Vec2.__name__ == "Vec2"
+
+    point = Vec2(x=1.5, y=2.5)
+    assert point.x == 1.5
+    assert point.y == 2.5
+
+
+def test_select_projects_existing_io_fields_and_preserves_frozen_flag():
+    @io
+    @dataclass(frozen=True)
+    class Pose2D:
+        x: float
+        y: float
+        yaw: float
+
+    PosOnly = select(Pose2D, "x", "y", name="PosOnly")
+
+    assert dataclasses.is_dataclass(PosOnly)
+    assert PosOnly.__name__ == "PosOnly"
+    assert PosOnly.__dataclass_params__.frozen is True
+
+    pos = PosOnly(x=1.0, y=2.0)
+    assert pos.x == 1.0
+    assert pos.y == 2.0
+
+
+def test_select_rejects_unknown_fields():
+    @io
+    class Pose2D:
+        x: float
+        y: float
+
+    with pytest.raises(FlowError):
+        select(Pose2D, "z")
 
 if __name__ == "__main__":
     try:

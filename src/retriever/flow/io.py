@@ -175,7 +175,7 @@ def get_flow_io_fields(cls) -> list[str]:
     return list(cls.__dataclass_fields__.keys())
 
 
-def compose(name: str, **field_types: type):
+def compose(name: str, *, frozen: bool = True, **field_types: type):
     """
     Dynamically create a named ``@io`` type from a mapping of field names to types.
 
@@ -194,7 +194,7 @@ def compose(name: str, **field_types: type):
     """
     annotations = dict(field_types)
     cls = type(name, (), {"__annotations__": annotations})
-    cls = dataclass(cls, frozen=False)
+    cls = dataclass(cls, frozen=frozen)
     return io(cls)
 
 
@@ -221,4 +221,6 @@ def select(source: type, *fields: str, name: str | None = None):
             ErrCode.FLOW_IO_FIELD_NOT_FOUND,
             f"Fields {missing} not found in '{source.__name__}'",
         )
-    return compose(name or f"{source.__name__}Subset", **{f: original[f] for f in fields})
+    dataclass_params = getattr(source, "__dataclass_params__", None)
+    frozen = bool(getattr(dataclass_params, "frozen", True))
+    return compose(name or f"{source.__name__}Subset", frozen=frozen, **{f: original[f] for f in fields})

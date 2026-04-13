@@ -6,7 +6,7 @@ import pytest
 import retriever
 from retriever.config import RecordConfig, VizConfig, get_global_config
 from retriever.error import ERROR_MSGS, ErrCode
-from retriever.flow import EdgeConfig, Flow, Pipeline, PipelineEdge, PipelineGraph, PipelineNode, Rate, io
+from retriever.flow import EdgeConfig, Flow, Pipeline, PipelineEdge, PipelineGraph, PipelineNode, Rate, compose, io, select
 from retriever.flow.pipeline import run as run_default_pipeline
 from retriever.registry.pipeline import run_pipeline
 from retriever.rt import execute_ir
@@ -35,6 +35,13 @@ def test_flow_module_exports_pipeline_graph_names_only():
 def test_top_level_retriever_exports_clear_default_pipeline():
     assert callable(retriever.clear_default_pipeline)
     assert callable(retriever.reset_default_pipeline)
+    assert not hasattr(retriever, "compose")
+    assert not hasattr(retriever, "select")
+
+
+def test_flow_module_exports_compose_and_select():
+    assert callable(compose)
+    assert callable(select)
 
 
 def test_retriever_init_can_clear_optional_defaults(tmp_path):

@@ -29,7 +29,7 @@ from retriever.flow.pipeline import (
     reset,
     view,
 )
-from retriever.flow import io, compose, select, TemporalFlow, PipelineBuilder
+from retriever.flow import io, TemporalFlow, PipelineBuilder
 
 
 from typing import Any, Optional, Union
@@ -129,8 +129,6 @@ __all__ = [
     "RecordConfig",
     "VizConfig",
     "io",
-    "compose",
-    "select",
     "TemporalFlow",
     "PipelineBuilder",
     # Registry
