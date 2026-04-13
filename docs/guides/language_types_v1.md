@@ -36,7 +36,7 @@ from retriever.types.language.v1 import Caption
 
 - `TextSpan`: half-open character span
 - `Caption`: short descriptive text with optional confidence/source
-- `Prompt`: model-facing prompt text with role/language
+- `Prompt`: user-authored or system-authored prompt text kept at the primitive text layer, not a full model transport packet
 - `ReferringExpression`: natural-language reference to an entity
 - `GroundedPhrase`: resolved language phrase with optional referent label and frame index
 - `PlanStepText`: one primitive language plan step
@@ -91,3 +91,14 @@ Keep these out of `retriever.types.language` for now:
 - larger domain plans such as TAMP or task-specific planner bundles.
 
 Those belong in Hub or domain packages first.
+
+
+## Runnable examples
+
+Mirror tests cover the canonical surface directly:
+
+```bash
+pixi run pytest -q tests/core/test_language_type_surface_rt.py
+```
+
+At the core-repo level, this surface is currently grounded by the canonical language type tests and the composition examples in this guide.

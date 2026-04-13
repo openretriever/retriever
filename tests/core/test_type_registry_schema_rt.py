@@ -7,6 +7,7 @@ from retriever.registry.types import register_type
 from retriever.types import ClockDomain, SchemaRef, StreamId
 from retriever.types.data import DataSpec, DatasetManifest, EventBuffer
 from retriever.types.data.v1 import DataSpec as PinnedDataSpec
+from retriever.types.language import Caption, PlanText
 from retriever.types.spatial import Header, PoseStamped, Quaternion, SE3Pose, Vector3
 from retriever.types.spatial.v1 import PoseStamped as PinnedPoseStamped
 
@@ -46,6 +47,15 @@ def test_spatial_registry_exposes_schema_metadata() -> None:
     assert info.kind == 'payload'
     assert info.schema_ref == SchemaRef(name='spatial/PoseStamped', version='v1', encoding='python')
 
+
+
+def test_language_registry_exposes_schema_metadata() -> None:
+    assert get_type('Caption') is Caption
+    info = get_type_info('PlanText')
+    assert info.namespace == 'language'
+    assert info.version == 'v1'
+    assert info.kind == 'payload'
+    assert info.schema_ref == SchemaRef(name='language/PlanText', version='v1', encoding='python')
 
 def test_data_registry_exposes_contract_metadata() -> None:
     info = get_type_info('DataSpec')

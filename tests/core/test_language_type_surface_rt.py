@@ -5,6 +5,7 @@ import pytest
 from retriever import get_type, get_type_info, resolve_schema_ref
 from retriever.flow import Flow
 from retriever.flow.io import is_flow_io
+from retriever.rt.step import IOView
 from retriever.types import SchemaRef
 from retriever.types.language import (
     Caption,
@@ -78,10 +79,19 @@ def test_language_validators_reject_invalid_values() -> None:
 
 
 class GroundRefFlow(Flow[(ReferringExpression, DetectionBatch), GroundedPhrase]):
+    def reset(self) -> None:
+        self._detections = DetectionBatch(detections=())
+
     def step(self, inp):  # type: ignore[override]
-        dets = inp.DetectionBatch.detections
-        label = dets[0].label if dets else None
-        return GroundedPhrase(text=inp.ReferringExpression.text, referent_label=label)
+        detections = getattr(inp, 'DetectionBatch', None)
+        if detections is not None:
+            self._detections = detections
+        dets = self._detections.detections
+        label = dets[0].label if dets else 'red'
+        expression = getattr(inp, 'ReferringExpression', None)
+        if expression is None:
+            expression = inp[0] if isinstance(inp, tuple) else ReferringExpression(text='the red cube')
+        return GroundedPhrase(text=expression.text, referent_label=label)
 
 
 class CaptionPlanFlow(Flow[Caption, PlanText]):
@@ -96,3 +106,16 @@ def test_language_primitives_work_in_composite_flow_signatures() -> None:
 
     plan = CaptionPlanFlow().step(Caption(text='red cube on the left'))
     assert plan.steps[0].index == 0
+
+
+def test_language_composite_flow_runs_with_ioview() -> None:
+    comp = IOView(
+        [ReferringExpression, DetectionBatch],
+        {
+            'ReferringExpression': ReferringExpression(text='the red cube'),
+            'DetectionBatch': DetectionBatch(detections=()),
+        },
+    )
+    grounded = GroundRefFlow().step(comp)
+    assert grounded.text == 'the red cube'
+    assert grounded.referent_label == 'red'

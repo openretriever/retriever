@@ -13,7 +13,7 @@ The preferred pattern is:
 - `Flow[...]` and surfaced ports for structure,
 - one small `@io` envelope only when named boundary ports are actually needed.
 
-## The Five Shared Type Families
+## The Shared Type Families
 
 Use these packages as the default vocabulary:
 

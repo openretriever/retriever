@@ -75,14 +75,14 @@ PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q \
   tests/core/test_flow_typing_contract_rt.py \
   tests/core/test_flow_typing_validator_script.py \
   tests/flow/test_compositional_io.py \
-  tests/core/test_robotics_typing_v1_rt.py \
-  tests/core/test_robotics_typing_registry_rt.py \
+  tests/core/test_perception_type_surface_rt.py \
   tests/core/test_language_type_surface_rt.py \
   tests/core/test_data_spec_event_core_rt.py \
   tests/core/test_data_spec_multistream_event_time_rt.py \
   tests/core/test_data_spec_processing_profile_rt.py \
   tests/core/test_data_spec_manifest_and_lerobot_rt.py \
-  tests/core/test_data_spec_eventbuffer_interop_rt.py
+  tests/core/test_data_spec_eventbuffer_interop_rt.py \
+  tests/core/test_type_registry_schema_rt.py
 ```
 
 Tutorial smoke checks:
