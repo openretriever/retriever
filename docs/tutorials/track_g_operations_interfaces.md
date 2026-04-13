@@ -8,6 +8,8 @@ Focus: registries, reusable pipelines, typed boundaries, and operational control
 
 `03_unified_wrapper` is an alternate ergonomic surface. Keep explicit `Pipeline(...)` authoring as the default mental model, and teach direct primitive composition first.
 
+Treat `05_spatial_type_boundaries` and `07_language_grounding_composition` as the canonical primitive-first lessons. `06_composable_pipelines`, `01_registry_basics`, `02_registry_ecosystem`, and `04_peripheral` are later operational examples and still use more explicit wrappers or surfaced selectors.
+
 ## Start Here
 
 Run these in order:

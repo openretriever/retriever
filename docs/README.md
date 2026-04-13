@@ -10,6 +10,8 @@ These docs track the current runtime, tutorial, and typing surfaces.
 
 If you only read one page, read `docs/handbook.md` top-to-bottom.
 
+If you are authoring new examples or reusable flows, follow `docs/guides/type_composition_v1.md`: shared primitives first, composite `Flow[...]` second, named `@io` only when boundary ports truly need names.
+
 ## Start Here
 
 - `docs/quickstart.md` — 5-minute runtime mental model and first runnable graph

@@ -48,6 +48,8 @@ pipe.connect(src, add, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
+This snippet keeps `@io` wrappers tiny because it is teaching the runtime shape. Later guides prefer canonical shared primitives and composite `Flow[...]` signatures when a reusable payload already exists.
+
 ### Debugging
 
 ```python

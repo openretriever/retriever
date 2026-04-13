@@ -96,12 +96,11 @@ Then:
 - `examples.tutorial.g_operations_interfaces.07_language_grounding_composition`
 - `examples.tutorial.g_operations_interfaces.06_composable_pipelines`
 - `examples.tutorial.g_operations_interfaces.01_registry_basics`
-- `examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries`
 
 Track page:
 - [Track G: Operations and Interfaces](track_g_operations_interfaces.md)
 
-Track G teaches canonical primitives first; treat wrapper-heavy surfaces as optional later material.
+Track G teaches canonical primitives first. Treat `06_composable_pipelines`, `01_registry_basics`, `02_registry_ecosystem`, and `04_peripheral` as later operational examples that still use more explicit wrappers or surfaced ports.
 
 ## Specialized Lanes
 

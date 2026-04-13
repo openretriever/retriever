@@ -53,7 +53,7 @@ Before inventing a new dataclass, prefer:
 
 ### 3. Use `@io` for structural boundaries
 
-`@io` is still useful when a flow needs named ports or explicit field mapping.
+For new public examples, prefer the direct primitive patterns above. Use `@io` only when a flow truly needs named ports or explicit field mapping.
 
 ```python
 from retriever.flow import Flow, io

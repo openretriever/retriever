@@ -15,6 +15,8 @@ Use these later:
 
 ## What To Expect
 
+- `05_spatial_type_boundaries.py` and `07_language_grounding_composition.py` are the preferred primitive-first modules.
+- `06_composable_pipelines.py`, `01_registry_basics.py`, `02_registry_ecosystem.py`, and `04_peripheral.py` are later operational examples and still use more explicit wrappers or surfaced selectors.
 - `03_unified_wrapper.py` is an optional legacy ergonomic surface; it is not part of the default tutorial path.
 - Use registries and reusable pipelines as operational surfaces.
 - See spatial type boundaries where frame/time/source metadata matters.
