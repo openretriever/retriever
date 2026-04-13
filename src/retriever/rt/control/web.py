@@ -11,6 +11,7 @@ Provides:
 from typing import Any, Dict, List, Optional, Set
 import asyncio
 import json
+import logging
 import time
 import threading
 import socket
@@ -25,6 +26,8 @@ except ImportError:
 
 from retriever.rt.control.output_capture import LogBuffer, LogEntry
 from retriever.rt.control.channel import ControlCommand
+
+logger = logging.getLogger(__name__)
 
 
 def _print_dashboard_banner(url: str, config_info: Optional[Dict[str, Any]] = None) -> None:
@@ -57,7 +60,7 @@ def _print_dashboard_banner(url: str, config_info: Optional[Dict[str, Any]] = No
                 line += "██" if cell else "  "
             qr_lines.append(line)
     except ImportError:
-        qr_lines = ["(Install qrcode for mobile QR: pip install qrcode)"]
+        qr_lines = ["(Install the control environment for mobile QR: pixi run -e control ...)"]
 
     # Build banner
     print()
@@ -88,6 +91,7 @@ def _print_dashboard_banner(url: str, config_info: Optional[Dict[str, Any]] = No
     print(f"  • Individual Flow Control: Pause/resume/reset specific flows")
     print(f"  • Global Controls: Manage all flows at once")
     print(f"  • Live Logs: Real-time flow output streaming")
+    print(f"  • Keyboard: Optional desktop-only convenience; not required")
     print()
     print("=" * 70)
     print()
@@ -170,7 +174,6 @@ class WebDashboard:
             self._clients.add(websocket)
             try:
                 while True:
-                    # Keep connection alive, handle client messages
                     data = await websocket.receive_text()
                     msg = json.loads(data)
 
@@ -181,6 +184,10 @@ class WebDashboard:
                     elif msg.get("action") == "reset":
                         self.controller.reset(msg.get("node"))
             except WebSocketDisconnect:
+                pass
+            except Exception as exc:
+                logger.warning("Dashboard control websocket closed after handler error: %s", exc)
+            finally:
                 self._clients.discard(websocket)
 
         @self.app.websocket("/ws/logs")
@@ -189,17 +196,14 @@ class WebDashboard:
             self._log_clients.add(websocket)
 
             try:
-                # Send recent log history
                 recent = self.log_buffer.get_recent(100)
                 await websocket.send_json({
                     "type": "history",
                     "logs": [entry.to_dict() for entry in recent]
                 })
 
-                # Keep connection alive and handle client filter requests
                 while True:
                     data = await websocket.receive_json()
-                    # Handle filter requests if needed
                     if data.get("action") == "filter":
                         node_id = data.get("node_id")
                         level = data.get("level")
@@ -210,6 +214,10 @@ class WebDashboard:
                         })
 
             except WebSocketDisconnect:
+                pass
+            except Exception as exc:
+                logger.warning("Dashboard log websocket closed after handler error: %s", exc)
+            finally:
                 self._log_clients.discard(websocket)
 
     async def _broadcast_status(self) -> None:
@@ -222,18 +230,16 @@ class WebDashboard:
                         "type": "status",
                         "data": status.to_dict()
                     })
-
-                    # Broadcast to all clients
+                except Exception as exc:
+                    logger.warning("Dashboard status broadcast skipped after controller error: %s", exc)
+                else:
                     disconnected = set()
                     for client in self._clients:
                         try:
                             await client.send_text(data)
                         except Exception:
                             disconnected.add(client)
-
                     self._clients -= disconnected
-                except Exception:
-                    pass
 
             await asyncio.sleep(0.5)
 
@@ -246,11 +252,9 @@ class WebDashboard:
         """
         while True:
             try:
-                # Poll dedicated log stream to avoid consuming control commands.
                 message = self.controller._channel.receive_log(timeout=0.01)
 
                 if message and message.command == ControlCommand.LOG_OUTPUT:
-                    # Create log entry
                     entry = LogEntry(
                         timestamp=message.payload["timestamp"],
                         node_id=message.target,
@@ -258,10 +262,8 @@ class WebDashboard:
                         message=message.payload["message"]
                     )
 
-                    # Add to buffer
                     self.log_buffer.add(entry)
 
-                    # Broadcast to all connected log clients
                     if self._log_clients:
                         log_data = json.dumps({
                             "type": "log",
@@ -277,8 +279,8 @@ class WebDashboard:
 
                         self._log_clients -= disconnected
 
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Dashboard log collector skipped an update after channel error: %s", exc)
 
             await asyncio.sleep(0.01)
 
@@ -329,11 +331,17 @@ class WebDashboard:
             )
             server = uvicorn.Server(config)
 
-            # Start broadcast tasks
             self._broadcast_task = asyncio.create_task(self._broadcast_status())
             self._log_collector_task = asyncio.create_task(self._collect_logs())
 
-            await server.serve()
+            try:
+                await server.serve()
+            finally:
+                tasks = [task for task in (self._broadcast_task, self._log_collector_task) if task]
+                for task in tasks:
+                    task.cancel()
+                if tasks:
+                    await asyncio.gather(*tasks, return_exceptions=True)
 
         if blocking:
             asyncio.run(start_server())
