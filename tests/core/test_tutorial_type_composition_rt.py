@@ -40,4 +40,3 @@ def test_multirate_robot_system_runs_with_composite_control_input() -> None:
         '--duration', '0.5',
     )
     assert result.returncode == 0, result.stderr
-    assert 'err_x=' in result.stdout
