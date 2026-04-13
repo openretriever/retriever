@@ -40,7 +40,6 @@ def test_policy_backend_tutorial_emits_console_and_optional_artifacts(tmp_path: 
 
     result = _run_script(
         '--steps', '4',
-        '--backends', 'openpi_pi05', 'mock',
         '--out-csv', str(csv_path),
         '--out-json', str(json_path),
     )
@@ -53,5 +52,9 @@ def test_policy_backend_tutorial_emits_console_and_optional_artifacts(tmp_path: 
 
     payload = json.loads(json_path.read_text(encoding='utf-8'))
     backends = {row['backend'] for row in payload['metrics']}
-    assert backends == {'openpi_pi05', 'mock'}
+    assert backends == {'openpi_pi05', 'lerobot', 'mock'}
     assert payload['steps'] == 4
+
+    csv_rows = csv_path.read_text(encoding='utf-8').strip().splitlines()
+    assert csv_rows[0] == 'backend,mean_ms,p95_ms,mean_chunk_len,mean_abs_action'
+    assert {row.split(',')[0] for row in csv_rows[1:]} == {'openpi_pi05', 'lerobot', 'mock'}
