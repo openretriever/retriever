@@ -1,7 +1,7 @@
 """Schema-aware registry for Retriever payload and contract types.
 
 Canonical domain packages such as `retriever.types.spatial`,
-`retriever.types.perception`, `retriever.types.data`, and `retriever.types.symbolic` register their exported
+`retriever.types.perception`, `retriever.types.data`, `retriever.types.language`, and `retriever.types.symbolic` register their exported
 classes here so downstream systems can discover them dynamically. The registry
 tracks:
 
@@ -81,7 +81,7 @@ class TypeRegistry:
     """Registry for named Retriever payload and contract types.
 
     Canonical callers should import domain packages such as `retriever.types.data`,
-    `retriever.types.perception`, `retriever.types.spatial`, or `retriever.types.symbolic` first, then use
+    `retriever.types.language`, `retriever.types.perception`, `retriever.types.spatial`, or `retriever.types.symbolic` first, then use
     registry lookups only when they need dynamic discovery rather than direct imports.
     """
 

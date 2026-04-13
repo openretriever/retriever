@@ -5,6 +5,7 @@
 - lightweight effect/module primitives: `Eff`, `pure`, `Module`
 - canonical domain packages:
   - `retriever.types.data`
+  - `retriever.types.language`
   - `retriever.types.perception`
   - `retriever.types.spatial`
   - `retriever.types.symbolic`
@@ -15,7 +16,7 @@ from top-level `retriever`, not from this package.
 
 from .core import Eff, pure, Module
 from .schema import ClockDomain, SchemaRef, StreamId
-from . import data, perception, spatial, symbolic
+from . import data, language, perception, spatial, symbolic
 
 __all__ = [
     "ClockDomain",
@@ -24,6 +25,7 @@ __all__ = [
     "SchemaRef",
     "StreamId",
     "data",
+    "language",
     "perception",
     "pure",
     "spatial",
