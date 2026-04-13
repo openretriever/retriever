@@ -112,7 +112,7 @@ class WebDashboard:
         config_info: Optional[Dict[str, Any]] = None,
     ):
         if not HAS_FASTAPI:
-            raise ImportError("FastAPI and uvicorn required: pip install fastapi uvicorn")
+            raise ImportError("FastAPI and uvicorn required. Use the control environment: pixi run -e control ...")
 
         self.controller = controller
         self.host = host

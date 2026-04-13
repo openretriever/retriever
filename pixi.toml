@@ -77,7 +77,7 @@ cpp = { features = ["cpp"] }
 bindings = { features = ["rust", "cpp"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
-control = { features = ["control"] }  # Pipeline control with web + keyboard
+control = { features = ["control"] }  # Pipeline control with web dashboard + optional keyboard
 
 
 # =============================================================================

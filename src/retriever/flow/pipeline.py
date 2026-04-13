@@ -469,14 +469,14 @@ class Pipeline:
                     config_info=config_info
                 )
             except ImportError:
-                print(f"Web dashboard requires FastAPI: pip install fastapi uvicorn")
+                print(f"Web dashboard requires the control environment: pixi run -e control ...")
 
         if config.keyboard:
             try:
                 from retriever.rt.control.keyboard import GlobalKeyboardController
                 self._keyboard_controller = GlobalKeyboardController(self._controller)
             except ImportError:
-                print(f"Keyboard control requires pynput: pip install pynput")
+                print(f"Keyboard control requires the control environment and desktop input permissions: pixi run -e control ...")
 
         return self._controller
 
@@ -752,7 +752,7 @@ class Pipeline:
                     not exact step count. Prefer `pipe.record(...)` when you
                     need explicit logical-step recording.
             control: ControlConfig for pause/resume/reset control.
-                     Example: control=ControlConfig(web_port=8080, keyboard=True)
+                     Example: control=ControlConfig(web_port=8080)
             deploy: Dict mapping TemporalFlow or node_id (str) to machine name.
                     Only supported on the Dora backend.
         """

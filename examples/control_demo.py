@@ -1,15 +1,17 @@
 """
-Demo of Pipeline Control System.
+Demo of the Retriever web control dashboard.
 
 This example demonstrates:
-- Individual flow control (pause/resume/reset specific flows)
 - Web dashboard with real-time monitoring
-- Keyboard controls (optional)
-- Mobile access via QR code
+- Individual flow control (pause/resume/reset specific flows)
+- Optional global keyboard shortcuts for desktop sessions
+- Optional mobile access via QR code
 
-Run with: pixi run demo-control
+Recommended launch:
+    pixi run -e control demo-control
 """
 
+import argparse
 import time
 from dataclasses import dataclass
 from typing import Optional
@@ -151,8 +153,21 @@ class MonitorFlow(Controllable, Flow[ProcessedData, None]):
             print(f"[{self.name}] 🚨 Alert #{self.alert_count}: High average detected!")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Web dashboard control demo")
+    parser.add_argument("--duration", type=float, default=30.0, help="Run duration in seconds.")
+    parser.add_argument("--web-port", type=int, default=8080, help="Dashboard port.")
+    parser.add_argument(
+        "--keyboard",
+        action="store_true",
+        help="Enable global keyboard shortcuts. Desktop-only; macOS requires Accessibility permission.",
+    )
+    return parser.parse_args()
+
+
 def main():
     """Run the control demo."""
+    args = parse_args()
 
     # Create pipeline with control enabled
     with Pipeline(name="Control Demo Pipeline") as pipe:
@@ -174,6 +189,9 @@ def main():
     print("  • Individual Flow Control: Pause/resume/reset specific flows")
     print("  • Real-time Monitoring: View flow states and custom metrics")
     print("  • Mobile Access: Scan QR code with your phone")
+    if args.keyboard:
+        print("  • Keyboard Controls: Enabled for this run")
+        print("    macOS note: grant Accessibility permission if keyboard hooks are blocked")
     print("\nDashboard Controls:")
     print("  • Global: Start/Pause/Stop/Reset all flows")
     print("  • Per-Flow: Start/Pause/Stop individual flows")
@@ -182,13 +200,13 @@ def main():
 
     pipe.run(
         backend="multiprocessing",
-        duration=30,
+        duration=args.duration,
         control=ControlConfig(
             enabled=True,
-            web_port=8080,
-            keyboard=True  # Enable keyboard controls
+            web_port=args.web_port,
+            keyboard=args.keyboard,
         ),
-        blocking=True
+        blocking=True,
     )
 
     print("\n" + "="*70)

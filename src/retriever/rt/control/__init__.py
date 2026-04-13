@@ -37,16 +37,16 @@ class ControlConfig:
     Configuration for pipeline control system.
 
     Usage:
-        # In pipe.run()
-        pipe.run(control=ControlConfig(web_port=8080, keyboard=True))
+        # Web dashboard first (recommended)
+        pipe.run(control=ControlConfig(web_port=8080))
 
-        # Or globally
-        retriever.init(control=ControlConfig(keyboard=True))
+        # Optional desktop keyboard shortcuts
+        pipe.run(control=ControlConfig(web_port=8080, keyboard=True))
 
     Attributes:
         enabled: Enable control system (auto-enabled if web_port or keyboard set)
         web_port: Port for web dashboard (None = disabled)
-        keyboard: Enable global keyboard shortcuts
+        keyboard: Enable global keyboard shortcuts (desktop-only convenience)
         cli_port: Port for CLI control (not yet implemented)
     """
     enabled: bool = True
