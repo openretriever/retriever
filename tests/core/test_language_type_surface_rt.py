@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from retriever import get_type, get_type_info, resolve_schema_ref
@@ -24,7 +25,7 @@ from retriever.types.language import (
     validate_text_span,
 )
 from retriever.types.language.v1 import Caption as PinnedCaption
-from retriever.types.perception import DetectionBatch
+from retriever.types.perception import DetectionBatch, Image2D
 
 
 def test_language_package_exports_canonical_surface() -> None:
@@ -119,3 +120,28 @@ def test_language_composite_flow_runs_with_ioview() -> None:
     grounded = GroundRefFlow().step(comp)
     assert grounded.text == 'the red cube'
     assert grounded.referent_label == 'red'
+
+
+class CaptionOnFrameFlow(Flow[(Image2D, Caption), PlanText]):
+    def step(self, inp):  # type: ignore[override]
+        frame = inp.Image2D
+        caption = inp.Caption
+        step = PlanStepText(index=0, text=f"frame {frame.frame_index}: {caption.text}", action_label='caption')
+        return PlanText(steps=(step,), summary=caption.text, source='caption_on_frame')
+
+
+def test_language_cross_family_composite_flow_runs_with_ioview() -> None:
+    assert CaptionOnFrameFlow._input_types == (Image2D, Caption)
+    assert CaptionOnFrameFlow._output_types == (PlanText,)
+
+    frame = Image2D(data=np.zeros((2, 2, 3), dtype=np.uint8), frame_index=5)
+    comp = IOView(
+        [Image2D, Caption],
+        {
+            'Image2D': frame,
+            'Caption': Caption(text='red cube on the table'),
+        },
+    )
+    plan = CaptionOnFrameFlow().step(comp)
+    assert plan.steps[0].text == 'frame 5: red cube on the table'
+    assert plan.steps[0].action_label == 'caption'

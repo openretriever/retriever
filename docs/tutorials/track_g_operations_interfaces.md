@@ -12,8 +12,9 @@ Focus: registries, reusable pipelines, typed boundaries, and operational control
 
 Run these in order:
 - `06_composable_pipelines`
-- `01_registry_basics`
 - `05_spatial_type_boundaries`
+- `07_language_grounding_composition`
+- `01_registry_basics`
 
 Use these later:
 - `02_registry_ecosystem`
@@ -27,6 +28,7 @@ pixi run python -m examples.tutorial.g_operations_interfaces.01_registry_basics
 pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosystem
 pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
 pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
+pixi run python -m examples.tutorial.g_operations_interfaces.07_language_grounding_composition
 pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
 ```
 
@@ -49,3 +51,5 @@ PY
 - How registries expose reusable runtime surfaces.
 - How composed pipelines can still be inspected and extended as live graphs.
 - How typed boundary payloads carry frame/time/source metadata cleanly.
+- How language and perception primitives compose directly in one Flow signature.
+- How a text-triggered grounding flow can keep the latest scene snapshot explicitly buffered.

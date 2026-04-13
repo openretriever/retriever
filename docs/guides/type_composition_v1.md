@@ -19,7 +19,7 @@ Use these packages as the default vocabulary:
 
 Registry helpers do not live on `retriever.types`; use top-level `retriever.register_type(...)` or `retriever.registry.types`. Symbolic object-centric types live under `retriever.types.symbolic`, not the umbrella root.
 
-- `retriever.types.schema`
+- `retriever.types`
   - `StreamId`, `SchemaRef`, `ClockDomain`
 - `retriever.types.spatial`
   - stamped robotics boundary payloads

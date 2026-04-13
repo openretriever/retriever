@@ -93,6 +93,19 @@ Keep these out of `retriever.types.language` for now:
 Those belong in Hub or domain packages first.
 
 
+## Transformation rules
+
+Treat `retriever.types.language` as a primitive text/grounding layer. Common
+transformations should be expressed explicitly in flows or adapters:
+
+- `ReferringExpression + DetectionBatch -> GroundedPhrase`
+- `Caption -> PlanStepText` or `PlanText`
+- `Prompt -> model-specific request packet` is a Hub/domain adapter boundary, not a core type
+- `GroundedPhrase -> symbolic or task-specific objects` is also an adapter boundary
+
+Keep chain-of-thought traces, dialogue state, and full planner/model bundles out
+of core.
+
 ## Runnable examples
 
 Mirror tests cover the canonical surface directly:
