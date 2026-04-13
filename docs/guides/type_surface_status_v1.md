@@ -8,6 +8,8 @@ title: Type Surface Status v1
 
 Summarize the current canonical type surfaces and:
 - `retriever.types.spatial`
+- `retriever.types.perception`
+- `retriever.types.language`
 - `retriever.types.data`
 - the flow typing contract carry-back that these packages rely on
 
@@ -15,6 +17,7 @@ This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/spatial_types_v1.md`
 - `docs/guides/data_eventstream_v1.md`
 - `docs/guides/perception_types_v1.md`
+- `docs/guides/language_types_v1.md`
 - `docs/guides/type_composition_v1.md`
 - `docs/guides/flow_typing_standard.md`
 
@@ -24,8 +27,10 @@ The mirror carry-back now targets the modern tutorial/runtime branch line and in
 
 1. flow typing contract support for tuple-literal and tuple-output signatures,
 2. canonical `retriever.types.spatial` package,
-3. canonical `retriever.types.data` package,
-4. tutorial-track exposure under existing one-level tracks.
+3. canonical `retriever.types.perception` package,
+4. canonical `retriever.types.language` package,
+5. canonical `retriever.types.data` package,
+6. tutorial-track exposure under existing one-level tracks.
 
 ## Runtime File Map
 
@@ -42,6 +47,14 @@ Spatial types:
 - `src/retriever/types/spatial/__init__.py`
 - `src/retriever/types/spatial/v1.py`
 - registry via `src/retriever/registry/types.py`
+
+Perception types:
+- `src/retriever/types/perception/__init__.py`
+- `src/retriever/types/perception/v1.py`
+
+Language types:
+- `src/retriever/types/language/__init__.py`
+- `src/retriever/types/language/v1.py`
 
 Data layer:
 - `src/retriever/types/data/__init__.py`
@@ -64,6 +77,7 @@ PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q \
   tests/flow/test_compositional_io.py \
   tests/core/test_robotics_typing_v1_rt.py \
   tests/core/test_robotics_typing_registry_rt.py \
+  tests/core/test_language_type_surface_rt.py \
   tests/core/test_data_spec_event_core_rt.py \
   tests/core/test_data_spec_multistream_event_time_rt.py \
   tests/core/test_data_spec_processing_profile_rt.py \
@@ -96,4 +110,5 @@ Canonical public naming is:
 - `retriever.types` is a narrow umbrella, not the home for symbolic entities or registry helpers
 - `retriever.types.spatial` / `retriever.types.spatial.v1`
 - `retriever.types.perception` / `retriever.types.perception.v1`
+- `retriever.types.language` / `retriever.types.language.v1`
 - `retriever.types.data` / `retriever.types.data.v1`

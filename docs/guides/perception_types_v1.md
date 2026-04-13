@@ -62,6 +62,7 @@ Use:
 - `retriever.types`: shared schema/stream identity primitives
 - `retriever.types.spatial`: geometry and stamped spatial payloads
 - `retriever.types.data`: event/stream/dataset contracts
+- `retriever.types.language`: primitive text, grounding, and plan-text contracts
 - `retriever.types.symbolic`: object-centric planning structures
 
 `retriever.types.perception` should stay media/perception-centric. Do not use it
@@ -97,11 +98,10 @@ Make media/perception transforms explicit:
 
 ## Current non-goals
 
-Keep these out of `retriever.types.perception` for now:
+Keep these out of `retriever.types.perception`:
 - memory-state payloads like `SceneBelief`
 - local example summaries
 - model-specific request/response packets
-- future text / caption / prompt payloads
+- primitive text / caption / prompt payloads
 
-If text-grounded payloads stabilize later, they should use a separate
-`retriever.types.language` family instead of a broad `semantic` bucket.
+Text-grounded payloads now live in the separate `retriever.types.language` family instead of a broad `semantic` bucket.

@@ -13,7 +13,7 @@ The preferred pattern is:
 - `Flow[...]` and surfaced ports for structure,
 - one small `@io` envelope only when named boundary ports are actually needed.
 
-## The Four Shared Type Families
+## The Five Shared Type Families
 
 Use these packages as the default vocabulary:
 
@@ -23,8 +23,12 @@ Registry helpers do not live on `retriever.types`; use top-level `retriever.regi
   - `StreamId`, `SchemaRef`, `ClockDomain`
 - `retriever.types.spatial`
   - stamped robotics boundary payloads
+- `retriever.types.perception`
+  - media, detection, mask, point-cloud, and video primitives
 - `retriever.types.data`
   - event/data/export contracts
+- `retriever.types.language`
+  - primitive text, grounding, and plan-text contracts
 - `retriever.types.symbolic`
   - object-centric planning contracts
 
@@ -103,6 +107,20 @@ from retriever.types.data.streams import align_exact, hold, latest, window_agg
 from retriever.types.data.dataset import build_dataset_manifest, build_episode_manifest
 from retriever.types.data.interop import from_runtime_event_buffer, to_lerobot_records
 ```
+
+## `retriever.types.language` Rule
+
+Use `retriever.types.language` for primitive text, grounding, and plan-text outputs.
+
+```python
+from retriever.types.language import Caption, GroundedPhrase, PlanText, ReferringExpression
+from retriever.types.perception import DetectionBatch
+
+Flow[(ReferringExpression, DetectionBatch), GroundedPhrase]
+Flow[Caption, PlanText]
+```
+
+Keep model-specific request/response packets and larger planner bundles out of core.
 
 ## `retriever.types.symbolic` Rule
 
