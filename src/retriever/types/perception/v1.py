@@ -12,6 +12,7 @@ from typing import Final, Iterable
 import numpy as np
 from numpy.typing import NDArray
 
+from retriever.flow import io
 from retriever.registry.types import register_type
 from retriever.types.spatial import Header
 
@@ -44,11 +45,13 @@ def _register_perception_type(
     description="Decoded 2D image frame payload",
     tags=["perception", "v1", "image", "frame"],
 )
+@io
 @dataclass(frozen=True)
 class Image2D:
     data: NDArray
     encoding: str = "rgb8"
     header: Header | None = None
+    frame_index: int | None = None
 
     @property
     def height(self) -> int:
@@ -70,11 +73,13 @@ class Image2D:
     description="Compressed single-frame image payload",
     tags=["perception", "v1", "image", "compressed"],
 )
+@io
 @dataclass(frozen=True)
 class CompressedImage2D:
     data: bytes
     format: str = "jpeg"
     header: Header | None = None
+    frame_index: int | None = None
     width: int | None = None
     height: int | None = None
 
@@ -84,6 +89,7 @@ class CompressedImage2D:
     description="Encoded multi-frame video artifact payload",
     tags=["perception", "v1", "video", "encoded"],
 )
+@io
 @dataclass(frozen=True)
 class EncodedVideo:
     data: bytes | None = None
@@ -101,6 +107,7 @@ class EncodedVideo:
     description="Camera intrinsics for image-to-geometry transforms",
     tags=["perception", "v1", "camera", "intrinsics"],
 )
+@io
 @dataclass(frozen=True)
 class CameraIntrinsics:
     width: int
@@ -118,6 +125,7 @@ class CameraIntrinsics:
     description="3D point cloud payload",
     tags=["perception", "v1", "pointcloud", "geometry"],
 )
+@io
 @dataclass(frozen=True)
 class PointCloud3D:
     points: NDArray
@@ -135,6 +143,7 @@ class PointCloud3D:
     description="Axis-aligned 2D bounding box",
     tags=["perception", "v1", "bbox", "geometry"],
 )
+@io
 @dataclass(frozen=True)
 class BBox2D:
     x: float
@@ -151,6 +160,7 @@ class BBox2D:
     description="Single 2D detection payload",
     tags=["perception", "v1", "detection", "2d"],
 )
+@io
 @dataclass(frozen=True)
 class Detection2D:
     label: str
@@ -160,6 +170,7 @@ class Detection2D:
     track_id: str | None = None
     centroid_x: float | None = None
     centroid_y: float | None = None
+    pixel_count: int | None = None
 
 
 @_register_perception_type(
@@ -167,10 +178,12 @@ class Detection2D:
     description="Batch of 2D detections for one frame or observation",
     tags=["perception", "v1", "detection", "batch"],
 )
+@io
 @dataclass(frozen=True)
 class DetectionBatch:
     detections: tuple[Detection2D, ...] = ()
     header: Header | None = None
+    frame_index: int | None = None
 
 
 @_register_perception_type(
@@ -178,10 +191,12 @@ class DetectionBatch:
     description="2D segmentation mask with optional class-to-label mapping",
     tags=["perception", "v1", "segmentation", "mask"],
 )
+@io
 @dataclass(frozen=True)
 class SegmentationMask2D:
     mask: NDArray
     header: Header | None = None
+    frame_index: int | None = None
     label_map: dict[int, str] = field(default_factory=dict)
 
     @property
@@ -198,6 +213,7 @@ class SegmentationMask2D:
     description="Normalized 2D target point for pointing and grounding flows",
     tags=["perception", "v1", "point", "target"],
 )
+@io
 @dataclass(frozen=True)
 class PointTarget2D:
     label: str | None = None
@@ -205,6 +221,7 @@ class PointTarget2D:
     y_norm: float | None = None
     confidence: float | None = None
     header: Header | None = None
+    frame_index: int | None = None
 
 
 def validate_image2d(msg: Image2D) -> None:
@@ -214,6 +231,7 @@ def validate_image2d(msg: Image2D) -> None:
         raise ValueError("Image2D.data must be non-empty")
     if not msg.encoding:
         raise ValueError("Image2D.encoding must be non-empty")
+    _validate_optional_frame_index(msg.frame_index, field_name="Image2D.frame_index")
 
 
 def validate_compressed_image2d(msg: CompressedImage2D) -> None:
@@ -221,6 +239,12 @@ def validate_compressed_image2d(msg: CompressedImage2D) -> None:
         raise ValueError("CompressedImage2D.data must be non-empty")
     if not msg.format:
         raise ValueError("CompressedImage2D.format must be non-empty")
+    _validate_optional_frame_index(msg.frame_index, field_name="CompressedImage2D.frame_index")
+
+
+def _validate_optional_frame_index(frame_index: int | None, *, field_name: str) -> None:
+    if frame_index is not None and frame_index < 0:
+        raise ValueError(f"{field_name} must be >= 0 when provided")
 
 
 def validate_encoded_video(msg: EncodedVideo) -> None:
@@ -248,11 +272,20 @@ def validate_pointcloud3d(msg: PointCloud3D) -> None:
         raise ValueError("PointCloud3D.colors must align with points by row count")
 
 
+def validate_detection_batch(msg: DetectionBatch) -> None:
+    _validate_optional_frame_index(msg.frame_index, field_name="DetectionBatch.frame_index")
+
+
 def validate_segmentation_mask2d(msg: SegmentationMask2D) -> None:
     if msg.mask.ndim != 2:
         raise ValueError("SegmentationMask2D.mask must be a 2D ndarray")
     if msg.mask.size == 0:
         raise ValueError("SegmentationMask2D.mask must be non-empty")
+    _validate_optional_frame_index(msg.frame_index, field_name="SegmentationMask2D.frame_index")
+
+
+def validate_point_target2d(msg: PointTarget2D) -> None:
+    _validate_optional_frame_index(msg.frame_index, field_name="PointTarget2D.frame_index")
 
 
 __all__ = [
@@ -268,8 +301,10 @@ __all__ = [
     "SegmentationMask2D",
     "validate_camera_intrinsics",
     "validate_compressed_image2d",
+    "validate_detection_batch",
     "validate_encoded_video",
     "validate_image2d",
+    "validate_point_target2d",
     "validate_pointcloud3d",
     "validate_segmentation_mask2d",
 ]

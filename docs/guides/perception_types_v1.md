@@ -44,6 +44,11 @@ Retriever keeps these separate on purpose:
 - `CompressedImage2D`: one compressed frame
 - `EncodedVideo`: one encoded multi-frame artifact or payload
 
+For frame-centric payloads, use the optional `frame_index` field when you need a
+stream-local integer frame counter. Do not overload `Header.frame_id` for that:
+`Header.frame_id` names the coordinate/source frame, while `frame_index` names a
+position in an image/video sequence.
+
 At the stream level, a stream of `Image2D` frames is semantically a video.
 That does **not** make `Image2D` and `EncodedVideo` interchangeable.
 
@@ -88,6 +93,7 @@ Make media/perception transforms explicit:
 - `Image2D + CameraIntrinsics -> PointCloud3D` for depth-like encodings
 - `DetectionBatch + Image2D -> overlay view` is a helper, not a primitive type
 - `SegmentationMask2D -> summary tables` is a helper, not a primitive type
+- `frame_index` should stay aligned across `Image2D`, `DetectionBatch`, `SegmentationMask2D`, and `PointTarget2D` when they describe the same frame
 
 ## Current non-goals
 

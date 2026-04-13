@@ -13,8 +13,10 @@ from .v1 import (
     SegmentationMask2D,
     validate_camera_intrinsics,
     validate_compressed_image2d,
+    validate_detection_batch,
     validate_encoded_video,
     validate_image2d,
+    validate_point_target2d,
     validate_pointcloud3d,
     validate_segmentation_mask2d,
 )
@@ -32,8 +34,10 @@ __all__ = [
     "SegmentationMask2D",
     "validate_camera_intrinsics",
     "validate_compressed_image2d",
+    "validate_detection_batch",
     "validate_encoded_video",
     "validate_image2d",
+    "validate_point_target2d",
     "validate_pointcloud3d",
     "validate_segmentation_mask2d",
 ]
