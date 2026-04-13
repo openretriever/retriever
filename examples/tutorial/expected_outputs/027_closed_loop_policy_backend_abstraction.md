@@ -2,17 +2,20 @@
 
 ## Run
 ```bash
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
+pixi run demo-policy-backends
 ```
 
 ## Expected Console Highlights
-- Prints backend-invariant graph fingerprint.
-- Prints timing + chunk-behavior table with rows for:
+- Prints a contract line showing that backend selection happens by config.
+- Prints a first-step action preview table.
+- Prints one backend comparison table with rows for:
   - `openpi_pi05`
   - `lerobot`
   - `mock`
-- Demonstrates backend switch without graph changes.
+- Demonstrates the same policy interface across all backends.
 
-## Expected Artifacts
+## Optional Artifacts
 - `logs/tutorial_policy/tut027_backend_metrics.csv`
 - `logs/tutorial_policy/tut027_backend_metrics.json`
+
+The console tables are the primary output. The CSV and JSON files are secondary evidence for later release-readiness checks.

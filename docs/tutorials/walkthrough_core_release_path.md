@@ -8,7 +8,7 @@ This is the shortest operator path to release confidence.
 
 ## Goal
 Confirm four things, in order:
-1. policy backend switch is contract-based, not graph-rewrite based
+1. policy backend evidence is available for representative policy pipelines
 2. backend behavior stays within parity tolerance
 3. incident diagnosis is replay-consistent
 4. acceptance-gate summary gives a defensible `GO`/`NO-GO`
@@ -18,7 +18,7 @@ Confirm four things, in order:
 Run from `retriever/`:
 
 ```bash
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
+pixi run demo-policy-backends
 pixi run verify-backend-parity
 pixi run verify-incident-replay
 pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
@@ -35,18 +35,20 @@ pixi run demo-release-readiness
 
 ## What Each Step Proves
 
-### Step 1: Backend Abstraction Contract (`TUT-027`)
+### Step 1: Policy Backend Evidence (`TUT-027`, specialized)
 Command:
 ```bash
-pixi run python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction
+pixi run demo-policy-backends
 ```
 
 Proves:
 - backends `openpi_pi05|lerobot|mock` are selected by config/interface
-- graph fingerprint remains invariant while backend changes
+- the same policy example and `infer(example)->actions` contract run across all three backends
 
 Artifact:
 - `logs/tutorial_policy/tut027_backend_metrics.csv`
+
+This step is specialized evidence for policy-driven pipelines, not a universal prerequisite for every Retriever deployment.
 
 ### Step 2: Backend Parity Gate (`TUT-032`)
 Command:
