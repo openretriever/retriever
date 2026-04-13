@@ -73,6 +73,8 @@ pipe.close_stepper()
 - **[Spatial Types v1](guides/spatial_types_v1.md)** - stamped robotics boundary payloads and registry lookup
 - **[Perception Types v1](guides/perception_types_v1.md)** - canonical images, encoded video artifacts, point clouds, detections, and masks
 - **[Language Types v1](guides/language_types_v1.md)** - primitive captions, grounded phrases, prompts, and plan text
+- **[Symbolic Types v1](guides/symbolic_types_v1.md)** - compact object-centric planning, options, and skill signatures
+- **[Type Composition v1](guides/type_composition_v1.md)** - shared primitive payloads first, composite `Flow[...]` second
 - **[Data and EventStream v1](guides/data_eventstream_v1.md)** - canonical event/data contracts plus explicit helper modules
 - **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
     - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)

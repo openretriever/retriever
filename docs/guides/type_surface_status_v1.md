@@ -11,6 +11,7 @@ Summarize the current canonical type surfaces and:
 - `retriever.types.perception`
 - `retriever.types.language`
 - `retriever.types.data`
+- `retriever.types.symbolic`
 - the flow typing contract carry-back that these packages rely on
 
 This page is status-oriented. For day-to-day usage, read:
@@ -19,6 +20,7 @@ This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/perception_types_v1.md`
 - `docs/guides/language_types_v1.md`
 - `docs/guides/type_composition_v1.md`
+- `docs/guides/symbolic_types_v1.md`
 - `docs/guides/flow_typing_standard.md`
 
 ## Current State
@@ -30,7 +32,8 @@ The mirror carry-back now targets the modern tutorial/runtime branch line and in
 3. canonical `retriever.types.perception` package,
 4. canonical `retriever.types.language` package,
 5. canonical `retriever.types.data` package,
-6. tutorial-track exposure under existing one-level tracks.
+6. canonical `retriever.types.symbolic` package,
+7. tutorial-track exposure under existing one-level tracks.
 
 ## Runtime File Map
 
@@ -55,6 +58,12 @@ Perception types:
 Language types:
 - `src/retriever/types/language/__init__.py`
 - `src/retriever/types/language/v1.py`
+
+Symbolic types:
+- `src/retriever/types/symbolic/__init__.py`
+- `src/retriever/types/symbolic/objects.py`
+- `src/retriever/types/symbolic/options.py`
+- `src/retriever/types/symbolic/skills.py`
 
 Data layer:
 - `src/retriever/types/data/__init__.py`
@@ -90,12 +99,14 @@ Tutorial smoke checks:
 ```bash
 PYTHONPATH=src python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 PYTHONPATH=src python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
+PYTHONPATH=src python -m examples.tutorial.g_operations_interfaces.07_language_grounding_composition
 PYTHONPATH=src python -m examples.tutorial.h_release_readiness.03_dataset_manifest_and_lerobot_mapping
 ```
 
 ## Tutorial Entry Points
 
 - `examples/tutorial/g_operations_interfaces/05_spatial_type_boundaries.py`
+- `examples/tutorial/g_operations_interfaces/07_language_grounding_composition.py`
 - `examples/tutorial/e_resource_and_sync/07_data_multistream_join.py`
 - `examples/tutorial/h_release_readiness/03_dataset_manifest_and_lerobot_mapping.py`
 
@@ -112,3 +123,4 @@ Canonical public naming is:
 - `retriever.types.perception` / `retriever.types.perception.v1`
 - `retriever.types.language` / `retriever.types.language.v1`
 - `retriever.types.data` / `retriever.types.data.v1`
+- `retriever.types.symbolic`

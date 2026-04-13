@@ -26,5 +26,6 @@ Key references:
 - `docs/guides/perception_types_v1.md`
 - `docs/guides/language_types_v1.md`
 - `docs/guides/type_composition_v1.md`
+- `docs/guides/symbolic_types_v1.md`
 
 For runtime/core work, prefer `docs/handbook.md`. The other guides are focused references, not draft placeholders.
