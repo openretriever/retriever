@@ -41,11 +41,7 @@ pixi run demo-webcam-detection-mp-rerun
 pixi run demo-webcam-detection-dora-rerun
 ```
 
-The Dora demo tasks already request a fresh runtime. If `dora` still complains about schema/version while you are running Dora manually, kill stale processes and retry:
-
-```bash
-pkill -9 dora && pixi run demo-webcam-detection-dora-rerun
-```
+The Dora demo tasks already request a fresh runtime. If `dora` still complains about schema/version while you are running Dora manually, restart Dora, then rerun `pixi run demo-webcam-detection-dora-rerun`.
 
 Pixi vs uv (how they fit together):
 
@@ -432,7 +428,7 @@ live in separate packages that build on top of the runtime/core surface.
 
 ## 12) Troubleshooting (common)
 
-- Dora schema/version mismatch: `pkill -9 dora` then rerun.
+- Dora schema/version mismatch: restart the Dora runtime, then rerun the demo task.
 - Python 3.14: avoid until optional deps ship wheels.
 - If using Pixi: don’t install random pip deps into `.pixi/envs/default` outside of Pixi tasks.
 

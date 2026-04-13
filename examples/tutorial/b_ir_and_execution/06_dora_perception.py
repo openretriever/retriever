@@ -30,6 +30,7 @@ if __package__ in {None, ""}:
 import argparse
 
 from examples.shared.perception_flows import build_tutorial_perception_pipeline
+from retriever.lib.perception import optional_cv2
 
 
 def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_camera: bool):
@@ -55,9 +56,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")
     parser.add_argument(
         "--camera-mode",
-        default="real",
-        choices=["real", "mock"],
-        help="Use 'real' (default) for a live camera — raises if no camera found. Use 'mock' for synthetic frames.",
+        default="auto",
+        choices=["auto", "real", "mock"],
+        help="Use 'auto' (default) to try a live camera and fall back to synthetic frames. Use 'real' to require a live camera or 'mock' for synthetic frames.",
     )
     parser.add_argument(
         "--visualize",
@@ -84,14 +85,7 @@ def parse_args() -> argparse.Namespace:
 def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
     mode = args.visualize
     if mode == "auto":
-        # Default to rerun so new users see live visualization out of the box.
-        # Falls back to stdout if rerun-sdk is not installed.
-        try:
-            import importlib
-            importlib.import_module("rerun")
-            mode = "rerun"
-        except ImportError:
-            mode = "stdout"
+        mode = "stdout"
 
     show_window = mode in {"window", "both"}
     use_rerun = mode in {"rerun", "both"}
@@ -106,8 +100,31 @@ def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
     return show_window, use_rerun
 
 
+def _camera_available(camera_index: int) -> bool:
+    cv2 = optional_cv2()
+    if cv2 is None:
+        return False
+    cap = cv2.VideoCapture(camera_index)
+    try:
+        if not cap.isOpened():
+            return False
+        ret, frame = cap.read()
+        return bool(ret and frame is not None)
+    finally:
+        cap.release()
+
+
 def _resolve_camera_mode(args: argparse.Namespace) -> bool:
-    return args.camera_mode != "mock"
+    if args.camera_mode == "mock":
+        return False
+    if args.camera_mode == "real":
+        return True
+    if _camera_available(args.camera_index):
+        return True
+    print(
+        f"[Perception Demo] No readable camera found at index {args.camera_index}; falling back to mock frames."
+    )
+    return False
 
 
 def main() -> None:

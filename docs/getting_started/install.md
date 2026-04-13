@@ -54,15 +54,14 @@ python -m pip install -e ".[mcp]"
 Then run tutorials directly:
 
 ```bash
-python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real
+python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout
 ```
 
 ## Dora Notes
 
-The Dora demo tasks already request a fresh runtime. If `dora` still reports stale coordinator/state errors while you are running Dora manually, kill stale processes and retry:
+The Dora demo tasks already request a fresh runtime. If `dora` still reports stale coordinator/state errors while you are running Dora manually, restart the Dora runtime, then rerun:
 
 ```bash
-pkill -9 dora || true
 pixi run demo-webcam-detection-dora-rerun
 ```
 

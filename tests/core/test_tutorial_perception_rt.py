@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import importlib
 import subprocess
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -33,6 +35,28 @@ def test_webcam_demo_help_runs() -> None:
     assert result.returncode == 0, result.stderr
     assert 'Perception runtime demo' in result.stdout
 
+
+
+
+def test_webcam_demo_auto_visualization_defaults_to_stdout() -> None:
+    mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+    show_window, use_rerun = mod._resolve_visualization(SimpleNamespace(visualize='auto', backend='in-process'))
+    assert show_window is False
+    assert use_rerun is False
+
+
+def test_webcam_demo_auto_camera_mode_falls_back_without_camera(monkeypatch) -> None:
+    mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+    monkeypatch.setattr(mod, '_camera_available', lambda index: False)
+    use_real = mod._resolve_camera_mode(SimpleNamespace(camera_mode='auto', camera_index=0))
+    assert use_real is False
+
+
+def test_webcam_demo_real_camera_mode_stays_explicit(monkeypatch) -> None:
+    mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+    monkeypatch.setattr(mod, '_camera_available', lambda index: False)
+    use_real = mod._resolve_camera_mode(SimpleNamespace(camera_mode='real', camera_index=0))
+    assert use_real is True
 
 def test_record_replay_cli_help_runs() -> None:
     result = _run_script('examples/tutorial/c_debug_and_replay/04_record_replay_perception.py', '--help')

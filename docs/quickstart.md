@@ -100,7 +100,7 @@ If you want something visual right away, use the perception tutorial series.
 pixi run demo-webcam-detection
 ```
 
-This runs `camera -> detector -> display` in-process. It uses a live camera when available and falls back to a mock pattern otherwise. This is the safest cross-platform quickstart because it avoids worker-process camera issues on macOS and keeps debugging simple.
+This runs `camera -> detector -> display` in-process. It tries a live camera first and falls back to a mock pattern when the camera cannot be opened. This is the safest cross-platform quickstart because it avoids worker-process camera issues on macOS and keeps debugging simple.
 
 If you specifically want a live Rerun backend demo, use one of these worker-safe mock-camera variants instead:
 
@@ -109,10 +109,9 @@ pixi run demo-webcam-detection-mp-rerun
 pixi run demo-webcam-detection-dora-rerun
 ```
 
-The Dora demo tasks now start with a fresh runtime by default. If you still hit a stale coordinator or schema/version mismatch while running Dora manually, restart Dora and retry:
+The Dora demo tasks now start with a fresh runtime by default. If you still hit a stale coordinator or schema/version mismatch while running Dora manually, restart the Dora runtime, then rerun:
 
 ```bash
-pkill -9 dora || true
 pixi run demo-webcam-detection-dora-rerun
 ```
 

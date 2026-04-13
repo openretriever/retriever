@@ -140,7 +140,7 @@ test-control = "python -m pytest tests/test_control.py tests/test_control_web.py
 demo-control = { cmd = "python examples/control_demo.py", env = { PYTHONPATH = ".", RUST_LOG = "error" } }
 
 # Tutorial Examples
-demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize stdout --duration 10"
+demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout --duration 10"
 demo-webcam-detection-dora = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --fresh-dora --camera-mode mock --visualize stdout --duration 10"
 demo-webcam-detection-mp-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend multiprocessing --camera-mode mock --visualize rerun --duration 30"
 demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --fresh-dora --camera-mode mock --visualize rerun --duration 30"
