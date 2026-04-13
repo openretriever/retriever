@@ -27,6 +27,7 @@ except Exception:  # pragma: no cover - optional dependency
     _rr_module = None
 
 from retriever.flow import io
+from retriever.lib.rerun import _log_image
 
 PerceptionDisplayMode = Literal["none", "stdout", "cv2"]
 PERCEPTION_DISPLAY_MODES: tuple[PerceptionDisplayMode, ...] = ("none", "stdout", "cv2")
@@ -124,7 +125,7 @@ class CameraData:
         rr = _rr_module
         if rr is None:
             return
-        rr.log(f"{path}/image", rr.Image(self.image.frame).compress(jpeg_quality=85))
+        _log_image(rr, f"{path}/image", self.image.frame)
         rr.log(f"{path}/frame_id", rr.TextLog(str(self.image.frame_id)))
         rr.log(f"{path}/mode", rr.TextLog(self.mode))
 
@@ -140,8 +141,8 @@ class DetectionResults:
         if rr is None:
             return
 
-        rr.log(f"{path}/image", rr.Image(self.image.frame).compress(jpeg_quality=85))
-        rr.log(f"{path}/overlay", rr.Image(render_detection_overlay(self.image.frame, self.detections)).compress(jpeg_quality=85))
+        _log_image(rr, f"{path}/image", self.image.frame)
+        _log_image(rr, f"{path}/overlay", render_detection_overlay(self.image.frame, self.detections))
         rr.log(f"{path}/count", rr.Scalars([len(self.detections)]))
         rr.log(f"{path}/mode", rr.TextLog(self.mode))
         if not self.detections:

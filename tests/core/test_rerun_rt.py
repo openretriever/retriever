@@ -91,7 +91,9 @@ def _install_fake_rerun(monkeypatch):
     class _FakeImage:
         def __init__(self, value):
             self._shape = np.asarray(value).shape
+            self.compress_calls = []
         def compress(self, **kwargs):
+            self.compress_calls.append(kwargs)
             return ("Image", self._shape)
         def __iter__(self):
             return iter(("Image", self._shape))
@@ -148,6 +150,30 @@ def test_log_value_from_env_logs_plain_io_dataclass_fields(monkeypatch):
     }
     assert ("step", 3, None, None) in timelines
     assert ("retriever_time", None, None, 0.0) in timelines
+    image_logs = [payload for path, payload in state["logs"] if path.endswith("/image")]
+    assert image_logs
+
+
+def test_log_image_falls_back_when_compress_is_unavailable(monkeypatch):
+    class _NoCompressImage:
+        def __init__(self, value):
+            self.shape = np.asarray(value).shape
+
+    class _FakeRR:
+        def __init__(self):
+            self.logged = []
+
+        Image = _NoCompressImage
+
+        def log(self, path, payload):
+            self.logged.append((path, payload))
+
+    rr_module = _FakeRR()
+    rerun_lib._log_image(rr_module, "camera/frame", np.zeros((2, 3, 3), dtype=np.uint8))
+    assert rr_module.logged
+    path, payload = rr_module.logged[0]
+    assert path == "camera/frame"
+    assert isinstance(payload, _NoCompressImage)
 
 
 def test_mpchannel_put_one_emits_worker_rerun_log(monkeypatch):

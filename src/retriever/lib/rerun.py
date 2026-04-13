@@ -274,8 +274,16 @@ def rerun_loggable(field_loggers: Dict[str, str] = None):
 
 
 def _log_image(rr, path: str, value: Any) -> None:
-    """Log a numpy array as a JPEG-compressed Rerun image."""
-    rr.log(path, rr.Image(value).compress(jpeg_quality=85))
+    """Log a numpy array as a Rerun image, preferring JPEG compression when available."""
+    image = rr.Image(value)
+    compress = getattr(image, "compress", None)
+    if callable(compress):
+        try:
+            rr.log(path, compress(jpeg_quality=85))
+            return
+        except TypeError:
+            pass
+    rr.log(path, image)
 
 
 def _log_with_archetype(rr, path: str, value: Any, archetype: str) -> None:
