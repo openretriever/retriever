@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import retriever
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger
 from retriever.types.spatial import (
     Header,
     PoseStamped,
@@ -27,12 +27,7 @@ from retriever.types.spatial import (
 from examples.tutorial._p0_utils import format_table, utc_now_iso, write_json
 
 
-@io
-class PoseEnvelope:
-    pose: PoseStamped | None = None
-
-
-class PoseSource(Flow[None, PoseEnvelope]):
+class PoseSource(Flow[None, PoseStamped]):
     def reset(self) -> None:
         self._seq = 0
 
@@ -46,19 +41,16 @@ class PoseSource(Flow[None, PoseEnvelope]):
                 orientation=Quaternion(0.0, 0.0, 0.0, 1.0),
             ),
         )
-        return PoseEnvelope(pose=msg)
+        return msg
 
 
-class CameraToBase(Flow[PoseEnvelope, PoseEnvelope]):
-    def step(self, input: PoseEnvelope) -> PoseEnvelope:
-        if input.pose is None:
-            return PoseEnvelope()
-
-        validate_pose_stamped(input.pose)
-        pose = input.pose.pose
+class CameraToBase(Flow[PoseStamped, PoseStamped]):
+    def step(self, input: PoseStamped) -> PoseStamped:
+        validate_pose_stamped(input)
+        pose = input.pose
         translated = PoseStamped(
             header=Header(
-                stamp_ns=input.pose.header.stamp_ns,
+                stamp_ns=input.header.stamp_ns,
                 frame_id="base",
                 source="tutorial.camera_to_base",
             ),
@@ -67,7 +59,7 @@ class CameraToBase(Flow[PoseEnvelope, PoseEnvelope]):
                 orientation=pose.orientation,
             ),
         )
-        return PoseEnvelope(pose=translated)
+        return translated
 
 
 def main() -> None:
@@ -89,8 +81,7 @@ def main() -> None:
     try:
         for step_idx in range(3):
             result = pipe.step(dt=0.2)
-            out = result.outputs.get(projector_id)
-            pose = getattr(out, "pose", None)
+            pose = result.outputs.get(projector_id)
             if pose is None:
                 continue
             rows.append(

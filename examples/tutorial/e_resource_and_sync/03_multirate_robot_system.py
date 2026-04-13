@@ -9,7 +9,7 @@ What it demonstrates:
   - Coordination is expressed via:
       - node clocks (`Rate(hz=...)`)
       - edge adapters (`Latest()` by default)
-      - explicit field mapping into multi-input flows
+      - composite multi-input flow signatures instead of fused input wrappers
 
 Run (multiprocessing):
   pixi run python -m examples.tutorial.e_resource_and_sync.03_multirate_robot_system --backend multiprocessing --duration 5
@@ -46,16 +46,6 @@ class PoseOut:
 class PlanOut:
     target_x: float
     confidence: float
-
-
-@io
-class ControlIn:
-    x: float
-    theta: float
-    uncertainty: float
-    pose_t: float
-    target_x: float
-    plan_confidence: float
 
 
 @io
@@ -124,23 +114,21 @@ class PlanningFlow(Flow[PoseOut, PlanOut]):
         return PlanOut(target_x=2.0, confidence=confidence)
 
 
-class ControlFlow(Flow[ControlIn, CmdOut]):
-    """20Hz controller: P-control in x and damping in theta."""
+class ControlFlow(Flow[(PoseOut, PlanOut), CmdOut]):
+    """20Hz controller: consume pose + plan directly, without a fused input wrapper."""
 
-    def step(self, input: ControlIn) -> CmdOut:
-        missing = (
-            input.x is None
-            or input.theta is None
-            or input.target_x is None
-            or input.plan_confidence is None
-        )
-        if missing:
+    def step(self, input) -> CmdOut:  # type: ignore[override]
+        pose = getattr(input, "PoseOut", None)
+        plan = getattr(input, "PlanOut", None)
+        if pose is None or plan is None:
+            return CmdOut()
+        if pose.x is None or pose.theta is None or plan.target_x is None or plan.confidence is None:
             return CmdOut()
 
-        x = float(input.x)
-        theta = float(input.theta)
-        target_x = float(input.target_x)
-        confidence = float(input.plan_confidence)
+        x = float(pose.x)
+        theta = float(pose.theta)
+        target_x = float(plan.target_x)
+        confidence = float(plan.confidence)
 
         err_x = target_x - x
         v = max(-1.0, min(1.0, 0.8 * err_x))
@@ -178,29 +166,15 @@ def build_pipeline() -> Pipeline:
         sensors = SensorFlow() @ Rate(hz=30)
         loc = LocalizationFlow() @ Rate(hz=10)
         plan = PlanningFlow() @ Rate(hz=1)
-        ctrl = ControlFlow() @ Rate(hz=20)
+        ctrl = ControlFlow() @ Trigger("x")
         prn = Printer() @ Rate(hz=2)
 
         sensors >> loc
         loc >> plan
 
-        # Multi-input wiring into control:
-        loc.then(
-            ctrl,
-            map={
-                "x": "x",
-                "theta": "theta",
-                "uncertainty": "uncertainty",
-                "t": "pose_t",
-            },
-        )
-        plan.then(
-            ctrl,
-            map={
-                "target_x": "target_x",
-                "confidence": "plan_confidence",
-            },
-        )
+        # Composite typed input into control: (PoseOut, PlanOut) -> CmdOut
+        loc.then(ctrl, sync=Latest())
+        plan.then(ctrl, sync=Latest())
 
         ctrl >> prn
 
