@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from math import sqrt
 from typing import Final, Iterable
 
+from retriever.flow import io
 from retriever.registry.types import register_type
 
 _SPATIAL_CATEGORY: Final[str] = "spatial"
@@ -37,6 +38,7 @@ def _register_spatial_type(
     description="Header for stamped spatial payloads",
     tags=["spatial", "v1", "header", "metadata"],
 )
+@io
 @dataclass(frozen=True)
 class Header:
     stamp_ns: int
@@ -49,6 +51,7 @@ class Header:
     description="3D vector payload",
     tags=["spatial", "v1", "geometry", "vector"],
 )
+@io
 @dataclass(frozen=True)
 class Vector3:
     x: float
@@ -61,6 +64,7 @@ class Vector3:
     description="Quaternion rotation payload",
     tags=["spatial", "v1", "geometry", "quaternion"],
 )
+@io
 @dataclass(frozen=True)
 class Quaternion:
     x: float
@@ -80,6 +84,7 @@ class Quaternion:
     description="SE(3) pose payload",
     tags=["spatial", "v1", "geometry", "pose"],
 )
+@io
 @dataclass(frozen=True)
 class SE3Pose:
     position: Vector3
@@ -91,6 +96,7 @@ class SE3Pose:
     description="Spatial velocity payload",
     tags=["spatial", "v1", "motion", "twist"],
 )
+@io
 @dataclass(frozen=True)
 class Twist:
     linear: Vector3
@@ -102,6 +108,7 @@ class Twist:
     description="Force and torque payload",
     tags=["spatial", "v1", "force", "wrench"],
 )
+@io
 @dataclass(frozen=True)
 class Wrench:
     force: Vector3
@@ -113,6 +120,7 @@ class Wrench:
     description="Joint state payload",
     tags=["spatial", "v1", "joint", "state"],
 )
+@io
 @dataclass(frozen=True)
 class JointState:
     names: tuple[str, ...]
@@ -121,6 +129,8 @@ class JointState:
     efforts: tuple[float, ...]
 
     def is_aligned(self) -> bool:
+        if any(value is None for value in (self.names, self.positions, self.velocities, self.efforts)):
+            return False
         n = len(self.names)
         return (
             len(self.positions) == n
@@ -134,6 +144,7 @@ class JointState:
     description="Timestamped pose payload",
     tags=["spatial", "v1", "pose", "stamped"],
 )
+@io
 @dataclass(frozen=True)
 class PoseStamped:
     header: Header
@@ -145,6 +156,7 @@ class PoseStamped:
     description="Timestamped twist payload",
     tags=["spatial", "v1", "twist", "stamped"],
 )
+@io
 @dataclass(frozen=True)
 class TwistStamped:
     header: Header
@@ -156,6 +168,7 @@ class TwistStamped:
     description="Timestamped wrench payload",
     tags=["spatial", "v1", "wrench", "stamped"],
 )
+@io
 @dataclass(frozen=True)
 class WrenchStamped:
     header: Header
@@ -163,25 +176,29 @@ class WrenchStamped:
 
 
 def validate_header(header: Header) -> None:
+    if header.stamp_ns is None or header.stamp_ns <= 0:
+        raise ValueError("stamp_ns must be > 0")
     if not header.frame_id:
         raise ValueError("frame_id must be non-empty")
-    if header.stamp_ns <= 0:
-        raise ValueError("stamp_ns must be > 0")
 
 
 def validate_quaternion(q: Quaternion, tol: float = 1e-3) -> None:
+    if any(value is None for value in (q.x, q.y, q.z, q.w)):
+        raise ValueError("orientation quaternion must set x, y, z, and w")
     if not q.is_unit(tol=tol):
         raise ValueError("orientation quaternion must be unit-norm")
 
 
 def validate_pose_stamped(msg: PoseStamped) -> None:
+    if msg.header is None or msg.pose is None:
+        raise ValueError("PoseStamped requires header and pose")
     validate_header(msg.header)
     validate_quaternion(msg.pose.orientation)
 
 
 def validate_joint_state(msg: JointState) -> None:
     if not msg.is_aligned():
-        raise ValueError("joint state arrays must align by length")
+        raise ValueError("joint state arrays must align by length and be fully specified")
 
 
 __all__ = [
