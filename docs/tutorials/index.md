@@ -74,12 +74,12 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.e_resource_and_sync.02_synchronization
+pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
 ```
 
 Then:
+- `examples.tutorial.e_resource_and_sync.02_synchronization`
 - `examples.tutorial.e_resource_and_sync.06_functional_fanin_fanout`
-- `examples.tutorial.e_resource_and_sync.07_data_multistream_join`
 
 Track page:
 - [Track E: Resource and Synchronization](track_e_resource_and_sync.md)
@@ -89,15 +89,19 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
+pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 ```
 
 Then:
+- `examples.tutorial.g_operations_interfaces.07_language_grounding_composition`
+- `examples.tutorial.g_operations_interfaces.06_composable_pipelines`
 - `examples.tutorial.g_operations_interfaces.01_registry_basics`
 - `examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries`
 
 Track page:
 - [Track G: Operations and Interfaces](track_g_operations_interfaces.md)
+
+Track G teaches canonical primitives first; treat wrapper-heavy surfaces as optional later material.
 
 ## Specialized Lanes
 

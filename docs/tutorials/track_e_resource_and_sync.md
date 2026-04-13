@@ -9,9 +9,9 @@ Focus: fan-in synchronization, multi-rate sampling, strict resource compatibilit
 ## Start Here
 
 Run these in order:
+- `07_data_multistream_join`
 - `02_synchronization`
 - `06_functional_fanin_fanout`
-- `07_data_multistream_join`
 
 Use these later if you want more backend/resource detail:
 - `01_multirate_window`
@@ -34,5 +34,6 @@ pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_joi
 ## What To Observe
 
 - Synchronization tradeoffs (`Latest`, windows, and fan-in behavior).
+- Prefer shared payloads and tuple composition where possible; keep named wrappers only when the synchronization surface itself is the lesson.
 - Resource hints only after the synchronization story is clear.
 - Explicit bridges between runtime buffer records and `retriever.types.data` event structures.

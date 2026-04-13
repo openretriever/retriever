@@ -3,9 +3,9 @@
 ## Start Here
 
 Run these first:
-- `06_composable_pipelines.py`
 - `05_spatial_type_boundaries.py`
 - `07_language_grounding_composition.py`
+- `06_composable_pipelines.py`
 - `01_registry_basics.py`
 
 Use these later:
@@ -15,8 +15,7 @@ Use these later:
 
 ## What To Expect
 
-- `03_unified_wrapper.py` is an alternate ergonomic surface. Keep explicit `Pipeline(...)` authoring as the default mental model.
-- `03_unified_wrapper.py` is illustrative, not part of the default Pixi tutorial surface.
+- `03_unified_wrapper.py` is an optional legacy ergonomic surface; it is not part of the default tutorial path.
 - Use registries and reusable pipelines as operational surfaces.
 - See spatial type boundaries where frame/time/source metadata matters.
 - See language + perception primitives compose without a custom wrapper dataclass.

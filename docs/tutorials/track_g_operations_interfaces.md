@@ -6,14 +6,14 @@ title: "Track G: Operations and Interfaces"
 
 Focus: registries, reusable pipelines, typed boundaries, and operational control surfaces.
 
-`03_unified_wrapper` is an alternate ergonomic surface. Keep explicit `Pipeline(...)` authoring as the default mental model.
+`03_unified_wrapper` is an alternate ergonomic surface. Keep explicit `Pipeline(...)` authoring as the default mental model, and teach direct primitive composition first.
 
 ## Start Here
 
 Run these in order:
-- `06_composable_pipelines`
 - `05_spatial_type_boundaries`
 - `07_language_grounding_composition`
+- `06_composable_pipelines`
 - `01_registry_basics`
 
 Use these later:
