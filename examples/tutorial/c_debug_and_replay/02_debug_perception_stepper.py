@@ -25,7 +25,8 @@ if __package__ in {None, ""}:
 
 import numpy as np
 
-from examples.shared.perception_flows import CameraData, ColorDetector, DetectionResults, Image
+from retriever.lib.perception import CameraData, DetectionResults, Image
+from examples.shared.perception_flows import ColorDetector
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger
 
 
