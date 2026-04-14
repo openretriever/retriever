@@ -7,14 +7,20 @@ This repo’s public example surface is centered on the core runtime.
 Start here:
 
 - `examples/tutorial/` — the canonical tutorial curriculum for the runtime
-- `examples/control_demo.py` — the web dashboard control demo for runtime orchestration (keyboard is optional)
+- `examples/control_demo.py` — optional web dashboard control demo for runtime orchestration
 
 If you want the shortest path:
 
 ```bash
 pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
-pixi run python -m examples.tutorial.b_ir_and_execution.01_context_graph
+pixi run python -m examples.tutorial.a_flow_fundamentals.03_adapter_connection
+pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
 pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
+```
+
+Then try the control surface separately:
+
+```bash
 pixi run -e control demo-control
 ```
 

@@ -8,17 +8,17 @@ Focus: registries, reusable pipelines, typed boundaries, and operational control
 
 `03_unified_wrapper` is an alternate ergonomic surface. Keep explicit `Pipeline(...)` authoring as the default mental model, and teach direct primitive composition first.
 
-Treat `05_spatial_type_boundaries` and `07_language_grounding_composition` as the canonical primitive-first lessons. `06_composable_pipelines`, `01_registry_basics`, `02_registry_ecosystem`, and `04_peripheral` are later operational examples and still use more explicit wrappers or surfaced selectors.
+Treat `05_spatial_type_boundaries` and `07_language_grounding_composition` as the canonical primitive-first lessons. `06_composable_pipelines`, `01_registry_basics`, `02_registry_ecosystem`, and `04_peripheral` are later operational examples and still use more explicit wrappers, surfaced selectors, or registry plumbing.
 
 ## Start Here
 
 Run these in order:
 - `05_spatial_type_boundaries`
 - `07_language_grounding_composition`
-- `06_composable_pipelines`
-- `01_registry_basics`
 
 Use these later:
+- `06_composable_pipelines`
+- `01_registry_basics`
 - `02_registry_ecosystem`
 - `03_unified_wrapper` (optional external env: `gymnasium` + `torch`)
 - `04_peripheral`
@@ -26,12 +26,12 @@ Use these later:
 ## Modules
 
 ```bash
-pixi run python -m examples.tutorial.g_operations_interfaces.01_registry_basics
-pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosystem
-pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
 pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
 pixi run python -m examples.tutorial.g_operations_interfaces.07_language_grounding_composition
 pixi run python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines
+pixi run python -m examples.tutorial.g_operations_interfaces.01_registry_basics
+pixi run python -m examples.tutorial.g_operations_interfaces.02_registry_ecosystem
+pixi run python -m examples.tutorial.g_operations_interfaces.04_peripheral
 ```
 
 `03_unified_wrapper` is intentionally not in the default Pixi tutorial surface. It needs `gymnasium` and `torch` in your own environment.
