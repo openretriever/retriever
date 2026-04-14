@@ -35,8 +35,8 @@ def test_flow_module_exports_pipeline_graph_names_only():
 def test_top_level_retriever_exports_clear_default_pipeline():
     assert callable(retriever.clear_default_pipeline)
     assert callable(retriever.reset_default_pipeline)
-    assert not hasattr(retriever, "compose")
-    assert not hasattr(retriever, "select")
+    assert callable(retriever.compose)
+    assert callable(retriever.select)
 
 
 def test_flow_module_exports_compose_and_select():
