@@ -132,6 +132,8 @@ class WebDashboard:
         self._broadcast_task: Optional[asyncio.Task] = None
         self._log_collector_task: Optional[asyncio.Task] = None
         self._server_thread: Optional[threading.Thread] = None
+        self._server: Optional["uvicorn.Server"] = None
+        self._server_ready = threading.Event()
 
         # Log buffer for output capture
         self.log_buffer = LogBuffer(maxlen=10000)
@@ -330,6 +332,8 @@ class WebDashboard:
                 log_level="warning",
             )
             server = uvicorn.Server(config)
+            self._server = server
+            self._server_ready.set()
 
             self._broadcast_task = asyncio.create_task(self._broadcast_status())
             self._log_collector_task = asyncio.create_task(self._collect_logs())
@@ -342,6 +346,10 @@ class WebDashboard:
                     task.cancel()
                 if tasks:
                     await asyncio.gather(*tasks, return_exceptions=True)
+                self._broadcast_task = None
+                self._log_collector_task = None
+                self._server = None
+                self._server_ready.clear()
 
         if blocking:
             asyncio.run(start_server())
@@ -355,6 +363,19 @@ class WebDashboard:
             # Print prominent dashboard banner
             url = self.get_url()
             _print_dashboard_banner(url, self.config_info)
+
+    def stop(self, timeout: float = 5.0) -> None:
+        """Request shutdown of a background dashboard server and wait briefly."""
+        thread = self._server_thread
+        if thread is None:
+            return
+
+        self._server_ready.wait(timeout=1.0)
+        if self._server is not None:
+            self._server.should_exit = True
+
+        thread.join(timeout=timeout)
+        self._server_thread = None
 
     def get_url(self) -> str:
         """Get the dashboard URL."""

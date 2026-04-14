@@ -4,6 +4,8 @@ import asyncio
 import json
 import socket
 import time
+import urllib.error
+import urllib.request
 
 import pytest
 
@@ -161,6 +163,32 @@ class TestWebDashboardHelpers:
             assert port != busy_port
         finally:
             sock.close()
+
+    def test_start_and_stop_background_server(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+        sock.close()
+
+        dashboard = WebDashboard(_DummyController(), host="127.0.0.1", port=port)
+        dashboard.start(blocking=False)
+        try:
+            url = f"{dashboard.get_url()}/api/status"
+            payload = None
+            for _ in range(30):
+                try:
+                    with urllib.request.urlopen(url, timeout=0.2) as resp:
+                        payload = json.loads(resp.read().decode("utf-8"))
+                        break
+                except (urllib.error.URLError, ConnectionError, TimeoutError):
+                    time.sleep(0.1)
+
+            assert payload is not None
+            assert payload["name"] == "dashboard-test"
+        finally:
+            dashboard.stop()
+
+        assert dashboard._server_thread is None
 
 
 class TestWebDashboardBackgroundTasks:

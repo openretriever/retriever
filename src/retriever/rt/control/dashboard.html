@@ -503,7 +503,8 @@
         });
 
         function connect() {
-            ws = new WebSocket(`ws://${location.host}/ws`);
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${proto}://${location.host}/ws`);
             ws.onmessage = e => {
                 const msg = JSON.parse(e.data);
                 if (msg.type === 'status') updateStatus(msg.data);
@@ -716,7 +717,8 @@
         function stopPipeline() { if(confirm('Stop pipeline?')) fetch('/api/stop', {method: 'POST'}); }
 
         function connectLogs() {
-            logsWs = new WebSocket(`ws://${location.host}/ws/logs`);
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            logsWs = new WebSocket(`${proto}://${location.host}/ws/logs`);
             logsWs.onmessage = e => {
                 const data = JSON.parse(e.data);
                 if (data.type === 'history') {

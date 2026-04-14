@@ -879,14 +879,18 @@ class Pipeline:
                  backend_config["rerun_config"] = {"mode": "spawn"}
 
         ir = self._build_ir()
-        return execute_ir(
-            ir,
-            backend=backend,
-            duration=duration,
-            blocking=blocking,
-            log_config=log_config,
-            backend_config=backend_config,
-        )
+        try:
+            return execute_ir(
+                ir,
+                backend=backend,
+                duration=duration,
+                blocking=blocking,
+                log_config=log_config,
+                backend_config=backend_config,
+            )
+        finally:
+            if blocking and self._web_dashboard:
+                self._web_dashboard.stop()
 
 
 # ==================================================================================
