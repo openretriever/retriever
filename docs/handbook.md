@@ -41,6 +41,8 @@ pixi run demo-webcam-detection-mp-rerun
 pixi run demo-webcam-detection-dora-rerun
 ```
 
+`demo-webcam-record` intentionally records deterministic mock frames by default so the replay artifacts are portable across machines. Use the tutorial module directly with `--camera-mode real` only when you explicitly want to capture a live webcam session.
+
 The Dora demo tasks already request a fresh runtime. If `dora` still complains about schema/version while you are running Dora manually, restart Dora, then rerun `pixi run demo-webcam-detection-dora-rerun`.
 
 Pixi vs uv (how they fit together):
@@ -372,6 +374,10 @@ pixi run demo-webcam-record
 pixi run demo-webcam-replay-rrd
 pixi run demo-webcam-replay-mcap
 ```
+
+Use `demo-webcam-detection` for a live-camera quickstart. `demo-webcam-record`
+is intentionally deterministic and mock-backed by default so the replay pair is
+portable across machines.
 
 Modules:
 

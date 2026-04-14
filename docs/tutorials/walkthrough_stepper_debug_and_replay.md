@@ -22,7 +22,7 @@ pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper --steps
 Set a breakpoint inside `Flow.step()` and rerun with `--fail-at 3` if you want
 an exception-driven stop.
 
-## Phase 2: Record Live Data (or Mock Fallback)
+## Phase 2: Record a Deterministic Session
 
 ```bash
 pixi run demo-webcam-record
@@ -33,10 +33,10 @@ Artifacts:
 - `logs/perception.rrd`
 - `logs/perception.mcap`
 
-If no webcam is available, record with explicit mock frames so you can still validate the recording pipeline:
+The packaged task records deterministic mock frames by default so replay works the same way on any machine. If you explicitly want a live webcam capture instead:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --camera-mode mock
+pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --camera-mode real
 ```
 
 ## Phase 3: Replay the Same Session

@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Record + replay perception stream (in-process stepper).")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    record = sub.add_parser("record", help="Record a short stream from the real camera")
+    record = sub.add_parser("record", help="Record a short stream from a live camera or deterministic mock frames")
     record.add_argument(
         "--out",
         type=Path,
@@ -57,8 +57,8 @@ def parse_args() -> argparse.Namespace:
     record.add_argument(
         "--camera-mode",
         choices=("real", "mock"),
-        default="real",
-        help="Record from a real camera or use deterministic mock frames.",
+        default="mock",
+        help="Record from a live camera or use deterministic mock frames (default: mock).",
     )
     record.add_argument("--stream", action="store_true", help="Stream to Rerun live while recording")
     record.add_argument("--steps", type=int, default=10, help="Number of step iterations")
