@@ -59,7 +59,7 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset
+pixi run demo-stateful-reset
 ```
 
 Then:
@@ -74,7 +74,7 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
+pixi run demo-data-multistream-join
 ```
 
 Then:

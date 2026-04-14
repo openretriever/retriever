@@ -234,7 +234,7 @@ Topic-focused tutorials (legacy extractions):
 
 ---
 
-## 5.5 Optional ergonomics: `retriever.connect(...)` (default pipeline)
+## 5.5 Notebook-only ergonomics: `retriever.connect(...)` (default pipeline)
 
 For lightweight experiments (REPL/notebooks), you can build a graph without explicitly passing a `Pipeline` around.
 Retriever maintains a thread-local **default pipeline**:

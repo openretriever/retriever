@@ -120,7 +120,7 @@ pixi run demo-webcam-detection-dora-rerun
 Use this when you want breakpoints inside `Flow.step(...)` without Dora or multiprocessing getting in the way:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 20 --sleep 0.05
+pixi run demo-webcam-stepper
 ```
 
 Add `--show-window` if you want the OpenCV display window.
@@ -134,8 +134,8 @@ pixi run demo-webcam-window
 ### 3. Record and replay a short session
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10 --visualize stdout
+pixi run demo-webcam-record
+pixi run demo-webcam-replay-rrd
 ```
 
 This is the shortest path from live sensing to deterministic replay:

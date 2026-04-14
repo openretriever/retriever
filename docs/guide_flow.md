@@ -13,7 +13,10 @@ Use the tutorial tracks and `docs/handbook.md` as the supported source of truth.
 
 ## 1) Define typed ports with `@io`
 
-Flows communicate using `@io` classes. Each annotated field becomes a **port**.
+Prefer shared payloads or tuples first. Use `@io` when you need named reusable
+boundary ports on a flow.
+
+With `@io`, each annotated field becomes a named port.
 
 ```py
 from retriever.flow import io
@@ -32,7 +35,7 @@ class DetectionsOut:
 Notes:
 - `@io` makes all fields `Optional[...]` with default `None`. The runtime sets only the fields present for a step.
 - `@io` is standalone. Do not stack it with `@dataclass`.
-- Inside `Flow.step(...)`, use `input._signals` to see which fields are present.
+- `input._signals` exists as a lower-level debugging/introspection surface. Do not treat it as the main authoring pattern.
 
 ---
 
@@ -74,9 +77,10 @@ class AddOne(Flow[SrcOut, AddOut]):
 
 - Override `step(...)` in new code. `run(...)` is the deprecated backwards-compat alias, and `forward(...)` is a PyTorch-style alias for `step(...)`.
 
-## 2.1) Wrapper Factory (Torch/Gym)
+## 2.1) Optional Wrapper Factory (Torch/Gym)
 
-For standard libraries, use `retriever.lib.Wrapper` instead of writing custom classes:
+If you want a quick bridge from a standard-library object, use `retriever.lib.Wrapper`.
+This is convenient, but not the main authoring surface:
 
 ```python
 from retriever.lib import Wrapper
@@ -160,7 +164,7 @@ Pipeline-wide default:
 
 - `Pipeline("name", on_lag="error")` or `pipe.set_on_lag("error")` applies a default to any node still using the library default (`on_lag="warn"`).
 
-### Global Defaults
+### Global Defaults (optional)
 
 For scripts and libraries, prefer explicit `sync=...` on each `pipe.connect(...)`.
 If you are prototyping in a notebook or REPL, you can still set a global default adapter:

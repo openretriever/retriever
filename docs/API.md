@@ -53,23 +53,21 @@ Guide: `docs/guide_flow.md`.
 Import path:
 ```python
 import retriever  # Global namespace
-from retriever.lib import Wrapper
 ```
 
-- **Pipeline Construction**:
-    - `retriever.connect(src, dst, map=None, sync=None)`: Connects two `TemporalFlow`s. Implicitly creates or uses a default pipeline, but still requires either explicit `sync=` or a shared default from `retriever.init(default_sync=...)`.
-    - `retriever.lib.Wrapper(obj)`: Factory creating `Flow` instance from `torch.nn.Module` or `gym.Env` factory.
-    - `retriever.default_pipeline()`: Returns the current thread-local default pipeline, creating one lazily if needed.
-    - `retriever.clear_default_pipeline()`: Clears the thread-local pipeline handle. The next `retriever.connect(...)` or `retriever.default_pipeline()` call will create a new pipeline lazily.
-    - `retriever.reset_default_pipeline()`: Eagerly creates and returns a fresh empty default pipeline immediately.
+This is a notebook/REPL convenience layer, not the primary shared-example surface.
+Use it when you want a temporary thread-local graph without naming a `Pipeline`.
 
-- **Execution**:
-    - `retriever.run(...)`: Executes the thread-local default-pipeline convenience surface.
-    - `retriever.step(dt=0.1)`: Manually steps the default pipeline (in-process debugging).
-    - `retriever.reset()`: Resets the default pipeline state.
+- `retriever.connect(src, dst, map=None, sync=None)`: connects two `TemporalFlow`s on the thread-local default pipeline
+- `retriever.default_pipeline()`: returns the current thread-local pipeline, creating one lazily if needed
+- `retriever.clear_default_pipeline()`: drops the current thread-local handle
+- `retriever.reset_default_pipeline()`: eagerly creates a fresh empty default pipeline
+- `retriever.run(...)`: runs the thread-local default pipeline
+- `retriever.step(dt=0.1)`: manually steps the default pipeline in-process
+- `retriever.reset()`: resets the default pipeline state
 
-Use this surface for notebooks and lightweight experiments. For scripts and shared
-examples, prefer `pipe.run(...)`, `pipe.step(...)`, and `pipe.reset_stepper()`.
+For scripts and shared examples, prefer explicit `Pipeline(...)` plus `pipe.run(...)`,
+`pipe.step(...)`, and `pipe.reset_stepper()`.
 
 If you need a clean slate before wiring new notebook cells, prefer `retriever.reset_default_pipeline()`.
 If you only want to drop the current thread-local handle and let Retriever recreate it later, use `retriever.clear_default_pipeline()`.
@@ -136,11 +134,14 @@ from retriever.registry.pipeline import (
     register_pipeline,
     list_pipelines,
     build_ir,
-    run_pipeline,
 )
 ```
 
 This enables external packages to register pipelines via entry points:
 - group: `retriever.plugins`
+
+Use `build_ir(...)` as the explicit execution-adjacent registry surface.
+`run_pipeline(...)` still exists for compatibility, but it is not the primary
+surface taught in these docs.
 
 See: `docs/architecture.md` (“Registry + plugins”).
