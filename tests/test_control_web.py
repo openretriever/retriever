@@ -1,5 +1,7 @@
 """Tests for the web dashboard control surface."""
 
+import asyncio
+import json
 import socket
 import time
 
@@ -66,6 +68,14 @@ class _DummyController:
     def stop(self):
         self.calls.append(("stop", None))
         return True
+
+
+class _DummyWebSocket:
+    def __init__(self):
+        self.messages = []
+
+    async def send_text(self, data):
+        self.messages.append(json.loads(data))
 
 
 def _make_dashboard():
@@ -151,3 +161,35 @@ class TestWebDashboardHelpers:
             assert port != busy_port
         finally:
             sock.close()
+
+
+class TestWebDashboardBackgroundTasks:
+    def test_broadcast_status_streams_current_state(self):
+        dashboard = _make_dashboard()
+        ws = _DummyWebSocket()
+        dashboard._clients.add(ws)
+
+        async def exercise():
+            with pytest.raises(asyncio.TimeoutError):
+                await asyncio.wait_for(dashboard._broadcast_status(), timeout=0.05)
+
+        asyncio.run(exercise())
+        assert ws.messages
+        assert ws.messages[0]["type"] == "status"
+        assert ws.messages[0]["data"]["name"] == "dashboard-test"
+
+    def test_log_collector_streams_channel_logs(self):
+        dashboard = _make_dashboard()
+        ws = _DummyWebSocket()
+        dashboard._log_clients.add(ws)
+        dashboard.controller._channel.push_log(target="camera", level="WARN", message="late frame")
+
+        async def exercise():
+            with pytest.raises(asyncio.TimeoutError):
+                await asyncio.wait_for(dashboard._collect_logs(), timeout=0.05)
+
+        asyncio.run(exercise())
+        assert ws.messages
+        assert ws.messages[0]["type"] == "log"
+        assert ws.messages[0]["data"]["node_id"] == "camera"
+        assert ws.messages[0]["data"]["level"] == "WARN"

@@ -193,8 +193,8 @@ def main():
         print("  • Keyboard Controls: Enabled for this run")
         print("    macOS note: grant Accessibility permission if keyboard hooks are blocked")
     print("\nDashboard Controls:")
-    print("  • Global: Start/Pause/Stop/Reset all flows")
-    print("  • Per-Flow: Start/Pause/Stop individual flows")
+    print("  • Global: Resume/Pause/Stop/Reset all flows")
+    print("  • Per-Flow: Resume/Pause/Reset individual flows")
     print("  • Logs: View real-time output from all flows")
     print("\n" + "="*70 + "\n")
 

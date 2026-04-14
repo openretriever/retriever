@@ -2,7 +2,6 @@
 Pipeline control system for Retriever flows.
 
 Provides pause/resume/reset capabilities and external control via:
-- CLI (retriever-ctl)
 - Web dashboard
 - Global keyboard shortcuts
 """
@@ -47,7 +46,7 @@ class ControlConfig:
         enabled: Enable control system (auto-enabled if web_port or keyboard set)
         web_port: Port for web dashboard (None = disabled)
         keyboard: Enable global keyboard shortcuts (desktop-only convenience)
-        cli_port: Port for CLI control (not yet implemented)
+        cli_port: Reserved for future CLI control (not yet implemented)
     """
     enabled: bool = True
     web_port: Optional[int] = None
