@@ -6,6 +6,7 @@ What this demonstrates:
   - naming internal flows for stable selectors
   - extending a declared pipeline via `select_flow(...)` + `replace(...)`
   - treating a registered pipeline as a reusable flow via `build_pipeline_flow(...)`
+  - keeping tiny structural wrappers on `compose(...)` / `select(...)`
 
 Run:
   pixi run demo-composable-pipelines
@@ -14,35 +15,14 @@ Run:
 from __future__ import annotations
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Latest, io
+from retriever.flow import Flow, Pipeline, Rate, Latest, compose, select
 
 
-@io
-class CounterOut:
-    value: int
-    aux: int
-
-
-@io
-class ProcIn:
-    value: int
-    bias: int
-
-
-@io
-class ProcOut:
-    value: int
-
-
-@io
-class BiasOut:
-    bias: int
-
-
-@io
-class DecisionView:
-    value: int
-    aux: int
+CounterOut = compose("CounterOut", value=int, aux=int)
+ProcIn = compose("ProcIn", value=int, bias=int)
+ProcOut = compose("ProcOut", value=int)
+BiasOut = compose("BiasOut", bias=int)
+DecisionView = select(CounterOut, "value", "aux", name="DecisionView")
 
 
 class Counter(Flow[None, CounterOut]):

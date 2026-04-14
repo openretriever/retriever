@@ -19,13 +19,14 @@ from __future__ import annotations
 
 
 import retriever
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, compose
 
 
-@retriever.register_type("CounterValue", category="examples", description="Tiny demo type")
-@io
-class CounterValue:
-    value: int
+CounterValue = retriever.register_type(
+    "CounterValue",
+    category="examples",
+    description="Tiny demo type",
+)(compose("CounterValue", value=int))
 
 
 @retriever.register_flow("counter", category="examples", description="Counts up each tick")
