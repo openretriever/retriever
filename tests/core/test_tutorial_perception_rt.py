@@ -38,8 +38,24 @@ def test_webcam_demo_help_runs() -> None:
 
 
 
-def test_webcam_demo_auto_visualization_defaults_to_stdout() -> None:
+def test_webcam_demo_auto_visualization_prefers_rerun_when_available() -> None:
     mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+    show_window, use_rerun = mod._resolve_visualization(SimpleNamespace(visualize='auto', backend='in-process'))
+    assert show_window is False
+    assert use_rerun is True
+
+
+def test_webcam_demo_auto_visualization_falls_back_to_stdout(monkeypatch) -> None:
+    mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+
+    real_import_module = importlib.import_module
+
+    def fake_import_module(name: str):
+        if name == 'rerun':
+            raise ImportError('rerun unavailable')
+        return real_import_module(name)
+
+    monkeypatch.setattr(importlib, 'import_module', fake_import_module)
     show_window, use_rerun = mod._resolve_visualization(SimpleNamespace(visualize='auto', backend='in-process'))
     assert show_window is False
     assert use_rerun is False

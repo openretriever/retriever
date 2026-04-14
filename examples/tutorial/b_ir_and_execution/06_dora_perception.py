@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
         "--visualize",
         default="auto",
         choices=["auto", "stdout", "window", "rerun", "both"],
-        help="Visualization mode. 'auto' uses stdout everywhere; opt into cv2 or Rerun explicitly.",
+        help="Visualization mode. 'auto' prefers Rerun when installed and falls back to stdout; opt into cv2 explicitly when needed.",
     )
     parser.add_argument(
         "--fresh-dora",
@@ -85,7 +85,14 @@ def parse_args() -> argparse.Namespace:
 def _resolve_visualization(args: argparse.Namespace) -> tuple[bool, bool]:
     mode = args.visualize
     if mode == "auto":
-        mode = "stdout"
+        # Prefer Rerun when it is available so local desktop users see live visualization
+        # out of the box, but fall back to stdout on machines without the SDK installed.
+        try:
+            import importlib
+            importlib.import_module("rerun")
+            mode = "rerun"
+        except ImportError:
+            mode = "stdout"
 
     show_window = mode in {"window", "both"}
     use_rerun = mode in {"rerun", "both"}

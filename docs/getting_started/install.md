@@ -54,7 +54,7 @@ python -m pip install -e ".[mcp]"
 Then run tutorials directly:
 
 ```bash
-python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout
+python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize auto
 ```
 
 ## Dora Notes
