@@ -100,9 +100,9 @@ If you want something visual right away, use the perception tutorial series.
 pixi run demo-webcam-detection
 ```
 
-This runs `camera -> detector -> display` in-process. It tries a live camera first and falls back to a mock pattern when the camera cannot be opened. This is the safest cross-platform quickstart because it avoids worker-process camera issues on macOS and keeps debugging simple.
+This runs `camera -> detector -> display` in-process. The bundled task requests a live camera and uses `--visualize auto`, which prefers Rerun when installed and falls back to stdout otherwise. If you do not have a readable camera on this machine, rerun the module directly with `--camera-mode mock`.
 
-If you specifically want a live Rerun backend demo, use one of these worker-safe mock-camera variants instead:
+If you specifically want a live Rerun backend demo on the worker backends, use one of these:
 
 ```bash
 pixi run demo-webcam-detection-mp-rerun

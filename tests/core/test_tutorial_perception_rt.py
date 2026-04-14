@@ -38,6 +38,14 @@ def test_webcam_demo_help_runs() -> None:
 
 
 
+def test_webcam_demo_parse_args_defaults_to_real_camera(monkeypatch) -> None:
+    mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
+    monkeypatch.setattr(sys, 'argv', ['demo-webcam-detection'])
+    args = mod.parse_args()
+    assert args.camera_mode == 'real'
+    assert args.visualize == 'auto'
+
+
 def test_webcam_demo_auto_visualization_prefers_rerun_when_available() -> None:
     mod = importlib.import_module('examples.tutorial.b_ir_and_execution.06_dora_perception')
     show_window, use_rerun = mod._resolve_visualization(SimpleNamespace(visualize='auto', backend='in-process'))

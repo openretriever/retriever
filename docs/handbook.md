@@ -34,14 +34,14 @@ pixi install
 pixi run demo-webcam-detection
 ```
 
-If you specifically want live worker-backend Rerun, use one of these mock-camera variants:
+If you specifically want live worker-backend Rerun, use one of these:
 
 ```bash
 pixi run demo-webcam-detection-mp-rerun
 pixi run demo-webcam-detection-dora-rerun
 ```
 
-`demo-webcam-record` intentionally records deterministic mock frames by default so the replay artifacts are portable across machines. Use the tutorial module directly with `--camera-mode real` only when you explicitly want to capture a live webcam session.
+`demo-webcam-record` intentionally records deterministic mock frames by default so the replay artifacts are portable across machines. The webcam demo tasks request a live camera; rerun the tutorial module directly with `--camera-mode mock` if you want a synthetic input path instead.
 
 The Dora demo tasks already request a fresh runtime. If `dora` still complains about schema/version while you are running Dora manually, restart Dora, then rerun `pixi run demo-webcam-detection-dora-rerun`.
 
@@ -375,9 +375,10 @@ pixi run demo-webcam-replay-rrd
 pixi run demo-webcam-replay-mcap
 ```
 
-Use `demo-webcam-detection` for a live-camera quickstart. `demo-webcam-record`
-is intentionally deterministic and mock-backed by default so the replay pair is
-portable across machines.
+Use `demo-webcam-detection` for a live-camera quickstart. It requests a live
+camera and uses `--visualize auto`, which prefers Rerun when installed and
+falls back to stdout otherwise. `demo-webcam-record` stays deterministic and
+mock-backed by default so the replay pair is portable across machines.
 
 Modules:
 

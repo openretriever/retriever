@@ -7,10 +7,9 @@ Demonstrates perception pipeline with live or mock camera input:
 - Backend execution (in-process, multiprocessing, or dora)
 
 Historical note: the filename still says `dora_perception`, but the public
-surface is backend-neutral. The default task uses the in-process backend so a
-local webcam path works reliably across desktop platforms. Dora and
-multiprocessing remain explicit mock-camera variants when you want worker
-backends or live Rerun views.
+surface is backend-neutral. The default task uses the in-process backend for a
+direct local webcam path. Dora and multiprocessing remain explicit worker
+backend variants when you want backend parity checks or live Rerun views.
 
 Run:
   pixi run demo-webcam-detection
@@ -56,9 +55,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--camera-index", type=int, default=0, help="Camera index to open (default: 0).")
     parser.add_argument(
         "--camera-mode",
-        default="auto",
+        default="real",
         choices=["auto", "real", "mock"],
-        help="Use 'auto' (default) to try a live camera and fall back to synthetic frames. Use 'real' to require a live camera or 'mock' for synthetic frames.",
+        help="Use 'real' (default) to require a live camera. Use 'auto' to try a live camera and fall back to synthetic frames, or 'mock' for synthetic frames.",
     )
     parser.add_argument(
         "--visualize",
@@ -163,8 +162,8 @@ def main() -> None:
         )
     else:
         print(
-            "Tip: This backend demo is using mock frames by default. "
-            "Use --backend in-process or demo-webcam-stepper for a real camera path."
+            "Tip: This run is using mock frames. "
+            "Use --camera-mode real to require a live webcam path."
         )
     print("-" * 60)
     pipe.run(
@@ -183,7 +182,7 @@ def main() -> None:
         print(f"  • Tries cv2.VideoCapture({args.camera_index}) for real camera")
         print("  • Raises clearly if no camera is available")
     else:
-        print("  • Uses mock test pattern by default in worker backends")
+        print("  • Uses mock test pattern when mock mode is selected or auto fallback triggers")
     print("\nDetection:")
     print("  • Red objects: RGB(255, <100, <100)")
     print("  • Blue objects: RGB(<100, <100, 255)")
