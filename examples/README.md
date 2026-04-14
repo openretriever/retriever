@@ -12,10 +12,10 @@ Start here:
 If you want the shortest path:
 
 ```bash
-pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
-pixi run python -m examples.tutorial.a_flow_fundamentals.03_adapter_connection
-pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
-pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
+pixi run demo-basic-flow
+pixi run demo-adapter-connection
+pixi run demo-rt-execution
+pixi run demo-stepper
 ```
 
 Then try the control surface separately:

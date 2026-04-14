@@ -16,12 +16,12 @@ Use the minimal path to learn the core runtime loop. Use Track G later for opera
 Run these in order:
 
 ```bash
-pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
-pixi run python -m examples.tutorial.a_flow_fundamentals.03_adapter_connection
-pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
-pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
-pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10
-pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
+pixi run demo-basic-flow
+pixi run demo-adapter-connection
+pixi run demo-rt-execution
+pixi run demo-stepper
+pixi run demo-webcam-record
+pixi run demo-spatial-boundaries
 ```
 
 What this path covers:

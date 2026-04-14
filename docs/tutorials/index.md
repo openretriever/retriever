@@ -14,11 +14,11 @@ Start here if you are new to Retriever.
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
+pixi run demo-basic-flow
 ```
 
 Then:
-- `examples.tutorial.a_flow_fundamentals.03_adapter_connection`
+- `demo-adapter-connection`
 - `examples.tutorial.a_flow_fundamentals.05_pipeline_ergonomics`
 
 Track page:
@@ -29,7 +29,7 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
+pixi run demo-rt-execution
 ```
 
 Then:
@@ -44,11 +44,11 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.c_debug_and_replay.01_debug_stepper
+pixi run demo-stepper
 ```
 
 Then:
-- `examples.tutorial.c_debug_and_replay.04_record_replay_perception`
+- `demo-webcam-record`
 - `examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill`
 
 Track page:
@@ -89,11 +89,11 @@ Track page:
 Run this first:
 
 ```bash
-pixi run python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries
+pixi run demo-spatial-boundaries
 ```
 
 Then:
-- `examples.tutorial.g_operations_interfaces.07_language_grounding_composition`
+- `demo-language-grounding`
 - `examples.tutorial.g_operations_interfaces.06_composable_pipelines`
 - `examples.tutorial.g_operations_interfaces.01_registry_basics`
 

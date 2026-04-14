@@ -140,6 +140,9 @@ test-control = "python -m pytest tests/test_control.py tests/test_control_web.py
 demo-control = { cmd = "python examples/control_demo.py", env = { PYTHONPATH = ".", RUST_LOG = "error" } }
 
 # Tutorial Examples
+demo-basic-flow = "python -m examples.tutorial.a_flow_fundamentals.01_basic_flow"
+demo-adapter-connection = "python -m examples.tutorial.a_flow_fundamentals.03_adapter_connection"
+demo-rt-execution = "python -m examples.tutorial.b_ir_and_execution.04_rt_execution"
 demo-webcam-detection = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode auto --visualize stdout --duration 10"
 demo-webcam-detection-dora = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend dora --fresh-dora --camera-mode mock --visualize stdout --duration 10"
 demo-webcam-detection-mp-rerun = "python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend multiprocessing --camera-mode mock --visualize rerun --duration 30"
@@ -165,6 +168,8 @@ demo-trace-contract = "python -m examples.tutorial.c_debug_and_replay.06_trace_c
 demo-manifest-lineage = "python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo"
 demo-policy-backends = "python -m examples.tutorial.f_policy_backends.01_closed_loop_policy_backend_abstraction"
 demo-authority-fsm = "python -m examples.tutorial.d_closed_loop_state_feedback.03_operator_mode_and_authority_fsm"
+demo-spatial-boundaries = "python -m examples.tutorial.g_operations_interfaces.05_spatial_type_boundaries"
+demo-language-grounding = "python -m examples.tutorial.g_operations_interfaces.07_language_grounding_composition"
 demo-composable-pipelines = "python -m examples.tutorial.g_operations_interfaces.06_composable_pipelines"
 demo-release-readiness = "python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough"
 demo-incident-replay = "python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill"
