@@ -378,13 +378,11 @@ def build_tutorial_perception_pipeline(
     *,
     use_real_camera: bool = True,
     show_window: bool = False,
-    stream_rerun: bool = False,
     min_confidence: float = 0.6,
     camera_width: int = 640,
     camera_height: int = 480,
     camera_index: int = 0,
 ) -> Pipeline:
-    del stream_rerun  # Reserved for future runtime-level visualization toggles.
     pipe = Pipeline("tutorial.perception")
     with pipe:
         camera = CameraSource(
@@ -409,7 +407,6 @@ def _register_tutorial_perception_pipeline(
     *,
     use_real_camera: bool = True,
     show_window: bool = False,
-    stream_rerun: bool = False,
     min_confidence: float = 0.6,
     camera_width: int = 640,
     camera_height: int = 480,
@@ -418,7 +415,6 @@ def _register_tutorial_perception_pipeline(
     return build_tutorial_perception_pipeline(
         use_real_camera=use_real_camera,
         show_window=show_window,
-        stream_rerun=stream_rerun,
         min_confidence=min_confidence,
         camera_width=camera_width,
         camera_height=camera_height,
