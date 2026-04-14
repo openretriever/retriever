@@ -21,8 +21,8 @@ If you want one longer narrative first:
 ## Modules
 
 ```bash
-pixi run python -m examples.tutorial.h_release_readiness.01_run_manifest_and_lineage demo
-pixi run python -m examples.tutorial.h_release_readiness.02_release_readiness_walkthrough
+pixi run demo-manifest-lineage
+pixi run demo-release-readiness
 pixi run python -m examples.tutorial.h_release_readiness.03_dataset_manifest_and_lerobot_mapping
 ```
 

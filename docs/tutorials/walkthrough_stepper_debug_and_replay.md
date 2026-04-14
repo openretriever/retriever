@@ -9,7 +9,7 @@ This is the shortest operational path for debugging in Retriever.
 ## Why this workflow exists
 
 - `step()` gives you debugger-friendly, in-process execution.
-- `record` captures one real session.
+- `record` captures one deterministic session by default.
 - `replay` lets you rerun that session without hardware variance.
 - incident and session inspection drills confirm your diagnosis is repeatable.
 
@@ -76,4 +76,4 @@ for notebook analysis or CI artifact review.
 
 - Use `step()` when logic correctness is still the main question.
 - Use `run(backend=...)` when validating multiprocessing or Dora behavior.
-- Use `record/replay` whenever the bug is timing-sensitive or hardware-tied.
+- Use `record/replay` whenever the bug is timing-sensitive or hardware-tied. Start with the deterministic mock path, then opt into live hardware only when that is part of the bug.

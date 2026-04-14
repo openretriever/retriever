@@ -37,7 +37,6 @@ See also:
 - `docs/tutorials/index.md`
 - `docs/handbook.md`
 
-## Legacy Examples
+## Older Surfaces
 
-`examples/legacy/` is kept as an archive/reference surface.
-It is not the recommended starting point for public runtime users.
+Some later tracks and specialized examples are intentionally more operational or domain-specific. Use the tutorial tracks and focused guides first, then return to those later surfaces once the runtime model is already clear.

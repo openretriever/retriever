@@ -107,6 +107,6 @@ Artifacts:
 - `NO-GO`: any parity/incident/acceptance gate check fails.
 
 ## Fast Triage If It Fails
-- fails at Step 2: fix backend runtime/parity contract first
-- fails at Step 3: fix replay determinism or diagnosis logic
-- fails at Step 4: fix missing evidence/docs linkage and re-run
+- fails at Step 1: fix backend runtime/parity contract first
+- fails at Step 2: fix replay determinism or diagnosis logic
+- fails at Step 3: fix missing evidence/docs linkage and re-run
