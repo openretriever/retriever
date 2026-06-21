@@ -10,10 +10,10 @@ These docs are organized around adoption first: run a small graph, understand Fl
 
 ## Start Here
 
-- `docs/quickstart.md` — 5-minute runtime mental model and first runnable graph.
-- `docs/handbook.md` — canonical install, authoring, running, debugging, recording, and typing guide.
-- `docs/tutorials/index.md` — runnable tutorial tracks using `pixi` tasks.
-- `docs/website_story.md` — polished public narrative blocks for the Retriever website and blog.
+- [docs/quickstart.md](quickstart.md) — 5-minute runtime mental model and first runnable graph.
+- [docs/handbook.md](handbook.md) — canonical install, authoring, running, debugging, recording, and typing guide.
+- [docs/tutorials/index.md](tutorials/index.md) — runnable tutorial tracks using `pixi` tasks.
+- [docs/website_story.md](website_story.md) — polished public narrative blocks for the Retriever website and blog.
 
 If you only read one operational page, read `docs/handbook.md`.
 

@@ -33,9 +33,9 @@ pixi run python -m pytest tests -q
 pixi shell
 ```
 
-## Alternative: venv + pip/uv
+## Alternative: source checkout with venv + pip/uv
 
-If you prefer a plain Python environment:
+Use this when you cloned the repository and want to run local examples from the checkout. The published wheel installs the `retriever` package; tutorial modules under `examples/` are source-checkout material unless you use a separate example bundle.
 
 ```bash
 python -m venv .venv
@@ -54,7 +54,7 @@ python -m pip install -e ".[demo,recording,dora]"
 python -m pip install -e ".[mcp]"
 ```
 
-Then run tutorials directly:
+From a source checkout, run tutorials directly:
 
 ```bash
 python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
@@ -71,6 +71,6 @@ pixi run demo-webcam-detection-dora-rerun
 
 ## Where To Go Next
 
-- Tutorial index: `docs/tutorials/index.md`
-- Runtime handbook: `docs/handbook.md`
-- Debugging guide: `docs/guides/debugging.md`
+- Tutorial index: [docs/tutorials/index.md](../tutorials/index.md)
+- Runtime handbook: [docs/handbook.md](../handbook.md)
+- Debugging guide: [docs/guides/debugging.md](../guides/debugging.md)

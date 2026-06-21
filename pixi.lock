@@ -12792,7 +12792,7 @@ packages:
 - pypi: ./
   name: retriever
   version: 0.1.0
-  sha256: f8dd90d5fadc38203037b71219397bc8d017195363fe9400f869cafd1eeb118e
+  sha256: f52b95c3ddba27ed9d81abca07cc3c93e48c891d0b728b585d1eb1417bffa060
   requires_dist:
   - packaging>=23
   - numpy ; extra == 'demo'

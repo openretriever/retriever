@@ -95,11 +95,11 @@ pixi run demo-webcam-detection
 
 Start here:
 
-- `docs/quickstart.md` — the shortest runnable introduction.
-- `docs/handbook.md` — the canonical runtime handbook.
-- `docs/architecture.md` — runtime layers, IR, clocks, and backends.
-- `docs/tutorials/index.md` — runnable tutorial tracks.
-- `docs/website_story.md` — website/blog-ready project narrative and copy blocks.
+- [docs/quickstart.md](docs/quickstart.md) — the shortest runnable introduction.
+- [docs/handbook.md](docs/handbook.md) — the canonical runtime handbook.
+- [docs/architecture.md](docs/architecture.md) — runtime layers, IR, clocks, and backends.
+- [docs/tutorials/index.md](docs/tutorials/index.md) — runnable tutorial tracks.
+- [docs/website_story.md](docs/website_story.md) — website/blog-ready project narrative and copy blocks.
 
 Reference docs:
 

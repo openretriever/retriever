@@ -107,8 +107,9 @@ pixi run python -m pytest
 Public docs are authored as markdown under `docs/` with tutorial track pages in `docs/tutorials/`.
 
 Current repo note:
-- A checked-in `mkdocs.yml` is not present right now.
-- Use repo markdown files directly as the source of truth.
+- `mkdocs.yml` defines the hostable public documentation site.
+- Use `pixi run -e docs docs-build` for a strict local build.
+- Keep the curated site nav focused; extra reference pages may remain in `docs/` without being exposed in the top-level site navigation.
 
 ### Environment Variables
 

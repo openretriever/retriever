@@ -75,6 +75,5 @@ nav:
       - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
       - Hub: hub.md
-      - Website Story: website_story.md
       - Contributing: contributing.md
   - API: API.md

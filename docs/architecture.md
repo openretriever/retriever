@@ -19,9 +19,9 @@ Use this page plus `docs/guide_execution.md` for the supported architecture surf
 
 Code lives in `retriever/flow/`:
 
-- `Flow[I, O]`: user-defined node logic (`reset()`, `run()`, `finalize()`)
+- `Flow[I, O]`: user-defined node logic centered on `step(...)`, with optional `reset()` and `finalize()` lifecycle hooks; `run()` remains a compatibility alias
 - `@io` classes: typed ports (each field is a port)
-- `Pipeline`: explicit graph builder (no context manager)
+- `Pipeline`: explicit graph builder; use `pipe.connect(...)` directly or `with pipe:` for scoped `then(...)` / `>>` wiring
 - `PipelineBuilder`: lower-level validator/builder used by the registry and tooling
 - `TemporalFlow`: result of `flow @ clock`, used to connect nodes (`then`, `>>`)
 - Clocks: `Rate`, `Tick`, `Trigger`, `Hybrid`
