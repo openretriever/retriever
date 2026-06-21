@@ -9535,8 +9535,8 @@ packages:
   requires_python: '>=3.10'
 - pypi: ./
   name: retriever
-  version: 0.0.0
-  sha256: 36e3d048a4a4728240d33c20d70d5e44463421ee6866f60ebc927291306a6bd4
+  version: 0.1.0
+  sha256: fcde349b7f718f23dc3cb709234d5e7bb830705f6e18ce798b880b2a53b05aeb
   requires_dist:
   - packaging>=23
   - numpy ; extra == 'demo'

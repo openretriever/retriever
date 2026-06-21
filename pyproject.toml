@@ -14,7 +14,7 @@ include = ["/src", "/README.md", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/pyproj
 
 [project]
 name = "retriever"
-version = "0.0.0"
+version = "0.1.0"
 description = "A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily."
 readme = "README.md"
 requires-python = ">=3.11"
