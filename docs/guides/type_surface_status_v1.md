@@ -12,7 +12,7 @@ Summarize the current canonical type surfaces and:
 - `retriever.types.language`
 - `retriever.types.data`
 - `retriever.types.symbolic`
-- the flow typing contract carry-back that these packages rely on
+- the flow typing contract that these packages rely on
 
 This page is status-oriented. For day-to-day usage, read:
 - `docs/guides/spatial_types_v1.md`
@@ -25,7 +25,7 @@ This page is status-oriented. For day-to-day usage, read:
 
 ## Current State
 
-The mirror carry-back now targets the modern tutorial/runtime branch line and includes:
+The current public type surface includes:
 
 1. flow typing contract support for tuple-literal and tuple-output signatures,
 2. canonical `retriever.types.spatial` package,

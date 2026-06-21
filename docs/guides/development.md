@@ -17,7 +17,7 @@ title: "Retriever Runtime Developer Guide"
 3. [Architecture Overview](#architecture-overview)
 4. [Development Workflow](#development-workflow)
 5. [Core Framework Components](#core-framework-components)
-6. [Testing & Quality Assurance](#testing--quality-assurance)
+6. [Testing & Quality Assurance](#testing-quality-assurance)
 7. [Contributing Guidelines](#contributing-guidelines)
 8. [Advanced Development](#advanced-development)
 9. [Troubleshooting](#troubleshooting)

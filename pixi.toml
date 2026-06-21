@@ -60,6 +60,11 @@ optax = "*"
 # =============================================================================
 # Optional Feature: Pipeline Control System
 # =============================================================================
+[feature.docs.pypi-dependencies]
+mkdocs = ">=1.6"
+mkdocs-material = ">=9.5"
+pymdown-extensions = ">=10"
+
 [feature.control.pypi-dependencies]
 pynput = "*"       # Global keyboard control
 fastapi = ">=0.100.0"      # Web dashboard (need modern version)
@@ -78,6 +83,7 @@ bindings = { features = ["rust", "cpp"] }
 jax = { features = ["jax"] }
 torch = { features = ["torch"] }
 control = { features = ["control"] }  # Pipeline control with web dashboard + optional keyboard
+docs = { features = ["docs"] }
 
 
 # =============================================================================
@@ -131,6 +137,11 @@ build = "python -m build"
 # Create distribution bundle (Wheel + Examples + Config)
 # Run: pixi run package
 package = "python scripts/package_dist.py"
+
+# Documentation site
+# Run: pixi run -e docs docs-build
+docs-build = "mkdocs build --strict"
+docs-serve = "mkdocs serve --dev-addr 127.0.0.1:8000"
 
 # Test tasks
 test = "python -m pytest tests/ -v"

@@ -161,9 +161,9 @@ That keeps the boundary clean:
 
 ## Merge Guidance
 
-For the current Retriever branch strategy:
+For current Retriever development:
 
-- merge runtime, perception, recording, and replay improvements separately
+- keep runtime, perception, recording, and replay improvements reviewable separately
 - keep `retriever.types.data` focused on collection/replay/export contracts
 - avoid forcing data/export concerns into the execution core
 

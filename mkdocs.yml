@@ -1,0 +1,80 @@
+site_name: Retriever
+site_description: Closed-loop robot agents with explicit time.
+site_url: https://openretriever.github.io/retriever/
+repo_url: https://github.com/openretriever/retriever
+repo_name: openretriever/retriever
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: teal
+      accent: amber
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+
+extra_css:
+  - stylesheets/extra.css
+
+exclude_docs:
+  README.md
+
+validation:
+  omitted_files: ignore
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Handbook: handbook.md
+  - Install: getting_started/install.md
+  - Concepts:
+      - Flow: guide_flow.md
+      - Runtime: guide_runtime.md
+      - Execution: guide_execution.md
+      - Temporal Model: guide_temporal.md
+      - Architecture: architecture.md
+  - Tutorials:
+      - Index: tutorials/index.md
+      - Flow Fundamentals: tutorials/track_a_flow_fundamentals.md
+      - IR and Execution: tutorials/track_b_ir_and_execution.md
+      - Debug and Replay: tutorials/track_c_debug_and_replay.md
+      - Closed Loop State: tutorials/track_d_closed_loop_state_feedback.md
+      - Resource and Sync: tutorials/track_e_resource_and_sync.md
+      - Policy Backends: tutorials/track_f_policy_backends.md
+      - Operations Interfaces: tutorials/track_g_operations_interfaces.md
+      - Release Readiness: tutorials/track_h_release_readiness.md
+  - Type Guides:
+      - Flow Typing: guides/flow_typing_standard.md
+      - Data and Event Streams: guides/data_eventstream_v1.md
+      - Spatial Types: guides/spatial_types_v1.md
+      - Perception Types: guides/perception_types_v1.md
+      - Language Types: guides/language_types_v1.md
+      - Symbolic Types: guides/symbolic_types_v1.md
+      - Type Composition: guides/type_composition_v1.md
+  - Ecosystem:
+      - Hub: hub.md
+      - Website Story: website_story.md
+      - Contributing: contributing.md
+  - API: API.md
