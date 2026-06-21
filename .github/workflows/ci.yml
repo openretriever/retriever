@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - release/mirror-alignment-20260621
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          pixi-version: v0.70.1
+          cache: true
+      - name: Core tests
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests/core -q
+      - name: Release readiness smoke
+        run: pixi run p0-release-readiness
+      - name: Docs build
+        run: pixi run -e docs docs-build
+      - name: Package build
+        run: pixi run build
