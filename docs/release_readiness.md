@@ -20,21 +20,23 @@ The public repository should preserve useful Retriever history with public autho
 
 ## Verified Provenance Snapshot
 
-As of 2026-06-21, the prepared public core repository had this verified provenance baseline. Later docs-only release notes may advance `HEAD` without changing the tree-policy conclusions below:
+As of 2026-06-21, the prepared public core repository uses a filtered public history with the current runtime tree and release metadata layered on top:
 
-- provenance baseline: `d8b16666b8229f9f51f10f00ca5cb5f174cc1ec9`, pushed to `openretriever/main` and `openretriever/release/mirror-alignment-20260621` at verification time,
-- preserved release history length at that baseline: 728 commits,
+- current rewritten baseline: `18b99e1`, before this provenance note refresh,
+- preserved release history length at that baseline: 734 commits,
 - first preserved commit: `f018771` from 2023-10-20, `initial commit: add readme and ignore`,
-- public author identities currently present: `Linfeng Zhao <zlf0625@gmail.com>`, `Haoyan Lin <haoyan.lin@sopia.edu>`, and `Toby <tobyxdd@gmail.com>`,
+- public author identities currently present on the release branch: `Linfeng Zhao <zlf0625@gmail.com>`, `Haoyan Lin <hylte.ai@gmail.com>`, and `Toby <tobyxdd@gmail.com>`,
 - development mirror reference: commit `ac4948ad03533cf9b6ffc71f8ca38a15f88f04b2` on `merge/feature-aggregate-v1`,
 - legacy history source: the original Retriever checkout, used read-only because its working tree contained local edits and deleted vendored assets during release preparation.
+
+The release history was rewritten once more on 2026-06-21 to replace Haoyan Lin's public author and committer email with `hylte.ai@gmail.com`. The local backup branch `backup/pre-hylte-email-rewrite-20260621` was kept only as a private safety reference and must not be pushed to the public remote.
 
 A bounded tracked-tree comparison against the mirror, excluding `pixi.lock`, `docs/reports/`, and `docs/temp_notes/`, showed:
 
 - 369 tracked release files versus 1236 tracked mirror files,
 - release-only files are public metadata/docs such as `.github/`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`, `docs/release_readiness.md`, `docs/website_story.md`, and `mkdocs.yml`,
 - mirror-only files are primarily excluded public-release bulk: `data/`, `external/`, the old website tree, generated distribution artifacts, and companion Golden/tutorial files,
-- common content differences are docs/metadata plus the five source files listed in [Current Intentional Release Differences](#current-intentional-release-differences).
+- common content differences are docs/metadata plus the runtime source files and release metadata listed in [Current Intentional Release Differences](#current-intentional-release-differences).
 
 ## Public Metadata
 
@@ -97,5 +99,6 @@ The public candidate should track the current core runtime tree closely. Any sou
 Other release-only differences should stay in metadata and docs rather than changing runtime behavior:
 
 - public URLs point at `openretriever`,
+- the PyPI distribution name is `pyretriever` while the import package remains `retriever`,
 - docs avoid private project history and local paths,
 - release docs include public website/packaging guidance.

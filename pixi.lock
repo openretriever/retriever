@@ -9443,7 +9443,7 @@ packages:
   size: 388453
   timestamp: 1764777142545
 - pypi: .
-  name: openretriever
+  name: pyretriever
   requires_dist:
   - packaging>=23
   - numpy ; extra == 'demo'

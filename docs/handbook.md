@@ -55,7 +55,7 @@ The Dora demo tasks already request a fresh runtime. If `dora` still complains a
 
 Pixi vs uv (how they fit together):
 
-- **Pixi** manages a full environment from `pixi.toml` and installs the PyPI portion via `uv` internally. The planned public distribution name is `openretriever`, while the import package remains `retriever`.
+- **Pixi** manages a full environment from `pixi.toml` and installs the PyPI portion via `uv` internally. The planned public distribution name is `pyretriever`, while the import package remains `retriever`.
 - If you prefer **uv-only** workflows, use a separate venv/conda env and `uv pip install -e ".[demo,dora]"`.
 - Avoid mixing `uv sync` into a Pixi env unless you also update `pixi.toml`/`pixi.lock`.
 
