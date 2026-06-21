@@ -6,9 +6,9 @@
 # pyproject.toml - NOT a replacement for it.
 #
 # RELATIONSHIP WITH pyproject.toml:
-#   - pyproject.toml: Defines the Python package (retriever) and its dependencies
+#   - pyproject.toml: Defines the Python distribution (`openretriever`) and its dependencies
 #   - pixi.toml: Defines the development environment (conda + pypi packages)
-#   - Pixi installs retriever from pyproject.toml as an editable package
+#   - Pixi installs the local `openretriever` distribution from pyproject.toml as an editable package
 #   - Both files may specify overlapping deps (e.g., dora-rs) - this is fine,
 #     the more restrictive version wins
 #
@@ -92,13 +92,13 @@ docs = { features = ["docs"] }
 # Note: These are installed via uv after conda deps are resolved
 [pypi-dependencies]
 
-# Install retriever package from local pyproject.toml.
+# Install the local openretriever distribution from pyproject.toml.
 # Keep the default environment lightweight, but include:
 # - `dora`: dora backend support
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
 # - `web`: deps for web-based command interfaces (FastAPI)
 # - `vision`: deps for real-time vision (PyTorch, Transformers)
-retriever = { path = ".", editable = true, extras = [
+openretriever = { path = ".", editable = true, extras = [
     "dora",
     "demo",
     "web",

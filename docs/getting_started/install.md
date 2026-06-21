@@ -33,9 +33,20 @@ pixi run python -m pytest tests -q
 pixi shell
 ```
 
+## PyPI Distribution
+
+After the public package is published, install the runtime distribution with:
+
+```bash
+python -m pip install openretriever
+python -c "import retriever; print(retriever.__file__)"
+```
+
+Until then, use Pixi or a source checkout.
+
 ## Alternative: source checkout with venv + pip/uv
 
-Use this when you cloned the repository and want to run local examples from the checkout. The published wheel installs the `retriever` package; tutorial modules under `examples/` are source-checkout material unless you use a separate example bundle.
+Use this when you cloned the repository and want to run local examples from the checkout. The planned PyPI distribution name is `openretriever`, and it installs the import package `retriever`; tutorial modules under `examples/` are source-checkout material unless you use a separate example bundle.
 
 ```bash
 python -m venv .venv

@@ -28,14 +28,16 @@ Before making the repository public:
 
 Before publishing to PyPI:
 
-- Confirm `pyproject.toml` metadata, version, license, URLs, and optional extras.
+The PyPI project name `retriever` is already used by another project. Publish this runtime as distribution name `openretriever`; the Python import remains `import retriever`.
+
+- Confirm `pyproject.toml` metadata, version, license, URLs, optional extras, and distribution name `openretriever`.
 - Build locally with `pixi run build`.
 - Inspect the wheel/sdist contents for generated or private files.
-- Prefer PyPI trusted publishing from GitHub Actions once the public release workflow is added.
+- Configure PyPI/TestPyPI trusted publishers for `.github/workflows/publish.yml` environments `pypi` and `testpypi`, then publish manually with the workflow dispatch target.
 
 ## Companion Repositories
 
 - Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://github.com/linfeng-z/retriever-project-website-astro`
 
-Golden currently depends on the temporary `debug-retriever` package. After the real `retriever` package is published, update Golden to depend on the public runtime package.
+Golden currently depends on the temporary `debug-retriever` package. After the real `openretriever` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`.

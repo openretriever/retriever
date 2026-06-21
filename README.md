@@ -72,6 +72,8 @@ Use Python 3.11 or newer.
 pip install -e .
 ```
 
+When installed from PyPI, the distribution name is expected to be `openretriever` while the Python package import remains `retriever`.
+
 For the maintained development and demo environment, use Pixi:
 
 ```bash
