@@ -1,138 +1,87 @@
 ---
-title: "🐕 Retriever Framework"
+title: "Retriever Framework"
 slug: "intro"
 ---
 
-# 🐕 Retriever Framework
+# Retriever Framework
 
-**Building Modular Robot Agents with Causal Functional Composition**
+Retriever is a programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.
 
-<div align="center">
-  <strong>Retriever</strong>
-</div>
+It is designed for robot applications that do not fit cleanly into one global loop: sensors stream, policies run at different rates, planners block, operators intervene, controllers need fresh state, and logs must be replayable. Retriever makes those temporal boundaries explicit while keeping the programming model close to ordinary Python classes.
 
-Retriever is the runtime/core package for typed robotics dataflow pipelines, with pluggable execution backends.
-Robot integrations, simulator stacks, and heavier model packages belong in companion repositories or external packages.
-
-## Quick Start
+## The Short Version
 
 ```python
-from retriever.flow import Flow, Pipeline, Rate, Latest, io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io
-class SrcOut:
+class Number:
     value: int
 
 
 @io
-class AddOut:
+class Doubled:
     value: int
 
 
-class Source(Flow[None, SrcOut]):
+class Source(Flow[None, Number]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.count = 0
+
     def step(self, _):  # type: ignore[override]
-        return SrcOut(value=1)
+        self.count += 1
+        return Number(value=self.count)
 
 
-class AddOne(Flow[SrcOut, AddOut]):
-    def step(self, input: SrcOut) -> AddOut:
-        return AddOut(value=input.value + 1)
+class Double(Flow[Number, Doubled]):
+    def step(self, input: Number) -> Doubled:
+        return Doubled(value=input.value * 2)
 
 
 pipe = Pipeline("quickstart")
-src = Source() @ Rate(hz=10)
-add = AddOne() @ Rate(hz=10)
-pipe.connect(src, add, sync=Latest())
+source = Source() @ Rate(hz=2)
+double = Double() @ Trigger("value")
+pipe.connect(source, double, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-This snippet keeps `@io` wrappers tiny because it is teaching the runtime shape. Later guides prefer canonical shared primitives and composite `Flow[...]` signatures when a reusable payload already exists.
+Read this as: each Flow has local state, each Flow declares when it runs, and each edge declares how upstream events are sampled before the downstream `step(...)` call.
 
-### Debugging
+## What To Learn First
 
-```python
-# Non-blocking full run
-engine = pipe.run(backend="multiprocessing", blocking=False)
-engine.stop()
+1. Run `pixi run demo-basic-flow`.
+2. Read `docs/quickstart.md`.
+3. Read `docs/handbook.md` for the full runtime path.
+4. Use `Pipeline.step(...)` before debugging backend execution.
+5. Move to `docs/tutorials/index.md` when you want specific runnable lanes.
 
-# Single-step in-process execution
-pipe.step(dt=0.1)
-pipe.close_stepper()
-```
+## Runtime Model
 
-## 📚 Documentation
+- `@io`: typed message envelopes.
+- `Flow[I, O]`: stateful module logic.
+- `Rate`, `Trigger`, `Tick`, `Hybrid`: local clocks for each Flow.
+- `Latest` and other sync policies: deterministic edge sampling.
+- `Pipeline`: graph authoring and validation.
+- `IR`: backend-agnostic representation.
+- `Pipeline.run(...)`: backend execution.
+- `Pipeline.step(...)`: in-process debugging and replay.
 
-### Getting Started
-- **[Quickstart](quickstart.md)** - The shortest path to `@io`, `Flow`, clocks, `connect`, `run`, and `step`
-- **[Install](getting_started/install.md)** - Pixi / uv setup and troubleshooting
-- **[Tutorial Tracks](tutorials/index.md)** - Runnable tutorial curriculum (Tracks A-H)
-- **[Runtime Guide (Canonical)](guide_runtime.md)** - Pipeline → IR → execute_ir, event/time model
-    - See also: **[Execution Build](guide_execution.md)** (IR optimization details)
-- **[Debugging](guides/debugging.md)** - `Pipeline.step(...)` (in-process) vs `Pipeline.run(...)` (backend)
-- **[Flow Typing Contract](guides/flow_typing_standard.md)** - tuple signatures, collision semantics, lifecycle ordering
-- **[Spatial Types v1](guides/spatial_types_v1.md)** - stamped robotics boundary payloads and registry lookup
-- **[Perception Types v1](guides/perception_types_v1.md)** - canonical images, encoded video artifacts, point clouds, detections, and masks
-- **[Language Types v1](guides/language_types_v1.md)** - primitive captions, grounded phrases, prompts, and plan text
-- **[Symbolic Types v1](guides/symbolic_types_v1.md)** - compact object-centric planning, options, and skill signatures
-- **[Type Composition v1](guides/type_composition_v1.md)** - shared primitive payloads first, composite `Flow[...]` second
-- **[Data and EventStream v1](guides/data_eventstream_v1.md)** - canonical event/data contracts plus explicit helper modules
-- **[Flow Guide](guide_flow.md)** - Authoring flows, clocks, adapters, and pipelines
-    - See also: **[Temporal Model](guide_temporal.md)** (Clocks & Adapters deep dive)
-- **[Development Guide](guides/development.md)** - Dev workflow and architecture
+## Why This Matters
 
-### Reference
-- **[Architecture](architecture.md)** - Design philosophy and system overview
-- **[API](API.md)** - API reference
+A robot stack becomes hard to maintain when timing is hidden inside callbacks, queues, sleeps, and ad hoc threads. Retriever puts timing and data handoff in the graph itself, so the same system can be inspected, replayed, and moved across execution backends.
 
-## 🚀 Key Features
+That is the core adoption story: normal Python authoring, explicit temporal semantics, and an ecosystem path for reusable robot components.
 
-### ✅ Alpha, Runtime-First
-- **Type-Safe Composition**: Catch errors at development time, not runtime
-- **Multi-Backend Execution**: Local multiprocessing + dora-rs backend
-- **Registry + Plugins**: Entry-point based pipeline discovery (`retriever.plugins`)
-- **Debugging Surface**: `Pipeline.step(...)` for VS Code breakpoints inside `Flow.step(...)`
-- **Record/Replay**: Stepper-first “rosbag-like” debug workflow
+## Documentation Map
 
-### 🎯 Framework Benefits
-- **"PyTorch for Robotics"**: Simple, composable abstractions
-- **Execution Flexibility**: One authoring model across stepper, multiprocessing, and dora-rs execution
-- **Component Reusability**: Share and discover robotics components
-- **Runtime Path**: Clear progression from prototype to backend execution and replay/debug workflows
-
-## 🏗️ Architecture Overview
-
-### Canonical Runtime Workflow
-```python
-# Author pipelines
-pipe = Pipeline("my_pipeline")
-...
-
-# Run on a backend (validates IR internally)
-pipe.run(backend="multiprocessing")
-```
-
-### Multi-Backend Execution
-- **Development**: In-process stepping (`Pipeline.step`) for debugging
-- **Local execution**: Python multiprocessing backend
-- **Backend execution**: dora-rs backend (multi-process, coordinator + message passing)
-
-### Registry System
-```python
-# IR-first pipeline registry
-from retriever.registry.pipeline import register_pipeline, build_ir
-from retriever.flow import Pipeline
-
-@register_pipeline("my_pipeline", overwrite=True)
-def build():
-    pipe = Pipeline("my_pipeline")
-    ...
-    return pipe
-
-ir = build_ir("my_pipeline")
-```
-
----
-
-**Ready to start?** → [Quickstart](quickstart.md) | **Tutorials** → [Tutorial Tracks](tutorials/index.md)
+- [Quickstart](quickstart.md)
+- [Runtime Handbook](handbook.md)
+- [Architecture](architecture.md)
+- [Tutorial Tracks](tutorials/index.md)
+- [Flow Guide](guide_flow.md)
+- [Runtime Guide](guide_runtime.md)
+- [Hub](hub.md)
+- [Website Story](website_story.md)

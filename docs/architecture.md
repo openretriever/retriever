@@ -91,20 +91,17 @@ EventStream whose `events()` returns the current `TimedBuffer`.
 - `EventStream.sample(adapter, now=...)` applies an Adapter to the current TimedBuffer.
 - A `Behavior[T]` is a “continuous-time” sampler derived from an EventStream + Adapter.
 
-These live in `retriever/rt/frp.py`.
-High-level user combinators (switch, until_event) live in `retriever/flow/frp.py`.
+The concrete definitions live in `retriever.flow.types`. `retriever.rt` re-exports `Behavior` and `EventStream` for runtime-facing imports. Higher-level stream operations such as `map`, `filter`, `merge`, `fold`, `snapshot`, `combine_latest`, `flat_map`, `Behavior.select(...)`, and `Behavior.until(...)` are methods on those classes rather than a separate `retriever.flow.frp` module.
 
-### 2.3 `Signal` (internal step helper)
+### 2.3 Step execution helper
 
-`retriever/rt/signal.py` defines `Signal`, which is **not** an EventStream.
+Runtime step execution is implemented in `retriever.rt.step` and `retriever.rt.stepper`. For each executed Flow, the runtime:
 
-It is the executor’s per-step helper:
+- samples per-port `TimedBuffer` histories with the configured Adapter at time `now`
+- calls `flow.step(...)`
+- publishes output values with the step timestamp
 
-- sample (read per-port TimedBuffers and apply Adapters at time `now`)
-- transform (call `flow.step(...)`)
-- publish (emit output values with the step timestamp)
-
-To avoid duplicating event-stream logic, `Signal` delegates per-port sampling to `EventStream`.
+The public debugging surface for this path is `Pipeline.step(...)`.
 
 ---
 

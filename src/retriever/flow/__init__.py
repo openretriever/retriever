@@ -6,7 +6,7 @@ Provides base classes and utilities for building dataflow pipelines.
 
 from retriever.flow.base import Flow, gui_flow
 from retriever.flow.clock import Clock, Rate, Trigger, Hybrid, Tick, DefaultRate, AdaptiveRate
-from retriever.flow.adapter import Adapter, Latest, Hold, Window, Events
+from retriever.flow.adapter import Adapter, Latest, Hold, Window, Events, Linear, Chunking
 from retriever.flow.config import FlowConfig, FlowRateConfig, EdgeConfig
 from retriever.flow.temporal import TemporalFlow
 from retriever.flow.builder import PipelineBuilder
@@ -35,6 +35,8 @@ __all__ = [
     'Hold',
     'Window',
     'Events',
+    'Linear',
+    'Chunking',
 
     # Configuration
     'FlowConfig',

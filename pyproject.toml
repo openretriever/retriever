@@ -7,6 +7,7 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/retriever"]
+force-include = { "THIRD_PARTY_NOTICES.md" = "THIRD_PARTY_NOTICES.md" }
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/README.md", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/pyproject.toml"]
@@ -14,10 +15,10 @@ include = ["/src", "/README.md", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/pyproj
 [project]
 name = "retriever"
 version = "0.0.0"
-description = "Retriever: Building Modular Robot Agents with Causal Functional Composition"
+description = "A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "Linfeng Zhao" }]
 keywords = [
     "robotics",
@@ -31,12 +32,13 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
 ]
 
-# Runtime/core is intentionally minimal: no required third-party deps.
-dependencies = []
+# Runtime/core keeps required third-party deps tiny.
+dependencies = ["packaging>=23"]
 
 [project.optional-dependencies]
 # Lightweight deps for local demos/examples in this repo.

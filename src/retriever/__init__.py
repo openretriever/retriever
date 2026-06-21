@@ -9,7 +9,9 @@ small scripts can stay terse. The preferred explicit surfaces still live in:
 - `retriever.types` for shared payload and contract definitions
 """
 
+from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version as _package_version
+from types import ModuleType
 
 try:
     __version__ = _package_version("retriever")
@@ -106,10 +108,20 @@ from retriever.registry import (
 
 # Import built-in shared schema types so registry lookups are stable after plain `import retriever`.
 from retriever.types import ClockDomain as _ClockDomain, SchemaRef as _SchemaRef, StreamId as _StreamId  # noqa: F401
-from retriever import hub  # noqa: F401
 # Import built-in domain typing packages so registry lookups are stable after plain `import retriever`.
 from retriever.types import data as _data  # noqa: F401
 from retriever.types import spatial as _spatial  # noqa: F401
+
+
+def __getattr__(name: str) -> ModuleType:
+    """Load optional top-level convenience modules on first access."""
+
+    if name == "hub":
+        module = import_module("retriever.hub")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "Flow",

@@ -21,9 +21,10 @@ Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this r
 # macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run the webcam quickstart (auto-installs deps)
-pixi run demo-webcam-detection
-pixi run demo-webcam-record
+# Run pure-core tutorial demos first
+pixi run demo-basic-flow
+pixi run demo-rt-execution
+pixi run demo-stepper
 ```
 
 Windows PowerShell:
@@ -31,7 +32,14 @@ Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -c "irm -useb https://pixi.sh/install.ps1 | iex"
 pixi install
+pixi run demo-basic-flow
+```
+
+Then try the optional visual/replay path:
+
+```bash
 pixi run demo-webcam-detection
+pixi run demo-webcam-record
 ```
 
 If you specifically want live worker-backend Rerun, use one of these:

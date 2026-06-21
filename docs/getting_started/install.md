@@ -19,8 +19,8 @@ Pixi is the default environment manager for this repo.
 # Install pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run a tutorial demo (auto-resolves env)
-pixi run demo-webcam-detection
+# Run a pure-core tutorial demo (auto-resolves env)
+pixi run demo-basic-flow
 ```
 
 Useful follow-ups:
@@ -41,12 +41,15 @@ If you prefer a plain Python environment:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
-python -m pip install -e ".[demo,dora,recording]"
+python -m pip install -e .
 ```
 
 Optional extras:
 
 ```bash
+# Local demos, recording, and dora backend support
+python -m pip install -e ".[demo,recording,dora]"
+
 # MCP / connector integration
 python -m pip install -e ".[mcp]"
 ```
@@ -54,7 +57,8 @@ python -m pip install -e ".[mcp]"
 Then run tutorials directly:
 
 ```bash
-python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize auto
+python -m examples.tutorial.a_flow_fundamentals.01_basic_flow
+python -m examples.tutorial.b_ir_and_execution.04_rt_execution
 ```
 
 ## Dora Notes

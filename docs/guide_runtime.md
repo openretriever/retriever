@@ -224,7 +224,7 @@ For collection/replay/export contracts, use `retriever.types.data.EventBuffer` i
 `Behavior[T]` is a continuous-time sampler: `t -> value`. In this runtime it is usually derived from an
 `EventStream` via an Adapter.
 
-High-level combinators (`switch_behavior`, `until_event`) are available in `retriever.flow.frp`.
+Use the methods on `retriever.flow.types.EventStream` and `retriever.flow.types.Behavior` for stream-style composition, including `map`, `filter`, `merge`, `fold`, `snapshot`, `combine_latest`, `flat_map`, `Behavior.select(...)`, and `Behavior.until(...)`.
 
 ### Adapters (sampling policy)
 
