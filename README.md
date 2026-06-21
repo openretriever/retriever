@@ -100,6 +100,7 @@ Start here:
 - [docs/architecture.md](docs/architecture.md) — runtime layers, IR, clocks, and backends.
 - [docs/tutorials/index.md](docs/tutorials/index.md) — runnable tutorial tracks.
 - [docs/website_story.md](docs/website_story.md) — website/blog-ready project narrative and copy blocks.
+- [RELEASE.md](RELEASE.md) — launch, docs deployment, and package publishing checklist.
 
 Reference docs:
 
