@@ -75,5 +75,6 @@ nav:
       - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
       - Hub: hub.md
+      - Release Readiness: release_readiness.md
       - Contributing: contributing.md
   - API: API.md

@@ -102,7 +102,7 @@ class DoraBackendFactory(BackendFactory):
                     - 'join_timeout': Timeout when waiting for executors (default: 5.0s)
                     - 'buffer_engine': Buffer engine kind for per-port sampling ('python' | 'native', default: 'python')
                     - 'native_overrides': Optional node path overrides to run some nodes as native dora nodes
-                      instead of Python executors. See `docs/temp_notes/2025-12-17_native_acceleration_plan.md`.
+                      instead of Python executors. See the native acceleration design notes in the public runtime documentation.
 
         Returns:
             DoraEngine instance

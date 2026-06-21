@@ -63,3 +63,4 @@ references/
 /docs/reports/
 /.vscode/
 *.egg-info/
+/site/
