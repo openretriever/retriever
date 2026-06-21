@@ -176,7 +176,7 @@ This split (logical IR vs physical execution graph) is the foundation for:
 - backend selection per partition (e.g., local mp vs dora vs ray)
 - richer compilation (non-linear partitions, watermark-aware operators, explicit adapters)
 
-Internal design notes cover the longer-term execution-graph roadmap; this guide documents the supported public surface only.
+This guide documents the supported public execution surface. Longer-term execution-graph extensions should preserve the same IR and backend boundaries.
 
 ## 7) Distributed Execution (Multi-Machine)
 

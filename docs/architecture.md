@@ -67,7 +67,7 @@ Note: `execute_ir(...)` accepts either an `IR` (logical graph) or an `ExecutionG
 (physical plan). When given an execution graph, it is lowered to a backend-friendly IR for execution.
 
 Backend boundary note:
-- Dora integration and native acceleration details are tracked in internal design notes, not in the public docs surface.
+- Dora integration is the supported external-runtime path. Native acceleration is an extension point for future backend packages rather than part of the current public core.
 
 ---
 

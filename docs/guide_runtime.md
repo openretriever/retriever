@@ -180,7 +180,7 @@ pipe.run(
 )
 ```
 
-Design details for native overrides are tracked in internal design notes rather than the public docs surface.
+Native overrides are an advanced backend extension point: keep the public pipeline API stable, and place runtime-specific implementation behind the backend adapter.
 
 ### Backend config: buffer engine (Tier B.3)
 
