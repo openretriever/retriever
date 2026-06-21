@@ -20,10 +20,10 @@ The public repository should preserve useful Retriever history with public autho
 
 ## Verified Provenance Snapshot
 
-As of 2026-06-21, the prepared public core repository has this verified state:
+As of 2026-06-21, the prepared public core repository had this verified provenance baseline. Later docs-only release notes may advance `HEAD` without changing the tree-policy conclusions below:
 
-- release HEAD: `870fbfa155b20c0aaea41221e8db79240a354b08`, pushed to `openretriever/main` and `openretriever/release/mirror-alignment-20260621`,
-- preserved release history length: 727 commits,
+- provenance baseline: `d8b16666b8229f9f51f10f00ca5cb5f174cc1ec9`, pushed to `openretriever/main` and `openretriever/release/mirror-alignment-20260621` at verification time,
+- preserved release history length at that baseline: 728 commits,
 - first preserved commit: `f018771` from 2023-10-20, `initial commit: add readme and ignore`,
 - public author identities currently present: `Linfeng Zhao <zlf0625@gmail.com>`, `Haoyan Lin <haoyan.lin@sopia.edu>`, and `Toby <tobyxdd@gmail.com>`,
 - development mirror reference: commit `ac4948ad03533cf9b6ffc71f8ca38a15f88f04b2` on `merge/feature-aggregate-v1`,
