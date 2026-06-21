@@ -1,0 +1,31 @@
+---
+name: Bug report
+description: Report a reproducible problem
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Exact commands, code snippet, or minimal example.
+      placeholder: |
+        pixi run ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, Pixi/pip setup, backend, hardware/model requirements if relevant.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or trace
+      description: Paste concise logs only. Remove credentials, private paths, and private endpoints.

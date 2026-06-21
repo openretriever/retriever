@@ -27,6 +27,7 @@ Before publishing, verify these surfaces are current:
 - `mkdocs.yml` site URL, repo URL, nav, theme, and hosted docs paths,
 - `LICENSE` and `THIRD_PARTY_NOTICES.md`,
 - `.gitignore` exclusions for generated/local/private artifacts.
+- GitHub issue and PR templates for bug reports, docs issues, feature requests, and public-release checks.
 
 ## Public Push Target
 

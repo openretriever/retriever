@@ -1,0 +1,24 @@
+---
+name: Docs issue
+description: Report unclear, stale, or missing documentation
+labels: [docs]
+body:
+  - type: textarea
+    id: page
+    attributes:
+      label: Page or section
+      description: Link or path to the affected docs.
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issue
+      description: What is confusing, stale, or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested fix
+      description: Optional wording, command, or example that would help.
