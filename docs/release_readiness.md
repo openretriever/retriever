@@ -18,6 +18,24 @@ System-level robot integrations, simulator packages, datasets, and heavier model
 
 The public repository should preserve useful Retriever history with public author identities. Cleanup commits may remove deleted legacy assets from the current tree, but they should avoid rewriting or flattening later core-runtime commits unless there is a concrete privacy, licensing, or repository-size reason.
 
+## Verified Provenance Snapshot
+
+As of 2026-06-21, the prepared public core repository has this verified state:
+
+- release HEAD: `870fbfa155b20c0aaea41221e8db79240a354b08`, pushed to `openretriever/main` and `openretriever/release/mirror-alignment-20260621`,
+- preserved release history length: 727 commits,
+- first preserved commit: `f018771` from 2023-10-20, `initial commit: add readme and ignore`,
+- public author identities currently present: `Linfeng Zhao <zlf0625@gmail.com>`, `Haoyan Lin <haoyan.lin@sopia.edu>`, and `Toby <tobyxdd@gmail.com>`,
+- development mirror reference: commit `ac4948ad03533cf9b6ffc71f8ca38a15f88f04b2` on `merge/feature-aggregate-v1`,
+- legacy history source: the original Retriever checkout, used read-only because its working tree contained local edits and deleted vendored assets during release preparation.
+
+A bounded tracked-tree comparison against the mirror, excluding `pixi.lock`, `docs/reports/`, and `docs/temp_notes/`, showed:
+
+- 369 tracked release files versus 1236 tracked mirror files,
+- release-only files are public metadata/docs such as `.github/`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`, `docs/release_readiness.md`, `docs/website_story.md`, and `mkdocs.yml`,
+- mirror-only files are primarily excluded public-release bulk: `data/`, `external/`, the old website tree, generated distribution artifacts, and companion Golden/tutorial files,
+- common content differences are docs/metadata plus the five source files listed in [Current Intentional Release Differences](#current-intentional-release-differences).
+
 ## Public Metadata
 
 Before publishing, verify these surfaces are current:
