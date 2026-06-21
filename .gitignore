@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Distribution
+/dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+
+# IDEs
+.vscode/
+.idea/
+
+# Lock
+uv.lock
+
+# Agent
+.claude/
+.specify/
+AGENTS.md
+
+# Artifacts
+logs/
+out/
+_ssl/
+
+# Rust
+target/
+
+# C++
+compile_commands.json
+.cache/
+*.so
+*.dylib
+*.dll
+*.o
+*.a
+
+# Data
+*.mcap
+TWIST2/
+viz-*.html
+
+# Private notes
+docs/notes/
+references/
+
+
+# Public release hygiene: keep large/private/generated artifacts out of core.
+/data/
+/external/
+/dist/
+/website/
+/docs/temp_notes/
+/docs/reports/
+/.vscode/
+*.egg-info/

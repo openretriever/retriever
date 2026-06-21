@@ -1,0 +1,185 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/retriever"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/README.md", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/pyproject.toml"]
+
+[project]
+name = "retriever"
+version = "0.0.0"
+description = "Retriever: Building Modular Robot Agents with Causal Functional Composition"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Linfeng Zhao" }]
+keywords = [
+    "robotics",
+    "planning",
+    "bilevel-planning",
+    "task-and-motion-planning",
+    "skill-learning",
+    "foundation-models",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+
+# Runtime/core is intentionally minimal: no required third-party deps.
+dependencies = []
+
+[project.optional-dependencies]
+# Lightweight deps for local demos/examples in this repo.
+demo = [
+    "numpy",
+    "opencv-python>=4.10", # Supports NumPy 2.0
+    "matplotlib",
+    "pandas",
+    "pynput",
+]
+
+recording = [
+    "mcap>=1.0.0",
+    "numpy",
+    "rerun-sdk>=0.21.0",
+]
+
+mcp = ["mcp>=1.25.0,<2"]
+
+jax = ["jax", "jaxlib", "flax", "optax"]
+
+dev = [
+    "black",
+    "ruff",
+    "mypy",
+    "pytest>=7.2.2",
+    "pytest-asyncio",
+    "pre-commit",
+    "pytest-cov",
+    "pygments",
+    "typing-extensions",
+    "lark",
+]
+
+dora = [
+    # Dora-rs runtime for dataflow execution
+    # Note: `dora-rs`/`dora-rs-cli` are also pinned in `pixi.toml` when using Pixi.
+    # If your installed `dora` CLI rejects the generated dataflow YAML, see `docs/getting_started/install.md`.
+    "dora-rs>=0.3.12",
+    "dora-rs-cli>=0.3.12",
+    "pyarrow",             # Arrow serialization for dora messages
+    "pyyaml",              # YAML compilation for dora dataflow descriptors
+    "psutil",              # For process/memory monitoring
+]
+
+otel = ["uptrace", "opentelemetry-api", "opentelemetry-sdk"]
+
+web = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "jinja2",            # Often used with FastAPI for templates
+]
+
+vision = [
+    "torch>=2.0.0",
+    "torchvision",
+    "transformers",
+    "pillow",
+    "openpi",
+    "timm",
+]
+
+[project.urls]
+Homepage = "https://github.com/openretriever/retriever"
+Documentation = "https://github.com/openretriever/retriever#readme"
+"Bug Tracker" = "https://github.com/openretriever/retriever/issues"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+lint.select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "C", # flake8-comprehensions
+    "B", # flake8-bugbear
+]
+lint.ignore = ["E501"] # Let black handle line length
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.11"
+strict_equality = true
+disallow_untyped_calls = true
+warn_unreachable = true
+exclude = ["venv/*"]
+plugins = ["numpy.typing.mypy_plugin"]
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*", "scipy.*", "opencv-python.*", "wandb.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-v"
+# This repo is being refocused on the runtime/core. Keep the default test run
+# scoped to runtime-facing tests; legacy/system tests can be run explicitly.
+testpaths = ["tests/core"]
+python_files = ["test_*_rt.py"]
+
+# [tool.uv]
+# UV-specific configuration for better dependency management
+# dev-dependencies = [
+#     "black",
+#     "ruff", 
+#     "mypy",
+#     "pytest>=7.2.2",
+#     "pytest-asyncio",
+#     "pytest-cov",
+#     "pre-commit",
+# ]
+
+# [tool.uv.scripts]
+# Convenient scripts using uv run
+# format = "black ."
+# lint = "ruff check --fix ."
+# typecheck = "mypy src/retriever/"
+# test = "pytest"
+# test-verbose = "pytest -v -s"
+# test-core = "pytest tests/core/"
+
+# Examples and demos
+# demo-flow = "python examples/simple_oracle_flow.py"
+# demo-oracle = "python retriever/planning/examples/example_oracle_flow.py"
+# demo-grounding = "python examples/grounding_demo.py"  # RETIRED: See retriever/perception/grounding/RETIRED.md
+
+# Dora integration scripts  
+# dora-bench = "python retriever/integrations/dora/benchmark_runner.py"
+# dora-bench-quick = "python retriever/integrations/dora/benchmark_runner.py --quick"
+# dora-test = "python retriever/integrations/dora/test_benchmarks.py"
+
+# Quality assurance workflow
+# qa = ["ruff check --fix .", "black .", "mypy retriever/", "pytest"]
+
+# Setup commands
+# install-dev = "uv pip install -e .[dev]"
+# install-demo = "uv pip install -e .[demo,dora]"
+# Full system deps will move to `pyproject-golden.toml` / `pixi-golden.toml`.
