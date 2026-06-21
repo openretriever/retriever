@@ -48,10 +48,16 @@ pixi run -e docs docs-build
 
 ## Current Intentional Release Differences
 
-The public candidate may intentionally differ from development worktrees in these ways:
+The public candidate should track the current core runtime tree closely. Any source-level difference from the development mirror should be small, intentional, and documented here. Current intentional deltas are:
+
+- `src/retriever/hub/_index.py`: default Hub index points at the public `openretriever/hub-index` location.
+- `src/retriever/__init__.py`: `retriever.hub` is loaded lazily so plain `import retriever` keeps optional Hub imports light.
+- `src/retriever/types/__init__.py`: domain type packages are loaded lazily while preserving the public `retriever.types.<domain>` surface.
+- `src/retriever/flow/__init__.py`: `Linear` and `Chunking` are exported from `retriever.flow` for public sync-adapter discoverability.
+- `src/retriever/rt/backend/dora/__init__.py`: public docs avoid references to excluded private/temp design notes.
+
+Other release-only differences should stay in metadata and docs rather than changing runtime behavior:
 
 - public URLs point at `openretriever`,
-- Hub defaults point at public `openretriever` indexes,
-- optional convenience imports should avoid heavy eager imports,
 - docs avoid private project history and local paths,
 - release docs include public website/packaging guidance.
