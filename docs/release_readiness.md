@@ -28,6 +28,22 @@ Before publishing, verify these surfaces are current:
 - `LICENSE` and `THIRD_PARTY_NOTICES.md`,
 - `.gitignore` exclusions for generated/local/private artifacts.
 
+## Public Push Target
+
+The intended public remote for this prepared core-runtime repository is:
+
+```bash
+git@github.com:openretriever/retriever.git
+```
+
+Keep the remote named `openretriever` locally when possible, and verify it before pushing:
+
+```bash
+git remote -v
+```
+
+The companion landing page should treat this repository as the runtime code surface. Link docs to `https://openretriever.github.io/retriever/` and keep larger robot examples in separate companion repositories.
+
 ## Acceptance Checks
 
 Run these from the repository root before publishing:
@@ -44,6 +60,7 @@ If using Pixi, prefer the packaged tasks when available:
 pixi run test
 pixi run p0-release-readiness
 pixi run -e docs docs-build
+pixi run build
 ```
 
 ## Current Intentional Release Differences

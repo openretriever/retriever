@@ -81,6 +81,15 @@ Show the difference between a backend run and in-process stepping. The key messa
 
 Explain why adoption depends on more than the core software. A useful ecosystem needs clear docs, stable shared types, examples, publishing conventions, plugin surfaces, and companion packages.
 
+## Runtime/Website Link Policy
+
+Use the landing page as the broad project narrative and this repository as the runtime docs/code surface:
+
+- Runtime code: `https://github.com/openretriever/retriever`
+- Runtime docs: `https://openretriever.github.io/retriever/`
+- Paper: keep marked as coming until a public PDF is approved
+- Examples: link only after the companion example repository is public-ready
+
 ## Website Section Outline
 
 1. Hero: what Retriever is and who it helps.

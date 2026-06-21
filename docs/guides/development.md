@@ -88,7 +88,11 @@ Use VS Code's Python interpreter selector to point those launch configs at the e
 
 ### Pre-commit Setup
 
+Install dev extras first; the default Pixi environment stays focused on runtime demos and tests.
+
 ```bash
+pixi run python -m pip install -e '.[dev]'
+
 # Install pre-commit hooks
 pixi run pre-commit install
 
@@ -365,6 +369,20 @@ def test_pipeline_runtime_regression():
     assert step.now is not None
     pipe.close_stepper()
 ```
+
+### Release Push Checklist
+
+For the public OpenRetriever repository, use the `openretriever` remote and keep generated artifacts out of Git:
+
+```bash
+git remote -v
+pixi run -e docs docs-build
+pixi run python -m pytest tests/core -q
+pixi run p0-release-readiness
+pixi run build
+```
+
+The project website should link the runtime code button to `https://github.com/openretriever/retriever` and the docs button to `https://openretriever.github.io/retriever/`. Companion example repositories can be linked separately when they are ready.
 
 ### Continuous Integration
 
