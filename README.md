@@ -1,41 +1,38 @@
 <div align="center">
-  <a href="https://github.com/linfeng-z/Retriever"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg"></a>
+  <a href="https://github.com/openretriever/retriever"><img width="260px" height="auto" src="assets/retriever-illustrative.jpeg" alt="Retriever logo"></a>
+
+# Retriever
+
+**Closed-loop robot agents with explicit time.**
+
+A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.
+
+<a href="https://openretriever.github.io/retriever/">Docs</a> ·
+<a href="https://github.com/openretriever/retriever">Runtime code</a> ·
+<a href="https://github.com/openretriever/golden-retriever">Examples</a> ·
+<a href="#">Website (coming soon)</a> ·
+<a href="#">Paper / arXiv (coming soon)</a> ·
+<a href="#">Discord (coming soon)</a>
 </div>
-
-
-
-# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span>
-
-## **Building Modular Closed-loop Robot Agents with Causal Functional Composition**
-
-<!-- **Retriever: a type-safe runtime for robotics dataflow pipelines** -->
-
-This repository is the **Retriever core/runtime** package:
-
-- Author pipelines as a typed graph (`Pipeline`)
-- Verify/compile to a backend-agnostic IR (done automatically at runtime)
-- Execute on a backend (`Pipeline.run(...)`): local multiprocessing or dora-rs
-- Debug step-by-step in-process (`Pipeline.step(...)`)
-
-System-level pipelines, robot/simulator integrations, and heavier model stacks belong in the companion **GoldenRetriever** repository or other external packages.
 
 ---
 
+Retriever is the **core/runtime** package for typed, multi-rate robot pipelines. Robot applications rarely run as one neat synchronous loop: cameras, state estimators, planners, VLMs, VLAs, controllers, operators, and logs all update at different rates. Retriever makes those timing boundaries explicit while keeping the authoring model close to normal Python.
+
+Use Retriever when a robot system needs:
+
+- **Closed loops**: perception, memory, planning, control, monitoring, and even environment wrappers can live in one cyclic graph.
+- **Explicit timing**: each `Flow` declares when it runs, and each edge declares how data is sampled before `step(...)` executes.
+- **Debuggable execution**: run the graph on a backend, or step it in-process with normal Python breakpoints.
+- **Portable backends**: author one typed graph, then run it in-process, with multiprocessing, or on a distributed backend.
+- **Reusable components**: typed payloads, registries, and Hub surfaces make robot software easier to publish and compose.
+
+System-level robot integrations, simulator stacks, and heavier model packages belong in companion repositories such as [`openretriever/golden-retriever`](https://github.com/openretriever/golden-retriever). This repository stays focused on the runtime core.
 
 ## Canonical Runtime Workflow
 
-Critical ideas:
-
-- `@io` defines typed message envelopes.
-- `Flow[I, O]` defines node logic.
-- `flow @ clock` decides when a node runs.
-- `Pipeline.connect(..., sync=...)` wires nodes and declares sampling behavior.
-- `pipe.run(...)` is for backend execution; `pipe.step(...)` is for in-process debugging.
-
-Minimal example:
-
-```py
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
+```python
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io
@@ -71,59 +68,102 @@ pipe.connect(source, double, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-Debugging:
+The important pieces are small:
 
-```py
-result = pipe.step(dt=0.5)
+- `@io` defines typed message envelopes.
+- `Flow[I, O]` defines node logic.
+- `flow @ clock` declares when a node runs.
+- `Pipeline.connect(..., sync=...)` declares how data crosses an edge.
+- `Pipeline.run(...)` executes on a backend.
+- `Pipeline.step(...)` runs in-process for debugging and replay.
+
+## Install
+
+Use Python 3.11 or newer.
+
+```bash
+python -m pip install pyretriever==0.0.1
+```
+
+The PyPI distribution name is `pyretriever`; the Python import package is `retriever`.
+
+For local development and demos, use Pixi:
+
+```bash
+curl -fsSL https://pixi.sh/install.sh | bash
+pixi install
+pixi run demo-basic-flow
+```
+
+Useful first commands:
+
+```bash
+pixi run demo-basic-flow
+pixi run demo-rt-execution
+pixi run demo-stepper
+pixi run demo-webcam-detection
+```
+
+`demo-webcam-detection` requests a real camera by default. If a camera is not available, run the module directly with `--camera-mode mock`.
+
+## Documentation Path
+
+Start here:
+
+- [Quickstart](docs/quickstart.md) — the shortest runnable introduction.
+- [Handbook](docs/handbook.md) — the canonical runtime handbook.
+- [Install Guide](docs/getting_started/install.md) — Pixi, pip/uv, and backend setup notes.
+- [Architecture](docs/architecture.md) — runtime layers, IR, clocks, and backends.
+- [Tutorials](docs/tutorials/index.md) — runnable tutorial tracks.
+- [API Reference](docs/API.md) — public API surface.
+- [Release Checklist](RELEASE.md) — launch, docs deployment, and package publishing checklist.
+
+The hosted docs target is [openretriever.github.io/retriever](https://openretriever.github.io/retriever/).
+
+## Runtime Surfaces
+
+Retriever has two execution modes on purpose:
+
+```python
+# Backend execution
+pipe.run(backend="multiprocessing", duration=3.0)
+pipe.run(backend="dora", duration=3.0)
+
+# In-process debugging
+result = pipe.step(dt=0.1)
 print(result.executed)
 pipe.close_stepper()
 ```
 
-Short docs path:
+Backend execution is for realistic scheduling, process boundaries, and deployment behavior. In-process stepping is for debugging logic, replaying incidents, and making timing bugs inspectable with normal Python tools.
 
-- Quickstart: `docs/quickstart.md`
-- Handbook: `docs/handbook.md`
-- Runtime guide: `docs/guide_runtime.md`
+## Ecosystem Boundary
 
-## Setup (overview)
+The intended public split is:
 
-Use Python 3.11 for the pinned runtime environment in this repo.
-
-Quick start with [Pixi](https://pixi.sh):
-
-```sh
-curl -fsSL https://pixi.sh/install.sh | bash
-pixi run demo-webcam-detection
-```
-
-`pixi.lock` is multi-platform (osx-arm64, linux-64). Commit it for reproducible installs; other platforms can re-lock after adding the platform to `pixi.toml` and running `pixi install`.
-
-Pixi manages its own env. If you prefer `uv`/`pip`, use a separate conda/venv to avoid mixing managers. Pixi installs the PyPI portion using `uv` internally; you usually don't need to run `uv` yourself when using Pixi.
-
-Full installation (Pixi/conda/uv), dora CLI notes, and troubleshooting: `docs/getting_started/install.md`.
-
-Runtime/core manifests in this repo:
-
-- `pyproject.toml`
-- `pixi.toml`
+- **Core runtime**: this repository, published as `pyretriever` and imported as `retriever`.
+- **Examples and integrations**: [`openretriever/golden-retriever`](https://github.com/openretriever/golden-retriever).
+- **Project website**: public landing page and paper material, link reserved above.
+- **Paper / arXiv**: research writeup, link reserved above.
+- **Community**: Discord or similar community link, reserved above.
 
 ## Development
 
-- Development workflow, pre-commit hooks, and QA steps: `docs/contributing.md`
+```bash
+pixi install
+pixi run test
+pixi run p0-release-readiness
+```
 
-## Documentation
+Focused public-surface checks:
 
-Docs live in `docs/`:
+```bash
+pixi run python -m pytest tests/core/test_public_surface_rt.py -q
+pixi run python -m pytest tests/core/test_hub_ref_rt.py tests/core/test_hub_check_rt.py tests/core/test_hub_loader_rt.py tests/core/test_hub_use_rt.py -q
+```
 
-- Runtime handbook (canonical): `docs/handbook.md`
-- Quickstart: `docs/quickstart.md`
-- Architecture: `docs/architecture.md`
-- Tutorials: `docs/tutorials/index.md`
-- Install: `docs/getting_started/install.md`
-- Runnable examples: `examples/tutorial/` and `examples/control_demo.py`
+See [docs/contributing.md](docs/contributing.md) for development workflow and QA details.
 
-## Roadmap
+## License
 
-Recent features:
-- **Main Thread Flow** (`@gui_flow`): Run flows in main thread for native GUI support (MuJoCo viewers, Qt, etc.)
-  - Public examples in this repo currently focus on the tutorial/runtime surface.
+Retriever is licensed under the Apache License 2.0 (`Apache-2.0`). See [LICENSE](LICENSE) for the full license text and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled third-party JavaScript notices.
