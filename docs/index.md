@@ -52,11 +52,12 @@ Read this as: each Flow has local state, each Flow declares when it runs, and ea
 
 ## What To Learn First
 
-1. Run `pixi run demo-basic-flow`.
-2. Read `docs/quickstart.md`.
-3. Read `docs/handbook.md` for the full runtime path.
-4. Use `Pipeline.step(...)` before debugging backend execution.
-5. Move to `docs/tutorials/index.md` when you want specific runnable lanes.
+1. Run `pixi run demo-webcam-detection` for the first visual path: live webcam -> color detection -> display.
+2. Run `pixi run demo-basic-flow` when you want the smallest API-only sanity check.
+3. Read `docs/quickstart.md`.
+4. Read `docs/handbook.md` for the full runtime path.
+5. Use `Pipeline.step(...)` before debugging backend execution.
+6. Move to `docs/tutorials/index.md` when you want specific runnable lanes.
 
 ## Runtime Model
 

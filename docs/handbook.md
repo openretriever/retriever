@@ -21,7 +21,10 @@ Supported Python: **3.11+**. Pixi pins `3.11.*` as the tested baseline in this r
 # macOS / Linux
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run pure-core tutorial demos first
+# Run the first visual demo: webcam -> color detector -> display
+pixi run demo-webcam-detection
+
+# Then run pure-core tutorial demos for API mechanics
 pixi run demo-basic-flow
 pixi run demo-rt-execution
 pixi run demo-stepper
@@ -35,10 +38,9 @@ pixi install
 pixi run demo-basic-flow
 ```
 
-Then try the optional visual/replay path:
+Then try deterministic recording/replay:
 
 ```bash
-pixi run demo-webcam-detection
 pixi run demo-webcam-record
 ```
 

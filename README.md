@@ -89,24 +89,24 @@ python -m pip install pyretriever==0.0.1
 
 The PyPI distribution name is `pyretriever`; the Python import package is `retriever`.
 
-For local development and demos, use Pixi:
+For local development and demos, use Pixi. The first visual demo is webcam color detection:
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
 pixi install
-pixi run demo-basic-flow
+pixi run demo-webcam-detection
 ```
 
-Useful first commands:
+`demo-webcam-detection` runs `camera -> color detector -> display` in-process, requests a real webcam by default, and uses `--visualize auto` so Rerun is used when available and stdout is used otherwise. Hold red or blue paper/objects in front of the camera to see detections. If a camera is not available, rerun the module directly with `--camera-mode mock`.
+
+Useful follow-up commands:
 
 ```bash
 pixi run demo-basic-flow
 pixi run demo-rt-execution
 pixi run demo-stepper
-pixi run demo-webcam-detection
+pixi run demo-webcam-record
 ```
-
-`demo-webcam-detection` requests a real camera by default. If a camera is not available, run the module directly with `--camera-mode mock`.
 
 ## Documentation Path
 

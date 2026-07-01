@@ -37,6 +37,7 @@ If you only read one operational page, read `docs/handbook.md`.
 
 ## Ecosystem And Release References
 
+- `docs/deployment/cloudflare_pages.md` — Cloudflare Pages deployment and domain binding notes.
 - `docs/hub.md` — reusable module loading and publishing patterns.
 - `docs/contributing.md` — development workflow and QA.
 - `docs/API.md` — API reference.

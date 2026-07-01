@@ -11,9 +11,19 @@ That page groups examples by functionality. This page keeps only the minimum pat
 
 Use the minimal path to learn the core runtime loop. Use Track G later for operational surfaces like registries and composable pipelines.
 
-## Minimal Path
+## First Visual Demo
 
-Run these in order:
+Start here if you want to see Retriever doing something with a real sensor:
+
+```bash
+pixi run demo-webcam-detection
+```
+
+This opens the local webcam, runs a color detector, and displays detections through Rerun when available or stdout otherwise. Show red or blue objects to the camera. If no camera is available, run the tutorial module directly with `--camera-mode mock`.
+
+## Minimal API Path
+
+Then run these in order to learn the core runtime mechanics:
 
 ```bash
 pixi run demo-basic-flow

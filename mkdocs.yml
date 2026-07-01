@@ -75,6 +75,7 @@ nav:
       - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
       - Hub: hub.md
+      - Cloudflare Pages: deployment/cloudflare_pages.md
       - Release Readiness: release_readiness.md
       - Contributing: contributing.md
   - API: API.md
