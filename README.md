@@ -1,18 +1,20 @@
 <div align="center">
   <a href="https://github.com/openretriever/retriever"><img width="260px" height="auto" src="assets/retriever-illustrative.jpeg" alt="Retriever logo"></a>
 
-# Retriever
+<h1>🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">Retriever</span></h1>
 
-**Closed-loop robot agents with explicit time.**
+<h3>Closed-loop robot agents with explicit time.</h3>
 
-A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.
+<p>A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.</p>
 
-<a href="https://openretriever.github.io/retriever/">Docs</a> ·
-<a href="https://github.com/openretriever/retriever">Runtime code</a> ·
-<a href="https://github.com/openretriever/golden-retriever">Examples</a> ·
-<a href="#">Website (coming soon)</a> ·
-<a href="#">Paper / arXiv (coming soon)</a> ·
-<a href="#">Discord (coming soon)</a>
+<p>
+  <a href="https://openretriever.github.io/retriever/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
+  <a href="https://github.com/openretriever/retriever"><img alt="Runtime code" src="https://img.shields.io/badge/Runtime-code-111827?style=for-the-badge&logo=github"></a>
+  <a href="https://github.com/openretriever/golden-retriever"><img alt="Examples" src="https://img.shields.io/badge/Examples-Golden-92400e?style=for-the-badge&logo=github"></a>
+  <a href="http://retriever.systems"><img alt="Website" src="https://img.shields.io/badge/Website-retriever.systems-2563eb?style=for-the-badge"></a>
+  <a href="#"><img alt="Paper arXiv coming soon" src="https://img.shields.io/badge/Paper%20%2F%20arXiv-coming%20soon-64748b?style=for-the-badge"></a>
+  <a href="#"><img alt="Discord coming soon" src="https://img.shields.io/badge/Discord-coming%20soon-64748b?style=for-the-badge&logo=discord"></a>
+</p>
 </div>
 
 ---
