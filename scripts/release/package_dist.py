@@ -48,15 +48,21 @@ def _strip_bundle_only_tasks(pixi_content: str) -> str:
 
 
 def main():
-    # 1. Build the wheel
-    print("Building wheel...")
-    subprocess.run(["python", "-m", "build"], check=True)
-
-    # Define paths
-    root_dir = Path(__file__).parent.parent
+    # Define paths first so this script works from any current directory.
+    root_dir = Path(__file__).resolve().parents[2]
     dist_dir = root_dir / "dist"
     bundle_name = "retriever_dist"
     bundle_dir = dist_dir / bundle_name
+
+    # 1. Build the wheel from a clean local dist surface. Stale wheels can make
+    # the bundled Pixi config point at the wrong distribution name.
+    dist_dir.mkdir(exist_ok=True)
+    for pattern in ("*.whl", "*.tar.gz"):
+        for artifact in dist_dir.glob(pattern):
+            artifact.unlink()
+
+    print("Building wheel...")
+    subprocess.run(["python", "-m", "build"], cwd=root_dir, check=True)
 
     # 2. Create bundle directory
     if bundle_dir.exists():
@@ -82,27 +88,24 @@ def main():
     # Note: We do NOT copy pixi.lock because the source location changes, invalidating the lock.
     # Users will generate a new lock file on first install.
 
-    # Get the wheel filename (assuming one wheel)
-    wheel_files = list(dist_dir.glob("*.whl"))
+    # Get the freshly built pyretriever wheel.
+    wheel_files = sorted(dist_dir.glob("pyretriever-*.whl"))
     if not wheel_files:
-        print("Warning: No wheel found to patch pixi.toml")
-        shutil.copy(root_dir / "pixi.toml", bundle_dir)
-        wheel_name = "retriever-0.0.0-py3-none-any.whl"  # Fallback for readme
+        raise RuntimeError("No pyretriever wheel found after build")
     else:
         wheel_name = wheel_files[0].name
         # Read and patch pixi.toml
         with open(root_dir / "pixi.toml", "r") as f:
             pixi_content = f.read()
 
-        # Replace the retriever dependency line
-        # We look for the line starting with 'retriever = { path = "."'
-        target_str = 'retriever = { path = ".", editable = true'
+        # Replace the local editable pyretriever dependency with the bundled wheel.
+        target_str = 'pyretriever = { path = ".", editable = true'
         if target_str not in pixi_content:
             print(f"WARNING: Could not find dependency line '{target_str}' in pixi.toml")
         
         pixi_patched = pixi_content.replace(
             target_str,
-            f'retriever = {{ path = "./install/{wheel_name}", editable = false'
+            f'pyretriever = {{ path = "./install/{wheel_name}", editable = false'
         )
         pixi_patched = _strip_bundle_only_tasks(pixi_patched)
 

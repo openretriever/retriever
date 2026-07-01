@@ -44,7 +44,7 @@ Flow typing contract:
 - `src/retriever/rt/backend/multiprocessing/executor.py`
 - `src/retriever/rt/backend/dora/executor.py`
 - `src/retriever/rt/lifecycle.py`
-- `scripts/validate_flow_typing.py`
+- `scripts/quality/validate_flow_typing.py`
 
 Spatial types:
 - `src/retriever/types/spatial/__init__.py`

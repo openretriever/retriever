@@ -7,8 +7,8 @@ Artifacts:
 - Optional .ipynb scaffolds for immediate Jupyter rendering
 
 Run:
-  python scripts/export_notebook_ready.py --emit-ipynb
-  python scripts/export_notebook_ready.py --check
+  python scripts/docs/export_notebook_ready.py --emit-ipynb
+  python scripts/docs/export_notebook_ready.py --check
 """
 
 from __future__ import annotations
@@ -262,7 +262,7 @@ def main() -> None:
                 "retriever": {
                     "generated_at": generated_at,
                     "source_markdown": str(rel),
-                    "conversion": "scripts/export_notebook_ready.py",
+                    "conversion": "scripts/docs/export_notebook_ready.py",
                 },
             },
             "nbformat": 4,

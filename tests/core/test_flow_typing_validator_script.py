@@ -12,7 +12,7 @@ def _repo_root() -> Path:
 def _run_validator(root: Path, strict: bool = False) -> subprocess.CompletedProcess[str]:
     cmd = [
         sys.executable,
-        "scripts/validate_flow_typing.py",
+        "scripts/quality/validate_flow_typing.py",
         "--root",
         str(root),
     ]

@@ -1,6 +1,6 @@
 # Retriever Release Checklist
 
-This repository is the public core runtime candidate for Retriever.
+This repository is the public core runtime candidate for Retriever. The first public package release target is `pyretriever==0.0.1`.
 
 ## Required Validation
 

@@ -60,7 +60,7 @@ def configure_otel(
         uptrace.configure_opentelemetry(
             dsn=dsn,
             service_name=service_name,
-            service_version="0.1.0",
+            service_version="0.0.1",
             resource_attributes=attrs or {},
             deployment_environment="dev",
         )
