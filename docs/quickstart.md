@@ -4,20 +4,23 @@ title: "Quickstart"
 
 # Quickstart
 
-This page is the shortest path to the core Retriever runtime ideas.
+This page teaches the core Retriever model with the smallest runnable graph. If you want a visual sensor demo first, run `pixi run demo-webcam-detection`, then come back here for the API shape.
 
-If you only want the essentials, learn these five things:
+<div class="rt-learning-panel">
+  <h2>The five ideas</h2>
+  <ol>
+    <li><code>@io</code> defines typed message envelopes.</li>
+    <li><code>Flow[I, O]</code> defines stateful node logic.</li>
+    <li><code>flow @ clock</code> declares when a node runs.</li>
+    <li><code>Pipeline.connect(..., sync=...)</code> declares how data crosses an edge.</li>
+    <li><code>pipe.run(...)</code> executes; <code>pipe.step(...)</code> debugs in-process.</li>
+  </ol>
+</div>
 
-1. `@io` defines typed message envelopes.
-2. `Flow[I, O]` defines node logic.
-3. `flow @ clock` decides when a node runs.
-4. `Pipeline.connect(..., sync=...)` wires nodes and declares sampling behavior.
-5. `pipe.run(...)` is for backend execution; `pipe.step(...)` is for in-process debugging.
-
-## Minimal Runnable Example
+## Minimal Runnable Graph
 
 ```python
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io
@@ -53,28 +56,18 @@ pipe.connect(source, double, sync=Latest())
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
 
-## What This Example Means
+Read it as a timed graph: `Source` wakes at 2 Hz, `Double` wakes when a new `value` arrives, and `Latest()` says exactly which upstream event the downstream Flow consumes.
 
-- `@io` turns a simple annotated class into a runtime envelope with typed ports.
-- `Flow[None, Number]` means the source emits `Number` and does not consume a typed input.
-- `Rate(hz=2)` means the source runs periodically at 2 Hz.
-- `Trigger("value")` means the downstream flow runs when a new `value` arrives.
-- `sync=Latest()` means the downstream reads the newest available event from its input buffer.
+## Step Before You Scale
 
-## The Two Execution Modes
-
-### Full execution
-
-Use `run(...)` when you want real backend behavior:
+Use backend execution when you want real scheduling behavior:
 
 ```python
 pipe.run(backend="multiprocessing", duration=1.0)
 pipe.run(backend="dora", duration=1.0)
 ```
 
-### Debugging
-
-Use `step(...)` when you want breakpoints inside `Flow.step(...)`:
+Use the stepper when you want normal Python breakpoints and deterministic inspection:
 
 ```python
 result = pipe.step(dt=0.5)
@@ -82,71 +75,58 @@ print(result.executed)
 pipe.close_stepper()
 ```
 
-`step(...)` runs in the current Python process. Start here before debugging a multiprocessing or dora run.
+This split is intentional: debug the graph in one process first, then move the same graph to a backend.
 
-## The Three Rules That Matter Most
+## First Things To Run
 
-1. Always define public flow inputs and outputs with `@io`.
-2. Always provide `sync=...` on `pipe.connect(...)`. Use a global default only for lightweight REPL or notebook experiments.
-3. Start with `Rate` and `Trigger`; reach for more advanced clocks or adapters only when you have a concrete need.
+=== "See something"
 
-## Try The Camera Path
+    ```bash
+    pixi run demo-webcam-detection
+    ```
 
-If you want something visual right away, use the perception tutorial series.
+    Runs `camera -> detector -> display` with a real webcam by default. If no camera is available, use the tutorial module with `--camera-mode mock`.
 
-### 1. Run the webcam quickstart
+=== "Learn the API"
 
-```bash
-pixi run demo-webcam-detection
-```
+    ```bash
+    pixi run demo-basic-flow
+    pixi run demo-adapter-connection
+    pixi run demo-rt-execution
+    pixi run demo-stepper
+    ```
 
-This runs `camera -> detector -> display` in-process. The bundled task requests a live camera and uses `--visualize auto`, which prefers Rerun when installed and falls back to stdout otherwise. If you do not have a readable camera on this machine, rerun the module directly with `--camera-mode mock`.
+=== "Record and replay"
 
-If you specifically want a live Rerun backend demo on the worker backends, use one of these:
+    ```bash
+    pixi run demo-webcam-record
+    pixi run demo-webcam-replay-rrd
+    ```
 
-```bash
-pixi run demo-webcam-detection-mp-rerun
-pixi run demo-webcam-detection-dora-rerun
-```
+## Rules Of Thumb
 
-The Dora demo tasks now start with a fresh runtime by default. If you still hit a stale coordinator or schema/version mismatch while running Dora manually, restart the Dora runtime, then rerun:
+- Define public Flow inputs and outputs with `@io`.
+- Keep Flow logic in `step(...)`; put timing in clocks and edge sync policies.
+- Start with `Rate`, `Trigger`, and `Latest`; reach for advanced policies only when a concrete robot handoff needs them.
+- Use `Pipeline.step(...)` before debugging multiprocessing or dora execution.
 
-```bash
-pixi run demo-webcam-detection-dora-rerun
-```
+## Next Pages
 
-### 2. Debug the same workflow in-process
+<div class="rt-doc-map">
+  <a href="/guide_flow/"><strong>Flow Guide</strong><span>Typed IO, Flow classes, clocks, sync, and wiring.</span></a>
+  <a href="/tutorials/"><strong>Tutorial Tracks</strong><span>Ordered runnable lessons.</span></a>
+  <a href="/guide_runtime/"><strong>Runtime Guide</strong><span>Validation, IR, execution, and backends.</span></a>
+  <a href="/examples/"><strong>Example Gallery</strong><span>Core examples and GoldenRetriever boundary.</span></a>
+</div>
 
-Use this when you want breakpoints inside `Flow.step(...)` without Dora or multiprocessing getting in the way:
+??? note "Backend and visualization variants"
+    Use these after the basic path is clear:
 
-```bash
-pixi run demo-webcam-stepper
-```
+    ```bash
+    pixi run demo-webcam-detection-mp-rerun
+    pixi run demo-webcam-detection-dora-rerun
+    pixi run demo-webcam-window
+    pixi run demo-webcam-replay-mcap
+    ```
 
-Add `--show-window` if you want the OpenCV display window.
-
-If you want the shortest OpenCV window demo directly:
-
-```bash
-pixi run demo-webcam-window
-```
-
-### 3. Record and replay a short session
-
-```bash
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
-```
-
-This is the shortest path from live sensing to deterministic replay:
-- `logs/perception.rrd` is the inspection artifact for Rerun
-- `logs/perception.mcap` is the interchange/mirror artifact
-- replay accepts either `.rrd` or `.mcap`
-
-## What To Read Next
-
-- [Install](getting_started/install.md)
-- [Flow Guide](guide_flow.md)
-- [Runtime Guide](guide_runtime.md)
-- [Debugging](guides/debugging.md)
-- [Track A: Flow Fundamentals](tutorials/track_a_flow_fundamentals.md)
+    The Dora demo tasks request a fresh runtime by default. If you run Dora manually and hit a stale coordinator or schema/version mismatch, restart Dora and rerun the task.

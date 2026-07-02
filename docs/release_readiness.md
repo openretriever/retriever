@@ -34,7 +34,7 @@ The release history was rewritten once more on 2026-06-21 to replace Haoyan Lin'
 A bounded tracked-tree comparison against the mirror, excluding `pixi.lock`, `docs/reports/`, and `docs/temp_notes/`, showed:
 
 - 369 tracked release files versus 1236 tracked mirror files,
-- release-only files are public metadata/docs such as `.github/`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`, `docs/release_readiness.md`, `docs/website_story.md`, and `mkdocs.yml`,
+- release-only files are public metadata/docs such as `.github/`, `CONTRIBUTING.md`, `SECURITY.md`, `THIRD_PARTY_NOTICES.md`, `docs/release_readiness.md` and `mkdocs.yml`,
 - mirror-only files are primarily excluded public-release bulk: `data/`, `external/`, the old website tree, generated distribution artifacts, and companion Golden/tutorial files,
 - common content differences are docs/metadata plus the runtime source files and release metadata listed in [Current Intentional Release Differences](#current-intentional-release-differences).
 
@@ -101,4 +101,4 @@ Other release-only differences should stay in metadata and docs rather than chan
 - public URLs point at `openretriever`,
 - the PyPI distribution name is `pyretriever` while the import package remains `retriever`,
 - docs avoid private project history and local paths,
-- release docs include public website/packaging guidance.
+- release docs include public packaging and repository-readiness guidance.
