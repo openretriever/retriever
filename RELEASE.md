@@ -21,8 +21,9 @@ Before making the repository public:
 
 - Set the default branch to `main`.
 - Keep `release/mirror-alignment-20260621` as an audit/reference branch if useful.
-- Enable GitHub Pages with source `GitHub Actions` so `.github/workflows/docs.yml` can deploy `site/`.
 - Confirm the repository URL is `https://github.com/openretriever/retriever`.
+- Confirm the hosted docs URL is `https://openretriever-docs.pages.dev/`.
+- Build docs with `pixi run -e docs docs-build`; deploy the generated static site through the configured Cloudflare Pages project.
 
 ## Package Publish
 

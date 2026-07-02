@@ -27,7 +27,7 @@ Retriever tutorials are organized as a learning path, not a dump of examples. Ru
   <a href="track_e_resource_and_sync/"><strong>E. Resource and Sync</strong><span>Multi-rate streams, synchronization, fan-in/fan-out, and joins.</span></a>
   <a href="track_f_policy_backends/"><strong>F. Policy Backends</strong><span>Swapping policy backends behind one graph contract.</span></a>
   <a href="track_g_operations_interfaces/"><strong>G. Operations Interfaces</strong><span>Registries, composition, typed boundaries, and integration surfaces.</span></a>
-  <a href="track_h_release_readiness/"><strong>H. Release Readiness</strong><span>Manifests, evidence, datasets, and acceptance gates.</span></a>
+  <a href="track_h_release_readiness/"><strong>H. Evidence and Manifests</strong><span>Run manifests, datasets, and acceptance evidence.</span></a>
 </div>
 
 ## How To Choose
@@ -41,7 +41,7 @@ Retriever tutorials are organized as a learning path, not a dump of examples. Ru
 | Handle multi-rate data handoff | [Track E: Resource and Sync](track_e_resource_and_sync.md) |
 | Abstract over a policy/model backend | [Track F: Policy Backends](track_f_policy_backends.md) |
 | Publish reusable components | [Track G: Operations Interfaces](track_g_operations_interfaces.md) |
-| Prepare a public release | [Track H: Release Readiness](track_h_release_readiness.md) |
+| Capture run evidence and dataset lineage | [Track H: Evidence and Manifests](track_h_release_readiness.md) |
 
 ## Deep Dives
 

@@ -87,11 +87,13 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
+The first PyPI release target is `pyretriever==0.0.1`. Once published, install it with:
+
 ```bash
 python -m pip install pyretriever==0.0.1
 ```
 
-The PyPI distribution name is `pyretriever`; the Python import package is `retriever`.
+Until then, use the Pixi/source-checkout path below. The PyPI distribution name is `pyretriever`; the Python import package is `retriever`.
 
 For local development and demos, use Pixi. The first visual demo is webcam color detection:
 
@@ -122,7 +124,7 @@ Start here:
 - [Architecture](docs/architecture.md) — runtime layers, IR, clocks, and backends.
 - [Tutorials](docs/tutorials/index.md) — runnable tutorial tracks.
 - [API Reference](docs/API.md) — public API surface.
-- [Release Checklist](RELEASE.md) — launch, docs deployment, and package publishing checklist.
+- [Release Checklist](RELEASE.md) — launch and package publishing checklist.
 
 The hosted docs target is [openretriever-docs.pages.dev](https://openretriever-docs.pages.dev/).
 

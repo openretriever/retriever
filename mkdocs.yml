@@ -67,7 +67,7 @@ nav:
       - Resource and Sync: tutorials/track_e_resource_and_sync.md
       - Policy Backends: tutorials/track_f_policy_backends.md
       - Operations Interfaces: tutorials/track_g_operations_interfaces.md
-      - Release Readiness: tutorials/track_h_release_readiness.md
+      - Evidence and Manifests: tutorials/track_h_release_readiness.md
   - Reference:
       - Runtime Handbook: handbook.md
       - API: API.md
@@ -81,5 +81,4 @@ nav:
           - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
       - Hub: hub.md
-      - Release Readiness: release_readiness.md
       - Contributing: contributing.md

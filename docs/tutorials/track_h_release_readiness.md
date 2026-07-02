@@ -1,12 +1,12 @@
 ---
-title: "Track H: Release Readiness"
+title: "Track H: Evidence and Manifests"
 ---
 
-# Track H: Release Readiness
+# Track H: Evidence and Manifests
 
 Focus: manifest lineage, acceptance-gate evidence, and go/no-go decisions.
 
-This track is for packaging and verification after the runtime basics are already familiar.
+This track is for run manifests, dataset lineage, and acceptance evidence after the runtime basics are already familiar.
 
 ## Start Here
 
