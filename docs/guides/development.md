@@ -382,7 +382,7 @@ pixi run p0-release-readiness
 pixi run build
 ```
 
-The project website should link the runtime code button to `https://github.com/openretriever/retriever` and the docs button to `https://openretriever.github.io/retriever/`. Companion example repositories can be linked separately when they are ready.
+The project website should link the runtime code button to `https://github.com/openretriever/retriever` and the docs button to `https://openretriever-docs.pages.dev/`. Companion example repositories can be linked separately when they are ready.
 
 ### Continuous Integration
 

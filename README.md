@@ -11,7 +11,7 @@
 <p>A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.</p>
 
 <p>
-  <a href="https://docs.openretriever.org/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
+  <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
   <a href="https://github.com/openretriever/retriever"><img alt="Runtime code" src="https://img.shields.io/badge/Runtime-code-111827?style=for-the-badge&logo=github"></a>
   <a href="https://github.com/openretriever/golden-retriever"><img alt="Examples" src="https://img.shields.io/badge/Examples-Golden-92400e?style=for-the-badge&logo=github"></a>
@@ -124,7 +124,7 @@ Start here:
 - [API Reference](docs/API.md) — public API surface.
 - [Release Checklist](RELEASE.md) — launch, docs deployment, and package publishing checklist.
 
-The hosted docs target is [openretriever.github.io/retriever](https://openretriever.github.io/retriever/).
+The hosted docs target is [openretriever-docs.pages.dev](https://openretriever-docs.pages.dev/).
 
 ## Runtime Surfaces
 

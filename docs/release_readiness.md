@@ -65,7 +65,7 @@ git remote -v
 
 Before making the repository public, verify GitHub's default branch is `main`. The release branch may remain as a named audit branch, but public clones and documentation links should land on `main` by default. If publishing docs through GitHub Pages, set the Pages source to `GitHub Actions` so `.github/workflows/docs.yml` can deploy `site/`.
 
-The companion landing page should treat this repository as the runtime code surface. Link docs to `https://openretriever.github.io/retriever/` and keep larger robot examples in separate companion repositories.
+The companion landing page should treat this repository as the runtime code surface. Link docs to `https://openretriever-docs.pages.dev/` and keep larger robot examples in separate companion repositories.
 
 ## Acceptance Checks
 

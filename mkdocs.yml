@@ -1,6 +1,6 @@
 site_name: OpenRetriever Docs
 site_description: Closed-loop robot agents with explicit time.
-site_url: https://docs.openretriever.org/
+site_url: https://openretriever-docs.pages.dev/
 repo_url: https://github.com/openretriever/retriever
 repo_name: openretriever/retriever
 
