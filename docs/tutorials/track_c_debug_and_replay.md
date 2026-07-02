@@ -42,12 +42,16 @@ Run this from the repository root. The snippet imports a repo-local helper from
 
 ```bash
 pixi run env PYTHONPATH=src:. python - <<'PY'
+from pathlib import Path
+
 from examples.shared.perception_flows import build_tutorial_perception_pipeline
 
+out = Path("artifacts/tutorial_perception.html")
+out.parent.mkdir(exist_ok=True)
 path = build_tutorial_perception_pipeline(
     use_real_camera=False,
     show_window=False,
-).visualize("/tmp/tutorial_perception.html")
+).visualize(str(out))
 
 print(path)
 PY
