@@ -39,6 +39,6 @@ The PyPI project name `retriever` is already used by another project. Publish th
 ## Companion Repositories
 
 - Golden examples: `https://github.com/openretriever/golden-retriever`
-- Project website: `https://github.com/openretriever/landing-site`
+- Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
 Golden currently depends on the temporary `debug-retriever` package. After the real `pyretriever` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`.
