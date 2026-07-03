@@ -43,6 +43,7 @@ export default defineConfig({
           label: 'Tutorial Path',
           items: [
             { label: 'Tutorial Overview', slug: 'tutorials' },
+            { label: 'Examples and Results', slug: 'tutorials/examples-and-results' },
             { label: 'Debug and Visualize', slug: 'tutorials/debug-and-visualize' },
           ],
         },

@@ -1,0 +1,186 @@
+---
+title: Examples and Results
+description: A notebook-style walkthrough through the first Retriever examples.
+---
+
+# Examples and Results
+
+This page is a lightweight notebook: run one cell, compare the typical output, then read what changed in the graph. Start here after install if you want a concrete path from a tiny Flow to visual perception and replay.
+
+## Cell 1: run the smallest Flow
+
+<p class="notebook-label">Command cell</p>
+
+```bash
+pixi run demo-basic-flow
+```
+
+<p class="notebook-label output-label">Typical output</p>
+
+```text
+============================================================
+DoubleFlow - direct attribute access
+  Input type: NumberInput
+  Output type: NumberOutput
+  [DoubleFlow] input.value=5 -> result=10
+  Result: NumberOutput(result=10)
+
+============================================================
+SignalAwareFlow - _signals pattern matching
+
+  Case 1: Empty input (no signals)
+  empty_input._signals = []
+  [SignalAwareFlow] input._signals=[]
+    No signals - skipping
+
+  Case 2: Input with value
+  full_input._signals = ['value']
+  [SignalAwareFlow] input._signals=['value']
+    value=7 -> result=14
+  Result: NumberOutput(result=14)
+============================================================
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> a Flow is still ordinary Python: typed input, typed output, and a `step(...)` method. The `_signals` case shows how Retriever can distinguish "field missing" from "field present with a value" when composing pipelines.</p>
+
+## Cell 2: step a graph locally
+
+<p class="notebook-label">Command cell</p>
+
+```bash
+pixi run demo-stepper
+```
+
+<p class="notebook-label output-label">Typical output</p>
+
+```text
+=== step 0 ===
+[Sink] got value=2
+
+=== step 1 ===
+[Sink] got value=4
+
+=== step 2 ===
+[Sink] got value=6
+
+=== step 3 ===
+[Sink] got value=8
+
+=== step 4 ===
+[Sink] got value=10
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> before launching a backend, you can advance the same graph in-process. This is the fastest way to set breakpoints inside `Flow.step(...)`, inspect local state, and reproduce a small failing case.</p>
+
+## Cell 3: step perception without a camera
+
+<p class="notebook-label">Command cell</p>
+
+```bash
+pixi run demo-perception-stepper
+```
+
+<p class="notebook-label output-label">Typical output</p>
+
+```text
+=== step 0 ===
+[PrintDetections] frame=1 labels=['blue_object']
+
+=== step 1 ===
+[PrintDetections] frame=2 labels=['red_object']
+
+=== step 2 ===
+[PrintDetections] frame=3 labels=['blue_object']
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> the perception graph can be debugged with deterministic mock frames first. That keeps the first debugging loop independent of camera permissions, GUI windows, and backend scheduling.</p>
+
+## Cell 4: run the visual perception pipeline
+
+<p class="notebook-label">Command cell: live webcam first</p>
+
+```bash
+pixi run demo-webcam-detection
+```
+
+<p class="notebook-label">Command cell: deterministic fallback</p>
+
+```bash
+pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
+  --backend in-process \
+  --camera-mode mock \
+  --visualize stdout \
+  --duration 3
+```
+
+<p class="notebook-label output-label">Typical mock output</p>
+
+```text
+Perception Demo - Live or Mock Camera to Detection
+
+Building perception pipeline:
+  Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
+
+[ok] Graph created: 3 nodes, 5 edges
+
+Running for 3.0 seconds...
+Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
+------------------------------------------------------------
+  Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+  Frame 2: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+  Frame 3: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+
+Pipeline Summary
+
+Camera Input:
+  - Uses mock test pattern when mock mode is selected or auto fallback triggers
+
+Detection:
+  - Red objects: high red channel, low green/blue channels
+  - Blue objects: high blue channel, low red/green channels
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> the visual demo is still a small graph: camera, detector, display. Live mode shows the same structure with a real webcam and Rerun when available; mock mode gives a stable expected result for docs, tests, and remote machines.</p>
+
+## Cell 5: render the graph before debugging timing
+
+<p class="notebook-label">Command cell</p>
+
+```bash
+pixi run docs-tutorial-perception-html
+```
+
+<p class="notebook-label output-label">Expected artifact</p>
+
+```text
+artifacts/tutorial_perception.html
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> the graph view is where timing becomes inspectable. Look for Flow nodes, ports, clocks, sync policies, and feedback edges before debugging backend behavior.</p>
+
+## Cell 6: record and replay a run
+
+<p class="notebook-label">Command cell</p>
+
+```bash
+pixi run demo-webcam-record
+pixi run demo-webcam-replay-rrd
+```
+
+<p class="notebook-label output-label">Expected result</p>
+
+```text
+logs/perception.rrd
+logs/perception.mcap
+```
+
+<p class="notebook-takeaway"><strong>What this teaches:</strong> a live robot or camera run can become a portable artifact. Replay lets you debug downstream logic without depending on the original sensor timing.</p>
+
+## Where to go next
+
+<div class="card-grid">
+  <a class="info-card" href="/concepts/flow/"><strong>Understand Flow</strong><span>Read the Python class model behind the first examples.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Understand time</strong><span>Learn clocks, event streams, and per-edge sync policies.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug deliberately</strong><span>Use graph render, stepping, Rerun, record, and replay.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/"><strong>Try GoldenRetriever</strong><span>Move from runtime primitives to richer robot examples.</span></a>
+</div>

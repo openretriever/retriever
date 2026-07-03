@@ -7,7 +7,7 @@ title: Install
 Retriever is published as a Python runtime package. The public release target is:
 
 ```bash
-pip install pyretriever
+pip install retriever-core
 ```
 
 For this repository while release preparation is ongoing, use Pixi from the repo root:
