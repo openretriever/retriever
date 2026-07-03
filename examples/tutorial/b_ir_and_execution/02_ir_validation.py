@@ -71,7 +71,7 @@ if __name__ == "__main__":
     print("What's checked during validation:")
     print("  [1] Port existence - all ports name must exist on their nodes")
     print("  [2] Type compatibility - source and destination types must match")
-    print("  [3] More validations are comming soon")
+    print("  [3] More validations are coming soon")
     print("\n" + "=" * 60)
     print("Next: IR can be compiled into an ExecutionGraph (partitioning + placement)")
     print("=" * 60)

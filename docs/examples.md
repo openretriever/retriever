@@ -10,7 +10,7 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   <a class="rt-path-step" href="/quickstart/">
     <span>01</span>
     <strong>First visual demo</strong>
-    <p>Webcam frames flow through a color detector and display path.</p>
+    <p>Webcam frames flow through a color detector into Rerun/stdout visualization.</p>
     <code>pixi run demo-webcam-detection</code>
   </a>
   <a class="rt-path-step" href="/tutorials/track_a_flow_fundamentals/">
@@ -33,12 +33,16 @@ These examples are intentionally small. They are meant to make the runtime model
 
 | Goal | Command | What it teaches |
 | --- | --- | --- |
-| See a graph run on real input | `pixi run demo-webcam-detection` | Camera input, detector Flow, visualization fallback. |
+| See a graph run on real input | `pixi run demo-webcam-detection` | Webcam color detection with Rerun when available and stdout fallback. |
 | Understand the minimum API | `pixi run demo-basic-flow` | `@io`, `Flow`, `Rate`, `Trigger`, `Pipeline.connect`. |
 | Inspect backend execution | `pixi run demo-rt-execution` | Runtime validation and backend execution. |
 | Debug in one Python process | `pixi run demo-stepper` | `Pipeline.step(...)` before multiprocessing/dora. |
 | Record and replay perception | `pixi run demo-webcam-record` | Deterministic replay artifacts for debugging. |
 | Join multi-rate streams | `pixi run demo-data-multistream-join` | Synchronization and event joins. |
+
+## Rerun Visualization
+
+Rerun is the first visual path for Retriever examples. Use `pixi run demo-webcam-detection` for automatic Rerun/stdout fallback, `pixi run demo-webcam-detection-mp-rerun` when you specifically want a worker-backend live viewer, and `pixi run demo-webcam-record` when you want a portable replay artifact.
 
 ## Core vs GoldenRetriever
 

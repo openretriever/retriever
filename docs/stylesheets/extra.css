@@ -12,9 +12,9 @@
 }
 
 [data-md-color-scheme="default"] {
-  --md-primary-fg-color: #0f766e;
-  --md-primary-fg-color--light: #14a69a;
-  --md-primary-fg-color--dark: #075e58;
+  --md-primary-fg-color: #0b5f58;
+  --md-primary-fg-color--light: #15877c;
+  --md-primary-fg-color--dark: #063f3b;
   --md-accent-fg-color: #c98200;
 }
 
@@ -290,6 +290,98 @@
 
 .rt-track-map {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Tutorial command cards keep public pages task-first instead of showing shell walls. */
+.rt-command-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1rem 0 1.8rem;
+}
+
+.rt-command-card {
+  border: 1px solid var(--rt-border);
+  border-radius: 1.05rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 245, 0.94));
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.055);
+  padding: 1rem 1.05rem;
+}
+
+.rt-command-card span {
+  color: var(--rt-gold);
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  margin-bottom: 0.45rem;
+}
+
+.rt-command-card strong,
+.rt-command-card small,
+.rt-command-card code {
+  display: block;
+}
+
+.rt-command-card strong {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.rt-command-card small {
+  color: var(--rt-muted);
+  line-height: 1.55;
+  min-height: 2.8rem;
+}
+
+.rt-command-card code {
+  margin-top: 0.7rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.md-typeset .highlight pre,
+.md-typeset pre {
+  overflow-x: auto;
+}
+
+.md-typeset .highlight code,
+.md-typeset pre code {
+  white-space: pre-wrap;
+}
+
+.rt-command-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.rt-figure-card {
+  border: 1px solid var(--rt-border);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--rt-shadow);
+  margin: 1.35rem 0 2.2rem;
+  overflow: hidden;
+}
+
+.rt-figure-card img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.rt-figure-card figcaption {
+  border-top: 1px solid rgba(231, 226, 215, 0.82);
+  color: var(--rt-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0.85rem 1rem;
+}
+
+.rt-figure-wide {
+  margin-left: calc(-1 * min(2.2rem, 4vw));
+  margin-right: calc(-1 * min(2.2rem, 4vw));
 }
 
 .md-footer {

@@ -1,5 +1,5 @@
-site_name: OpenRetriever Docs
-site_description: Closed-loop robot agents with explicit time.
+site_name: Retriever
+site_description: Build closed-loop robot agents with explicit time.
 site_url: https://openretriever-docs.pages.dev/
 repo_url: https://github.com/openretriever/retriever
 repo_name: openretriever/retriever
@@ -13,8 +13,6 @@ theme:
       primary: teal
       accent: amber
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.sections
     - navigation.indexes
     - navigation.top
@@ -47,8 +45,9 @@ markdown_extensions:
   - pymdownx.inlinehilite
 
 nav:
-  - Overview: index.md
+  - Start: index.md
   - Getting Started:
+      - Visual Quickstart: getting_started/visual_quickstart.md
       - Quickstart: quickstart.md
       - Installation: getting_started/install.md
       - Example Gallery: examples.md
@@ -57,6 +56,7 @@ nav:
       - Flow: guide_flow.md
       - Temporal Model: guide_temporal.md
       - Runtime: guide_runtime.md
+      - Debugging and Replay: guides/debugging.md
       - Execution: guide_execution.md
       - Architecture: architecture.md
   - Tutorials:
@@ -80,5 +80,8 @@ nav:
           - Symbolic Types: guides/symbolic_types_v1.md
           - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
-      - Hub: hub.md
+      - Overview: hub.md
+      - Hub Modules: ecosystem/modules.md
+      - Composable Pipelines: ecosystem/composable_pipelines.md
+      - Publishing Modules: ecosystem/publishing.md
       - Contributing: contributing.md

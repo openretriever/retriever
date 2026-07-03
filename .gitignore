@@ -30,6 +30,7 @@ AGENTS.md
 # Artifacts
 logs/
 out/
+artifacts/
 _ssl/
 
 # Rust

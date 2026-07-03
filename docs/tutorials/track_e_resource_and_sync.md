@@ -4,36 +4,29 @@ title: "Track E: Resource and Synchronization"
 
 # Track E: Resource and Synchronization
 
-Focus: fan-in synchronization, multi-rate sampling, strict resource compatibility, and fusion constraints.
+Focus: fan-in synchronization, multi-rate sampling, resource compatibility, and fusion constraints.
 
-## Start Here
+<div class="rt-learning-panel">
+  <h2>Recommended Path</h2>
+  <p>Start with data handoff and fan-in behavior. Resource hints are useful later, after the synchronization story is clear.</p>
+</div>
 
-Run these in order:
-- `07_data_multistream_join`
-- `02_synchronization`
-- `06_functional_fanin_fanout`
+<div class="rt-command-grid">
+  <div class="rt-command-card"><span>01</span><strong>Join event streams</strong><small>Bridge runtime buffer records with data/event stream structures.</small><code>pixi run demo-data-multistream-join</code></div>
+  <div class="rt-command-card"><span>02</span><strong>Sync policies</strong><small>Compare explicit sampling behavior across edges.</small><code>pixi run demo-synchronization</code></div>
+  <div class="rt-command-card"><span>03</span><strong>Fan-in and fan-out</strong><small>Use functional composition for branching graph shapes.</small><code>pixi run demo-functional-fanin-fanout</code></div>
+  <div class="rt-command-card"><span>04</span><strong>Multi-rate robot system</strong><small>See a larger example with different sensor/control rates.</small><code>pixi run demo-multirate-robot-system</code></div>
+</div>
 
-Use these later if you want more backend/resource detail:
-- `01_multirate_window`
-- `03_multirate_robot_system`
-- `04_strict_resource_fusion`
-- `05_resource_hints`
-
-## Modules
-
-```bash
-pixi run python -m examples.tutorial.e_resource_and_sync.01_multirate_window
-pixi run python -m examples.tutorial.e_resource_and_sync.02_synchronization
-pixi run python -m examples.tutorial.e_resource_and_sync.03_multirate_robot_system
-pixi run python -m examples.tutorial.e_resource_and_sync.04_strict_resource_fusion --case compatible
-pixi run python -m examples.tutorial.e_resource_and_sync.05_resource_hints --print-ir
-pixi run python -m examples.tutorial.e_resource_and_sync.06_functional_fanin_fanout --steps 6 --dt 0.1
-pixi run python -m examples.tutorial.e_resource_and_sync.07_data_multistream_join
-```
+??? note "More resource modules"
+    | Goal | Command |
+    | --- | --- |
+    | Windowed multi-rate sampling | `pixi run demo-multirate` |
+    | Strict resource fusion | `pixi run demo-strict-resource-fusion` |
+    | Resource hints in IR | `pixi run demo-resource-hints` |
 
 ## What To Observe
 
-- Synchronization tradeoffs (`Latest`, windows, and fan-in behavior).
-- Prefer shared payloads and tuple composition where possible; keep named wrappers only when the synchronization surface itself is the lesson.
-- Resource hints only after the synchronization story is clear.
-- Explicit bridges between runtime buffer records and `retriever.types.data` event structures.
+- Sync policies make “which upstream value did I consume?” explicit.
+- Prefer shared payloads and direct composition where possible; named wrappers are useful when the synchronization surface is itself the lesson.
+- Resource hints belong after the timing and data-handoff model is clear.

@@ -6,58 +6,32 @@ title: "Track B: IR and Execution"
 
 Focus: pipeline validation, IR structure, execution graph build, and backend behavior.
 
-## Start Here
+<div class="rt-learning-panel">
+  <h2>Recommended Path</h2>
+  <p>Start with one backend-neutral runtime pass, then inspect the IR and execution build. Treat Dora and backend parity as optional follow-ups, not the first experience.</p>
+</div>
 
-Run these in order:
-- `04_rt_execution`
-- `02_ir_validation`
-- `03_execution_build`
+<div class="rt-command-grid">
+  <div class="rt-command-card"><span>01</span><strong>Run the runtime path</strong><small>Execute a small graph through Retriever's runtime surface.</small><code>pixi run demo-rt-execution</code></div>
+  <div class="rt-command-card"><span>02</span><strong>Validate the graph</strong><small>See the typed graph checks before a backend runs.</small><code>pixi run demo-ir-validation</code></div>
+  <div class="rt-command-card"><span>03</span><strong>Build execution IR</strong><small>Inspect how pipeline structure becomes an executable graph.</small><code>pixi run demo-execution-build</code></div>
+  <div class="rt-command-card"><span>04</span><strong>Render an HTML graph</strong><small>Generate a local visualization artifact without pasting Python heredocs.</small><code>pixi run docs-tutorial-perception-html</code></div>
+</div>
 
-Use these later, once the basic execution story is clear:
-- `05_dora_simple`
-- `06_dora_perception`
-- `09_backend_parity_benchmark`
+??? note "Optional backend and perception modules"
+    Use these when you are already comfortable with the runtime path:
 
-`06_dora_perception` keeps a historical filename. The public learning path is backend-neutral; Dora is optional and should be requested explicitly.
-
-## Modules
-
-```bash
-pixi run python -m examples.tutorial.b_ir_and_execution.01_context_graph
-pixi run python -m examples.tutorial.b_ir_and_execution.02_ir_validation
-pixi run python -m examples.tutorial.b_ir_and_execution.03_execution_build
-pixi run python -m examples.tutorial.b_ir_and_execution.04_rt_execution
-pixi run python -m examples.tutorial.b_ir_and_execution.05_dora_simple
-pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception
-pixi run python -m examples.tutorial.b_ir_and_execution.07_request_response
-pixi run python -m examples.tutorial.b_ir_and_execution.08_detection_window_stats --backend multiprocessing --duration 3
-pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark
-```
-
-## Generate An HTML View
-
-Run this from the repository root. The snippet imports a repo-local helper from
-`examples/shared/perception_flows.py`, so the repository root needs to be on the default Python path.
-
-```bash
-pixi run env PYTHONPATH=src:. python - <<'PY'
-from pathlib import Path
-
-from examples.shared.perception_flows import build_tutorial_perception_pipeline
-
-out = Path("artifacts/tutorial_perception.html")
-out.parent.mkdir(exist_ok=True)
-path = build_tutorial_perception_pipeline(
-    use_real_camera=False,
-    show_window=False,
-).visualize(str(out))
-
-print(path)
-PY
-```
+    | Goal | Command |
+    | --- | --- |
+    | Context graph inspection | `pixi run demo-context-graph` |
+    | Webcam or mock perception graph | `pixi run demo-webcam-detection` |
+    | Dora backend smoke | `pixi run demo-dora-simple` |
+    | Request/response edge | `pixi run demo-request-response` |
+    | Detection window stats | `pixi run demo-detection-window-stats` |
+    | Backend parity check | `pixi run demo-backend-parity` |
 
 ## What To Observe
 
-- Graph-level validation and error surfaces.
-- The difference between “inspect the graph” and “run the graph”.
-- Backend differences only after the basic runtime model is clear.
+- Validation happens before backend execution.
+- IR inspection answers “what graph did I build?” while runtime execution answers “how does it run?”.
+- Backend-specific examples come after the graph contract is clear.
