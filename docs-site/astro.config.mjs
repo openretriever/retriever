@@ -55,12 +55,6 @@ export default defineConfig({
             { label: 'Publishing', slug: 'ecosystem/publishing' },
           ],
         },
-        {
-          label: 'Reference',
-          items: [
-            { label: 'MkDocs Archive', slug: 'reference/mkdocs-archive' },
-          ],
-        },
       ],
     }),
   ],
