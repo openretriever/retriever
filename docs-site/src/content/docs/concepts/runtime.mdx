@@ -1,0 +1,29 @@
+---
+title: Runtime
+---
+
+# Runtime
+
+A Retriever Pipeline is the executable graph. It validates Flow wiring, exposes an intermediate representation, renders visual graph artifacts, supports local stepping, and can run through different backends.
+
+```python
+from retriever.flow import Latest, Pipeline, Rate
+
+with Pipeline("agent") as pipe:
+    camera = CameraFlow() @ Rate(hz=30)
+    detector = ColorDetector() @ Rate(hz=10)
+    pipe.connect(camera, detector, sync=Latest())
+
+pipe.validate()
+pipe.visualize("artifacts/agent.html")
+pipe.run(duration=10)
+```
+
+## Runtime surfaces
+
+<div class="card-grid">
+  <div class="info-card"><strong>Validate</strong><span>Catch missing ports, invalid sync policies, and type-shape mistakes before launch.</span></div>
+  <div class="info-card"><strong>Visualize</strong><span>Render graph structure, clocks, ports, and edge policies as an HTML artifact.</span></div>
+  <div class="info-card"><strong>Step</strong><span>Debug in one process with normal Python breakpoints before launching backends.</span></div>
+  <div class="info-card"><strong>Replay</strong><span>Turn robot runs into repeatable evidence instead of relying on timing luck.</span></div>
+</div>

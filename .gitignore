@@ -65,3 +65,8 @@ references/
 /.vscode/
 *.egg-info/
 /site/
+
+# Astro Starlight docs prototype
+/docs-site/.astro/
+/docs-site/dist/
+/docs-site/node_modules/

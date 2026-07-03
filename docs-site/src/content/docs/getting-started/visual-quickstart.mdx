@@ -1,0 +1,42 @@
+---
+title: Visual Quickstart
+description: Run the first visual Retriever demo.
+---
+
+# Visual Quickstart: webcam color detection
+
+Start here if you want to see Retriever do something immediately. This demo opens your webcam, detects red and blue objects, and streams the result to Rerun when available.
+
+<div class="command-grid">
+  <div class="command-card"><strong>Webcam → color detector → Rerun</strong><span>Show a red or blue object to the camera. If Rerun cannot open, the demo falls back to stdout.</span><code>pixi run demo-webcam-detection</code></div>
+</div>
+
+## What you should see
+
+- A camera Flow publishes frames at its own rate.
+- A color detector Flow runs when frames arrive and emits red/blue bounding boxes.
+- A visualization path shows detections live in Rerun when available.
+- If no camera is available, run the mock-frame version below.
+
+```bash
+pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
+  --backend in-process \
+  --camera-mode mock \
+  --visualize rerun \
+  --duration 10
+```
+
+## Why this is first
+
+The webcam path is small but representative: it has sensor input, typed Flow outputs, asynchronous timing, visualization, and an immediate debugging story. After this works, the same graph can be stepped, inspected, recorded, replayed, and moved to another backend.
+
+## Rerun visualization
+
+| Use case | Command |
+| --- | --- |
+| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
+| Force live Rerun on multiprocessing backend | `pixi run demo-webcam-detection-mp-rerun` |
+| Force mock frames with Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
+| Record a portable perception replay | `pixi run demo-webcam-record` |
+
+If Rerun cannot open a viewer on your machine, use `--visualize stdout` to keep the tutorial running without a GUI.

@@ -1,0 +1,51 @@
+---
+title: Retriever
+slug: /
+description: Build closed-loop robot agents with explicit time.
+template: splash
+---
+
+<div class="hero-panel">
+  <p class="eyebrow">Retriever runtime</p>
+  <h1>Build robot agents whose perception, reasoning, and control run together.</h1>
+  <p class="lede">Retriever is a Python framework for closed-loop robot systems with explicit timing, typed handoff, graph inspection, and replayable execution.</p>
+  <div class="action-grid">
+    <a class="action-card" href="/getting-started/visual-quickstart/">
+      <strong>Start with webcam detection</strong>
+      <span>Run a lightweight visual demo with Rerun or stdout fallback.</span>
+    </a>
+    <a class="action-card" href="/concepts/flow/">
+      <strong>Understand Flow</strong>
+      <span>Learn the Python class abstraction that makes robot modules ordinary to author.</span>
+    </a>
+    <a class="action-card" href="/ecosystem/">
+      <strong>Explore Retriever Hub</strong>
+      <span>See how reusable Flows and pipelines are packaged and composed.</span>
+    </a>
+  </div>
+</div>
+
+General-purpose robot agents rarely fit in one clean loop. Cameras stream, robot state updates faster than policies, VLM/VLA calls have variable latency, planners can block, operators intervene, and replay has to explain exactly what happened. Retriever puts timing and handoff decisions into the graph instead of scattering them across callbacks, queues, and sleeps.
+
+<figure class="figure-card">
+  <img src="/assets/figures/01_pipeline.png" alt="Closed-loop Retriever robot agent pipeline." />
+  <figcaption>A representative Retriever pipeline: slow reasoning, medium-rate skills, and high-rate control live in one explicit graph.</figcaption>
+</figure>
+
+## Learn by building
+
+<div class="card-grid">
+  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>1. See a graph run</strong><span>Webcam frames, color detections, and Rerun visualization.</span></a>
+  <a class="info-card" href="/concepts/flow/"><strong>2. Define a Flow</strong><span>Implement synchronous Python `step(...)` logic with typed inputs and outputs.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>3. Add time</strong><span>Give each module its own clock and declare how incoming streams are sampled.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>4. Debug and replay</strong><span>Render graphs, step locally, record sessions, and replay consumed events.</span></a>
+</div>
+
+## The four objects
+
+<div class="card-grid">
+  <a class="info-card" href="/concepts/flow/"><strong>Flow</strong><span>A typed Python class with local state and a synchronous `step(...)` method.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Clock</strong><span>Each Flow declares when it runs; there is no global robot timestep.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Sync policy</strong><span>Each edge declares how upstream event history becomes one aligned input.</span></a>
+  <a class="info-card" href="/concepts/runtime/"><strong>Pipeline</strong><span>The graph that validates, visualizes, steps, replays, and runs.</span></a>
+</div>

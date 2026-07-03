@@ -1,0 +1,30 @@
+---
+title: Time and Sync
+---
+
+# Time and Sync
+
+Robots do not run on one global timestep. Cameras, state estimators, planners, policies, controllers, and operators all update on different schedules.
+
+Retriever makes this explicit with two graph-level choices:
+
+- **Clock**: when a Flow wakes up.
+- **Sync policy**: how each incoming event buffer is sampled before `step(...)` runs.
+
+<figure class="figure-card">
+  <img src="/assets/figures/02_flow_sync.png" alt="Flow synchronization over event streams." />
+  <figcaption>Each Flow has its own schedule. Each edge declares how upstream history becomes one aligned input.</figcaption>
+</figure>
+
+## The intuition
+
+```python
+# before this Flow steps:
+image = Latest(camera_events)
+state = Latest(robot_state_events)
+goal = Latest(goal_events)
+obs = SkillObs(image=image, state=state, goal=goal)
+chunk = vla_flow.step(obs)
+```
+
+The important part is not the exact adapter name. The important part is that sampling is part of the graph instead of being hidden in callback timing.

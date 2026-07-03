@@ -1,0 +1,24 @@
+---
+title: Retriever Hub
+---
+
+# Retriever Hub
+
+Retriever has two layers:
+
+- **Runtime core**: Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, and backend execution.
+- **Hub and examples**: reusable Flows, typed payloads, transforms, and larger robot/application modules that can be shared across projects.
+
+<div class="card-grid">
+  <a class="info-card" href="/ecosystem/modules/"><strong>Modules</strong><span>What a reusable Retriever module exports and how users import it.</span></a>
+  <a class="info-card" href="/ecosystem/composable-pipelines/"><strong>Composable pipelines</strong><span>Reuse a whole pipeline as an inspectable graph or one Flow stage.</span></a>
+  <a class="info-card" href="/ecosystem/publishing/"><strong>Publishing</strong><span>Package conventions, import-safe modules, and index metadata.</span></a>
+</div>
+
+```python
+from retriever import hub
+from retriever.flow import Pipeline, Rate, Latest
+
+LidarSlam = hub.use("your-org/lidar-slam:LidarSlamFlow")
+slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
+```

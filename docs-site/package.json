@@ -1,0 +1,17 @@
+{
+  "name": "retriever-docs-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "latest",
+    "astro": "latest",
+    "sharp": "latest",
+    "starlight-theme-nova": "latest"
+  },
+  "devDependencies": {}
+}
