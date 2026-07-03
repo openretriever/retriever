@@ -70,3 +70,6 @@ references/
 /docs-site/.astro/
 /docs-site/dist/
 /docs-site/node_modules/
+
+# Cloudflare local deploy state
+/.wrangler/
