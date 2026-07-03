@@ -140,8 +140,8 @@ package = "python scripts/release/package_dist.py"
 
 # Documentation site
 # Run: pixi run -e docs docs-build
-docs-build = "mkdocs build --strict"
-docs-serve = "mkdocs serve --dev-addr 127.0.0.1:8000"
+docs-build = "npm --prefix docs-site ci && npm --prefix docs-site run build"
+docs-serve = "npm --prefix docs-site run dev"
 
 # Test tasks
 test = "python -m pytest tests/ -v"

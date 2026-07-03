@@ -23,7 +23,7 @@ Before making the repository public:
 - Keep `release/mirror-alignment-20260621` as an audit/reference branch if useful.
 - Confirm the repository URL is `https://github.com/openretriever/retriever`.
 - Confirm the hosted docs URL is `https://openretriever-docs.pages.dev/`.
-- Build docs with `pixi run -e docs docs-build`; deploy the generated static site through the configured Cloudflare Pages project.
+- Build docs with `pixi run -e docs docs-build`; deploy `docs-site/dist/` through the configured Cloudflare Pages project.
 
 ## Package Publish
 
