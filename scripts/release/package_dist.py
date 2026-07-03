@@ -88,24 +88,24 @@ def main():
     # Note: We do NOT copy pixi.lock because the source location changes, invalidating the lock.
     # Users will generate a new lock file on first install.
 
-    # Get the freshly built pyretriever wheel.
-    wheel_files = sorted(dist_dir.glob("pyretriever-*.whl"))
+    # Get the freshly built retriever-core wheel.
+    wheel_files = sorted(dist_dir.glob("retriever_core-*.whl"))
     if not wheel_files:
-        raise RuntimeError("No pyretriever wheel found after build")
+        raise RuntimeError("No retriever-core wheel found after build")
     else:
         wheel_name = wheel_files[0].name
         # Read and patch pixi.toml
         with open(root_dir / "pixi.toml", "r") as f:
             pixi_content = f.read()
 
-        # Replace the local editable pyretriever dependency with the bundled wheel.
-        target_str = 'pyretriever = { path = ".", editable = true'
+        # Replace the local editable retriever-core dependency with the bundled wheel.
+        target_str = 'retriever-core = { path = ".", editable = true'
         if target_str not in pixi_content:
             print(f"WARNING: Could not find dependency line '{target_str}' in pixi.toml")
         
         pixi_patched = pixi_content.replace(
             target_str,
-            f'pyretriever = {{ path = "./install/{wheel_name}", editable = false'
+            f'retriever-core = {{ path = "./install/{wheel_name}", editable = false'
         )
         pixi_patched = _strip_bundle_only_tasks(pixi_patched)
 

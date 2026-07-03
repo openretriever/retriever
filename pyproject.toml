@@ -13,7 +13,7 @@ force-include = { "THIRD_PARTY_NOTICES.md" = "THIRD_PARTY_NOTICES.md" }
 include = ["/src", "/README.md", "/LICENSE", "/THIRD_PARTY_NOTICES.md", "/pyproject.toml"]
 
 [project]
-name = "pyretriever"
+name = "retriever-core"
 version = "0.0.1"
 description = "A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily."
 readme = "README.md"

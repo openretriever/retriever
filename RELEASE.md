@@ -1,6 +1,6 @@
 # Retriever Release Checklist
 
-This repository is the public core runtime candidate for Retriever. The first public package release target is `pyretriever==0.0.1`.
+This repository is the public core runtime candidate for Retriever. The first public package release target is `retriever-core==0.0.1`.
 
 ## Required Validation
 
@@ -29,9 +29,9 @@ Before making the repository public:
 
 Before publishing to PyPI:
 
-The PyPI project name `retriever` is already used by another project. Publish this runtime as distribution name `pyretriever`; the Python import remains `import retriever`.
+The PyPI project name `retriever` is already used by another project. Publish this runtime as distribution name `retriever-core`; the Python import remains `import retriever`.
 
-- Confirm `pyproject.toml` metadata, version, license, URLs, optional extras, and distribution name `pyretriever`.
+- Confirm `pyproject.toml` metadata, version, license, URLs, optional extras, and distribution name `retriever-core`.
 - Build locally with `pixi run build`.
 - Inspect the wheel/sdist contents for generated or private files.
 - Configure PyPI/TestPyPI trusted publishers for `.github/workflows/publish.yml` environments `pypi` and `testpypi`, then publish manually with the workflow dispatch target.
@@ -41,4 +41,4 @@ The PyPI project name `retriever` is already used by another project. Publish th
 - Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
-Golden currently depends on the temporary `debug-retriever` package. After the real `pyretriever` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`.
+Golden currently depends on the temporary `debug-retriever` package. After the real `retriever-core` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`.

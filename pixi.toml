@@ -6,9 +6,9 @@
 # pyproject.toml - NOT a replacement for it.
 #
 # RELATIONSHIP WITH pyproject.toml:
-#   - pyproject.toml: Defines the Python distribution (`pyretriever`) and its dependencies
+#   - pyproject.toml: Defines the Python distribution (`retriever-core`) and its dependencies
 #   - pixi.toml: Defines the development environment (conda + pypi packages)
-#   - Pixi installs the local `pyretriever` distribution from pyproject.toml as an editable package
+#   - Pixi installs the local `retriever-core` distribution from pyproject.toml as an editable package
 #   - Both files may specify overlapping deps (e.g., dora-rs) - this is fine,
 #     the more restrictive version wins
 #
@@ -92,13 +92,13 @@ docs = { features = ["docs"] }
 # Note: These are installed via uv after conda deps are resolved
 [pypi-dependencies]
 
-# Install the local pyretriever distribution from pyproject.toml.
+# Install the local retriever-core distribution from pyproject.toml.
 # Keep the default environment lightweight, but include:
 # - `dora`: dora backend support
 # - `demo`: deps needed for the included examples (e.g. OpenCV + NumPy)
 # - `web`: deps for web-based command interfaces (FastAPI)
 # - `vision`: deps for real-time vision (PyTorch, Transformers)
-pyretriever = { path = ".", editable = true, extras = [
+retriever-core = { path = ".", editable = true, extras = [
     "dora",
     "demo",
     "web",

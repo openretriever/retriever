@@ -87,13 +87,13 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The first PyPI release target is `pyretriever==0.0.1`. Once published, install it with:
+The first PyPI release target is `retriever-core==0.0.1`. Once published, install it with:
 
 ```bash
-python -m pip install pyretriever==0.0.1
+python -m pip install retriever-core==0.0.1
 ```
 
-Until then, use the Pixi/source-checkout path below. The PyPI distribution name is `pyretriever`; the Python import package is `retriever`.
+Until then, use the Pixi/source-checkout path below. The PyPI distribution name is `retriever-core`; the Python import package is `retriever`.
 
 For local development and demos, use Pixi. The first visual demo is webcam color detection:
 
@@ -149,7 +149,7 @@ Backend execution is for realistic scheduling, process boundaries, and deploymen
 
 The intended public split is:
 
-- **Core runtime**: this repository, published as `pyretriever` and imported as `retriever`.
+- **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
 - **Examples and integrations**: [`openretriever/golden-retriever`](https://github.com/openretriever/golden-retriever).
 - **Project website**: public landing page and paper material, link reserved above.
 - **Paper / arXiv**: research writeup, link reserved above.

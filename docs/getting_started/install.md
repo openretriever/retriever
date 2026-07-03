@@ -37,10 +37,10 @@ pixi shell
 
 ## PyPI Distribution
 
-The first public PyPI release target is `pyretriever==0.0.1`. Once that package is published, install the runtime distribution with:
+The first public PyPI release target is `retriever-core==0.0.1`. Once that package is published, install the runtime distribution with:
 
 ```bash
-python -m pip install pyretriever
+python -m pip install retriever-core
 python -c "import retriever; print(retriever.__file__)"
 ```
 
@@ -48,7 +48,7 @@ Until then, use Pixi or a source checkout.
 
 ## Alternative: source checkout with venv + pip/uv
 
-Use this when you cloned the repository and want to run local examples from the checkout. The PyPI distribution name is `pyretriever`, and it installs the import package `retriever`; tutorial modules under `examples/` are source-checkout material unless you use a separate example bundle.
+Use this when you cloned the repository and want to run local examples from the checkout. The PyPI distribution name is `retriever-core`, and it installs the import package `retriever`; tutorial modules under `examples/` are source-checkout material unless you use a separate example bundle.
 
 ```bash
 python -m venv .venv
