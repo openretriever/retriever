@@ -8,7 +8,7 @@ Retriever has three public surfaces that should stay separate but connected:
 
 - **Core runtime**: Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, standard types, and backend execution.
 - **Retriever Hub**: the reusable pack/module protocol and index for Flows, type packs, transforms, and composed pipelines.
-- **GoldenRetriever**: the applied reference layer: maintained robot-facing examples, type packs, simulator/visualization lanes, and current manifest-declared Hub pack surface.
+- **GoldenRetriever**: the reference layer: maintained robot-facing examples, type packs, simulator/visualization lanes, and current manifest-declared Hub pack surface.
 
 Use Hub when a robot system needs to reuse a stable boundary rather than copy code: a Flow class, a pipeline builder, a typed payload pack, or a representation transform.
 
@@ -39,4 +39,4 @@ slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
 3. Run [Golden Packs](/ecosystem/golden-packs/) to prove that applied robotics types load through Hub.
 4. Continue to the [Golden reference layer](https://retriever-space.pages.dev/) when you want maintained perception, memory, language, simulator, visualization, or robot type-pack lanes.
 
-The important boundary is that GoldenRetriever is **not** a second runtime package. The runtime is `retriever-core` and imports as `retriever`; Golden is the maintained applied reference catalog, example site, and pack-candidate surface built on top of it.
+The important boundary is that GoldenRetriever is **not** a second runtime package. The runtime is `retriever-core` and imports as `retriever`; Golden is the maintained reference catalog, example site, and pack-candidate surface built on top of it.

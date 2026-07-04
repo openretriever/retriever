@@ -56,7 +56,7 @@ Recommended public split:
 
 ## Applied reference catalog
 
-GoldenRetriever is the applied reference catalog for this release. Its current manifest-declared Hub surface exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same ref shape:
+GoldenRetriever is the reference catalog for this release. Its current manifest-declared Hub surface exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same ref shape:
 
 ```python
 from retriever import hub

@@ -101,7 +101,7 @@ Minimum expectations before publishing:
 
 ## Release boundary
 
-GoldenRetriever is the current applied reference catalog. Keep Golden as applied examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
+GoldenRetriever is the current reference catalog. Keep Golden as the reference layer with source examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
 
 ## Public-surface check
 
