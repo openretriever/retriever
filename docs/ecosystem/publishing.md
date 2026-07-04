@@ -106,4 +106,4 @@ After repository visibility, DNS cutover, and TestPyPI/PyPI publication are comp
 pixi run public-surface-check
 ```
 
-This check verifies the GitHub default branch, live website URLs, DNS resolution, and `retriever-core` visibility on PyPI/TestPyPI. It is expected to fail before those external launch steps are complete.
+This check verifies that repository metadata, live website URLs, DNS resolution, and `retriever-core` package indexes match the launch docs. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.

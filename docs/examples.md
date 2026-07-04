@@ -21,7 +21,7 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   </a>
   <a class="rt-path-step" href="https://retriever-space.pages.dev/">
     <span>03</span>
-    <strong>Golden applied examples</strong>
+    <strong>Golden reference layer</strong>
     <p>Perception, memory, language, notebooks, robotics integration lanes, and pack candidates live in the GoldenRetriever applied examples site.</p>
     <code>Open GoldenRetriever docs</code>
   </a>

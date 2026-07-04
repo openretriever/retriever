@@ -92,11 +92,11 @@ After repository visibility, DNS cutover, and TestPyPI/PyPI publication are comp
 pixi run public-surface-check
 ```
 
-This network-facing check verifies the GitHub default branch, live website URLs, DNS resolution, and `retriever-core` visibility on PyPI/TestPyPI. It is expected to fail before those external launch steps are complete.
+This network-facing check verifies that repository metadata, live website URLs, DNS resolution, and `retriever-core` package indexes match the launch docs. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
 
 ## Companion Repositories
 
-- Golden applied examples: `https://github.com/openretriever/golden-retriever`
+- Golden reference layer: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
 Golden is the applied examples repository and applied type pack. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so Golden should launch as a Hub-distributed pack catalog rather than a second public PyPI product.
@@ -117,10 +117,7 @@ link or command dangles:
    verify its Hub-loadable applied type pack (`openretriever/golden-retriever`).
    Keep any Golden wheel as an optional future artifact, not a required public
    launch step.
-4. Create the public `openretriever/hub-index` repository (the Hub's
-   default module index) and push the prepared index repo. Optional follow-up:
-   publish the `openretriever/pi05-policy` hub module designed in the Golden
-   repo (`examples/advanced/openpi_policy/README.md`).
+4. Publish the public Retriever Hub index and any optional policy modules only after the runtime package and Golden reference layer are live. Keep those modules separate from the core runtime release.
 5. Redeploy the docs site (includes `llms.txt`, Standard Types, Concepts and
    Lineage, and Hub pages) and the landing site, then run a link check.
 6. DNS cutover for the docs domain, then update `site-links.js` in the

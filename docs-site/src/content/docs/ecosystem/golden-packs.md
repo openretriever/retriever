@@ -1,8 +1,8 @@
 ---
-title: Golden Reference Packs
+title: Golden Reference Layer
 ---
 
-# Golden Reference Packs
+# Golden Reference Layer
 
 GoldenRetriever is the applied reference layer for Hub-distributed robotics packs. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
