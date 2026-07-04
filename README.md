@@ -93,17 +93,26 @@ The public PyPI distribution target is `retriever-core`; the Python import packa
 python -m pip install retriever-core
 ```
 
-Until the `0.0.1` package is published, use the Pixi/source-checkout path below. It is also the recommended path for demos because it includes the example files and optional visualization dependencies.
+Current launch status: the package and source release are staged, but public
+PyPI/source access is not the default path until the final visibility switch.
+If you already have a source checkout, use Pixi for demos because it includes
+example files and optional visualization dependencies.
 
-For local development and demos, use Pixi. The first visual demo is webcam color detection:
+Start with the deterministic color-detection smoke, then run the live webcam
+visual demo:
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
 pixi install
+pixi run demo-webcam-detection-mock
 pixi run demo-webcam-detection
 ```
 
-`demo-webcam-detection` runs `camera -> color detector -> display` in-process, requests a real webcam by default, and uses `--visualize auto` so Rerun is used when available and stdout is used otherwise. Hold red or blue paper/objects in front of the camera to see detections. If a camera is not available, rerun the module directly with `--camera-mode mock`.
+`demo-webcam-detection-mock` runs `camera -> color detector -> display` with
+synthetic frames and stdout, so it works on headless machines and in agent
+runs. `demo-webcam-detection` requests a real webcam and uses `--visualize auto`
+so Rerun is used when available and stdout is used otherwise. Hold red or blue
+paper/objects in front of the camera to see detections.
 
 Useful follow-up commands:
 
@@ -116,17 +125,16 @@ pixi run demo-webcam-record
 
 ## Documentation Path
 
-Start here:
+The hosted Starlight docs are the public docs front door:
 
-- [Quickstart](docs/quickstart.md) — the shortest runnable introduction.
-- [Handbook](docs/handbook.md) — the canonical runtime handbook.
-- [Install Guide](docs/getting_started/install.md) — Pixi, pip/uv, and backend setup notes.
-- [Architecture](docs/architecture.md) — runtime layers, IR, clocks, and backends.
-- [Tutorials](docs/tutorials/index.md) — runnable tutorial tracks.
-- [API Reference](docs/API.md) — public API surface.
-- [Release Checklist](RELEASE.md) — launch and package publishing checklist.
+- [Overview](https://openretriever-docs.pages.dev/) — recommended path.
+- [Install](https://openretriever-docs.pages.dev/getting-started/install/) — package target and source-checkout commands.
+- [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/) — mock smoke, webcam color detection, and Rerun.
+- [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/) — commands paired with expected output.
+- [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/) — graph render, stepper, record, and replay.
 
-The hosted docs target is [openretriever-docs.pages.dev](https://openretriever-docs.pages.dev/).
+The repository `docs/` tree remains available for deeper source-local reference
+and release maintenance.
 
 Source release status is tracked at [openretriever.org/start/#source-release](https://openretriever.org/start/#source-release) until the GitHub repositories are public.
 

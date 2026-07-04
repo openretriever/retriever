@@ -9,13 +9,14 @@ Start here:
 - `examples/tutorial/` — the canonical tutorial curriculum for the runtime
 - `examples/control_demo.py` — optional web dashboard control demo for runtime orchestration
 
-If you want the first tangible demo, start with live webcam color detection:
+If you want the first tangible demo, start with deterministic color detection, then switch to live webcam color detection:
 
 ```bash
+pixi run demo-webcam-detection-mock
 pixi run demo-webcam-detection
 ```
 
-This runs `camera -> color detector -> display`. It asks for a live webcam and detects simple red/blue objects; use the tutorial module directly with `--camera-mode mock` if no camera is available.
+Both commands run `camera -> color detector -> display`. The mock command uses synthetic frames and stdout, so it works on headless machines. The webcam command asks for a live camera and detects simple red/blue objects with Rerun/stdout visualization.
 
 Then use the pure-core sanity path to understand the API mechanics:
 

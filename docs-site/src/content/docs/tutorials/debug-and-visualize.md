@@ -49,7 +49,13 @@ Use this mode when you want breakpoints inside `Flow.step(...)`, deterministic l
 
 ## Visualize perception runs
 
-The first visual path uses webcam color detection. It tries Rerun first and falls back to stdout when a viewer is not available:
+Use the deterministic mock/stdout path first when you are checking setup, running headless, or asking an agent to verify the graph:
+
+```bash
+pixi run demo-webcam-detection-mock
+```
+
+Then use the live webcam path. It tries Rerun first and falls back to stdout when a viewer is not available:
 
 ```bash
 pixi run demo-webcam-detection
@@ -75,7 +81,7 @@ pixi run demo-webcam-record
 pixi run demo-webcam-replay-rrd
 ```
 
-A recorded run gives you a stable artifact for debugging, regression tests, and sharing evidence. The default record command writes a compact local log under `logs/`, then the replay command consumes the recorded events instead of relying on live camera timing.
+A recorded run gives you a stable artifact for debugging, regression tests, and sharing evidence. The default record command writes `logs/perception.rrd` plus `logs/perception.mcap`, then the replay command consumes the recorded events instead of relying on live camera timing.
 
 ## A practical debugging checklist
 

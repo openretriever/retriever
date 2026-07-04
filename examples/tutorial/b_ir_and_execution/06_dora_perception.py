@@ -12,6 +12,7 @@ direct local webcam path. Dora and multiprocessing remain explicit worker
 backend variants when you want backend parity checks or live Rerun views.
 
 Run:
+  pixi run demo-webcam-detection-mock
   pixi run demo-webcam-detection
   pixi run demo-webcam-detection-mp-rerun
   pixi run demo-webcam-detection-dora

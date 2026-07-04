@@ -95,22 +95,18 @@ pixi run demo-perception-stepper
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> the perception graph can be debugged with deterministic mock frames first. That keeps the first debugging loop independent of camera permissions, GUI windows, and backend scheduling.</p>
 
-## Cell 4: run the visual perception pipeline
+## Cell 4: run the perception pipeline
 
-<p class="notebook-label">Command cell: live webcam first</p>
+<p class="notebook-label">Command cell: deterministic first smoke</p>
+
+```bash
+pixi run demo-webcam-detection-mock
+```
+
+<p class="notebook-label">Command cell: live webcam and Rerun/stdout</p>
 
 ```bash
 pixi run demo-webcam-detection
-```
-
-<p class="notebook-label">Command cell: deterministic fallback</p>
-
-```bash
-pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
-  --backend in-process \
-  --camera-mode mock \
-  --visualize stdout \
-  --duration 3
 ```
 
 <p class="notebook-label output-label">Typical mock output</p>
@@ -123,12 +119,12 @@ Building perception pipeline:
 
 [ok] Graph created: 3 nodes, 5 edges
 
-Running for 3.0 seconds...
+Running for 0.1 seconds...
 Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
 ------------------------------------------------------------
   Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
   Frame 2: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
-  Frame 3: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+  ...
 
 Pipeline Summary
 

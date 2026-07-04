@@ -13,13 +13,13 @@ backends are "multiprocessing", "dora", and "in-process"; `record=` forces
 the in-process backend for determinism. In the source repo, start from
 AGENTS.md at the repo root.
 
-Prerelease note: before `retriever-core==0.0.1` is published on PyPI, use the source-checkout Pixi commands in the install and visual quickstart guides if you already have repository access. Anonymous GitHub requests currently return 404 until repo visibility is flipped.
+Launch-status note: before `retriever-core==0.0.1` is published on PyPI, use the source-checkout Pixi commands in the install and visual quickstart guides if you already have a checkout. Public PyPI/source access is enabled at release.
 
 ## Docs
 
 - [Overview](https://openretriever-docs.pages.dev/): what Retriever is and the recommended path.
 - [Install](https://openretriever-docs.pages.dev/getting-started/install/): Pixi-first setup; pip/uv fallback.
-- [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/): webcam color-detection demo, with a no-camera mock mode.
+- [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/): deterministic mock color-detection smoke, then live webcam/Rerun.
 - [Flow](https://openretriever-docs.pages.dev/concepts/flow/): authoring typed Flows; `@io` payloads; `step()`.
 - [Time and Sync](https://openretriever-docs.pages.dev/concepts/time-and-sync/): clocks (Rate/Tick/Trigger/Hybrid), sync policies (Latest/Hold/Window/Events), on_lag.
 - [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate → IR → backends; stepping; recording and replay.

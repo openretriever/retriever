@@ -10,7 +10,7 @@ Retriever's public runtime distribution name is `retriever-core`; the Python imp
 pip install retriever-core
 ```
 
-Until that package is published, use the source-checkout path below if you already have repository access. It is also the recommended route for demos because it includes the example files and optional visualization dependencies. Public clone access opens when the GitHub repo visibility is flipped for launch.
+Current launch status: the package and source release are staged, but public PyPI/source access is not the default path until the final release switch. If you already have a source checkout, use Pixi for demos because it includes example files and optional visualization dependencies.
 
 ```bash
 # public source path after repo visibility flips
@@ -18,8 +18,11 @@ git clone https://github.com/openretriever/retriever
 cd retriever
 pixi install
 pixi run demo-basic-flow
+pixi run demo-webcam-detection-mock
 pixi run demo-webcam-detection
 ```
+
+`demo-webcam-detection-mock` is the deterministic first smoke: synthetic frames, stdout output, no camera permission, no GUI requirement. `demo-webcam-detection` is the live visual step: real webcam, `--visualize auto`, Rerun when available and stdout otherwise.
 
 The source-checkout demo commands install optional example and visualization dependencies that are intentionally not part of the minimal runtime package:
 
