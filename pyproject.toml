@@ -147,7 +147,6 @@ module = ["matplotlib.*", "scipy.*", "opencv-python.*", "wandb.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 addopts = "-v"
 # Collect every runtime-facing test (test_*_rt.py) across the tree; files
 # without the _rt suffix are not part of the maintained suite.

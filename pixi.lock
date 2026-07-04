@@ -9472,6 +9472,7 @@ packages:
   - pygments ; extra == 'dev'
   - typing-extensions ; extra == 'dev'
   - lark ; extra == 'dev'
+  - twine ; extra == 'dev'
   - dora-rs>=0.3.12 ; extra == 'dora'
   - dora-rs-cli>=0.3.12 ; extra == 'dora'
   - pyarrow ; extra == 'dora'
