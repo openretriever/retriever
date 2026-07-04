@@ -6,7 +6,7 @@ Retriever is the core runtime repository. Keep changes focused on typed flows, c
 
 ```bash
 pixi install
-pixi run python -m pytest tests/core -q
+pixi run python -m pytest tests -q
 pixi run -e docs docs-build
 ```
 

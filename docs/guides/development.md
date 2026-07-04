@@ -47,8 +47,8 @@ pixi run python -m pip install -e '.[dev]'   # dev tooling inside Pixi env
 # uv pip install -e '.[dev]'
 
 # Verify installation
-pixi run python -m pytest tests/core -q  # Pixi
-# python -m pytest tests/core -q         # uv/pip (after activating your env)
+pixi run python -m pytest tests -q       # Pixi
+# python -m pytest tests -q              # uv/pip (after activating your env)
 ```
 
 ### Command Conventions
@@ -377,7 +377,7 @@ For the public OpenRetriever repository, use the `openretriever` remote and keep
 ```bash
 git remote -v
 pixi run -e docs docs-build
-pixi run python -m pytest tests/core -q
+pixi run python -m pytest tests -q
 pixi run p0-release-readiness
 pixi run build
 ```
@@ -405,7 +405,7 @@ jobs:
           pixi run ruff check .
           pixi run black .
           pixi run mypy src/retriever
-          pixi run python -m pytest
+          pixi run python -m pytest tests -q
       - name: Run focused runtime sweep
         run: pixi run python -m pytest tests/core/test_public_surface_rt.py tests/core/test_pipeline_step_rt.py
 ```

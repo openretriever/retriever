@@ -30,14 +30,14 @@ pixi run python -m pip install -e '.[dev]'
 ```bash
 pixi run pre-commit install
 pixi run pre-commit run --all-files
-pixi run python -m pytest tests/core -q
+pixi run python -m pytest tests -q
 ```
 
 ## Workflow
 
 - Branch naming: `<type>/<short-description>-<YYYY-MM-DD>` (e.g. `bugfix/dora-yaml-2025-12-15`)
 - Install dev extras before running lint/type tools: `pixi run python -m pip install -e '.[dev]'`
-- Before pushing code changes: run `pixi run ruff check .`, `pixi run black .`, `pixi run mypy src/retriever`, and `pixi run python -m pytest`
+- Before pushing code changes: run `pixi run ruff check .`, `pixi run black .`, `pixi run mypy src/retriever`, and `pixi run python -m pytest tests -q`
 - Before publishing docs: run `pixi run -e docs docs-build`
 - Open a PR with: what/why/how-tested, and any follow-ups
 

@@ -22,7 +22,7 @@ jobs:
           pixi-version: v0.70.1
           cache: true
       - name: Core tests
-        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests/core -q
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
       - name: Release readiness smoke
         run: pixi run p0-release-readiness
       - name: Docs build

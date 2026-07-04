@@ -7,13 +7,13 @@ This repository is the public core runtime candidate for Retriever. The first pu
 Run these before a public launch, tag, or package publish:
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests/core -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
 pixi run p0-release-readiness
 pixi run -e docs docs-build
 pixi run build
 ```
 
-The same checks are wired in `.github/workflows/ci.yml`.
+The same checks are wired in `.github/workflows/ci.yml`; the pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
 
 ## GitHub Settings
 

@@ -39,7 +39,7 @@ pixi run -e docs docs-build         # build the Starlight docs site
 pixi run build                      # build the wheel
 
 # Plain venv alternative:
-python -m pip install -e . && python -m pytest tests/core -q
+python -m pip install -e . && python -m pytest tests -q
 ```
 
 If `dora` reports stale coordinator/schema errors: `pkill -9 dora` and rerun.
