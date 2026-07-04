@@ -4,13 +4,13 @@ title: Install
 
 # Install
 
-Retriever's public runtime distribution name is `retriever-core`; the Python import package is `retriever`. The planned package install path is:
+Retriever's public runtime distribution name is `retriever-core`; the Python import package is `retriever`. Install the runtime package with:
 
 ```bash
 pip install retriever-core
 ```
 
-For source-checkout demos while release preparation is ongoing, use Pixi from the repo root:
+For source-checkout demos, use Pixi from the repository root:
 
 ```bash
 pixi install
