@@ -12,10 +12,9 @@ and composed.
 Use this page when you want the concrete extension story rather than a generic
 Hub template.
 
-## Public path after launch
+## Load Golden exports through Hub
 
-After the GitHub repo and Hub index are public, load Golden exports through the
-same string-ref API as any other Hub module:
+Golden exports use the same string-ref API as any other Hub module:
 
 ```python
 from retriever import hub
@@ -36,9 +35,9 @@ The important boundary is boring on purpose:
 Golden is not a second framework. It is the maintained pack and example catalog
 for the core runtime.
 
-## Source-checkout proof today
+## Local source proof
 
-Until the public Hub index is live, run the proof from the GoldenRetriever repo if you already have repository access. Public clone access opens when the GoldenRetriever GitHub visibility is flipped:
+From a GoldenRetriever source checkout, run the same pack contract locally before publishing or depending on an index entry:
 
 ```bash
 pixi run demo-golden-hub-pack
@@ -58,7 +57,7 @@ Golden Hub exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to
 Registry WorldState: _retriever_hub...WorldState
 Constructed WorldState: ['cup']
 Arrow round-trip: Action OK
-Public path after launch: hub.use("openretriever/golden-retriever:WorldState")
+Hub reference: hub.use("openretriever/golden-retriever:WorldState")
 Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
 ```
 

@@ -13,10 +13,8 @@
 <p>
   <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
-  <a href="https://openretriever.org/start/#source-release"><img alt="Runtime source" src="https://img.shields.io/badge/Runtime-source%20soon-111827?style=for-the-badge&logo=github"></a>
+  <a href="https://github.com/openretriever/retriever"><img alt="Runtime source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
   <a href="https://retriever-space.pages.dev/"><img alt="Examples" src="https://img.shields.io/badge/Examples-Golden-92400e?style=for-the-badge"></a>
-  <img alt="Paper arXiv coming soon" src="https://img.shields.io/badge/Paper%20%2F%20arXiv-coming%20soon-64748b?style=for-the-badge">
-  <img alt="Discord coming soon" src="https://img.shields.io/badge/Discord-coming%20soon-64748b?style=for-the-badge&logo=discord">
 </p>
 
 </div>
@@ -87,19 +85,13 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. The planned package install path for `0.0.1` is:
+The public PyPI distribution is `retriever-core`; the Python import package is `retriever`:
 
 ```bash
 python -m pip install retriever-core
 ```
 
-Current launch status: the package and source release are staged, but public
-PyPI/source access is not the default path until the final visibility switch.
-If you already have a source checkout, use Pixi for demos because it includes
-example files and optional visualization dependencies.
-
-Start with the deterministic color-detection smoke, then run the live webcam
-visual demo:
+For repository demos, use Pixi because it includes example files and optional visualization dependencies. Start with the deterministic color-detection smoke, then run the live webcam visual demo:
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
@@ -162,8 +154,6 @@ The intended public split is:
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
 - **Examples and integrations**: [GoldenRetriever Examples](https://retriever-space.pages.dev/).
 - **Project website**: [openretriever.org](https://openretriever.org/).
-- **Paper / arXiv**: research writeup, link pending.
-- **Community**: Discord or similar community link, planned.
 
 ## Development
 
