@@ -147,9 +147,16 @@ class CompositeRecordingSink:
             sink.write_step(result, step_idx)
 
     def close(self) -> None:
+        first_error: Optional[BaseException] = None
         for sink in reversed(self._sinks):
-            sink.close()
+            try:
+                sink.close()
+            except BaseException as exc:  # noqa: BLE001 - close every sink first
+                if first_error is None:
+                    first_error = exc
         self._opened = False
+        if first_error is not None:
+            raise first_error
 
 
 class McapRecordingSink:
@@ -182,9 +189,11 @@ class McapRecordingSink:
     def close(self) -> None:
         if self._writer is None:
             return
-        self._writer.__exit__(None, None, None)
-        self._writer = None
-        self._written_specs.clear()
+        try:
+            self._writer.__exit__(None, None, None)
+        finally:
+            self._writer = None
+            self._written_specs.clear()
 
 
 class RrdRecordingSink:
@@ -485,7 +494,8 @@ def view_recording(path: str | Path) -> None:
             print(f"[Rerun] Recording saved to: {path}")
             print("[Rerun] Install rerun CLI to open `.rrd`: pip install rerun-sdk[cli]")
             return
-        subprocess.Popen(["rerun", str(path)])
+        # Detach the viewer so it outlives us and never becomes our zombie child.
+        subprocess.Popen(["rerun", str(path)], start_new_session=True)
         return
     raise ValueError(
         f"Unsupported recording path: {path}. Supported view formats are .mcap and .rrd."
