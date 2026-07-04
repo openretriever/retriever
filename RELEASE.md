@@ -11,6 +11,8 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
 pixi run p0-release-readiness
 pixi run -e docs docs-build
 pixi run build
+python -m pip install --upgrade twine
+python -m twine check dist/*
 ```
 
 The same checks are wired in `.github/workflows/ci.yml`; the pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
@@ -34,7 +36,7 @@ The PyPI project name `retriever` is already used by another project. Publish th
 - Confirm `pyproject.toml` metadata, version, license, URLs, optional extras, and distribution name `retriever-core`.
 - Build locally with `pixi run build`.
 - Inspect the wheel/sdist contents for generated or private files.
-- Run `python -m twine check dist/*` before publishing.
+- Run `python -m twine check dist/*` before publishing; `.github/workflows/publish.yml` enforces the same metadata check before upload.
 - Configure PyPI/TestPyPI trusted publishers for `.github/workflows/publish.yml`, then publish manually with the workflow dispatch target.
 
 Trusted publisher settings:

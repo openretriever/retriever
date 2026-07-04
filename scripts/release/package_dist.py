@@ -13,6 +13,22 @@ _BUNDLE_ONLY_TASKS = {
 }
 
 
+def _ignore_generated_artifacts(_dir: str, names: list[str]) -> set[str]:
+    """Keep local caches and run artifacts out of the shareable example bundle."""
+    ignored = {
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".DS_Store",
+        "logs",
+        "out",
+        "artifacts",
+    }
+    ignored.update(name for name in names if name.endswith((".pyc", ".pyo", ".mcap", ".rrd")))
+    return ignored.intersection(names)
+
+
 def _strip_bundle_only_tasks(pixi_content: str) -> str:
     """Remove maintainer-only Pixi tasks from the shipped distribution surface."""
     lines = pixi_content.splitlines()
@@ -81,7 +97,7 @@ def main():
     # Copy examples
     examples_src = root_dir / "examples"
     examples_dst = bundle_dir / "examples"
-    shutil.copytree(examples_src, examples_dst)
+    shutil.copytree(examples_src, examples_dst, ignore=_ignore_generated_artifacts)
     print("Copied examples/")
 
     # Copy config and patch pixi.toml

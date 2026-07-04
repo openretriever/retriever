@@ -4,7 +4,7 @@
 
 ## Validation
 
-- [ ] `pixi run python -m pytest tests/core -q`
+- [ ] `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q`
 - [ ] `pixi run p0-release-readiness`
 - [ ] `pixi run -e docs docs-build`
 - [ ] Docs updated if public behavior changed
