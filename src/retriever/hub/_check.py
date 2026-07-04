@@ -48,7 +48,7 @@ def check_min_retriever_version(required: str) -> None:
             ErrCode.HUB_MIN_VERSION_MISMATCH,
             f"Module requires retriever>={required}, but you have "
             f"retriever=={retriever.__version__}. "
-            f"Please upgrade: pip install --upgrade retriever",
+            f"Please upgrade: pip install --upgrade retriever-core",
         )
 
 

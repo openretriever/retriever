@@ -61,6 +61,7 @@ class TestCheckMinRetrieverVersion:
             check_min_retriever_version("1.0.0")
         assert exc_info.value.code == ErrCode.HUB_MIN_VERSION_MISMATCH
         assert "retriever>=1.0.0" in exc_info.value.message
+        assert "pip install --upgrade retriever-core" in exc_info.value.message
 
 
 class TestCheckDependencies:
