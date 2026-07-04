@@ -8,13 +8,13 @@ Retriever has three public surfaces that should stay separate but connected:
 
 - **Core runtime**: Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, standard types, and backend execution.
 - **Retriever Hub**: the reusable module protocol and index for Flows, type packs, transforms, and composed pipelines.
-- **GoldenRetriever**: the first applied robotics Hub module and companion example catalog.
+- **GoldenRetriever**: the applied robotics reference catalog and current manifest-declared type pack.
 
 Use Hub when a robot system needs to reuse a stable boundary rather than copy code: a Flow class, a pipeline builder, a typed payload pack, or a representation transform.
 
 <div class="card-grid">
   <a class="info-card" href="/ecosystem/modules/"><strong>Modules</strong><span>What a reusable Retriever module exports and how users import it with <code>hub.use(...)</code>.</span></a>
-  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Golden packs</strong><span>The first concrete proof: GoldenRetriever exports robot-facing types through Hub.</span></a>
+  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Golden packs</strong><span>Concrete proof that GoldenRetriever exposes robot-facing types through the Hub manifest.</span></a>
   <a class="info-card" href="/ecosystem/composable-pipelines/"><strong>Composable pipelines</strong><span>Reuse a whole pipeline as an inspectable graph or one Flow stage.</span></a>
   <a class="info-card" href="/ecosystem/publishing/"><strong>Publishing</strong><span>Package conventions, import-safe modules, and index metadata.</span></a>
   <a class="info-card" href="https://retriever-space.pages.dev/"><strong>GoldenRetriever examples</strong><span>Applied robotics examples: type packs, perception, memory, simulation, visualization, and robosuite demos.</span></a>
@@ -39,4 +39,4 @@ slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
 3. Run [Golden Packs](/ecosystem/golden-packs/) to prove that applied robotics types load through Hub.
 4. Continue to [GoldenRetriever examples](https://retriever-space.pages.dev/) when you want perception, memory, language, simulator, or visualization lanes.
 
-The important boundary is that GoldenRetriever is **not** a second runtime package. The runtime is `retriever-core` and imports as `retriever`; Golden is the first maintained applied module pack and examples catalog built on top of it.
+The important boundary is that GoldenRetriever is **not** a second runtime package. The runtime is `retriever-core` and imports as `retriever`; Golden is the maintained applied reference catalog and examples site built on top of it.

@@ -101,7 +101,7 @@ Minimum expectations before publishing:
 
 ## Release boundary
 
-The first public applied module is GoldenRetriever. Keep Golden as a Hub module and source-checkout example catalog; do not publish a second runtime package just to share applied robot payloads.
+GoldenRetriever is the current applied reference catalog. Keep Golden as applied examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
 
 ## Final public-surface check
 

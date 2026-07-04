@@ -54,9 +54,9 @@ Recommended public split:
 | `flow.py` | Flow classes and lightweight factories. |
 | `pipeline.py` | Graph assembly and composition helpers. |
 
-## First applied module
+## Applied reference catalog
 
-GoldenRetriever is the first applied robotics module for this release. It exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same Hub path:
+GoldenRetriever is the applied robotics reference catalog for this release. Its current manifest-declared Hub surface exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same ref shape:
 
 ```python
 from retriever import hub
@@ -64,4 +64,4 @@ from retriever import hub
 WorldState = hub.use("openretriever/golden-retriever:WorldState")
 ```
 
-Open [Golden Packs](/ecosystem/golden-packs/) for the concrete source-checkout proof path, then continue to the [GoldenRetriever examples site](https://retriever-space.pages.dev/) for applied perception, memory, language, simulator, and visualization lanes.
+Open [Golden Packs](/ecosystem/golden-packs/) for the local manifest proof path, then continue to the [GoldenRetriever examples site](https://retriever-space.pages.dev/) for applied perception, memory, language, simulator, and visualization lanes.

@@ -64,7 +64,7 @@ This command is the final external launch proof and is expected to fail before t
 - [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
 - [Standard Types](https://openretriever-docs.pages.dev/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
 - [Concepts and Lineage](https://openretriever-docs.pages.dev/concepts/lineage/): relation to FRP and synchronous dataflow.
-- [Golden Packs](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): GoldenRetriever as the first applied robotics Hub module.
+- [Golden Packs](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): GoldenRetriever as the applied reference catalog and manifest-declared type pack.
 - [Modules](https://openretriever-docs.pages.dev/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")`.
 - [Composable Pipelines](https://openretriever-docs.pages.dev/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
 - [Publishing](https://openretriever-docs.pages.dev/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.

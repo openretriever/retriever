@@ -14,7 +14,7 @@ Hub template.
 
 ## Load Golden exports through Hub
 
-Golden exports use the same string-ref API as any other Hub module:
+The intended public Golden refs use the same string-ref API as other Hub exports:
 
 ```python
 from retriever import hub
@@ -59,7 +59,7 @@ Golden Hub exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to
 Registry WorldState: _retriever_hub...WorldState
 Constructed WorldState: ['cup']
 Arrow round-trip: Action OK
-Hub reference: hub.use("openretriever/golden-retriever:WorldState")
+Intended Hub reference: hub.use("openretriever/golden-retriever:WorldState")
 Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
 ```
 
@@ -79,5 +79,5 @@ compose those types; they should not redefine them.
 ## Next step
 
 Continue with [Hub Modules](/ecosystem/modules/) for the general reference shape,
-or open the [GoldenRetriever module site](https://retriever-space.pages.dev/) for the
+or open the [GoldenRetriever examples site](https://retriever-space.pages.dev/) for the
 runnable applied lanes.
