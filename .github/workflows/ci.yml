@@ -24,7 +24,7 @@ jobs:
       - name: Core tests
         run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
       - name: Release readiness smoke
-        run: pixi run p0-release-readiness
+        run: pixi run p1-reliability-gates && pixi run p0-release-readiness-full
       - name: Docs build
         run: pixi run -e docs docs-build
       - name: Package build
