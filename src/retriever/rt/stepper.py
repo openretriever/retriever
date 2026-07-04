@@ -406,7 +406,7 @@ def replay_flow(buffer: TimedBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     Create a replay source flow that outputs recorded items sequentially.
 
     Notes:
-    - `output_type` must be a `@flow_io` dataclass type.
+    - `output_type` must be an `@io` dataclass type.
     - When exhausted, returns an "empty" output instance (all fields None),
       so no outputs are published.
     """

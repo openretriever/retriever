@@ -36,11 +36,10 @@ class Detector(Flow[Image2D, DetectionBatch]):
 - **Hub modules**: depend on `retriever-core` (they already do) and import
   `retriever.types.*` in their port contracts. Do not vendor copies — a
   copied class with the same name is a different type at runtime.
-- **GoldenRetriever**: `retriever_typing` *re-exports* the spatial standard
-  (`retriever_typing.Header is retriever.types.spatial.Header`), delegates to
-  the runtime registry, and adds what the runtime should not own directly:
-  Arrow conversions plus higher-level robotics/planning payloads exported as
-  a Hub-loadable applied type pack.
+- **Golden packs**: import canonical runtime types directly, delegate to the
+  runtime registry, and add what the runtime should not own directly: Arrow
+  conversions plus higher-level robotics/planning payloads exported as a
+  Hub-loadable applied type pack.
 - **Extension packs**: domain-specific type sets that do not belong in the
   runtime can be published as hub modules and loaded with
   `hub.use("org/types-pack:SomeType")` — built on top of, never instead of,

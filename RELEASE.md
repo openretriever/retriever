@@ -51,7 +51,7 @@ Do not publish a package named `retriever`; that name belongs to another project
 - Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
-Golden is the companion examples repository and applied type pack. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so a separate `retriever-golden` PyPI publish is not a first-launch blocker.
+Golden is the companion examples repository and applied type pack. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so Golden should launch as a Hub-distributed pack catalog rather than a second public PyPI product.
 
 ## Launch-Order Dependencies
 
@@ -66,8 +66,8 @@ link or command dangles:
    moment those pages are promoted.
 3. Update Golden to consume the published `retriever-core` runtime and
    verify its Hub-loadable applied type pack (`openretriever/golden-retriever`).
-   Keep any `retriever-golden` wheel as an optional future artifact, not a
-   required public launch step.
+   Keep any Golden wheel as an optional future artifact, not a required public
+   launch step.
 4. Create the public `openretriever/hub-index` repository (the Hub's
    default module index). Optional follow-up: publish the
    `openretriever/pi05-policy` hub module designed in the Golden repo
