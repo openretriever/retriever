@@ -57,3 +57,8 @@ class Detector(Flow[Image2D, DetectionBatch]):
    standard fields (`Header`, `SchemaRef`) so it composes.
 4. Never redefine a standard type locally, even with identical fields —
    type identity is the contract.
+
+For Hub-distributed applied types, the cross-version contract is the registered
+schema and serialization behavior, not Python class identity across unrelated
+versions. Pin one Hub ref per application; compose runtime standard types rather
+than redefining them.

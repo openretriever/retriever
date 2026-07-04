@@ -7,7 +7,7 @@ title: Golden Packs
 GoldenRetriever is the reference catalog for Hub-distributed domain packs. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
 payload types, and small proof paths that show how a pack is loaded, inspected,
-and composed.
+and composed. This path intentionally avoids a separate Golden PyPI runtime package.
 
 Use this page when you want the concrete extension story rather than a generic
 Hub template.
@@ -47,7 +47,7 @@ pixi run demo-pipeline-html-viz
 The first command loads Golden's local `[tool.retriever.module]` manifest through
 the runtime Hub loader, checks representative exports, verifies registry
 visibility, and round-trips a lightweight action payload through the exported
-Arrow helpers. The second command validates a small closed-loop pipeline to IR
+Arrow helpers. This mirrors the release contract for Hub-distributed applied types: schema compatibility plus serialization behavior. The second command validates a small closed-loop pipeline to IR
 and writes an HTML graph artifact.
 
 Typical output starts like this:
@@ -77,5 +77,5 @@ compose those types; they should not redefine them.
 ## Next step
 
 Continue with [Hub Modules](/ecosystem/modules/) for the general reference shape,
-or open the [Golden examples site](https://retriever-space.pages.dev/) for the
+or open the [GoldenRetriever module site](https://retriever-space.pages.dev/) for the
 runnable applied lanes.

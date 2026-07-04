@@ -13,24 +13,28 @@ backends are "multiprocessing", "dora", and "in-process"; `record=` forces
 the in-process backend for determinism. In the source repo, start from
 AGENTS.md at the repo root.
 
-Primary setup: install the runtime as `retriever-core`; use the source-checkout Pixi commands when running demos, examples, Rerun visualization, or repository tests.
+Primary setup: use the source-checkout Pixi commands for demos, examples, Rerun visualization, and repository tests. `retriever-core` is the PyPI distribution target; keep source checkout primary until 0.0.1 resolves.
 
 ## Docs
 
 - [Overview](https://openretriever-docs.pages.dev/): what Retriever is and the recommended path.
-- [Install](https://openretriever-docs.pages.dev/getting-started/install/): Pixi-first setup; pip/uv fallback.
+- [Install](https://openretriever-docs.pages.dev/getting-started/install/): source-checkout setup today; `retriever-core` package target after 0.0.1 resolves.
 - [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/): deterministic mock color-detection smoke, then live webcam/Rerun.
 - [Flow](https://openretriever-docs.pages.dev/concepts/flow/): authoring typed Flows; `@io` payloads; `step()`.
 - [Time and Sync](https://openretriever-docs.pages.dev/concepts/time-and-sync/): clocks (Rate/Tick/Trigger/Hybrid), sync policies (Latest/Hold/Window/Events), on_lag.
 - [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate → IR → backends; stepping; recording and replay.
+- [Standard Types](https://openretriever-docs.pages.dev/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
 - [Concepts and Lineage](https://openretriever-docs.pages.dev/concepts/lineage/): how the model maps to FRP and synchronous dataflow, with references.
 - [Tutorials](https://openretriever-docs.pages.dev/tutorials/): tracked tutorial path with runnable pixi tasks.
 - [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/): commands paired with expected output.
 - [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/): stepper, graph rendering, MCAP/Rerun recording, replay.
+- [Ecosystem Overview](https://openretriever-docs.pages.dev/ecosystem/): Core runtime, Retriever Hub, and GoldenRetriever boundary.
+- [Golden Packs](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): GoldenRetriever as the first applied robotics Hub module.
 - [Ecosystem: Modules](https://openretriever-docs.pages.dev/ecosystem/modules/): Retriever Hub — load Flows from git repos via `hub.use("org/name:Export")`.
+- [Composable Pipelines](https://openretriever-docs.pages.dev/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
 - [Ecosystem: Publishing](https://openretriever-docs.pages.dev/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
 
 ## Companion
 
-- [GoldenRetriever examples](https://retriever-space.pages.dev/): applied perception / memory / language / simulation examples built on the runtime.
-- [Landing page](https://openretriever.org/): install-first front door.
+- [GoldenRetriever](https://retriever-space.pages.dev/): first applied robotics Hub module and companion examples site.
+- [Landing page](https://openretriever.org/): source-first public preview front door.

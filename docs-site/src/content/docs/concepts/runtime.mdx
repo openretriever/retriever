@@ -22,8 +22,13 @@ pipe.run(duration=10)
 ## Runtime surfaces
 
 <div class="card-grid">
-  <div class="info-card"><strong>Validate</strong><span>Catch missing ports, invalid sync policies, and type-shape mistakes before launch.</span></div>
+  <div class="info-card"><strong>Validate</strong><span>Catch missing ports, invalid sync policies, type-shape mistakes, and invalid loaded IR before launch.</span></div>
   <div class="info-card"><strong>Visualize</strong><span>Render graph structure, clocks, ports, and edge policies as an HTML artifact.</span></div>
   <div class="info-card"><strong>Step</strong><span>Debug in one process with normal Python breakpoints before launching backends.</span></div>
   <div class="info-card"><strong>Replay</strong><span>Turn robot runs into repeatable evidence instead of relying on timing luck.</span></div>
 </div>
+
+
+## Loaded IR validation
+
+Retriever validates both authored pipelines and IR loaded from JSON. `IR.from_json(...)` rejects duplicate node ids, dangling edge or adjacency references, and unknown ports before a backend tries to execute the graph. That keeps graph artifacts useful for debugging, replay, and Hub-loaded modules without deferring structural errors to a later runtime process.

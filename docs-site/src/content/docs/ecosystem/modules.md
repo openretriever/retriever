@@ -4,33 +4,61 @@ title: Hub Modules
 
 # Hub Modules
 
-A Hub module is a reusable Retriever component with a stable public surface.
+A Retriever Hub module is a normal Python package with a declared export table. Users import the exported class, function, type, or value directly.
 
-Good module boundaries include:
+## Module reference format
 
-- typed payloads such as poses, detections, task commands, and action chunks
-- perception, localization, planning, policy, or control Flows
-- transforms between common robotics/data formats
-- pipeline factories that expose a stable public surface while keeping internals replaceable
+```text
+{org}/{module-name}[:{attribute}][@{version}]
+```
 
-Keep one-off tutorial code in the examples tree until the public boundary is stable.
-
-## Module reference shape
-
-Users load modules with string references:
+Examples:
 
 ```python
 from retriever import hub
 
-module = hub.use("org/name")
-FlowCls = hub.use("org/name:Export")
-VersionedFlow = hub.use("org/name:Export@0.1.0")
+module = hub.use("your-org/lidar-slam")
+LidarSlamFlow = hub.use("your-org/lidar-slam:LidarSlamFlow")
+BuildSlamPipeline = hub.use("your-org/lidar-slam:BuildSlamPipeline@0.1.0")
 ```
 
-- `hub.use("org/name")` returns a module proxy over declared exports.
-- `hub.use("org/name:Export")` returns the exported class, function, type, or value.
-- `@version` pins the module ref to a release/tag understood by the Hub index.
+## Loading semantics
 
-The module repository declares its export table in `pyproject.toml` under
-`[tool.retriever.module]`. Users should not need to read that metadata for the
-common import path.
+- `hub.use("org/name:Export")` returns the actual exported class, function, type, or value, not a wrapper.
+- `hub.use("org/name")` returns a `ModuleProxy` over the declared export table, not the raw Python module.
+- Different versions of the same module are isolated by commit-scoped internal namespaces, so `@0.9.0` and `@1.0.0` do not alias each other in one process.
+- Backend/runtime re-import can recover hub-loaded Flow classes from the local hub cache when a fresh process reconstructs nodes from IR.
+
+> Current boundary: a serialized IR from hub-loaded code is not a self-contained artifact across machines by itself. The target machine must have the corresponding hub cache content available, or load the module through Hub first.
+
+## What a module can export
+
+Hub exports are normal Python attributes. A module may export:
+
+- Flow classes or Flow factories
+- live pipeline factories
+- pipeline-flow factories for in-process hierarchical composition
+- shared `@io` envelope types for Flow boundaries
+- shared domain or representation types
+- representation transforms and serialization helpers
+
+Recommended public split:
+
+| File | Purpose |
+| --- | --- |
+| `types.py` | Shared envelope types and domain types. Use `@io` only for Flow-boundary envelopes. |
+| `transforms.py` | Pure representation conversion helpers. |
+| `flow.py` | Flow classes and lightweight factories. |
+| `pipeline.py` | Graph assembly and composition helpers. |
+
+## First applied module
+
+GoldenRetriever is the first applied robotics module for this release. It exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same Hub path:
+
+```python
+from retriever import hub
+
+WorldState = hub.use("openretriever/golden-retriever:WorldState")
+```
+
+Open [Golden Packs](/ecosystem/golden-packs/) for the concrete source-checkout proof path.

@@ -4,18 +4,88 @@ title: Composable Pipelines
 
 # Composable Pipelines
 
-A reusable pipeline can be loaded in two modes:
+Reusable robot subsystems often need two surfaces: a live graph that downstream users can inspect and modify, and a single-stage wrapper that fits inside a larger graph.
 
-- **Inspectable graph**: downstream users can validate, visualize, and extend the internal pipeline.
-- **Pipeline-as-Flow**: downstream users treat the pipeline as one typed stage inside a larger graph.
+## 1. Export a live pipeline factory
+
+Use this when downstream code wants to inspect, replace, or rewire internal Flows.
 
 ```python
-build_slam = hub.use("your-org/lidar-slam:BuildSlamPipeline")
-pipe = build_slam()
-frontend = pipe.select_flow("frontend")
+from retriever import hub
+from retriever.flow import Rate
 
-build_stage = hub.use("your-org/lidar-slam:BuildSlamPipelineFlow")
-stage = build_stage(resolution=0.05) @ Rate(hz=10)
+pipe = hub.use("your-org/lidar-slam:BuildSlamPipeline")()
+frontend = pipe.select_flow("frontend")
+pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
 ```
 
-Use the graph form when debugging and extension matter. Use the Flow form when you want a clean boundary inside a larger robot agent.
+## 2. Export a Pipeline-as-Flow factory
+
+Use this when downstream code wants to treat the whole sub-pipeline as one reusable stage.
+
+```python
+from retriever import hub
+from retriever.flow import Latest, Rate
+
+slam_stage = hub.use("your-org/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
+camera.then(slam_stage, sync=Latest())
+```
+
+Important boundary:
+
+- direct `flow.step(...)` on this wrapper is local/in-process
+- the wrapper itself is not the backend artifact
+- when nested inside a larger `Pipeline`, Retriever lowers the wrapper into flat IR so multiprocessing and dora backends can execute the inner nodes normally
+
+## Surface grammar
+
+Explicit pipeline surfaces use:
+
+```text
+flow_id.port
+```
+
+Resolution order:
+
+1. exact flow id / node id
+2. unique flow class name fallback
+
+Recommendation:
+
+- name internal handles with `.named("camera")`, `.named("frontend")`, `.named("planner")`
+- use stable ids in `input_ports=[...]` and `output_ports=[...]`
+
+```python
+source = (Camera() @ Rate(hz=10)).named("camera")
+frontend = (Frontend() @ Rate(hz=10)).named("frontend")
+```
+
+Then publish the stable surface:
+
+```python
+@register_pipeline(
+    "slam_stage",
+    surface_policy="explicit",
+    input_ports=["frontend.threshold"],
+    output_ports=["camera.image", "frontend.pose"],
+)
+def build_slam_stage():
+    ...
+```
+
+## Visualizing composition
+
+`Pipeline.visualize(...)` and `IR.visualize(...)` preserve wrapped-pipeline context for `build_pipeline_flow(...)` stages. In HTML and ASCII views, a nested pipeline stage is rendered as a grouped pipeline box around the lowered inner Flows, with:
+
+- the wrapped pipeline name
+- surfaced input/output bindings
+- a summary of the internal Flow graph
+
+Run the core composition demo:
+
+```bash
+pixi run demo-composable-pipelines
+pixi run docs-tutorial-composable-html
+```
+
+For applied composition examples, continue to [GoldenRetriever](https://retriever-space.pages.dev/).
