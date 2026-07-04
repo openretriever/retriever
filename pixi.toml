@@ -145,7 +145,7 @@ docs-serve = "npm --prefix docs-site run dev"
 
 # Test tasks
 test = "python -m pytest tests/ -v"
-test-control = "python -m pytest tests/test_control.py tests/test_control_web.py tests/test_adapter_reset.py tests/test_output_capture.py -v"
+test-control = "python -m pytest tests/test_control_rt.py tests/test_control_web_rt.py tests/test_adapter_reset_rt.py tests/test_output_capture_rt.py -v"
 
 # Control System Demos
 demo-control = { cmd = "python examples/control_demo.py", env = { PYTHONPATH = ".", RUST_LOG = "error" } }

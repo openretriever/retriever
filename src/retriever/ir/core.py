@@ -298,6 +298,9 @@ class IR:
                 )
             nodes_by_id[node.id] = node
 
+        expected_successors: Dict[str, Set[str]] = {node.id: set() for node in self.nodes}
+        expected_predecessors: Dict[str, Set[str]] = {node.id: set() for node in self.nodes}
+
         for edge in self.edges:
             for endpoint, role in ((edge.source, 'source'), (edge.destination, 'destination')):
                 if endpoint.node not in nodes_by_id:
@@ -330,10 +333,18 @@ class IR:
                     node=dst_node.id,
                     port=edge.destination.port,
                 )
+            expected_successors[edge.source.node].add(edge.destination.node)
+            expected_predecessors[edge.destination.node].add(edge.source.node)
 
         for node in self.nodes:
             for kind, neighbors in (('successors', node.successors),
                                     ('predecessors', node.predecessors)):
+                if len(neighbors) != len(set(neighbors)):
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Node '{node.id}' contains duplicate {kind}",
+                        node=node.id,
+                    )
                 for neighbor in neighbors:
                     if neighbor not in nodes_by_id:
                         raise IRError(
@@ -342,6 +353,26 @@ class IR:
                             node=node.id,
                             neighbor=neighbor,
                         )
+
+            actual_successors = set(node.successors)
+            if actual_successors != expected_successors[node.id]:
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Node '{node.id}' successors do not match edges: "
+                    f"expected {sorted(expected_successors[node.id])}, "
+                    f"got {sorted(actual_successors)}",
+                    node=node.id,
+                )
+
+            actual_predecessors = set(node.predecessors)
+            if actual_predecessors != expected_predecessors[node.id]:
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Node '{node.id}' predecessors do not match edges: "
+                    f"expected {sorted(expected_predecessors[node.id])}, "
+                    f"got {sorted(actual_predecessors)}",
+                    node=node.id,
+                )
         return self
 
     def save(self, path: Union[str, Path]) -> None:

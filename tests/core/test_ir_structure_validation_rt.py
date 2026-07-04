@@ -95,6 +95,41 @@ def test_unknown_successor_rejected(ir_dict: dict) -> None:
     assert excinfo.value.code == ErrCode.IR_VAL_INVALID
 
 
+def test_duplicate_successor_rejected(ir_dict: dict) -> None:
+    first = ir_dict['nodes'][0]
+    first['successors'] = [first['successors'][0], first['successors'][0]]
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+
+
+def test_successor_without_matching_edge_rejected(ir_dict: dict) -> None:
+    src, dst = ir_dict['nodes'][0], ir_dict['nodes'][1]
+    src['successors'] = [dst['id']]
+    dst['predecessors'] = [src['id']]
+    ir_dict['edges'] = []
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'successors do not match edges' in str(excinfo.value)
+
+
+def test_edge_without_successor_rejected(ir_dict: dict) -> None:
+    ir_dict['nodes'][0]['successors'] = []
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'successors do not match edges' in str(excinfo.value)
+
+
+def test_edge_without_predecessor_rejected(ir_dict: dict) -> None:
+    ir_dict['nodes'][1]['predecessors'] = []
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'predecessors do not match edges' in str(excinfo.value)
+
+
 def test_save_load_round_trip(tmp_path, ir_dict: dict) -> None:
     path = tmp_path / "pipeline.json"
     ir = reload(ir_dict)
