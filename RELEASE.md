@@ -23,10 +23,10 @@ The pytest gate intentionally uses `tests/`, because `pyproject.toml` collects t
 
 Before making the repository public:
 
-- Set the default branch to `main`.
+- Set the default branch to `main`; verify with `pixi run public-surface-check` or `git ls-remote --symref git@github.com:openretriever/retriever.git HEAD`.
 - Keep `release/mirror-alignment-20260621` as an audit/reference branch if useful.
 - Confirm the repository URL is `https://github.com/openretriever/retriever`.
-- Confirm the hosted docs URL is `https://openretriever-docs.pages.dev/`.
+- Confirm the hosted docs URL is `https://openretriever-docs.pages.dev/`; after DNS cutover, also confirm `https://docs.openretriever.org/`.
 - Build docs with `pixi run -e docs docs-build`; deploy `docs-site/dist/` through the configured Cloudflare Pages project.
 
 ## Package Publish
@@ -49,6 +49,16 @@ Trusted publisher settings:
 | PyPI | `retriever-core` | `openretriever` | `retriever` | `publish.yml` | `pypi` |
 
 Do not publish a package named `retriever`; that name belongs to another project.
+
+## Final External Surface Check
+
+After repository visibility, DNS cutover, and TestPyPI/PyPI publication are complete, run:
+
+```bash
+pixi run public-surface-check
+```
+
+This network-facing check verifies the GitHub default branch, live website URLs, DNS resolution, and `retriever-core` visibility on PyPI/TestPyPI. It is expected to fail before those external launch steps are complete.
 
 ## Companion Repositories
 

@@ -138,6 +138,9 @@ build = "python -m build"
 # Run: pixi run package-check
 package-check = "python -m pip install --quiet --upgrade twine && python -m twine check dist/*.whl dist/*.tar.gz"
 
+# Final network-facing launch check. Expected to fail before DNS and PyPI are live.
+public-surface-check = "python scripts/release/check_public_surfaces.py"
+
 # Create distribution bundle (Wheel + Examples + Config)
 # Run: pixi run package
 package = "python scripts/release/package_dist.py"
