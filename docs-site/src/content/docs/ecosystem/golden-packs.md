@@ -4,7 +4,7 @@ title: Golden Reference Layer
 
 # Golden Reference Layer
 
-GoldenRetriever is the applied reference layer for Hub-distributed robotics packs. The
+GoldenRetriever is the applied reference layer for robot-facing examples, reusable type packs, and Hub-pack candidates. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
 payload types, simulator/visualization lanes, and small proof paths that show how a pack is loaded, inspected,
 and composed. This path intentionally avoids a separate Golden PyPI runtime package.
@@ -63,6 +63,16 @@ Retriever Hub reference: hub.use("openretriever/golden-retriever:WorldState")
 Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
 ```
 
+
+## After this page
+
+Use this page as the bridge from runtime mechanics into applied examples:
+
+1. Run `pixi run demo-golden-hub-pack` from a GoldenRetriever source checkout.
+2. Open the [Golden example catalog](https://retriever-space.pages.dev/examples/).
+3. Run the mock-safe applied ladder: Hub proof, perception detection, robosuite mock, and pipeline HTML visualization.
+4. Treat only `pyproject.toml` manifest exports as Hub-loadable today; promoted demos remain source-checkout examples until exported, versioned, smoke-tested, and indexed.
+
 ## What belongs in Golden packs
 
 Put a type or helper in a Golden pack when it is useful across robot examples but
@@ -79,5 +89,5 @@ compose those types; they should not redefine them.
 ## Next step
 
 Continue with [Hub packs and modules](/ecosystem/modules/) for the general reference shape,
-or open the [Golden reference site](https://retriever-space.pages.dev/) for the
+or open the [Golden example catalog](https://retriever-space.pages.dev/examples/) for the
 runnable applied lanes and source-checkout module catalog.
