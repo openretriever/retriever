@@ -38,8 +38,8 @@ pixi run demo-webcam-detection      # visual quickstart (webcam; mock mode docum
 pixi run -e docs docs-build         # build the Starlight docs site
 pixi run build                      # build the wheel
 
-# Plain venv alternative:
-python -m pip install -e . && python -m pytest tests -q
+# Plain venv alternative (dev extra brings pytest/numpy):
+python -m pip install -e '.[dev]' && python -m pytest tests -q
 ```
 
 If `dora` reports stale coordinator/schema errors: `pkill -9 dora` and rerun.
@@ -98,8 +98,9 @@ pipe.run(backend="multiprocessing", duration=1.0, blocking=True)
   which is supported).
 - `on_lag` canonical values: `warn` (default), `drop`, `error`, `catch_up`
   (aliases panic/raise/strict → error).
-- `pipe.run(record=...)` switches to the in-process backend for
-  deterministic recording. Replay with `pipe.replay(node, path=...)`.
+- `pipe.run(record=...)` requires `backend="in-process"` explicitly — any
+  other backend raises `ValueError` (recording must be deterministic). Or use
+  `pipe.record(...)`. Replay with `pipe.replay(node, path=...)`.
 - The multiprocessing backend uses its own `fork` context
   (`src/retriever/rt/backend/multiprocessing/mp_context.py`); it does not
   touch, and is not affected by, the host's global start method.

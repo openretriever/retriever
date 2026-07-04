@@ -111,8 +111,10 @@ pixi run python -m pytest
 Public docs are authored as markdown under `docs/` with tutorial track pages in `docs/tutorials/`.
 
 Current repo note:
-- `mkdocs.yml` defines the hostable public documentation site.
-- Use `pixi run -e docs docs-build` for a strict local build.
+- The deployed public docs site is the Starlight app under `docs-site/`;
+  `pixi run -e docs docs-build` builds it (npm build of `docs-site/`).
+- `mkdocs.yml` covers the parallel MkDocs content in `docs/` kept during the
+  Starlight migration.
 - Keep the curated site nav focused; extra reference pages may remain in `docs/` without being exposed in the top-level site navigation.
 
 ### Environment Variables
