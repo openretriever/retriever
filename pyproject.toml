@@ -148,9 +148,9 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = "-v"
-# This repo is being refocused on the runtime/core. Keep the default test run
-# scoped to runtime-facing tests; legacy/system tests can be run explicitly.
-testpaths = ["tests/core"]
+# Collect every runtime-facing test (test_*_rt.py) across the tree; files
+# without the _rt suffix are not part of the maintained suite.
+testpaths = ["tests"]
 python_files = ["test_*_rt.py"]
 
 # [tool.uv]
