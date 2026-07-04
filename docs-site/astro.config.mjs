@@ -26,6 +26,7 @@ export default defineConfig({
             { label: 'Landing', link: 'https://openretriever.org/' },
             { label: 'Golden Reference Layer', link: 'https://retriever-space.pages.dev/' },
             { label: 'Core Source', link: 'https://github.com/openretriever/retriever' },
+            { label: 'Golden Source', link: 'https://github.com/openretriever/golden-retriever' },
             { label: 'Agent Map', link: '/llms.txt' },
           ],
         },
