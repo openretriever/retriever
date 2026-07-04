@@ -44,7 +44,7 @@ The first public PyPI release target is `retriever-core==0.0.1`. Once that packa
 
 ```bash
 python -m pip install retriever-core
-python -c "import retriever; print(retriever.__file__)"
+python -c "import retriever; print('retriever import OK')"
 ```
 
 Until then, use Pixi or a source checkout.

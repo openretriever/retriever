@@ -1,6 +1,7 @@
+# Source-local reference docs retained for release maintenance.
+# Public hosted docs are built from docs-site/.
 site_name: Retriever
-site_description: Build closed-loop robot agents with explicit time.
-site_url: https://openretriever-docs.pages.dev/
+site_description: Source-local Retriever reference docs. Public hosted docs are built from docs-site/.
 repo_url: https://github.com/openretriever/retriever
 repo_name: openretriever/retriever
 

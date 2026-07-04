@@ -4,6 +4,10 @@ title: "Retriever Documentation"
 
 # Retriever Documentation
 
+> Public docs note: the hosted docs front door is built from `docs-site/`.
+> This `docs/` tree is retained as source-local reference material, release maintenance notes, and deeper handbooks.
+
+
 Retriever is a programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.
 
 These docs are organized around adoption first: run a small graph, understand Flows and time, debug the graph, then move toward backends, registries, and reusable ecosystem packages.

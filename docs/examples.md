@@ -10,8 +10,8 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   <a class="rt-path-step" href="/quickstart/">
     <span>01</span>
     <strong>First visual demo</strong>
-    <p>Webcam frames flow through a color detector into Rerun/stdout visualization.</p>
-    <code>pixi run demo-webcam-detection</code>
+    <p>Mock frames flow through a color detector into stdout; then switch to webcam/Rerun.</p>
+    <code>pixi run demo-webcam-detection-mock</code>
   </a>
   <a class="rt-path-step" href="/tutorials/track_a_flow_fundamentals/">
     <span>02</span>
@@ -22,8 +22,8 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   <a class="rt-path-step" href="https://retriever-space.pages.dev/">
     <span>03</span>
     <strong>Golden examples</strong>
-    <p>Perception, memory, language, notebooks, and robotics integration lanes (run from a GoldenRetriever checkout).</p>
-    <code>pixi run -e golden-local demo-perception-detection-flow</code>
+    <p>Perception, memory, language, notebooks, and robotics integration lanes live in the GoldenRetriever module site.</p>
+    <code>Open GoldenRetriever docs</code>
   </a>
 </div>
 
