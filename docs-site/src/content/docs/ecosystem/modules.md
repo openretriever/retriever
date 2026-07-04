@@ -17,9 +17,20 @@ Keep one-off tutorial code in the examples tree until the public boundary is sta
 
 ## Module reference shape
 
-```toml
-[name]
-package = "your-org/lidar-slam"
-exports = ["LidarSlamFlow", "build_pipeline"]
-version = "0.1.0"
+Users load modules with string references:
+
+```python
+from retriever import hub
+
+module = hub.use("org/name")
+FlowCls = hub.use("org/name:Export")
+VersionedFlow = hub.use("org/name:Export@0.1.0")
 ```
+
+- `hub.use("org/name")` returns a module proxy over declared exports.
+- `hub.use("org/name:Export")` returns the exported class, function, type, or value.
+- `@version` pins the module ref to a release/tag understood by the Hub index.
+
+The module repository declares its export table in `pyproject.toml` under
+`[tool.retriever.module]`. Users should not need to read that metadata for the
+common import path.
