@@ -300,8 +300,17 @@ class IR:
 
         expected_successors: Dict[str, Set[str]] = {node.id: set() for node in self.nodes}
         expected_predecessors: Dict[str, Set[str]] = {node.id: set() for node in self.nodes}
+        edge_ids: Set[str] = set()
 
         for edge in self.edges:
+            if edge.id in edge_ids:
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Duplicate edge id '{edge.id}'",
+                    edge=edge.id,
+                )
+            edge_ids.add(edge.id)
+
             for endpoint, role in ((edge.source, 'source'), (edge.destination, 'destination')):
                 if endpoint.node not in nodes_by_id:
                     raise IRError(
@@ -321,17 +330,45 @@ class IR:
                     port=edge.source.port,
                 )
             dst_node = nodes_by_id[edge.destination.node]
-            # Fan-in ports are synthesized at execution-build time and are not
-            # part of the authored input surface.
-            if (not edge.destination.port.startswith(self._FANIN_PREFIX)
-                    and edge.destination.port not in dst_node.inputs):
+            destination_port = edge.destination.port
+            if destination_port.startswith(self._FANIN_PREFIX):
+                parts = destination_port.split("/")
+                if len(parts) != 3 or parts[0] != "_fanin" or not parts[1] or not parts[2]:
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Edge '{edge.id}' destination fan-in port '{destination_port}' "
+                        "must be _fanin/<source_node>/<logical_port>",
+                        edge=edge.id,
+                        node=dst_node.id,
+                        port=destination_port,
+                    )
+                fanin_source, logical_port = parts[1], parts[2]
+                if fanin_source != edge.source.node:
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Edge '{edge.id}' destination fan-in source '{fanin_source}' "
+                        f"does not match source node '{edge.source.node}'",
+                        edge=edge.id,
+                        node=edge.source.node,
+                        port=destination_port,
+                    )
+                if logical_port not in dst_node.inputs:
+                    raise IRError(
+                        ErrCode.IR_VAL_PORT_NOT_FOUND,
+                        f"Edge '{edge.id}' destination fan-in logical port '{logical_port}' "
+                        f"not in inputs of node '{dst_node.id}'",
+                        edge=edge.id,
+                        node=dst_node.id,
+                        port=logical_port,
+                    )
+            elif destination_port not in dst_node.inputs:
                 raise IRError(
                     ErrCode.IR_VAL_PORT_NOT_FOUND,
-                    f"Edge '{edge.id}' destination port '{edge.destination.port}' "
+                    f"Edge '{edge.id}' destination port '{destination_port}' "
                     f"not in inputs of node '{dst_node.id}'",
                     edge=edge.id,
                     node=dst_node.id,
-                    port=edge.destination.port,
+                    port=destination_port,
                 )
             expected_successors[edge.source.node].add(edge.destination.node)
             expected_predecessors[edge.destination.node].add(edge.source.node)

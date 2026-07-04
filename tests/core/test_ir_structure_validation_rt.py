@@ -59,6 +59,14 @@ def test_duplicate_node_id_rejected(ir_dict: dict) -> None:
     assert excinfo.value.code == ErrCode.IR_VAL_INVALID
 
 
+def test_duplicate_edge_id_rejected(ir_dict: dict) -> None:
+    ir_dict['edges'].append(dict(ir_dict['edges'][0]))
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'Duplicate edge id' in str(excinfo.value)
+
+
 def test_dangling_edge_node_rejected(ir_dict: dict) -> None:
     ir_dict['edges'][0]['destination']['node'] = 'ghost'
     with pytest.raises(IRError) as excinfo:
@@ -83,9 +91,31 @@ def test_unknown_destination_port_rejected(ir_dict: dict) -> None:
 
 
 def test_fanin_destination_port_is_exempt(ir_dict: dict) -> None:
-    dst_node = ir_dict['edges'][0]['destination']['node']
-    ir_dict['edges'][0]['destination']['port'] = f"_fanin/{dst_node}/value"
+    src_node = ir_dict['edges'][0]['source']['node']
+    ir_dict['edges'][0]['destination']['port'] = f"_fanin/{src_node}/value"
     reload(ir_dict)  # must not raise
+
+
+def test_malformed_fanin_destination_port_rejected(ir_dict: dict) -> None:
+    ir_dict['edges'][0]['destination']['port'] = "_fanin/value"
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+
+
+def test_fanin_destination_source_mismatch_rejected(ir_dict: dict) -> None:
+    ir_dict['edges'][0]['destination']['port'] = "_fanin/ghost/value"
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+
+
+def test_unknown_fanin_logical_port_rejected(ir_dict: dict) -> None:
+    src_node = ir_dict['edges'][0]['source']['node']
+    ir_dict['edges'][0]['destination']['port'] = f"_fanin/{src_node}/not_a_port"
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_PORT_NOT_FOUND
 
 
 def test_unknown_successor_rejected(ir_dict: dict) -> None:
