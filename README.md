@@ -179,6 +179,12 @@ pixi run python -m pytest tests/core/test_public_surface_rt.py -q
 pixi run python -m pytest tests/core/test_hub_ref_rt.py tests/core/test_hub_check_rt.py tests/core/test_hub_loader_rt.py tests/core/test_hub_use_rt.py -q
 ```
 
+Final external launch check, after GitHub default branch, DNS, and PyPI/TestPyPI are live:
+
+```bash
+pixi run public-surface-check
+```
+
 See [docs/contributing.md](docs/contributing.md) for development workflow and QA details.
 
 ## License

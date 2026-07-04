@@ -27,6 +27,7 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 - Common backends are `in-process`, `multiprocessing`, and `dora`.
 - Use record/replay when behavior depends on live sensor timing.
 - GoldenRetriever is the companion examples and applied type-pack surface, distributed through Retriever Hub rather than as a first-launch PyPI dependency.
+- `pixi run public-surface-check` is the final external launch proof. It is expected to fail until GitHub default branch, custom DNS, and PyPI/TestPyPI are live.
 
 ## Canonical Commands
 
@@ -40,6 +41,16 @@ pixi run docs-tutorial-perception-html
 pixi run demo-webcam-record
 pixi run demo-webcam-replay-rrd
 ```
+
+## Release Maintainer Command
+
+After GitHub default branch, custom DNS, and PyPI/TestPyPI are live, run:
+
+```bash
+pixi run public-surface-check
+```
+
+This command is the final external launch proof and is expected to fail before those external surfaces are complete.
 
 ## Docs
 

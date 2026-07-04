@@ -102,3 +102,13 @@ Minimum expectations before publishing:
 ## Release boundary
 
 The first public applied module is GoldenRetriever. Keep Golden as a Hub module and source-checkout example catalog; do not publish a second runtime package just to share applied robot payloads.
+
+## Final public-surface check
+
+After repository visibility, DNS cutover, and TestPyPI/PyPI publication are complete, run the external launch verifier from the core repo root:
+
+```bash
+pixi run public-surface-check
+```
+
+This check verifies the GitHub default branch, live website URLs, DNS resolution, and `retriever-core` visibility on PyPI/TestPyPI. It is expected to fail before those external launch steps are complete.

@@ -44,6 +44,16 @@ python -m pip install -e . && python -m pytest tests -q
 
 If `dora` reports stale coordinator/schema errors: `pkill -9 dora` and rerun.
 
+## Final launch check
+
+For release maintainers, after GitHub default branch, custom DNS, and PyPI/TestPyPI are live:
+
+```bash
+pixi run public-surface-check
+```
+
+This is intentionally external and is expected to fail before launch cutover is complete.
+
 ## Minimal correct usage (runs as-is)
 
 ```python
