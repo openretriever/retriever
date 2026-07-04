@@ -63,8 +63,8 @@ link or command dangles:
    public. Every GitHub link on openretriever.org, the docs site, and the
    Golden site currently 404s for anonymous visitors.
 2. Publish `retriever-core` to PyPI. `pip install retriever-core` is the
-   first command on the landing page and in the docs — it must work the
-   moment those pages are promoted.
+   visible release command on the landing page and in the docs; keep it marked
+   pending until the package actually resolves from PyPI.
 3. Update Golden to consume the published `retriever-core` runtime and
    verify its Hub-loadable applied type pack (`openretriever/golden-retriever`).
    Keep any Golden wheel as an optional future artifact, not a required public
