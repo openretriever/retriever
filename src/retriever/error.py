@@ -46,6 +46,7 @@ class ErrCode(IntEnum):
     # PipelineGraph Errors (1300-1399)
     PIPELINE_GRAPH_NODE_NOT_FOUND = 1300
     PIPELINE_GRAPH_PORT_NOT_FOUND = 1301
+    PIPELINE_GRAPH_DUPLICATE_NODE = 1302
 
     # PipelineBuilder Errors (1400-1499)
     PIPELINE_BUILDER_INACTIVE = 1400
@@ -162,6 +163,7 @@ ERROR_MSGS: Dict[ErrCode, str] = {
     # Flow layer - PipelineGraph (1300-1399)
     ErrCode.PIPELINE_GRAPH_NODE_NOT_FOUND: "Node not found in PipelineGraph",
     ErrCode.PIPELINE_GRAPH_PORT_NOT_FOUND: "Port not found in PipelineNode",
+    ErrCode.PIPELINE_GRAPH_DUPLICATE_NODE: "Node already exists in PipelineGraph",
 
     # Flow layer - PipelineBuilder (1400-1499)
     ErrCode.PIPELINE_BUILDER_INACTIVE: "Operation requires active PipelineBuilder",

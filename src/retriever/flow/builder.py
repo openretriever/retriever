@@ -128,7 +128,7 @@ class PipelineBuilder:
                 msg = f"{method_name}() must be called inside PipelineBuilder"
             else:
                 msg = "Operation must be called inside PipelineBuilder"
-            raise FlowError(ErrCode.FLOW_CONTEXT_INACTIVE, msg)
+            raise FlowError(ErrCode.PIPELINE_BUILDER_INACTIVE, msg)
         return ctx
 
     # ========================================================================
@@ -161,6 +161,16 @@ class PipelineBuilder:
         # Register handles and get node IDs
         src_node_id = self._register_handle(src)
         dst_node_id = self._register_handle(dst)
+
+        if src_node_id == dst_node_id:
+            raise FlowError(
+                ErrCode.FLOW_CONNECTION_INVALID,
+                f"Cannot connect node '{src_node_id}' to itself. Keep per-flow state "
+                "in instance attributes, or route feedback through another node "
+                "(a >> b >> a).",
+                src=src.flow.__class__.__name__,
+                dst=dst.flow.__class__.__name__,
+            )
 
         # Record connection
         self._connections.append(

@@ -127,13 +127,14 @@ class Rate(Clock):
 @dataclass(init=False)
 class Tick(Rate):
     """
-    Periodic clock that does not sample any inputs (tick-only).
+    Periodic clock, named for tick-only (input-less) source flows.
 
-    Equivalent to: `Rate(hz=..., fields=[])`
+    Runtime behavior is identical to `Rate(hz=...)`; use `Tick` to signal
+    intent when a flow has no inputs to sample.
     """
 
     def __init__(self, hz: float, *, on_lag: str = "warn"):
-        super().__init__(hz=hz, fields=[], on_lag=on_lag)
+        super().__init__(hz=hz, on_lag=on_lag)
 
     def __repr__(self) -> str:
         if self.on_lag != "warn":

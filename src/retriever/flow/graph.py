@@ -115,10 +115,14 @@ class PipelineGraph:
         output_ports: Dict[str, Type],
     ) -> PipelineNode:
         """Add a flow node to the graph"""
-        # Check for duplicate node
+        # Duplicate ids indicate a wiring bug upstream; silently reusing the
+        # existing node would mask it.
         if node_id in self.nodes:
-            logger.warning(f"Skipped node '{node_id}' already exists in graph")
-            return self.nodes[node_id]
+            raise FlowError(
+                ErrCode.PIPELINE_GRAPH_DUPLICATE_NODE,
+                f"Node '{node_id}' already exists in graph",
+                node_id=node_id,
+            )
 
         node = PipelineNode(
             node_id=node_id,
