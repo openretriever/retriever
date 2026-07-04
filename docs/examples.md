@@ -22,8 +22,8 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   <a class="rt-path-step" href="https://retriever-space.pages.dev/">
     <span>03</span>
     <strong>Golden examples</strong>
-    <p>Perception, memory, language, notebooks, and robotics integration lanes.</p>
-    <code>pixi run -e golden-local ...</code>
+    <p>Perception, memory, language, notebooks, and robotics integration lanes (run from a GoldenRetriever checkout).</p>
+    <code>pixi run -e golden-local demo-perception-detection-flow</code>
   </a>
 </div>
 

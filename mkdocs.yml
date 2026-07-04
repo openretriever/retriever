@@ -59,6 +59,8 @@ nav:
       - Debugging and Replay: guides/debugging.md
       - Execution: guide_execution.md
       - Architecture: architecture.md
+      - Standard Types: types_standard.md
+      - Concepts and Lineage: concepts_lineage.md
   - Tutorials:
       - Flow Fundamentals: tutorials/track_a_flow_fundamentals.md
       - IR and Execution: tutorials/track_b_ir_and_execution.md

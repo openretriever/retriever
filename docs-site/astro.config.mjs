@@ -37,6 +37,8 @@ export default defineConfig({
             { label: 'Flow', slug: 'concepts/flow' },
             { label: 'Time and Sync', slug: 'concepts/time-and-sync' },
             { label: 'Runtime', slug: 'concepts/runtime' },
+            { label: 'Standard Types', slug: 'concepts/standard-types' },
+            { label: 'Concepts and Lineage', slug: 'concepts/lineage' },
           ],
         },
         {

@@ -38,6 +38,9 @@ Retriever implements a pragmatic variation of Functional Reactive Programming:
   - In practice, a Behavior is formed by **holding** the last value of an Event Stream.
   - When you sample an input port using `Latest()` or `Hold()`, you are effectively treating it as a Behavior.
 
+For where these ideas come from (FRP, synchronous dataflow, Kahn networks)
+and what to read next, see [Concepts and Lineage](concepts_lineage.md).
+
 
 ---
 
@@ -262,7 +265,7 @@ At each step `now`:
 If a node cannot keep up with its target Hz:
 - `on_lag="warn"` (default): Skip missed ticks and warn.
 - `on_lag="drop"`: Skip missed ticks (silent).
-- `on_lag="panic"`: Raise error and stop.
+- `on_lag="error"`: Raise error and stop (aliases: `"panic"`, `"raise"`, `"strict"`).
 - `on_lag="catch_up"`: Execute every tick eventually (can build latency).
 
 See `docs/handbook.md` for more on lag policies.

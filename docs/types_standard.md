@@ -1,0 +1,51 @@
+# Standard Types
+
+There is one canonical home for standard payload types: **`retriever.types`**,
+shipped with the runtime. Anything that runs Retriever — examples, hub
+modules, GoldenRetriever lanes — can refer to these classes directly, and
+two components that both say `PoseStamped` mean the *same class*.
+
+## The canonical modules
+
+| Module | What lives there |
+| --- | --- |
+| `retriever.types.spatial` | `Header`, `Vector3`, `Quaternion`, `SE3Pose`, `PoseStamped`, `Twist(Stamped)`, `Wrench(Stamped)`, `JointState` + `validate_*` helpers |
+| `retriever.types.perception` | `Image2D`, `CompressedImage2D`, `CameraIntrinsics`, `PointCloud3D`, `BBox2D`, `Detection2D`, `DetectionBatch`, `SegmentationMask2D`, `PointTarget2D` |
+| `retriever.types.language` | `Caption`, `ReferringExpression`, `GroundedPhrase`, plan-text payloads |
+| `retriever.types.symbolic` | objects, skills, grounded-skill payloads |
+| `retriever.types.data` | data-spec / event-stream contracts |
+| `retriever.types.schema` | `SchemaRef`, `StreamId`, `ClockDomain` |
+
+All payload classes are `@io`-ready: use them directly as Flow port types.
+
+```python
+from retriever.flow import Flow, Trigger
+from retriever.types.perception import Image2D, DetectionBatch
+
+class Detector(Flow[Image2D, DetectionBatch]):
+    def step(self, image: Image2D) -> DetectionBatch: ...
+```
+
+## How the ecosystem refers to them
+
+- **Hub modules**: depend on `retriever-core` (they already do) and import
+  `retriever.types.*` in their port contracts. Do not vendor copies — a
+  copied class with the same name is a different type at runtime.
+- **GoldenRetriever**: `retriever_typing` *re-exports* the spatial standard
+  (`retriever_typing.Header is retriever.types.spatial.Header`) and adds
+  what the runtime does not ship: the type registry, Arrow conversions, and
+  higher-level robotics/planning payloads.
+- **Extension packs**: domain-specific type sets that do not belong in the
+  runtime can be published as hub modules and loaded with
+  `hub.use("org/types-pack:SomeType")` — built on top of, never instead of,
+  the standard modules.
+
+## Rules of thumb
+
+1. Need a common robotics payload? Import it from `retriever.types.*`.
+2. Adding a broadly useful payload? Contribute it to `retriever.types`
+   (versioned, `@io`-decorated, with validators where invariants exist).
+3. Adding a niche or heavy payload? Keep it in your module/repo, typed with
+   standard fields (`Header`, `SchemaRef`) so it composes.
+4. Never redefine a standard type locally, even with identical fields —
+   type identity is the contract.
