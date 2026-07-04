@@ -5,29 +5,18 @@ Orchestrates pipeline execution using Python's multiprocessing module.
 """
 
 import time
-import sys
 from typing import Dict, List, Any, Optional
-from multiprocessing import Queue
-import multiprocessing
 
 from retriever.config import get_global_config
 from retriever.ir.core import IR, IRNode, IREdge, IRVizPolicy
 from retriever.rt.backend.interface import ExecutionEngine
 from retriever.rt.backend.multiprocessing.channel import MPChannel
 from retriever.rt.backend.multiprocessing.executor import MPExecutor
+from retriever.rt.backend.multiprocessing.mp_context import MP_CTX
 from retriever.rt.logging.manager import LogManager
 
 import logging
 logger = logging.getLogger(__name__)
-
-# Configure multiprocessing start method for compatibility
-# Fork is faster and allows queue sharing; spawn requires full pickling
-if sys.platform != 'win32':
-    try:
-        multiprocessing.set_start_method('fork', force=True)
-    except RuntimeError:
-        # Start method already set
-        pass
 
 
 class MPEngine(ExecutionEngine):
@@ -81,7 +70,7 @@ class MPEngine(ExecutionEngine):
         """Create MPChannel for each edge."""
         buffer_engine = self.config.get("buffer_engine", "python")
         for edge in self.ir.edges:
-            queue = Queue(maxsize=edge.qsize)
+            queue = MP_CTX.Queue(maxsize=edge.qsize)
             adapter = edge.instantiate_adapter()
             self.channels[edge.id] = MPChannel(
                 queue,

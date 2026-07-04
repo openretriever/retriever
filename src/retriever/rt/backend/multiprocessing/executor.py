@@ -4,7 +4,6 @@ MPExecutor - Process-based executor for multiprocessing backend.
 Wraps a Flow for execution in a separate process using multiprocessing.Process.
 """
 
-import multiprocessing
 from contextlib import nullcontext
 from typing import Dict, List, Optional, Any
 from retriever.flow.base import Flow
@@ -13,6 +12,7 @@ from retriever.flow.adapter import Adapter
 from retriever.ir.core import IRNode
 from retriever.rt.backend.interface import Executor, Subscriber, Publisher
 from retriever.rt.lifecycle import instantiate_flow_from_node, initialize_flow_runtime
+from retriever.rt.backend.multiprocessing.mp_context import MP_CTX
 from retriever.rt.backend.multiprocessing.scheduler import MPScheduler
 from retriever.rt.step import IOStep
 from retriever.rt.logging.worker import configure_worker
@@ -30,7 +30,7 @@ except ImportError:
     CONTROL_AVAILABLE = False
 
 
-class MPExecutor(multiprocessing.Process, Executor):
+class MPExecutor(MP_CTX.Process, Executor):
     """
     Process-based executor for multiprocessing backend.
 
@@ -83,7 +83,7 @@ class MPExecutor(multiprocessing.Process, Executor):
         self.adapters = adapters or {}
         self.log_params = log_params
         self.scheduler = MPScheduler(clock)
-        self._stop_flag = multiprocessing.Event()
+        self._stop_flag = MP_CTX.Event()
 
         # Store queue references (will create channel in run() after fork/spawn)
         self._control_command_queue = control_command_queue
