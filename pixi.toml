@@ -134,6 +134,10 @@ dora-rs-cli = ">=0.3.12"
 # Run: pixi run build
 build = "python -m build"
 
+# Check built wheel/sdist metadata
+# Run: pixi run package-check
+package-check = "python -m pip install --quiet --upgrade twine && python -m twine check dist/*.whl dist/*.tar.gz"
+
 # Create distribution bundle (Wheel + Examples + Config)
 # Run: pixi run package
 package = "python scripts/release/package_dist.py"
