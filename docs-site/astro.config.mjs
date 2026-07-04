@@ -16,7 +16,6 @@ export default defineConfig({
       favicon: '/assets/logo.svg',
       customCss: ['./src/styles/retriever.css'],
       plugins: [starlightThemeNova()],
-      // GitHub links are intentionally hidden until repository visibility is public.
       sidebar: [
         {
           label: 'Start',
@@ -25,7 +24,8 @@ export default defineConfig({
             { label: 'Visual Quickstart', slug: 'getting-started/visual-quickstart' },
             { label: 'Install', slug: 'getting-started/install' },
             { label: 'Landing', link: 'https://openretriever.org/' },
-            { label: 'Golden Applied Examples', link: 'https://retriever-space.pages.dev/' },
+            { label: 'Golden Reference', link: 'https://retriever-space.pages.dev/' },
+            { label: 'Core Source', link: 'https://github.com/openretriever/retriever' },
             { label: 'Agent Map', link: '/llms.txt' },
           ],
         },
@@ -51,7 +51,7 @@ export default defineConfig({
           label: 'Retriever Hub',
           items: [
             { label: 'Ecosystem Overview', slug: 'ecosystem' },
-            { label: 'Golden Packs', slug: 'ecosystem/golden-packs' },
+            { label: 'Golden Reference Packs', slug: 'ecosystem/golden-packs' },
             { label: 'Hub Packs and Modules', slug: 'ecosystem/modules' },
             { label: 'Composable Pipelines', slug: 'ecosystem/composable-pipelines' },
             { label: 'Publishing', slug: 'ecosystem/publishing' },

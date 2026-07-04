@@ -103,12 +103,12 @@ Minimum expectations before publishing:
 
 GoldenRetriever is the current applied reference catalog. Keep Golden as applied examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
 
-## Final public-surface check
+## Public-surface check
 
-After repository visibility, DNS cutover, and TestPyPI/PyPI publication are complete, run the external launch verifier from the core repo root:
+Before a release announcement, maintainers should run the external launch verifier from the core repo root:
 
 ```bash
 pixi run public-surface-check
 ```
 
-This check verifies the GitHub default branch, live website URLs, DNS resolution, and `retriever-core` visibility on PyPI/TestPyPI. It is expected to fail before those external launch steps are complete.
+This check verifies that public routes, package indexes, and repository metadata match the release docs. Treat failures as release blockers or document them in maintainer-only release notes before publishing.
