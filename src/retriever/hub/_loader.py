@@ -97,6 +97,20 @@ def _iter_intra_package_imports(file_path: Path, module_name: str) -> list[str]:
     return deps
 
 
+def _package_base(module_root: Path, module_name: str) -> Path:
+    """Directory that directly contains the package.
+
+    Supports both flat repos (`<root>/<pkg>/`) and the standard src layout
+    (`<root>/src/<pkg>/`). Returns module_root when neither exists so the
+    caller's error path reports the miss.
+    """
+    if (module_root / module_name).is_dir():
+        return module_root
+    if (module_root / "src" / module_name).is_dir():
+        return module_root / "src"
+    return module_root
+
+
 def _preload_intra_package_imports(
     module_root: Path,
     module_name: str,
@@ -138,13 +152,14 @@ def _load_package(
     """
     _ensure_namespace()
 
-    pkg_dir = module_root / module_name
+    pkg_dir = _package_base(module_root, module_name) / module_name
     init_path = pkg_dir / "__init__.py"
 
     if not pkg_dir.is_dir():
         raise HubError(
             ErrCode.HUB_IMPORT_FAILED,
-            f"Package directory '{module_name}' not found at {module_root}",
+            f"Package directory '{module_name}' not found at {module_root} "
+            f"(also tried the 'src/' layout)",
         )
 
     # A package without __init__.py — treat as namespace package
@@ -248,10 +263,11 @@ def _import_submodule(
 
     # Build file path
     rel_path = Path(*parts)
-    file_path = module_root / (str(rel_path) + ".py")
+    pkg_base = _package_base(module_root, module_name)
+    file_path = pkg_base / (str(rel_path) + ".py")
     if not file_path.exists():
         # Try as sub-package
-        file_path = module_root / rel_path / "__init__.py"
+        file_path = pkg_base / rel_path / "__init__.py"
 
     if not file_path.exists():
         raise HubError(

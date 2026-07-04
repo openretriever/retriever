@@ -140,3 +140,33 @@ class TestModuleProxy:
         r = repr(proxy)
         assert "company/slam" in r
         assert "FlowA" in r
+
+
+class TestSrcLayout:
+    def test_load_exports_from_src_layout(self, tmp_path: Path):
+        """Packages under the standard src/ layout resolve like flat ones."""
+        pkg_dir = tmp_path / "src" / "src_pkg"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("")
+        (pkg_dir / "types.py").write_text("class Pose:\n    frame = 'map'\n")
+        (pkg_dir / "deep").mkdir()
+        (pkg_dir / "deep" / "__init__.py").write_text("")
+        (pkg_dir / "deep" / "flow.py").write_text("class DeepFlow:\n    pass\n")
+
+        exports = load_exports(tmp_path, "src_pkg", {
+            "Pose": "src_pkg.types:Pose",
+            "DeepFlow": "src_pkg.deep.flow:DeepFlow",
+        })
+        assert exports["Pose"].frame == "map"
+        assert exports["DeepFlow"].__name__ == "DeepFlow"
+
+        for key in list(sys.modules):
+            if "src_pkg" in key:
+                del sys.modules[key]
+
+    def test_missing_package_error_mentions_src(self, tmp_path: Path):
+        from retriever.error import HubError
+
+        with pytest.raises(HubError) as excinfo:
+            load_exports(tmp_path, "ghost_pkg", {"X": "ghost_pkg.mod:X"})
+        assert "src/" in str(excinfo.value)
