@@ -19,11 +19,14 @@ Pixi is the default environment manager for this repo.
 # Install pixi
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Run the first visual demo (auto-resolves env)
+# Run the reliable first visual smoke (auto-resolves env)
+pixi run demo-webcam-detection-mock
+
+# Then try the live webcam path
 pixi run demo-webcam-detection
 ```
 
-This uses a live webcam by default and detects red/blue objects. If camera access is unavailable, run the tutorial module directly with `--camera-mode mock`, or use `pixi run demo-basic-flow` for a pure-core API sanity check.
+The mock command uses deterministic frames and prints detector events without camera or GUI requirements. The live command uses a webcam by default and detects red/blue objects with Rerun when available and stdout as fallback. Use `pixi run demo-basic-flow` for a pure-core API sanity check.
 
 Useful follow-ups:
 

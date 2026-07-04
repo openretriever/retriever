@@ -4,7 +4,7 @@ title: "Quickstart"
 
 # Quickstart
 
-Start with the visual path: `pixi run demo-webcam-detection` opens webcam color detection and streams results to Rerun when available. This page then teaches the same core model with the smallest runnable graph.
+Start with the reliable visual smoke: `pixi run demo-webcam-detection-mock` runs the same color-detection graph with deterministic frames and stdout output. Then use `pixi run demo-webcam-detection` for live webcam input and Rerun/stdout visualization. This page then teaches the same core model with the smallest runnable graph.
 
 <div class="rt-learning-panel">
   <h2>The five ideas</h2>
@@ -82,10 +82,11 @@ This split is intentional: debug the graph in one process first, then move the s
 === "See something"
 
     ```bash
+    pixi run demo-webcam-detection-mock
     pixi run demo-webcam-detection
     ```
 
-    Runs `camera -> color detector -> display` with a real webcam by default. Show red or blue objects to the camera. Rerun opens when available; otherwise the demo prints detections to stdout. If no camera is available, use the tutorial module with `--camera-mode mock --visualize rerun`.
+    The mock command is the first smoke: no camera permission and no GUI requirement. The live command runs `camera -> color detector -> display` with a real webcam by default. Show red or blue objects to the camera; Rerun opens when available and stdout is the fallback.
 
 === "Learn the API"
 

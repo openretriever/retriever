@@ -4,26 +4,29 @@ title: "Visual Quickstart"
 
 # Visual Quickstart: Webcam Color Detection
 
-Start here if you want to see Retriever do something immediately. This demo opens your webcam, detects red and blue objects, and streams the result to Rerun when available.
+Start here if you want to see Retriever do something immediately. First run the deterministic mock-frame smoke; then switch to the live webcam path with Rerun when available.
 
 <div class="rt-command-grid rt-command-grid-single">
-  <div class="rt-command-card"><span>Start here</span><strong>Webcam → color detector → Rerun</strong><small>Show a red or blue object to the camera. Rerun opens a live viewer when the SDK is installed; otherwise the demo falls back to stdout.</small><code>pixi run demo-webcam-detection</code></div>
+  <div class="rt-command-card"><span>Start here</span><strong>Mock camera → color detector → stdout</strong><small>Reliable first smoke for laptops, headless machines, and CI.</small><code>pixi run demo-webcam-detection-mock</code></div>
+  <div class="rt-command-card"><span>Then go live</span><strong>Webcam → color detector → Rerun</strong><small>Show a red or blue object to the camera. Rerun opens a live viewer when the SDK is installed; otherwise the demo falls back to stdout.</small><code>pixi run demo-webcam-detection</code></div>
 </div>
 
 ## What You Should See
 
+- The mock command prints detector events to stdout.
 - A camera Flow publishes frames at its own rate.
 - A color detector Flow runs when frames arrive and emits bounding boxes for red/blue regions.
 - A display/visualization path shows detections live in Rerun when available.
-- If no camera is available, rerun the module with mock frames:
+- If you specifically want mock frames with Rerun, run:
 
 ```bash
+pixi run demo-webcam-detection-mock
 pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10
 ```
 
 ## Why This Is The First Demo
 
-The webcam path is small but representative: it has sensor input, typed Flow outputs, asynchronous timing, visualization, and an immediate debugging story. After this works, the rest of the docs explain how the same graph can be stepped, inspected, recorded, replayed, and moved to a backend.
+The color-detection path is small but representative: it has sensor input, typed Flow outputs, asynchronous timing, visualization, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live visual path. After this works, the same graph can be stepped, inspected, recorded, replayed, and moved to a backend.
 
 ## Rerun Visualization
 
@@ -31,6 +34,7 @@ Retriever uses Rerun as the lightweight live viewer for visual demos and as the 
 
 | Use case | Command |
 | --- | --- |
+| Deterministic first smoke | `pixi run demo-webcam-detection-mock` |
 | Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
 | Force live Rerun on multiprocessing backend | `pixi run demo-webcam-detection-mp-rerun` |
 | Force mock frames with Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
