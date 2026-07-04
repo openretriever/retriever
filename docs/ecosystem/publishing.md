@@ -1,8 +1,8 @@
 ---
-title: "Publishing Modules"
+title: "Publishing Hub Packs"
 ---
 
-# Publishing Modules
+# Publishing Hub Packs
 
 A public Retriever module should be import-safe, versioned, and explicit about what it exports.
 

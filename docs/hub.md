@@ -4,16 +4,17 @@ title: "Ecosystem"
 
 # Retriever Ecosystem
 
-Retriever has two layers:
+Retriever has three connected public layers:
 
 - **Runtime core**: the Python package in this repo. It defines Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, and backend execution.
-- **Hub and examples**: reusable Flows, typed payloads, transforms, and larger robot/application modules that can be shared across projects.
+- **Retriever Hub**: reusable Flows, typed payload packs, transforms, and composed pipelines that can be shared across projects.
+- **GoldenRetriever applied examples**: the applied robotics reference catalog and current manifest-declared type pack.
 
 <div class="rt-doc-map">
-  <a href="/ecosystem/modules/"><strong>Hub Modules</strong><span>What a reusable Retriever module can export and how users import it.</span></a>
+  <a href="/ecosystem/modules/"><strong>Hub Packs and Modules</strong><span>What a reusable Retriever export surface can declare and how users import it.</span></a>
   <a href="/ecosystem/composable_pipelines/"><strong>Composable Pipelines</strong><span>How to reuse a whole pipeline as an inspectable graph or one Flow stage.</span></a>
   <a href="/ecosystem/publishing/"><strong>Publishing</strong><span>Packaging conventions, import-safe modules, and index metadata.</span></a>
-  <a href="https://retriever-space.pages.dev/"><strong>GoldenRetriever</strong><span>Application examples for perception, memory, language, notebooks, and robotics.</span></a>
+  <a href="https://retriever-space.pages.dev/"><strong>Golden applied examples</strong><span>Applied robotics examples and Retriever Hub pack candidates for perception, memory, language, notebooks, and robotics.</span></a>
 </div>
 
 ## API In A Nutshell
@@ -38,7 +39,7 @@ stage = build_stage(resolution=0.05) @ Rate(hz=10)
 
 ## When To Use Hub
 
-Use Hub-style modules when a component is reusable across robot stacks:
+Use Hub packs/modules when a component is reusable across robot stacks:
 
 - typed boundary payloads such as poses, detections, task commands, and action chunks
 - perception, localization, planning, policy, or control Flows
@@ -49,6 +50,6 @@ Keep one-off tutorial code in the examples tree until the public boundary is sta
 
 ## Continue
 
-- [Hub Modules](ecosystem/modules.md)
+- [Hub Packs and Modules](ecosystem/modules.md)
 - [Composable Pipelines](ecosystem/composable_pipelines.md)
-- [Publishing Modules](ecosystem/publishing.md)
+- [Publishing Hub Packs](ecosystem/publishing.md)

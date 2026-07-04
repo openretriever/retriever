@@ -55,11 +55,11 @@ and writes an HTML graph artifact.
 Typical output starts like this:
 
 ```text
-Golden Hub exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to_arrow, convert_from_arrow
+Golden pack exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to_arrow, convert_from_arrow
 Registry WorldState: _retriever_hub...WorldState
 Constructed WorldState: ['cup']
 Arrow round-trip: Action OK
-Intended Hub reference: hub.use("openretriever/golden-retriever:WorldState")
+Retriever Hub reference: hub.use("openretriever/golden-retriever:WorldState")
 Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
 ```
 
@@ -78,6 +78,6 @@ compose those types; they should not redefine them.
 
 ## Next step
 
-Continue with [Hub Modules](/ecosystem/modules/) for the general reference shape,
-or open the [GoldenRetriever examples site](https://retriever-space.pages.dev/) for the
+Continue with [Hub packs and modules](/ecosystem/modules/) for the general reference shape,
+or open the [Golden applied examples site](https://retriever-space.pages.dev/) for the
 runnable applied lanes.

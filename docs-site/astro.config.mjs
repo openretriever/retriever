@@ -25,7 +25,7 @@ export default defineConfig({
             { label: 'Visual Quickstart', slug: 'getting-started/visual-quickstart' },
             { label: 'Install', slug: 'getting-started/install' },
             { label: 'Landing', link: 'https://openretriever.org/' },
-            { label: 'Golden Examples', link: 'https://retriever-space.pages.dev/' },
+            { label: 'Golden Applied Examples', link: 'https://retriever-space.pages.dev/' },
             { label: 'Agent Map', link: '/llms.txt' },
           ],
         },
@@ -52,7 +52,7 @@ export default defineConfig({
           items: [
             { label: 'Ecosystem Overview', slug: 'ecosystem' },
             { label: 'Golden Packs', slug: 'ecosystem/golden-packs' },
-            { label: 'Modules', slug: 'ecosystem/modules' },
+            { label: 'Hub Packs and Modules', slug: 'ecosystem/modules' },
             { label: 'Composable Pipelines', slug: 'ecosystem/composable-pipelines' },
             { label: 'Publishing', slug: 'ecosystem/publishing' },
           ],

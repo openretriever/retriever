@@ -1,12 +1,12 @@
 ---
-title: "Hub Modules"
+title: "Hub Packs and Modules"
 ---
 
-# Hub Modules
+# Hub Packs and Modules
 
-A Retriever Hub module is a normal Python package with a declared export table. Users import the exported class, function, type, or value directly.
+A Retriever Hub pack or module is a normal Python package with a declared export table. Users import the exported class, function, type, or value directly.
 
-## Module Reference Format
+## Hub Reference Format
 
 ```text
 {org}/{module-name}[:{attribute}][@{version}]

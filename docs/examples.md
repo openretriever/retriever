@@ -4,7 +4,7 @@ title: "Example Gallery"
 
 # Example Gallery
 
-Use the examples in this order. The core repo teaches the runtime itself; GoldenRetriever carries larger perception, memory, language, robotics, and integration examples.
+Use the examples in this order. The core repo teaches the runtime itself; GoldenRetriever carries the applied examples and Retriever Hub pack candidates for larger perception, memory, language, robotics, and integration lanes.
 
 <div class="rt-path-grid rt-path-grid-three">
   <a class="rt-path-step" href="/quickstart/">
@@ -21,8 +21,8 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
   </a>
   <a class="rt-path-step" href="https://retriever-space.pages.dev/">
     <span>03</span>
-    <strong>Golden examples</strong>
-    <p>Perception, memory, language, notebooks, and robotics integration lanes live in the GoldenRetriever examples site.</p>
+    <strong>Golden applied examples</strong>
+    <p>Perception, memory, language, notebooks, robotics integration lanes, and pack candidates live in the GoldenRetriever applied examples site.</p>
     <code>Open GoldenRetriever docs</code>
   </a>
 </div>
@@ -47,7 +47,7 @@ Rerun is the first visual path for Retriever examples. Use `pixi run demo-webcam
 ## Core vs GoldenRetriever
 
 - Keep examples in this repo when they teach the **runtime contract**: typed flows, clocks, sync, IR, execution, stepping, replay, or release checks.
-- Put examples in GoldenRetriever when they teach a **robotics application lane**: perception models, memory, language grounding, notebooks, simulation, real robot adapters, or larger system demos.
+- Put examples in GoldenRetriever when they teach a **robotics application lane or pack candidate**: perception models, memory, language grounding, notebooks, simulation, real robot adapters, robot type packs, or larger system demos.
 - Link across repos instead of copying code when the same concept would otherwise appear twice.
 
 !!! note "Current boundary"
@@ -57,4 +57,4 @@ Rerun is the first visual path for Retriever examples. Use `pixi run demo-webcam
 
 - [Tutorial Tracks](tutorials/index.md) for the ordered core curriculum.
 - [Runtime Handbook](handbook.md) for the canonical reference path.
-- [GoldenRetriever site](https://retriever-space.pages.dev/) for application examples.
+- [GoldenRetriever site](https://retriever-space.pages.dev/) for applied examples and pack candidates.

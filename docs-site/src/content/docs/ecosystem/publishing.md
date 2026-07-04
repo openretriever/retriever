@@ -4,7 +4,7 @@ title: Publishing
 
 # Publishing
 
-Publish Hub modules only after the boundary is stable, import-safe, and explicit about what it exports.
+Publish Hub packs or modules only after the boundary is stable, import-safe, and explicit about what it exports.
 
 ## Package layout
 
@@ -38,7 +38,7 @@ BuildSlamPipeline = "lidar_slam.pipeline:build_slam_pipeline"
 BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
 ```
 
-The Hub loader reads `[tool.retriever.module]`, imports the declared module, and returns the requested export.
+The Hub loader reads `[tool.retriever.module]`, imports the declared package surface, and returns the requested export.
 
 ## Import-safe modules
 

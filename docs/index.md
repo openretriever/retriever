@@ -22,7 +22,7 @@ slug: "intro"
     <a class="rt-action-card" href="/examples/">
       <span class="rt-action-icon">◇</span>
       <strong>See visual examples</strong>
-      <small>Webcam detection, graph visualization, replay, and Golden examples.</small>
+      <small>Webcam detection, graph visualization, replay, and Golden applied examples.</small>
     </a>
   </div>
 </div>

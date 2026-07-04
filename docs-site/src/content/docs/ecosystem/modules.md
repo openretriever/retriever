@@ -1,12 +1,12 @@
 ---
-title: Hub Modules
+title: Hub Packs and Modules
 ---
 
-# Hub Modules
+# Hub Packs and Modules
 
-A Retriever Hub module is a normal Python package with a declared export table. Users load the exported class, function, type, or value directly; they do not import private source paths or depend on an in-repo layout.
+A Retriever Hub pack or module is a normal Python package with a declared export table. Users load the exported class, function, type, or value directly; they do not import private source paths or depend on an in-repo layout.
 
-## Module reference format
+## Hub reference format
 
 ```text
 {org}/{module-name}[:{attribute}][@{version}]
@@ -25,7 +25,7 @@ BuildSlamPipeline = hub.use("your-org/lidar-slam:BuildSlamPipeline@0.1.0")
 ## Loading semantics
 
 - `hub.use("org/name:Export")` returns the actual exported class, function, type, or value, not a wrapper.
-- `hub.use("org/name")` returns a `ModuleProxy` over the declared export table, not the raw Python module.
+- `hub.use("org/name")` returns a proxy over the declared export table, not the raw Python module.
 - Source-layout packages are supported: a module can keep implementation under `src/` as long as its manifest points to an importable package.
 - Different versions of the same module are isolated by commit-scoped internal namespaces, so `@0.9.0` and `@1.0.0` do not alias each other in one process.
 - Backend/runtime re-import can recover hub-loaded Flow classes from the local hub cache when a fresh process reconstructs nodes from IR.
@@ -43,7 +43,7 @@ Hub exports are normal Python attributes. A module may export:
 - shared domain or representation types
 - representation transforms and serialization helpers
 
-Types are a first-class use case. Runtime-wide standards live in `retriever.types.*`; domain-specific applied types can live in Hub modules so they evolve with the examples or product integration that owns them.
+Types are a first-class use case. Runtime-wide standards live in `retriever.types.*`; domain-specific applied types can live in Hub packs so they evolve with the examples or product integration that owns them.
 
 Recommended public split:
 
@@ -64,4 +64,4 @@ from retriever import hub
 WorldState = hub.use("openretriever/golden-retriever:WorldState")
 ```
 
-Open [Golden Packs](/ecosystem/golden-packs/) for the local manifest proof path, then continue to the [GoldenRetriever examples site](https://retriever-space.pages.dev/) for applied perception, memory, language, simulator, and visualization lanes.
+Open [Golden Packs](/ecosystem/golden-packs/) for the local manifest proof path, then continue to the [Golden applied examples site](https://retriever-space.pages.dev/) for applied perception, memory, language, simulator, and visualization lanes.

@@ -26,7 +26,7 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 - Edge sync should be explicit with `connect(..., sync=...)` unless a default sync policy is intentionally configured.
 - Common backends are `in-process`, `multiprocessing`, and `dora`.
 - Use record/replay when behavior depends on live sensor timing.
-- GoldenRetriever is the companion examples and applied type-pack surface, distributed through Retriever Hub rather than as a first-launch PyPI dependency.
+- GoldenRetriever is the applied examples and type-pack surface, distributed through Retriever Hub rather than as a first-launch PyPI dependency.
 - `pixi run public-surface-check` is the final external launch proof. It is expected to fail until GitHub default branch, custom DNS, and PyPI/TestPyPI are live.
 
 ## Canonical Commands
@@ -72,4 +72,4 @@ This command is the final external launch proof and is expected to fail before t
 ## Companion Sites
 
 - [Landing page](https://openretriever.org/): compact public front door.
-- [GoldenRetriever](https://retriever-space.pages.dev/): applied robotics examples and Golden Hub packs.
+- [GoldenRetriever](https://retriever-space.pages.dev/): applied robotics examples and Golden packs loaded through Retriever Hub.

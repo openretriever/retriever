@@ -84,7 +84,7 @@ nav:
           - Type Composition: guides/type_composition_v1.md
   - Ecosystem:
       - Overview: hub.md
-      - Hub Modules: ecosystem/modules.md
+      - Hub Packs and Modules: ecosystem/modules.md
       - Composable Pipelines: ecosystem/composable_pipelines.md
-      - Publishing Modules: ecosystem/publishing.md
+      - Publishing Hub Packs: ecosystem/publishing.md
       - Contributing: contributing.md

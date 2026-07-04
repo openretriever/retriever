@@ -14,7 +14,7 @@
   <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
   <a href="https://github.com/openretriever/retriever"><img alt="Runtime source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
-  <a href="https://retriever-space.pages.dev/"><img alt="Examples" src="https://img.shields.io/badge/Examples-Golden-92400e?style=for-the-badge"></a>
+  <a href="https://retriever-space.pages.dev/"><img alt="Applied examples" src="https://img.shields.io/badge/Applied%20Examples-Golden-92400e?style=for-the-badge"></a>
 </p>
 
 </div>
@@ -31,7 +31,7 @@ Use Retriever when a robot system needs:
 - **Portable backends**: author one typed graph, then run it in-process, with multiprocessing, or on a distributed backend.
 - **Reusable components**: typed payloads, registries, and Hub surfaces make robot software easier to publish and compose.
 
-System-level robot integrations, simulator stacks, and heavier model packages belong in companion surfaces such as [GoldenRetriever Examples](https://retriever-space.pages.dev/). This repository stays focused on the runtime core.
+System-level robot integrations, simulator stacks, and heavier model packages belong in the applied layer: [GoldenRetriever applied examples](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
 
 ## Canonical Runtime Workflow
 
@@ -137,7 +137,7 @@ The hosted Starlight docs are the public docs front door:
 The repository `docs/` tree remains available for deeper source-local reference
 and release maintenance.
 
-Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). Companion examples live at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever).
+Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever applied examples and pack candidates live at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever).
 
 ## Runtime Surfaces
 
@@ -161,7 +161,7 @@ Backend execution is for realistic scheduling, process boundaries, and deploymen
 The intended public split is:
 
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
-- **Examples and integrations**: [GoldenRetriever Examples](https://retriever-space.pages.dev/).
+- **Applied examples and pack candidates**: [GoldenRetriever applied examples](https://retriever-space.pages.dev/).
 - **Project website**: [openretriever.org](https://openretriever.org/).
 
 ## Development
