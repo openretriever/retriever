@@ -38,7 +38,7 @@ for the core runtime.
 
 ## Source-checkout proof today
 
-Until the public Hub index is live, run the proof from the GoldenRetriever repo:
+Until the public Hub index is live, run the proof from the GoldenRetriever repo if you already have repository access. Public clone access opens when the GoldenRetriever GitHub visibility is flipped:
 
 ```bash
 pixi run demo-golden-hub-pack

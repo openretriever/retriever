@@ -16,12 +16,7 @@ export default defineConfig({
       favicon: '/assets/logo.svg',
       customCss: ['./src/styles/retriever.css'],
       plugins: [starlightThemeNova()],
-      social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/openretriever/retriever' },
-      ],
-      editLink: {
-        baseUrl: 'https://github.com/openretriever/retriever/edit/main/docs-site',
-      },
+      // GitHub links are intentionally hidden until repository visibility is public.
       sidebar: [
         {
           label: 'Start',

@@ -13,7 +13,7 @@ backends are "multiprocessing", "dora", and "in-process"; `record=` forces
 the in-process backend for determinism. In the source repo, start from
 AGENTS.md at the repo root.
 
-Prerelease note: before `retriever-core==0.0.1` is published on PyPI, use the source-checkout Pixi commands in the install and visual quickstart guides.
+Prerelease note: before `retriever-core==0.0.1` is published on PyPI, use the source-checkout Pixi commands in the install and visual quickstart guides if you already have repository access. Anonymous GitHub requests currently return 404 until repo visibility is flipped.
 
 ## Docs
 
