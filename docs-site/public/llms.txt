@@ -1,6 +1,6 @@
 # Retriever
 
-> Retriever (`pip install retriever-core`, import `retriever`) is a typed
+> Retriever (PyPI target `retriever-core`, import `retriever`) is a typed
 > dataflow runtime for closed-loop robot systems: author typed Flow graphs
 > with explicit clocks and per-edge sync policies, debug them
 > deterministically in-process with `pipe.step()`, then run the same graph
@@ -12,6 +12,8 @@ mandatory on every edge unless `retriever.init(default_sync=...)` is set;
 backends are "multiprocessing", "dora", and "in-process"; `record=` forces
 the in-process backend for determinism. In the source repo, start from
 AGENTS.md at the repo root.
+
+Prerelease note: before `retriever-core==0.0.1` is published on PyPI, use the source-checkout Pixi commands in the install and visual quickstart guides.
 
 ## Docs
 

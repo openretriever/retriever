@@ -87,13 +87,13 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. The planned package install path is:
+The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. The planned package install path for `0.0.1` is:
 
 ```bash
 python -m pip install retriever-core
 ```
 
-For demos and development before the release package is finalized, use the Pixi/source-checkout path below.
+Until the `0.0.1` package is published, use the Pixi/source-checkout path below. It is also the recommended path for demos because it includes the example files and optional visualization dependencies.
 
 For local development and demos, use Pixi. The first visual demo is webcam color detection:
 

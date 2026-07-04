@@ -4,15 +4,17 @@ title: Install
 
 # Install
 
-Retriever's public runtime distribution name is `retriever-core`; the Python import package is `retriever`. Install the runtime package with:
+Retriever's public runtime distribution name is `retriever-core`; the Python import package is `retriever`. The PyPI install path for the `0.0.1` release is:
 
 ```bash
 pip install retriever-core
 ```
 
-For source-checkout demos, use Pixi from the repository root:
+Until that package is published, use the source-checkout path below. It is also the recommended route for demos because it includes the example files and optional visualization dependencies:
 
 ```bash
+git clone https://github.com/openretriever/retriever
+cd retriever
 pixi install
 pixi run demo-basic-flow
 pixi run demo-webcam-detection
