@@ -430,12 +430,6 @@ class IR:
                 ErrCode.IR_VAL_INVALID,
                 f"Topology node_count mismatch: expected {len(self.nodes)}, got {topo.node_count}",
             )
-        if topo.edge_count != len(self.edges):
-            raise IRError(
-                ErrCode.IR_VAL_INVALID,
-                f"Topology edge_count mismatch: expected {len(self.edges)}, got {topo.edge_count}",
-            )
-
         grouped_nodes: List[str] = [node_id for group in topo.groups for node_id in group]
         grouped_node_set = set(grouped_nodes)
         node_ids = set(nodes_by_id)
@@ -475,9 +469,15 @@ class IR:
         expected_sources = topo_graph.find_sources()
         expected_sinks = topo_graph.find_sinks()
         expected_groups = topo_graph.get_topological_groups()
+        expected_edge_count = topo_graph.get_edge_count()
         expected_has_cycle = topo_graph.has_cycles()
         expected_is_connected = topo_graph.is_connected()
 
+        if topo.edge_count != expected_edge_count:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology edge_count mismatch: expected {expected_edge_count}, got {topo.edge_count}",
+            )
         if topo.sources != expected_sources:
             raise IRError(
                 ErrCode.IR_VAL_INVALID,

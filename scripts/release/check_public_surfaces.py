@@ -123,8 +123,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--github-remote",
-        default="git@github.com:openretriever/retriever.git",
-        help="Git remote used for default-branch verification.",
+        default="https://github.com/openretriever/retriever.git",
+        help="Git remote used for default-branch verification. Defaults to public HTTPS.",
     )
     parser.add_argument("--expected-default-branch", default="main")
     parser.add_argument("--timeout", type=float, default=10.0)

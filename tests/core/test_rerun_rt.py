@@ -358,7 +358,7 @@ def test_ir_viz_policy_validates_and_loads_from_json():
     with pytest.raises(ValueError):
         IRVizPolicy(enabled=True, hz=0)
 
-    ir_json = '{"version":"1","metadata":{"name":"p","created_at":"t","validated":true,"optimized":false},"nodes":[{"id":"n","type":"TickSource","module":"m","init_config":{},"config":{"clock":{"Rate":{"hz":1}}},"viz_policy":{"enabled":true,"hz":5.0,"fields":["value"],"path":"custom/path"},"inputs":{},"outputs":{"out":"TickOut"},"successors":[],"predecessors":[],"service_handlers":[],"service_callers":[]}],"edges":[],"topology":{"sources":[],"sinks":[],"groups":[],"node_count":1,"edge_count":0,"has_cycle":false,"is_connected":true},"optimization":null}'
+    ir_json = '{"version":"1","metadata":{"name":"p","created_at":"t","validated":true,"optimized":false},"nodes":[{"id":"n","type":"TickSource","module":"m","init_config":{},"config":{"clock":{"Rate":{"hz":1}}},"viz_policy":{"enabled":true,"hz":5.0,"fields":["value"],"path":"custom/path"},"inputs":{},"outputs":{"out":"TickOut"},"successors":[],"predecessors":[],"service_handlers":[],"service_callers":[]}],"edges":[],"topology":{"sources":["n"],"sinks":["n"],"groups":[["n"]],"node_count":1,"edge_count":0,"has_cycle":false,"is_connected":true},"optimization":null}'
     loaded = IR.from_json(ir_json)
     assert loaded.nodes[0].viz_policy is not None
     assert loaded.nodes[0].viz_policy.fields == ["value"]
