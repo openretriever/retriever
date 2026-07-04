@@ -18,6 +18,11 @@ two components that both say `PoseStamped` mean the *same class*.
 
 All payload classes are `@io`-ready: use them directly as Flow port types.
 
+These are generic standards, not the whole robotics ontology. Applied payloads
+such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` belong
+in GoldenRetriever or other Hub type packs so they can evolve with examples and
+domain semantics without expanding the core runtime API.
+
 ```python
 from retriever.flow import Flow, Trigger
 from retriever.types.perception import Image2D, DetectionBatch
@@ -32,9 +37,10 @@ class Detector(Flow[Image2D, DetectionBatch]):
   `retriever.types.*` in their port contracts. Do not vendor copies — a
   copied class with the same name is a different type at runtime.
 - **GoldenRetriever**: `retriever_typing` *re-exports* the spatial standard
-  (`retriever_typing.Header is retriever.types.spatial.Header`) and adds
-  what the runtime does not ship: the type registry, Arrow conversions, and
-  higher-level robotics/planning payloads.
+  (`retriever_typing.Header is retriever.types.spatial.Header`), delegates to
+  the runtime registry, and adds what the runtime should not own directly:
+  Arrow conversions plus higher-level robotics/planning payloads exported as
+  a Hub-loadable applied type pack.
 - **Extension packs**: domain-specific type sets that do not belong in the
   runtime can be published as hub modules and loaded with
   `hub.use("org/types-pack:SomeType")` — built on top of, never instead of,
