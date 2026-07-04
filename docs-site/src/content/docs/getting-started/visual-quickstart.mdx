@@ -7,6 +7,8 @@ description: Run the first visual Retriever demo.
 
 Start here if you want to see Retriever do something immediately. This demo opens your webcam, detects red and blue objects, and streams the result to Rerun when available.
 
+This is a source-checkout demo: run it from the core `openretriever/retriever` repository after `pixi install`. The package distribution is `retriever-core`, but examples and visualization extras live in the repository environment for now.
+
 <div class="command-grid">
   <div class="command-card"><strong>Webcam → color detector → Rerun</strong><span>Show a red or blue object to the camera. If Rerun cannot open, the demo falls back to stdout.</span><code>pixi run demo-webcam-detection</code></div>
 </div>
@@ -16,7 +18,10 @@ Start here if you want to see Retriever do something immediately. This demo open
 - A camera Flow publishes frames at its own rate.
 - A color detector Flow runs when frames arrive and emits red/blue bounding boxes.
 - A visualization path shows detections live in Rerun when available.
+- If Rerun is unavailable, stdout still shows detector events.
 - If no camera is available, run the mock-frame version below.
+
+Typical stdout fallback output includes frame/detection events rather than a static success banner. The exact counts vary with lighting and what you show the camera.
 
 ```bash
 pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \

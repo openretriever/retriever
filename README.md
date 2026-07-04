@@ -87,13 +87,13 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The first PyPI release target is `retriever-core==0.0.1`. Once published, install it with:
+The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. The planned package install path is:
 
 ```bash
-python -m pip install retriever-core==0.0.1
+python -m pip install retriever-core
 ```
 
-Until then, use the Pixi/source-checkout path below. The PyPI distribution name is `retriever-core`; the Python import package is `retriever`.
+For demos and development before the release package is finalized, use the Pixi/source-checkout path below.
 
 For local development and demos, use Pixi. The first visual demo is webcam color detection:
 
@@ -151,9 +151,9 @@ The intended public split is:
 
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
 - **Examples and integrations**: [`openretriever/golden-retriever`](https://github.com/openretriever/golden-retriever).
-- **Project website**: public landing page and paper material, link reserved above.
-- **Paper / arXiv**: research writeup, link reserved above.
-- **Community**: Discord or similar community link, reserved above.
+- **Project website**: [openretriever.org](https://openretriever.org/).
+- **Paper / arXiv**: research writeup, link pending.
+- **Community**: Discord or similar community link, planned.
 
 ## Development
 
