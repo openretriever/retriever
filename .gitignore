@@ -25,7 +25,6 @@ uv.lock
 # Agent
 .claude/
 .specify/
-AGENTS.md
 
 # Artifacts
 logs/

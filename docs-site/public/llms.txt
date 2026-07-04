@@ -1,0 +1,34 @@
+# Retriever
+
+> Retriever (`pip install retriever-core`, import `retriever`) is a typed
+> dataflow runtime for closed-loop robot systems: author typed Flow graphs
+> with explicit clocks and per-edge sync policies, debug them
+> deterministically in-process with `pipe.step()`, then run the same graph
+> on multiprocessing or dora backends with recording and replay.
+
+Key facts for agents: Python 3.11+; override `Flow.step()` (not `run()`);
+IO dataclasses use the `@io` decorator; `connect(..., sync=...)` is
+mandatory on every edge unless `retriever.init(default_sync=...)` is set;
+backends are "multiprocessing", "dora", and "in-process"; `record=` forces
+the in-process backend for determinism. In the source repo, start from
+AGENTS.md at the repo root.
+
+## Docs
+
+- [Overview](https://openretriever-docs.pages.dev/): what Retriever is and the recommended path.
+- [Install](https://openretriever-docs.pages.dev/getting-started/install/): Pixi-first setup; pip/uv fallback.
+- [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/): webcam color-detection demo, with a no-camera mock mode.
+- [Flow](https://openretriever-docs.pages.dev/concepts/flow/): authoring typed Flows; `@io` payloads; `step()`.
+- [Time and Sync](https://openretriever-docs.pages.dev/concepts/time-and-sync/): clocks (Rate/Tick/Trigger/Hybrid), sync policies (Latest/Hold/Window/Events), on_lag.
+- [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate → IR → backends; stepping; recording and replay.
+- [Concepts and Lineage](https://openretriever-docs.pages.dev/concepts/lineage/): how the model maps to FRP and synchronous dataflow, with references.
+- [Tutorials](https://openretriever-docs.pages.dev/tutorials/): tracked tutorial path with runnable pixi tasks.
+- [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/): commands paired with expected output.
+- [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/): stepper, graph rendering, MCAP/Rerun recording, replay.
+- [Ecosystem: Modules](https://openretriever-docs.pages.dev/ecosystem/modules/): Retriever Hub — load Flows from git repos via `hub.use("org/name:Export")`.
+- [Ecosystem: Publishing](https://openretriever-docs.pages.dev/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
+
+## Companion
+
+- [GoldenRetriever examples](https://retriever-space.pages.dev/): applied perception / memory / language / simulation examples built on the runtime.
+- [Landing page](https://openretriever.org/): install-first front door.
