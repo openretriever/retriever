@@ -236,19 +236,23 @@ class ChainPartitioner(Partitioner):
             if current is None:
                 continue
 
+            chain_seen = {node_id}
             while True:
                 # Check for linear continuation
                 if len(current.successors) != 1:
                     break
 
                 next_id = current.successors[0]
-                if next_id in visited:
+                # Stop on nodes already chained elsewhere, and on cycles
+                # (including self-loops) within the current walk.
+                if next_id in visited or next_id in chain_seen:
                     break
 
                 if not rule(ir, current.id, next_id, analysis):
                     break
 
                 chain.append(next_id)
+                chain_seen.add(next_id)
                 current = ir.get_node(next_id)
                 if current is None:
                     break
