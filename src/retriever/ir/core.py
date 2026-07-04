@@ -269,7 +269,7 @@ class IR:
         if data.get('optimization') is not None:
             optimization = IROptimization(**data['optimization'])
 
-        return IR(
+        ir = IR(
             version=data['version'],
             metadata=metadata,
             nodes=nodes,
@@ -277,6 +277,72 @@ class IR:
             topology=topology,
             optimization=optimization
         )
+        # Loaded IRs are untrusted input: fail here with a named node/edge/port
+        # instead of deep inside backend execution.
+        ir.validate_structure()
+        return ir
+
+    def validate_structure(self) -> 'IR':
+        """Check referential integrity of the graph; raise IRError on the
+        first inconsistency (duplicate ids, dangling edge/adjacency
+        references, unknown ports)."""
+        from retriever.error import ErrCode, IRError
+
+        nodes_by_id: Dict[str, IRNode] = {}
+        for node in self.nodes:
+            if node.id in nodes_by_id:
+                raise IRError(
+                    ErrCode.IR_VAL_INVALID,
+                    f"Duplicate node id '{node.id}'",
+                    node=node.id,
+                )
+            nodes_by_id[node.id] = node
+
+        for edge in self.edges:
+            for endpoint, role in ((edge.source, 'source'), (edge.destination, 'destination')):
+                if endpoint.node not in nodes_by_id:
+                    raise IRError(
+                        ErrCode.IR_VAL_INVALID,
+                        f"Edge '{edge.id}' {role} references unknown node '{endpoint.node}'",
+                        edge=edge.id,
+                        node=endpoint.node,
+                    )
+            src_node = nodes_by_id[edge.source.node]
+            if edge.source.port not in src_node.outputs:
+                raise IRError(
+                    ErrCode.IR_VAL_PORT_NOT_FOUND,
+                    f"Edge '{edge.id}' source port '{edge.source.port}' "
+                    f"not in outputs of node '{src_node.id}'",
+                    edge=edge.id,
+                    node=src_node.id,
+                    port=edge.source.port,
+                )
+            dst_node = nodes_by_id[edge.destination.node]
+            # Fan-in ports are synthesized at execution-build time and are not
+            # part of the authored input surface.
+            if (not edge.destination.port.startswith(self._FANIN_PREFIX)
+                    and edge.destination.port not in dst_node.inputs):
+                raise IRError(
+                    ErrCode.IR_VAL_PORT_NOT_FOUND,
+                    f"Edge '{edge.id}' destination port '{edge.destination.port}' "
+                    f"not in inputs of node '{dst_node.id}'",
+                    edge=edge.id,
+                    node=dst_node.id,
+                    port=edge.destination.port,
+                )
+
+        for node in self.nodes:
+            for kind, neighbors in (('successors', node.successors),
+                                    ('predecessors', node.predecessors)):
+                for neighbor in neighbors:
+                    if neighbor not in nodes_by_id:
+                        raise IRError(
+                            ErrCode.IR_VAL_INVALID,
+                            f"Node '{node.id}' lists unknown {kind[:-1]} '{neighbor}'",
+                            node=node.id,
+                            neighbor=neighbor,
+                        )
+        return self
 
     def save(self, path: Union[str, Path]) -> None:
         path = Path(path)
