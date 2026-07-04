@@ -5,6 +5,7 @@ Provides `@io` for declaring Flow I/O types with signal helpers
 and port extraction.
 """
 
+import sys
 from dataclasses import MISSING, dataclass, fields
 from typing import Any, Optional, Union, get_args, get_origin
 
@@ -194,6 +195,12 @@ def compose(name: str, *, frozen: bool = True, **field_types: type):
     """
     annotations = dict(field_types)
     cls = type(name, (), {"__annotations__": annotations})
+    # Attribute the class to the caller's module (namedtuple-style) so repr,
+    # pickling, and registries report where it was defined, not this factory.
+    try:
+        cls.__module__ = sys._getframe(1).f_globals.get("__name__", __name__)
+    except (AttributeError, ValueError):
+        pass
     cls = dataclass(cls, frozen=frozen)
     return io(cls)
 
@@ -223,4 +230,10 @@ def select(source: type, *fields: str, name: str | None = None):
         )
     dataclass_params = getattr(source, "__dataclass_params__", None)
     frozen = bool(getattr(dataclass_params, "frozen", True))
-    return compose(name or f"{source.__name__}Subset", frozen=frozen, **{f: original[f] for f in fields})
+    cls = compose(name or f"{source.__name__}Subset", frozen=frozen, **{f: original[f] for f in fields})
+    # compose() attributed the class to this module; re-stamp with our caller.
+    try:
+        cls.__module__ = sys._getframe(1).f_globals.get("__name__", cls.__module__)
+    except (AttributeError, ValueError):
+        pass
+    return cls
