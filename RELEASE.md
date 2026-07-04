@@ -8,13 +8,16 @@ Run these before a public launch, tag, or package publish:
 
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
-pixi run p0-release-readiness
+pixi run p1-reliability-gates
+pixi run p0-release-readiness-full
 pixi run -e docs docs-build
 pixi run build
 pixi run package-check
 ```
 
-The same checks are wired in `.github/workflows/ci.yml`; the pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
+`.github/workflows/ci.yml` runs the same core tests, reliability gates, full P0 release-readiness smoke, docs build, and package build. Run `pixi run package-check` locally after `pixi run build` because the CI publish workflow enforces the metadata check before upload.
+
+The pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
 
 ## GitHub Settings
 
@@ -60,21 +63,22 @@ The public surfaces reference each other; publish in this order so no live
 link or command dangles:
 
 1. Make `openretriever/retriever` and `openretriever/golden-retriever`
-   public. Every GitHub link on openretriever.org, the docs site, and the
-   Golden site currently 404s for anonymous visitors.
-2. Publish `retriever-core` to PyPI. `pip install retriever-core` is the
-   visible release command on the landing page and in the docs; keep it marked
-   pending until the package actually resolves from PyPI.
+   public. The current source-first install path depends on anonymous users
+   being able to clone those repositories.
+2. Keep the public preview source-first until `retriever-core==0.0.1`
+   resolves from PyPI. The landing page and docs may mention the future
+   `pip install retriever-core` target, but the working command path should
+   remain source checkout plus Pixi until PyPI is live.
 3. Update Golden to consume the published `retriever-core` runtime and
    verify its Hub-loadable applied type pack (`openretriever/golden-retriever`).
    Keep any Golden wheel as an optional future artifact, not a required public
    launch step.
 4. Create the public `openretriever/hub-index` repository (the Hub's
-   default module index). Optional follow-up: publish the
-   `openretriever/pi05-policy` hub module designed in the Golden repo
-   (`examples/advanced/openpi_policy/README.md`).
-5. Redeploy the docs site (includes `llms.txt` and the Standard Types /
-   Concepts and Lineage pages) and the landing site, then run a link check.
+   default module index) and push the prepared index repo. Optional follow-up:
+   publish the `openretriever/pi05-policy` hub module designed in the Golden
+   repo (`examples/advanced/openpi_policy/README.md`).
+5. Redeploy the docs site (includes `llms.txt`, Standard Types, Concepts and
+   Lineage, and Hub pages) and the landing site, then run a link check.
 6. DNS cutover for the docs domain, then update `site-links.js` in the
    landing repo from `.pages.dev` URLs to the final domain.
 
