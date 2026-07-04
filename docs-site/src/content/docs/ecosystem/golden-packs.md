@@ -4,7 +4,7 @@ title: Golden Packs
 
 # Golden Packs
 
-GoldenRetriever is the reference catalog for Hub-distributed domain packs. The
+GoldenRetriever is the reference catalog for Hub-distributed applied robotics packs. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
 payload types, and small proof paths that show how a pack is loaded, inspected,
 and composed. This path intentionally avoids a separate Golden PyPI runtime package.
@@ -31,6 +31,8 @@ The important boundary is boring on purpose:
 - load reusable Golden payloads through Hub
 - keep heavy demos, notebooks, robot stacks, and generated artifacts in the
   Golden source checkout
+- treat the registered schema and serialization round-trip as the cross-version
+  contract for Hub-distributed applied types
 
 Golden is not a second framework. It is the maintained pack and example catalog
 for the core runtime.
