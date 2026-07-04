@@ -34,6 +34,7 @@ HTTP_TARGETS = (
     ("golden-root-custom", "https://retriever.space/"),
     ("golden-space-custom", "https://golden.retriever.space/"),
     ("golden-systems-custom", "https://golden.retriever.systems/"),
+    ("golden-build-custom", "https://golden.retriever.build/"),
 )
 
 DNS_TARGETS = (
@@ -43,6 +44,7 @@ DNS_TARGETS = (
     "retriever.space",
     "golden.retriever.space",
     "golden.retriever.systems",
+    "golden.retriever.build",
 )
 
 PYPI_TARGETS = (
