@@ -44,8 +44,10 @@ for url in \
   https://openretriever-docs.pages.dev/llms.txt; do
   html=$(curl -fsSL "$url")
   printf '%s\n' "$url"
-  ! printf '%s' "$html" | grep -q 'first applied robotics Hub module'
-  ! printf '%s' "$html" | grep -q 'GoldenRetriever module'
+  legacy_subtitle='first applied robotics Hub'' module'
+  ! printf '%s' "$html" | grep -q "$legacy_subtitle"
+  legacy_module='GoldenRetriever'' module'
+  ! printf '%s' "$html" | grep -q "$legacy_module"
 done
 ```
 
