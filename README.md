@@ -85,7 +85,16 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The public PyPI distribution is `retriever-core`; the Python import package is `retriever`:
+The current working path is source checkout plus Pixi because the examples and visualization assets live in the repository:
+
+```bash
+git clone https://github.com/openretriever/retriever
+cd retriever
+pixi install
+pixi run demo-webcam-detection-mock
+```
+
+The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. After `retriever-core==0.0.1` resolves from PyPI, the minimal runtime install is:
 
 ```bash
 python -m pip install retriever-core
