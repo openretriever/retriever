@@ -19,6 +19,26 @@ pixi run package-check
 
 The pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
 
+
+## Post-Deploy Docs Content Check
+
+After deploying core docs, verify that the live Starlight site and agent map use the current Golden terminology:
+
+```bash
+for url in \
+  https://openretriever-docs.pages.dev/ecosystem/ \
+  https://openretriever-docs.pages.dev/ecosystem/golden-packs/ \
+  https://openretriever-docs.pages.dev/ecosystem/modules/ \
+  https://openretriever-docs.pages.dev/llms.txt; do
+  html=$(curl -fsSL "$url")
+  printf '%s\n' "$url"
+  ! printf '%s' "$html" | grep -q 'first applied robotics Hub module'
+  ! printf '%s' "$html" | grep -q 'GoldenRetriever module'
+done
+```
+
+Run `pixi run public-surface-check` after repository visibility, DNS, and PyPI/TestPyPI are ready; this content check is a narrower docs-deploy smoke.
+
 ## GitHub Settings
 
 Before making the repository public:
