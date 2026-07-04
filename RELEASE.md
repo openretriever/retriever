@@ -20,6 +20,18 @@ pixi run package-check
 The pytest gate intentionally uses `tests/`, because `pyproject.toml` collects the maintained `test_*_rt.py` runtime-facing suite across the full tree.
 
 
+
+## Built-Artifact Local Preview
+
+Use this when reviewing exactly what the docs Pages project will receive:
+
+```bash
+/opt/homebrew/bin/pixi run -e docs docs-build
+python3 -m http.server 8781 --bind 127.0.0.1 --directory docs-site/dist
+```
+
+Open `http://127.0.0.1:8781/`, `http://127.0.0.1:8781/ecosystem/`, and `http://127.0.0.1:8781/ecosystem/golden-packs/`. Ecosystem pages should describe Golden as an applied reference/catalog plus manifest-declared type pack, not as a second runtime.
+
 ## Post-Deploy Docs Content Check
 
 After deploying core docs, verify that the live Starlight site and agent map use the current Golden terminology:
