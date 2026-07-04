@@ -106,15 +106,16 @@ pipe.run(backend="multiprocessing", duration=1.0, blocking=True)
 | Error codes (all `FlowError`/`IRError`/`HubError` codes) | `src/retriever/error.py` |
 | Runtime tests (the ones CI runs) | `tests/**/test_*_rt.py` |
 | Canonical examples | `examples/tutorial/` |
-| Docs (mkdocs source of truth) | `docs/` |
-| Deployed docs site (Starlight) | `docs-site/` → openretriever-docs.pages.dev |
+| Deployed public docs (Starlight, source of truth) | `docs-site/` → openretriever-docs.pages.dev |
+| MkDocs content, maintained in parallel during the Starlight migration | `docs/` |
 
 ## Editing rules for this repo
 
 - Tests live next to the behavior they pin: add `test_*_rt.py` under
   `tests/core/` or the change will not be collected.
-- Keep `docs/` and `docs-site/src/content/docs/` in sync when you touch a
-  concept both describe.
+- The deployed public docs are Starlight under `docs-site/`; edit there first.
+  If a concept is also covered by the parallel MkDocs content in `docs/`,
+  update both so they do not drift during the migration.
 - No prints in library code; use module loggers.
 - Module import must stay side-effect-free (no global state mutation, no
   device/GPU/socket access at import time).
