@@ -26,7 +26,7 @@ jobs:
           pixi-version: v0.70.1
           cache: true
       - name: Run tests
-        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests/core -q
+        run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
       - name: Build package
         run: pixi run build
       - uses: actions/upload-artifact@v4
