@@ -382,7 +382,7 @@ pixi run p0-release-readiness
 pixi run build
 ```
 
-Until the GitHub repositories are public, the project website should route source/code buttons through `https://openretriever.org/start/#source-release` and link docs directly to `https://openretriever-docs.pages.dev/`. After repository visibility flips, runtime and companion source links can point to the public GitHub repositories directly.
+The project website should link install and source actions directly to the public surfaces: `https://openretriever.org/`, `https://openretriever-docs.pages.dev/`, `https://github.com/openretriever/retriever`, and `https://github.com/openretriever/golden-retriever`. If repository visibility changes, verify anonymous browser access before redeploying public links.
 
 ### Continuous Integration
 
