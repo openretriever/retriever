@@ -41,4 +41,29 @@ The PyPI project name `retriever` is already used by another project. Publish th
 - Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
-Golden currently depends on the temporary `debug-retriever` package. After the real `retriever-core` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`.
+Golden currently depends on the temporary `debug-retriever` package. After the real `retriever-core` distribution is published, update Golden to depend on it while continuing to import the runtime as `retriever`. Note the stale-wheel effects until then: the bundled runtime's Hub default index still points at the pre-rename `dev-coordination/hub-index`, and it predates recent runtime fixes.
+
+## Launch-Order Dependencies
+
+The public surfaces reference each other; publish in this order so no live
+link or command dangles:
+
+1. Make `openretriever/retriever` and `openretriever/golden-retriever`
+   public. Every GitHub link on openretriever.org, the docs site, and the
+   Golden site currently 404s for anonymous visitors.
+2. Publish `retriever-core` to PyPI. `pip install retriever-core` is the
+   first command on the landing page and in the docs — it must work the
+   moment those pages are promoted.
+3. Publish `retriever-golden` (it now declares a `retriever-core`
+   dependency, so core must land first), or refresh `debug-retriever`.
+4. Create the public `openretriever/hub-index` repository (the Hub's
+   default module index). Optional follow-up: publish the
+   `openretriever/pi05-policy` hub module designed in the Golden repo
+   (`examples/advanced/openpi_policy/README.md`).
+5. Redeploy the docs site (includes `llms.txt` and the Standard Types /
+   Concepts and Lineage pages) and the landing site, then run a link check.
+6. DNS cutover for the docs domain, then update `site-links.js` in the
+   landing repo from `.pages.dev` URLs to the final domain.
+
+Agent-facing entry points (`AGENTS.md` at each repo root, `/llms.txt` on
+the docs site) ship with the repos — keep them current with API changes.
