@@ -311,7 +311,6 @@ class DoraEngine(ExecutionEngine):
             )
             for runner in self.main_thread_runners:
                 # Run in main thread (blocking) - uses dora.Node for communication
-                print(f"[MAIN] Starting @gui_flow: {runner.name}")
                 logger.info(f"Starting main-thread executor: {runner.name}")
                 runner.run()  # This blocks until executor stops
 

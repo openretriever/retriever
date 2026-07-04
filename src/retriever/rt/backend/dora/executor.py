@@ -394,8 +394,7 @@ class DoraExecutor(multiprocessing.Process, Executor):
                     if "timed out" in error_msg:
                         continue
 
-                    import sys
-                    print(f"[{self.flow.name}] DoraExecutor error: {event}", file=sys.stderr)
+                    logger.error(f"[{self.flow.name}] DoraExecutor error: {event}")
                     break
                 
                 self._dispatch_event(event)

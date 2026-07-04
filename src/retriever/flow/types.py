@@ -8,6 +8,7 @@ complex temporal behaviors from simple blocks.
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -26,6 +27,8 @@ from typing import (
 
 if TYPE_CHECKING:
     from retriever.flow.adapter import Adapter
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -627,8 +630,8 @@ class EventManager:
                 for handler in handlers:
                     try:
                         handler(event_value, ts)
-                    except Exception as e:
-                        print(f"Error in event handler for {event_name}: {e}")
+                    except Exception:
+                        logger.exception(f"Error in event handler for '{event_name}'")
 
     def create_merged_event_stream(self, *event_names: str) -> EventStream[Tuple[str, Any]]:
         """Create event stream that merges multiple named event streams."""

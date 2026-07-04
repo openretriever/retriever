@@ -177,24 +177,11 @@ class MPScheduler(Scheduler):
         if not candidates:
             return ScheduleResult(should_execute=False)
             
-        # Found common timestamps!
-        sorted_ts = sorted(list(candidates))
-        
-        for ts in sorted_ts:
-            if self._last_lag_log is None or ts > self._last_lag_log:
-                # Reuse _last_lag_log as last_tick check for simplicity to avoid adding new state?
-                # No, _last_lag_log is for logging lag.
-                # Use pending tick ts? Or add state?
-                # DoraScheduler has _last_tick_ts. MPScheduler doesn't seem to use it for Trigger.
-                # The reset() method sets next_tick for Rate.
-                pass
-                
-        # We need state to avoid re-executing same timestamp.
-        # MPScheduler uses blocking wait logic, but peeking doesn't consume.
-        # So we MUST track last executed TS.
-        # self.next_tick is float. We can reuse it or use a new logic.
-        # Let's check `self.next_tick`. Initialize to 0?
-        if self.next_tick is None: 
+        # Found common timestamps. Peeking does not consume, so track the last
+        # executed timestamp in next_tick to avoid re-executing the same one.
+        sorted_ts = sorted(candidates)
+
+        if self.next_tick is None:
             self.next_tick = 0.0
 
         for ts in sorted_ts:

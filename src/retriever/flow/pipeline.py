@@ -469,14 +469,14 @@ class Pipeline:
                     config_info=config_info
                 )
             except ImportError:
-                print(f"Web dashboard requires the control environment: pixi run -e control ...")
+                logger.warning("Web dashboard requires the control environment: pixi run -e control ...")
 
         if config.keyboard:
             try:
                 from retriever.rt.control.keyboard import GlobalKeyboardController
                 self._keyboard_controller = GlobalKeyboardController(self._controller)
             except ImportError:
-                print(f"Keyboard control requires the control environment and desktop input permissions: pixi run -e control ...")
+                logger.warning("Keyboard control requires the control environment and desktop input permissions: pixi run -e control ...")
 
         return self._controller
 
