@@ -128,7 +128,7 @@ The hosted Starlight docs are the public docs front door:
 The repository `docs/` tree remains available for deeper source-local reference
 and release maintenance.
 
-Source release status is tracked at [openretriever.org/start/#source-release](https://openretriever.org/start/#source-release) until the GitHub repositories are public.
+Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). Companion examples live at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever).
 
 ## Runtime Surfaces
 
