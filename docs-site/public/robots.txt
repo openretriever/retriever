@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://openretriever-docs.pages.dev/sitemap-index.xml
+# Agent map: https://openretriever-docs.pages.dev/llms.txt

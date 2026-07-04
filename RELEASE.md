@@ -41,7 +41,8 @@ for url in \
   https://openretriever-docs.pages.dev/ecosystem/ \
   https://openretriever-docs.pages.dev/ecosystem/golden-packs/ \
   https://openretriever-docs.pages.dev/ecosystem/modules/ \
-  https://openretriever-docs.pages.dev/llms.txt; do
+  https://openretriever-docs.pages.dev/llms.txt \
+  https://openretriever-docs.pages.dev/robots.txt; do
   html=$(curl -fsSL "$url")
   printf '%s\n' "$url"
   legacy_subtitle='first applied robotics Hub'' module'
@@ -49,6 +50,7 @@ for url in \
   legacy_module='GoldenRetriever'' module'
   ! printf '%s' "$html" | grep -q "$legacy_module"
 done
+curl -fsSL https://openretriever-docs.pages.dev/robots.txt | grep -q 'sitemap-index.xml'
 ```
 
 Run `pixi run public-surface-check` after repository visibility, DNS, and PyPI/TestPyPI are ready; this content check is a narrower docs-deploy smoke.
