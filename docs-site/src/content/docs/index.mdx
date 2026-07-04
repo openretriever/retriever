@@ -25,10 +25,6 @@ template: splash
   </div>
 </div>
 
-```bash
-pip install retriever-core
-```
-
 Use the source checkout for demos until the first public package release is live:
 
 ```bash
@@ -36,6 +32,12 @@ git clone https://github.com/openretriever/retriever.git
 cd retriever
 pixi install
 pixi run demo-webcam-detection-mock
+```
+
+After `retriever-core==0.0.1` resolves from PyPI, the library install path becomes:
+
+```bash
+python -m pip install retriever-core
 ```
 
 General-purpose robot agents rarely fit in one clean loop. Cameras stream, robot state updates faster than policies, VLM/VLA calls have variable latency, planners can block, operators intervene, and replay has to explain exactly what happened. Retriever puts timing and handoff decisions into the graph instead of scattering them across callbacks, queues, and sleeps.
