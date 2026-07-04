@@ -160,9 +160,125 @@ def test_edge_without_predecessor_rejected(ir_dict: dict) -> None:
     assert 'predecessors do not match edges' in str(excinfo.value)
 
 
+def test_topology_group_omission_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['groups'] = [[ir_dict['nodes'][0]['id']]]
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'Topology groups omit nodes' in str(excinfo.value)
+
+
+def test_topology_group_duplicate_rejected(ir_dict: dict) -> None:
+    first = ir_dict['nodes'][0]['id']
+    ir_dict['topology']['groups'] = [[first], [first]]
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'duplicate node ids' in str(excinfo.value)
+
+
+def test_topology_group_unknown_node_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['groups'].append(['ghost'])
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'unknown nodes' in str(excinfo.value)
+
+
+def test_topology_order_mismatch_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['groups'] = list(reversed(ir_dict['topology']['groups']))
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'Topology groups mismatch' in str(excinfo.value)
+
+
+def test_topology_count_mismatch_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['node_count'] += 1
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'node_count mismatch' in str(excinfo.value)
+
+
+def test_topology_source_sink_metadata_mismatch_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['sources'] = []
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'Topology sources mismatch' in str(excinfo.value)
+
+
+def test_topology_cycle_metadata_mismatch_rejected(ir_dict: dict) -> None:
+    ir_dict['topology']['has_cycle'] = True
+    with pytest.raises(IRError) as excinfo:
+        reload(ir_dict)
+    assert excinfo.value.code == ErrCode.IR_VAL_INVALID
+    assert 'has_cycle mismatch' in str(excinfo.value)
+
+
 def test_save_load_round_trip(tmp_path, ir_dict: dict) -> None:
     path = tmp_path / "pipeline.json"
     ir = reload(ir_dict)
     ir.save(path)
     loaded = IR.load(path)
+    assert {n.id for n in loaded.nodes} == {n.id for n in ir.nodes}
+
+
+
+# --- service round-trip fixtures (module-level: service signature inspection
+# resolves annotations via module globals under `from __future__ import annotations`) ---
+from retriever.flow import Trigger, handle_service, call_service
+from retriever.flow.service import ServiceCall
+
+
+@dataclass
+class SvcReq:
+    value: int
+
+
+@dataclass
+class SvcResp:
+    value: int
+
+
+class SvcNode(Flow[None, Value]):
+    @handle_service
+    def double(self, request: SvcReq) -> SvcResp:
+        return SvcResp(value=request.value * 2)
+
+    @handle_service
+    def triple(self, request: SvcReq) -> SvcResp:
+        return SvcResp(value=request.value * 3)
+
+    def step(self, _):  # type: ignore[override]
+        return Value(value=1)
+
+
+@call_service(SvcNode.double, SvcNode.triple)
+class SvcCaller(Flow[Value, Value]):
+    def step(self, input: Value):  # type: ignore[override]
+        doubled = yield ServiceCall(SvcNode.double, SvcReq(value=2))
+        tripled = yield ServiceCall(SvcNode.triple, SvcReq(value=doubled.value))
+        return Value(value=tripled.value)
+
+
+def test_service_pipeline_round_trips() -> None:
+    """Service pipelines emit internal request/response edges (underscore
+    ports, one channel per caller-target pair). Saved IRs must reload:
+    regression for duplicate service edge ids and for the adjacency check
+    counting non-topology edges."""
+    pipe = Pipeline("svc_roundtrip")
+    svc = SvcNode() @ Rate(hz=10)
+    caller = SvcCaller() @ Trigger("value")
+    pipe.connect(svc, caller, sync=Latest())
+    ir = pipe.validate()
+
+    # Exactly one request + one response edge for the caller-target pair,
+    # despite two methods being called.
+    service_edges = [e for e in ir.edges if e.source.port.startswith('_')
+                     or e.destination.port.startswith('_')]
+    assert len(service_edges) == 2
+
+    loaded = IR.from_json(ir.to_json())
     assert {n.id for n in loaded.nodes} == {n.id for n in ir.nodes}

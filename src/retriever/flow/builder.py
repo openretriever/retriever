@@ -8,7 +8,7 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, is_dataclass
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from retriever.error import ErrCode, FlowError
 from retriever.flow.graph import PipelineGraph
@@ -1097,10 +1097,20 @@ class PipelineBuilder:
                 )
 
     def _build_service_edges(self, ir_nodes: List[IRNode]) -> List[IREdge]:
-        """Build service request/response edges."""
+        """Build service request/response edges.
+
+        A node registers one IRServiceCaller per method it calls, but the
+        request/response channel is per (caller, target) node pair — method
+        dispatch travels in the payload. Deduplicate so multiple methods on
+        the same target don't emit identical edges (duplicate edge ids).
+        """
         edges = []
         for node in ir_nodes:
+            seen_targets: Set[str] = set()
             for caller in node.service_callers:
+                if caller.target_node in seen_targets:
+                    continue
+                seen_targets.add(caller.target_node)
                 adapter = {"latest": {"buffer_size": 1}}
                 # Request
                 edges.append(

@@ -370,8 +370,14 @@ class IR:
                     node=dst_node.id,
                     port=destination_port,
                 )
-            expected_successors[edge.source.node].add(edge.destination.node)
-            expected_predecessors[edge.destination.node].add(edge.source.node)
+            # Node adjacency is defined by topology edges only — internal
+            # channels (underscore-prefixed logical ports, e.g. service
+            # request/response) are excluded, matching the builder's
+            # _is_topology_edge predicate.
+            if not (self.get_logical_port(edge.source.port).startswith('_')
+                    or self.get_logical_port(edge.destination.port).startswith('_')):
+                expected_successors[edge.source.node].add(edge.destination.node)
+                expected_predecessors[edge.destination.node].add(edge.source.node)
 
         for node in self.nodes:
             for kind, neighbors in (('successors', node.successors),
@@ -410,7 +416,93 @@ class IR:
                     f"got {sorted(actual_predecessors)}",
                     node=node.id,
                 )
+        self._validate_topology_metadata(nodes_by_id)
         return self
+
+    def _validate_topology_metadata(self, nodes_by_id: Mapping[str, IRNode]) -> None:
+        """Ensure serialized topology cannot change runtime execution order."""
+        from retriever.error import ErrCode, IRError
+        from retriever.flow.graph import PipelineGraph
+
+        topo = self.topology
+        if topo.node_count != len(self.nodes):
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology node_count mismatch: expected {len(self.nodes)}, got {topo.node_count}",
+            )
+        if topo.edge_count != len(self.edges):
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology edge_count mismatch: expected {len(self.edges)}, got {topo.edge_count}",
+            )
+
+        grouped_nodes: List[str] = [node_id for group in topo.groups for node_id in group]
+        grouped_node_set = set(grouped_nodes)
+        node_ids = set(nodes_by_id)
+        if len(grouped_nodes) != len(grouped_node_set):
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                "Topology groups contain duplicate node ids",
+            )
+        unknown_grouped = sorted(grouped_node_set - node_ids)
+        if unknown_grouped:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology groups reference unknown nodes: {unknown_grouped}",
+            )
+        missing_grouped = sorted(node_ids - grouped_node_set)
+        if missing_grouped:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology groups omit nodes: {missing_grouped}",
+            )
+
+        topo_graph = PipelineGraph()
+        for node_id in nodes_by_id:
+            topo_graph.add_node(node_id, {"_in": object}, {"_out": object})
+
+        seen_pairs: Set[Tuple[str, str]] = set()
+        for edge in self.edges:
+            if (self.get_logical_port(edge.source.port).startswith('_')
+                    or self.get_logical_port(edge.destination.port).startswith('_')):
+                continue
+            pair = (edge.source.node, edge.destination.node)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            topo_graph.connect(edge.source.node, "_out", edge.destination.node, "_in", {})
+
+        expected_sources = topo_graph.find_sources()
+        expected_sinks = topo_graph.find_sinks()
+        expected_groups = topo_graph.get_topological_groups()
+        expected_has_cycle = topo_graph.has_cycles()
+        expected_is_connected = topo_graph.is_connected()
+
+        if topo.sources != expected_sources:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology sources mismatch: expected {expected_sources}, got {topo.sources}",
+            )
+        if topo.sinks != expected_sinks:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology sinks mismatch: expected {expected_sinks}, got {topo.sinks}",
+            )
+        if topo.groups != expected_groups:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology groups mismatch: expected {expected_groups}, got {topo.groups}",
+            )
+        if topo.has_cycle != expected_has_cycle:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology has_cycle mismatch: expected {expected_has_cycle}, got {topo.has_cycle}",
+            )
+        if topo.is_connected != expected_is_connected:
+            raise IRError(
+                ErrCode.IR_VAL_INVALID,
+                f"Topology is_connected mismatch: expected {expected_is_connected}, got {topo.is_connected}",
+            )
 
     def save(self, path: Union[str, Path]) -> None:
         path = Path(path)
