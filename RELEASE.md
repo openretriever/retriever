@@ -34,7 +34,17 @@ The PyPI project name `retriever` is already used by another project. Publish th
 - Confirm `pyproject.toml` metadata, version, license, URLs, optional extras, and distribution name `retriever-core`.
 - Build locally with `pixi run build`.
 - Inspect the wheel/sdist contents for generated or private files.
-- Configure PyPI/TestPyPI trusted publishers for `.github/workflows/publish.yml` environments `pypi` and `testpypi`, then publish manually with the workflow dispatch target.
+- Run `python -m twine check dist/*` before publishing.
+- Configure PyPI/TestPyPI trusted publishers for `.github/workflows/publish.yml`, then publish manually with the workflow dispatch target.
+
+Trusted publisher settings:
+
+| Registry | Project | Owner | Repository | Workflow | Environment |
+| --- | --- | --- | --- | --- | --- |
+| TestPyPI | `retriever-core` | `openretriever` | `retriever` | `publish.yml` | `testpypi` |
+| PyPI | `retriever-core` | `openretriever` | `retriever` | `publish.yml` | `pypi` |
+
+Do not publish a package named `retriever`; that name belongs to another project.
 
 ## Companion Repositories
 
