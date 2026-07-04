@@ -22,7 +22,7 @@ pixi run demo-basic-flow
 DoubleFlow - direct attribute access
   Input type: NumberInput
   Output type: NumberOutput
-  [DoubleFlow] input.value=5 -> result=10
+  [DoubleFlow] input.value=5 → result=10
   Result: NumberOutput(result=10)
 
 ============================================================
@@ -36,7 +36,7 @@ SignalAwareFlow - _signals pattern matching
   Case 2: Input with value
   full_input._signals = ['value']
   [SignalAwareFlow] input._signals=['value']
-    value=7 -> result=14
+    value=7 → result=14
   Result: NumberOutput(result=14)
 ============================================================
 ```
@@ -117,7 +117,7 @@ Perception Demo - Live or Mock Camera to Detection
 Building perception pipeline:
   Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
 
-[ok] Graph created: 3 nodes, 5 edges
+✓ Graph created: 3 nodes, 5 edges
 
 Running for 0.1 seconds...
 Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
@@ -129,11 +129,11 @@ Tip: This run is using mock frames. Use --camera-mode real to require a live web
 Pipeline Summary
 
 Camera Input:
-  - Uses mock test pattern when mock mode is selected or auto fallback triggers
+  • Uses mock test pattern when mock mode is selected or auto fallback triggers
 
 Detection:
-  - Red objects: high red channel, low green/blue channels
-  - Blue objects: high blue channel, low red/green channels
+  • Red objects: RGB(255, <100, <100)
+  • Blue objects: RGB(<100, <100, 255)
 ```
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> the visual demo is still a small graph: camera, detector, display. Live mode shows the same structure with a real webcam and Rerun when available; mock mode gives a stable expected result for docs, tests, and remote machines.</p>
@@ -146,10 +146,11 @@ Detection:
 pixi run docs-tutorial-perception-html
 ```
 
-<p class="notebook-label output-label">Expected artifact</p>
+<p class="notebook-label output-label">Expected output</p>
 
 ```text
-artifacts/tutorial_perception.html
+[Success] Visualization saved to: artifacts/tutorial_perception.html
+Open this file in your browser to view the interactive graph.
 ```
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> the graph view is where timing becomes inspectable. Look for Flow nodes, ports, clocks, sync policies, and feedback edges before debugging backend behavior.</p>

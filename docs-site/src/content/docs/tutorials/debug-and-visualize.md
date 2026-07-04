@@ -4,36 +4,42 @@ title: Debug and Visualize
 
 # Debug and Visualize
 
-Retriever should be easy to inspect before you run a robot backend. If you want concrete command outputs first, start with [Examples and Results](/tutorials/examples-and-results/). The recommended debugging loop is:
+Retriever debugging should start before a robot backend is involved. Use the same Pipeline source and move through four increasingly concrete views: graph, local stepper, live visualization, and replay artifact.
 
-1. render the graph,
-2. step the same graph in-process,
-3. record the consumed events,
-4. replay the run when behavior changes.
+## The Debug Loop
 
-## Render a graph
+| Question | Command | Artifact |
+| --- | --- | --- |
+| Did I wire the graph I intended? | `pixi run docs-tutorial-perception-html` | `artifacts/tutorial_perception.html` |
+| Does Flow logic work in ordinary Python? | `pixi run demo-stepper` | stdout step trace |
+| Does perception work without camera/GUI risk? | `pixi run demo-webcam-detection-mock` | stdout detection events |
+| Does live perception visualize correctly? | `pixi run demo-webcam-detection` | Rerun viewer or stdout fallback |
+| Can I debug the same events again? | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` | `logs/perception.rrd`, `logs/perception.mcap` |
+
+## Render the Graph
 
 ```bash
 pixi run docs-tutorial-perception-html
 ```
 
-This writes an HTML artifact with nodes, ports, clocks, and sync policies. Open the generated file and check:
+Open the generated HTML artifact and inspect:
 
-- which Flows are in the graph,
-- which clock wakes each Flow,
-- which sync policy is on each edge,
-- whether the graph has expected feedback loops.
+- Flow nodes,
+- input/output ports,
+- each Flow clock,
+- each edge sync policy,
+- feedback edges and fan-in points.
 
 When a robot pipeline feels confusing, this is usually the first artifact to inspect because it shows timing and handoff decisions without requiring a backend.
 
-## Step locally
+## Step Locally
 
 ```bash
 pixi run demo-stepper
 pixi run demo-perception-stepper
 ```
 
-The stepper path is useful because it keeps debugging inside ordinary Python. The idea is the same in your own script:
+The stepper path is useful because it keeps debugging inside ordinary Python:
 
 ```python
 pipe.validate()
@@ -47,7 +53,7 @@ pipe.close_stepper()
 
 Use this mode when you want breakpoints inside `Flow.step(...)`, deterministic local state changes, or a short failing case before launching multiprocessing or dora.
 
-## Visualize perception runs
+## Visualize Perception Runs
 
 Use the deterministic mock/stdout path first when you are checking setup, running headless, or asking an agent to verify the graph:
 
@@ -74,7 +80,7 @@ pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
 
 Use Rerun when you need to inspect image frames, detections, and timing visually. Use stdout when the question is simply whether the graph runs and emits events.
 
-## Record and replay
+## Record and Replay
 
 ```bash
 pixi run demo-webcam-record
@@ -83,10 +89,12 @@ pixi run demo-webcam-replay-rrd
 
 A recorded run gives you a stable artifact for debugging, regression tests, and sharing evidence. The default record command writes `logs/perception.rrd` plus `logs/perception.mcap`, then the replay command consumes the recorded events instead of relying on live camera timing.
 
-## A practical debugging checklist
+## Practical Triage
 
-- **Graph looks wrong**: run `pixi run docs-tutorial-perception-html` and inspect nodes, ports, clocks, and edge sync policies.
-- **Flow logic looks wrong**: use `pixi run demo-stepper` or `pixi run demo-perception-stepper` and set breakpoints inside `step(...)`.
-- **Visualization is missing**: rerun the perception demo with `--visualize stdout` to separate runtime issues from viewer issues.
-- **Behavior changes between runs**: record once with `pixi run demo-webcam-record`, then replay with `pixi run demo-webcam-replay-rrd`.
-- **Backend behavior differs from local stepping**: keep the same Pipeline source, compare stepper output with the multiprocessing/Rerun command, then inspect the rendered graph for clock or sync-policy differences.
+- **Graph looks wrong:** render the graph and inspect nodes, ports, clocks, and edge sync policies.
+- **Flow logic looks wrong:** use the stepper commands and set breakpoints inside `step(...)`.
+- **Visualization is missing:** force `--visualize stdout` to separate runtime issues from viewer issues.
+- **Behavior changes between runs:** record once, then replay the same events.
+- **Backend behavior differs from local stepping:** keep the same Pipeline source, compare stepper output with multiprocessing/Rerun output, then inspect the rendered graph for clock or sync-policy differences.
+
+For concrete expected outputs, continue to [Examples and Results](/tutorials/examples-and-results/).

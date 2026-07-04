@@ -3,45 +3,84 @@ title: Visual Quickstart
 description: Run the first visual Retriever demo.
 ---
 
-# Visual Quickstart: color detection
+# Visual Quickstart: Color Detection
 
-Start here if you want to see Retriever do something immediately. First run the deterministic mock-frame smoke; then switch to the live webcam path with Rerun when available.
+Start here if you want to see Retriever do something immediately. The first run is deterministic and hardware-free; the second run uses a real webcam and Rerun when available.
 
-This is a source-checkout demo: run it from the core `openretriever/retriever` repository after `pixi install`. The package distribution is `retriever-core`, while examples and visualization extras live in the repository environment.
+This is a source-checkout demo. The PyPI distribution target is `retriever-core`, while examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
 
 <div class="command-grid">
-  <div class="command-card"><strong>Mock camera → color detector → stdout</strong><span>Reliable first smoke for laptops, headless machines, and CI.</span><code>pixi run demo-webcam-detection-mock</code></div>
-  <div class="command-card"><strong>Webcam → color detector → Rerun/stdout</strong><span>Show a red or blue object to the camera. If Rerun cannot open, the demo falls back to stdout.</span><code>pixi run demo-webcam-detection</code></div>
+  <div class="command-card"><strong>1. Mock camera -> color detector -> stdout</strong><span>Reliable first smoke for laptops, headless machines, CI, and AI agents.</span><code>pixi run demo-webcam-detection-mock</code></div>
+  <div class="command-card"><strong>2. Webcam -> color detector -> Rerun/stdout</strong><span>Show a red or blue object to the camera. If Rerun cannot open, the demo falls back to stdout.</span><code>pixi run demo-webcam-detection</code></div>
 </div>
 
-## What you should see
+## Step 0: Install the Source Environment
 
-- A camera Flow publishes frames at its own rate.
-- A color detector Flow runs when frames arrive and emits red/blue bounding boxes.
-- The mock command prints detector events to stdout.
-- The webcam command shows detections live in Rerun when available.
-- If Rerun is unavailable, stdout still shows detector events.
+```bash
+git clone https://github.com/openretriever/retriever.git
+cd retriever
+pixi install
+```
 
-Typical stdout fallback output includes frame/detection events rather than a static success banner. The exact counts vary with lighting and what you show the camera.
+If you only need the library API after release, install the package:
+
+```bash
+pip install retriever-core
+```
+
+## Step 1: Run the Deterministic Smoke
 
 ```bash
 pixi run demo-webcam-detection-mock
 ```
 
-## Why this is first
+Typical output:
+
+```text
+Perception Demo - Live or Mock Camera to Detection
+
+Building perception pipeline:
+  Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
+
+✓ Graph created: 3 nodes, 5 edges
+
+Running for 0.1 seconds...
+Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
+------------------------------------------------------------
+  Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+```
+
+What happened:
+
+- a camera Flow emitted synthetic image frames,
+- a detector Flow sampled the latest frame when triggered,
+- a display Flow printed detections,
+- the graph ran without camera permission, GUI windows, or backend setup.
+
+## Step 2: Switch to Webcam and Rerun
+
+```bash
+pixi run demo-webcam-detection
+```
+
+This uses the same tutorial pipeline with real camera input. On a machine with a working viewer, Rerun shows image frames and detections over time. If Rerun is unavailable, the command still emits stdout events so you can separate runtime correctness from viewer setup.
+
+## Step 3: Pick the Right Variant
+
+| Need | Command |
+| --- | --- |
+| Reliable first smoke, no hardware | `pixi run demo-webcam-detection-mock` |
+| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
+| Live webcam with multiprocessing and forced Rerun | `pixi run demo-webcam-detection-mp-rerun` |
+| Mock frames with forced Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
+| Portable recording for replay/debugging | `pixi run demo-webcam-record` |
+
+## Why This Is First
 
 The color-detection path is small but representative: it has sensor input, typed Flow outputs, asynchronous timing, visualization, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live visual path. After this works, the same graph can be stepped, inspected, recorded, replayed, and moved to another backend.
 
-## Rerun visualization
-
-| Use case | Command |
-| --- | --- |
-| Deterministic first smoke | `pixi run demo-webcam-detection-mock` |
-| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
-| Force live Rerun on multiprocessing backend | `pixi run demo-webcam-detection-mp-rerun` |
-| Force mock frames with Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
-| Record a portable perception replay | `pixi run demo-webcam-record` |
-
-If Rerun cannot open a viewer on your machine, use `--visualize stdout` to keep the tutorial running without a GUI.
-
-Want a notebook-style walkthrough with expected command output? Continue to [Examples and Results](/tutorials/examples-and-results/).
+<div class="card-grid">
+  <a class="info-card" href="/tutorials/examples-and-results/"><strong>See more example outputs</strong><span>Notebook-style cells for Flow, stepping, perception, graph render, and replay.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug this graph</strong><span>Render the graph, step it locally, record events, and replay them.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Understand the timing</strong><span>Learn why Retriever uses clocks and per-edge sync policies instead of one global loop.</span></a>
+</div>
