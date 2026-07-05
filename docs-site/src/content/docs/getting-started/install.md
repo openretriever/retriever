@@ -55,4 +55,4 @@ The minimal runtime package is for library use. Repository demos such as `demo-w
 - Run the [Visual Quickstart](/getting-started/visual-quickstart/).
 - Compare outputs in [Examples and Results](/tutorials/examples-and-results/).
 - Use [Debug and Visualize](/tutorials/debug-and-visualize/) for graph rendering, stepping, recording, and replay.
-- Move to [Retriever Hub](/ecosystem/) and [GoldenRetriever](https://retriever-space.pages.dev/) after the core runtime path is clear.
+- Move to [Retriever Hub](/ecosystem/) and [GoldenRetriever](https://retriever-space.pages.dev/examples/) after the core runtime path is clear.

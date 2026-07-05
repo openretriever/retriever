@@ -64,4 +64,4 @@ from retriever import hub
 WorldState = hub.use("openretriever/golden-retriever:WorldState")
 ```
 
-Open [Golden Examples](/ecosystem/golden-packs/) for the local manifest proof path, then continue to [Golden examples](https://retriever-space.pages.dev/) for applied perception, memory, language, simulator, visualization, and robot type-pack lanes.
+Open [Golden Examples](/ecosystem/golden-packs/) for the local manifest proof path, then continue to [Golden examples](https://retriever-space.pages.dev/examples/) for applied perception, memory, language, simulator, visualization, and robot type-pack lanes.

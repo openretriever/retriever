@@ -8,7 +8,7 @@ title: "Retriever Documentation"
 > This `docs/` tree is retained as source-local reference material, release maintenance notes, and deeper handbooks.
 
 
-Retriever is a programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.
+Retriever is a Python runtime for closed-loop robot systems whose perception, reasoning, and control can run together with explicit time, typed handoff, graph inspection, and replay.
 
 These docs are organized around adoption first: run a small graph, understand Flows and time, debug the graph, then move toward backends, registries, and reusable ecosystem packages.
 

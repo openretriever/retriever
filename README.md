@@ -8,13 +8,13 @@
 
 <div align="center">
 
-<p>A programming framework for building closed-loop robot systems whose perception, reasoning, and control can run together easily.</p>
+<p>A Python runtime for building closed-loop robot systems whose perception, reasoning, and control can run together with explicit time, typed handoff, graph inspection, and replay.</p>
 
 <p>
   <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
   <a href="https://github.com/openretriever/retriever"><img alt="Runtime source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
-  <a href="https://retriever-space.pages.dev/"><img alt="Golden examples" src="https://img.shields.io/badge/Golden-Examples-f97316?style=for-the-badge"></a>
+  <a href="https://retriever-space.pages.dev/examples/"><img alt="Golden examples" src="https://img.shields.io/badge/Golden-Examples-f97316?style=for-the-badge"></a>
 </p>
 
 </div>
@@ -31,7 +31,7 @@ Use Retriever when a robot system needs:
 - **Portable backends**: author one typed graph, then run it in-process, with multiprocessing, or on a distributed backend.
 - **Reusable components**: typed payloads, registries, and Hub surfaces make robot software easier to publish and compose.
 
-System-level robot integrations, simulator stacks, and heavier model packages belong in the maintained reference examples layer: [GoldenRetriever](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
+System-level robot integrations, simulator stacks, and heavier model packages belong in the maintained reference examples layer: [GoldenRetriever](https://retriever-space.pages.dev/examples/) and Retriever Hub packs. This repository stays focused on the runtime core.
 
 ## Canonical Runtime Workflow
 
@@ -133,13 +133,13 @@ The hosted Starlight docs are the public docs front door:
 - [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/) — mock smoke, webcam color detection, and Rerun.
 - [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/) — commands paired with expected output.
 - [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/) — graph render, stepper, record, and replay.
-- [Golden Examples](https://retriever-space.pages.dev/) — maintained robot-facing examples, type packs, simulator/visualization lanes, and Hub-pack candidates after the core quickstart.
+- [Golden Overview](https://retriever-space.pages.dev/) — GoldenRetriever as the applied examples and reference-pack layer.
 - [Golden Example Catalog](https://retriever-space.pages.dev/examples/) — applied perception, memory, language, composition, simulation, visualization, and typing guides.
 
 The repository `docs/` tree remains available for deeper source-local reference
 and release maintenance.
 
-Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever source lives at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever), but most users should start from the hosted [Golden docs](https://retriever-space.pages.dev/).
+Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever source lives at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever), but most users should start from the hosted [Golden example catalog](https://retriever-space.pages.dev/examples/).
 
 ## Runtime Surfaces
 
@@ -163,7 +163,7 @@ Backend execution is for realistic scheduling, process boundaries, and deploymen
 The intended public split is:
 
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
-- **Golden examples**: [GoldenRetriever](https://retriever-space.pages.dev/) for robot-facing examples and pack candidates.
+- **Golden examples**: [GoldenRetriever](https://retriever-space.pages.dev/examples/) for robot-facing examples and pack candidates.
 - **Project website**: [openretriever.org](https://openretriever.org/).
 
 ## Development

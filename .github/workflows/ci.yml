@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - release/mirror-alignment-20260621
+      - docs/starlight-nova-v1
   pull_request:
     branches:
       - main

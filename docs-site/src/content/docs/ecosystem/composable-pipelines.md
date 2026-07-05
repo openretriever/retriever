@@ -88,4 +88,4 @@ pixi run demo-composable-pipelines
 pixi run docs-tutorial-composable-html
 ```
 
-For applied composition examples, continue to [GoldenRetriever](https://retriever-space.pages.dev/).
+For applied composition examples, continue to [GoldenRetriever](https://retriever-space.pages.dev/examples/).

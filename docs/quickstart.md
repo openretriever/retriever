@@ -117,7 +117,7 @@ This split is intentional: debug the graph in one process first, then move the s
   <a href="/guide_flow/"><strong>Flow Guide</strong><span>Typed IO, Flow classes, clocks, sync, and wiring.</span></a>
   <a href="/tutorials/"><strong>Tutorial Tracks</strong><span>Ordered runnable lessons.</span></a>
   <a href="/guide_runtime/"><strong>Runtime Guide</strong><span>Validation, IR, execution, and backends.</span></a>
-  <a href="/examples/"><strong>Example Gallery</strong><span>Core examples and GoldenRetriever boundary.</span></a>
+  <a href="/examples/"><strong>Example Gallery</strong><span>Core runtime examples plus the Golden applied examples handoff.</span></a>
 </div>
 
 ??? note "Backend and visualization variants"
