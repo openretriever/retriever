@@ -32,7 +32,7 @@ The important boundary is boring on purpose:
 - keep heavy demos, notebooks, robot stacks, and generated artifacts in the
   Golden source checkout
 - treat the registered schema and serialization round-trip as the cross-version
-  contract for Hub-distributed applied types
+  contract for Hub-distributed robot-facing types
 
 Golden is not a second framework. It is the maintained reference layer for robot-facing examples and pack candidates on top of the core runtime.
 
@@ -48,7 +48,7 @@ pixi run demo-pipeline-html-viz
 The first command loads Golden's local `[tool.retriever.module]` manifest through
 the runtime Hub loader, checks representative exports, verifies registry
 visibility, and round-trips a lightweight action payload through the exported
-Arrow helpers. This mirrors the release contract for Hub-distributed applied types: schema compatibility plus serialization behavior. The second command validates a small closed-loop pipeline to IR
+Arrow helpers. This mirrors the release contract for Hub-distributed robot-facing types: schema compatibility plus serialization behavior. The second command validates a small closed-loop pipeline to IR
 and writes an HTML graph artifact.
 
 Typical output starts like this:
@@ -65,11 +65,11 @@ Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR 
 
 ## After this page
 
-Use this page as the bridge from runtime mechanics into the applied Golden path:
+Use this page as the bridge from runtime mechanics into the Golden reference path:
 
 1. Run `pixi run demo-golden-hub-pack` from a GoldenRetriever source checkout.
 2. Open the [Golden example catalog](https://retriever-space.pages.dev/examples/).
-3. Run the mock-safe applied ladder: Hub proof, perception detection, robosuite mock, and pipeline HTML visualization.
+3. Run the mock-safe Golden ladder: Hub proof, perception detection, robosuite mock, and pipeline HTML visualization.
 4. Treat only `pyproject.toml` manifest exports as Hub-loadable today; promoted demos remain source-checkout examples until exported, versioned, smoke-tested, and indexed.
 
 ## What belongs in Golden packs
@@ -79,7 +79,7 @@ not universal enough for the runtime standard library:
 
 - world and belief state envelopes
 - skill, plan, trajectory, and execution-status payloads
-- Arrow conversions for applied robot payloads
+- Arrow conversions for robot-facing payloads
 - domain examples that compose runtime standard types
 
 Keep canonical, broadly reusable primitives in `retriever.types.*`. Golden packs
@@ -89,4 +89,4 @@ compose those types; they should not redefine them.
 
 Continue with [Hub packs and modules](/ecosystem/modules/) for the general reference shape,
 or open the [Golden example catalog](https://retriever-space.pages.dev/examples/) for the
-runnable applied lanes and source-checkout module catalog.
+runnable robot-facing lanes and source-checkout module catalog.
