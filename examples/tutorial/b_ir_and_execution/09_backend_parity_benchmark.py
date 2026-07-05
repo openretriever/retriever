@@ -178,12 +178,15 @@ def summarize_backend(backend: str, rows: list[dict[str, Any]]) -> dict[str, Any
     if not rows:
         raise RuntimeError(f"No rows captured for backend={backend}")
 
+    raw_seqs = [int(r["seq"]) for r in rows]
     ordered = sorted(rows, key=lambda r: int(r["seq"]))
     seqs = [int(r["seq"]) for r in ordered]
     latencies = [float(r["latency_ms"]) for r in ordered]
     sink_ts = [float(r["sink_ts"]) for r in ordered]
 
     contiguous = all(seqs[i] == seqs[0] + i for i in range(len(seqs)))
+    monotonic = all(raw_seqs[i] > raw_seqs[i - 1] for i in range(1, len(raw_seqs)))
+    missing_seq_count = (seqs[-1] - seqs[0] + 1) - len(seqs)
     intervals = [(sink_ts[i] - sink_ts[i - 1]) * 1000.0 for i in range(1, len(sink_ts))]
 
     return {
@@ -192,6 +195,8 @@ def summarize_backend(backend: str, rows: list[dict[str, Any]]) -> dict[str, Any
         "seq_start": seqs[0],
         "seq_end": seqs[-1],
         "contiguous": contiguous,
+        "monotonic": monotonic,
+        "missing_seq_count": missing_seq_count,
         "mean_latency_ms": round(sum(latencies) / len(latencies), 3),
         "p95_latency_ms": round(percentile(latencies, 95.0), 3),
         "max_latency_ms": round(max(latencies), 3),
@@ -233,9 +238,12 @@ def parity_report(
     mp_rows = mp["rows"]
     dora_rows = dora["rows"]
 
-    prefix_n = min(len(mp_rows), len(dora_rows))
-    mp_prefix_sig = hash_sequence(mp_rows[:prefix_n]) if prefix_n else ""
-    dora_prefix_sig = hash_sequence(dora_rows[:prefix_n]) if prefix_n else ""
+    mp_by_seq = {int(row["seq"]): row for row in mp_rows}
+    dora_by_seq = {int(row["seq"]): row for row in dora_rows}
+    common_seqs = sorted(set(mp_by_seq) & set(dora_by_seq))
+    mp_common_sig = hash_sequence([mp_by_seq[seq] for seq in common_seqs]) if common_seqs else ""
+    dora_common_sig = hash_sequence([dora_by_seq[seq] for seq in common_seqs]) if common_seqs else ""
+    common_ratio = len(common_seqs) / max(min(len(mp_rows), len(dora_rows)), 1)
 
     count_ratio = abs(mp["count"] - dora["count"]) / max(mp["count"], dora["count"])
     mean_latency_delta = abs(mp["mean_latency_ms"] - dora["mean_latency_ms"])
@@ -243,12 +251,14 @@ def parity_report(
 
     checks = [
         make_check("mp_contiguous", mp["contiguous"], mp["contiguous"], True),
-        make_check("dora_contiguous", dora["contiguous"], dora["contiguous"], True),
-        make_check("prefix_window_non_empty", prefix_n > 0, prefix_n, ">0"),
-        make_check("prefix_signature_match", mp_prefix_sig == dora_prefix_sig, {
-            "mp": mp_prefix_sig,
-            "dora": dora_prefix_sig,
-            "prefix_n": prefix_n,
+        make_check("dora_monotonic", dora["monotonic"], dora["monotonic"], True),
+        make_check("common_window_non_empty", bool(common_seqs), len(common_seqs), ">0"),
+        make_check("common_window_complete", common_ratio >= 0.95, round(common_ratio, 4), ">= 0.95"),
+        make_check("common_result_signature_match", mp_common_sig == dora_common_sig, {
+            "mp": mp_common_sig,
+            "dora": dora_common_sig,
+            "common_n": len(common_seqs),
+            "dora_missing_seq_count": dora["missing_seq_count"],
         }, "equal"),
         make_check("count_ratio_within_tol", count_ratio <= count_ratio_tol, round(count_ratio, 4), f"<= {count_ratio_tol}"),
         make_check(
@@ -268,7 +278,7 @@ def parity_report(
     overall_pass = all(c["pass"] for c in checks)
     return {
         "overall_pass": overall_pass,
-        "prefix_n": prefix_n,
+        "common_n": len(common_seqs),
         "checks": checks,
     }
 
@@ -284,6 +294,8 @@ def write_csv(path: Path, mp: dict[str, Any], dora: dict[str, Any], parity: dict
                 "seq_start",
                 "seq_end",
                 "contiguous",
+                "monotonic",
+                "missing_seq_count",
                 "mean_latency_ms",
                 "p95_latency_ms",
                 "max_latency_ms",
@@ -361,6 +373,8 @@ def main() -> None:
         "count",
         "seq_range",
         "contiguous",
+        "monotonic",
+        "missing_seq_count",
         "mean_latency_ms",
         "p95_latency_ms",
         "max_latency_ms",
@@ -375,6 +389,8 @@ def main() -> None:
                 row["count"],
                 f"{row['seq_start']}..{row['seq_end']}",
                 row["contiguous"],
+                row["monotonic"],
+                row["missing_seq_count"],
                 f"{row['mean_latency_ms']:.3f}",
                 f"{row['p95_latency_ms']:.3f}",
                 f"{row['max_latency_ms']:.3f}",

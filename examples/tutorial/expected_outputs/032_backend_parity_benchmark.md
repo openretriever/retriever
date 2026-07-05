@@ -22,5 +22,8 @@ pixi run python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchm
 
 ## Pass Criteria
 - Both backends run successfully (hard gate).
-- Prefix output signature matches between backends.
+- Multiprocessing output is contiguous.
+- Dora output is monotonic. Async startup may skip an early sample under `Latest()`; this is reported with `missing_seq_count` instead of treated as deterministic-result drift.
+- Shared sequence IDs have matching deterministic result signatures.
+- The common sequence window is non-empty and at least 95% complete relative to the shorter backend run.
 - Count ratio drift and latency deltas are within configured tolerances.
