@@ -180,4 +180,4 @@ That bundle lets the next reader distinguish graph wiring, Flow logic, viewer se
 
 - Use [Examples and Results](/tutorials/examples-and-results/) for notebook-style expected outputs.
 - Use [Time and Sync](/concepts/time-and-sync/) if the issue is event timing or edge sampling.
-- Use [Golden examples](https://retriever-space.pages.dev/examples/) after the core visual debugging path works.
+- Use the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) after the core visual debugging path works.

@@ -64,4 +64,4 @@ Repository demos such as `demo-webcam-detection`, graph-rendering helpers, Rerun
 - Run the [Visual Quickstart](/getting-started/visual-quickstart/).
 - Compare outputs in [Examples and Results](/tutorials/examples-and-results/).
 - Use [Debug and Visualize](/tutorials/debug-and-visualize/) for graph rendering, stepping, recording, and replay.
-- Move to [Retriever Hub](/ecosystem/) and [GoldenRetriever](https://retriever-space.pages.dev/examples/) after the core runtime path is clear.
+- Move to [Retriever Hub](/ecosystem/) and [the first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) after the core runtime path is clear.

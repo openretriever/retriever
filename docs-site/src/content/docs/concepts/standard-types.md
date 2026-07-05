@@ -23,7 +23,7 @@ All payload classes are `@io`-ready: use them directly as Flow port types.
 
 These are generic standards, not the whole robotics ontology. Applied payloads
 such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` belong
-in GoldenRetriever or other Hub type packs so they can evolve with examples and
+in GoldenRetriever or other Hub payload packs so they can evolve with examples and
 domain semantics without expanding the core runtime API.
 
 ```python
