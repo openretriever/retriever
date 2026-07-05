@@ -1,10 +1,10 @@
 ---
-title: Golden Reference Layer
+title: Golden Examples
 ---
 
-# Golden Reference Layer
+# Golden Examples
 
-GoldenRetriever is the reference layer for robot-facing examples, reusable type packs, and Hub-pack candidates. The
+GoldenRetriever is the applied examples layer for robot-facing examples, reusable type packs, and Hub-pack candidates. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
 payload types, simulator/visualization lanes, and small proof paths that show how a pack is loaded, inspected,
 and composed. This path intentionally avoids a separate Golden PyPI runtime package.
@@ -34,7 +34,7 @@ The important boundary is boring on purpose:
 - treat the registered schema and serialization round-trip as the cross-version
   contract for Hub-distributed robot-facing types
 
-Golden is not a second framework. It is the maintained reference layer for robot-facing examples and pack candidates on top of the core runtime.
+Golden is not a second framework. It is the maintained examples layer for robot-facing examples and pack candidates on top of the core runtime.
 
 ## Local source proof
 
@@ -65,7 +65,7 @@ Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR 
 
 ## After this page
 
-Use this page as the bridge from runtime mechanics into the Golden reference path:
+Use this page as the bridge from runtime mechanics into the Golden examples path:
 
 1. Run `pixi run demo-golden-hub-pack` from a GoldenRetriever source checkout.
 2. Open the [Golden example catalog](https://retriever-space.pages.dev/examples/).

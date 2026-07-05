@@ -26,11 +26,11 @@ The pytest gate intentionally uses `tests/`, because `pyproject.toml` collects t
 Use this when reviewing exactly what the docs Pages project will receive:
 
 ```bash
-/opt/homebrew/bin/pixi run -e docs docs-build
+pixi run -e docs docs-build
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs-site/dist
 ```
 
-Open `http://127.0.0.1:8781/`, `http://127.0.0.1:8781/ecosystem/`, and `http://127.0.0.1:8781/ecosystem/golden-packs/`. Ecosystem pages should describe Golden as the reference layer plus manifest-declared type pack, not as a second runtime.
+Open `http://127.0.0.1:8781/`, `http://127.0.0.1:8781/ecosystem/`, and `http://127.0.0.1:8781/ecosystem/golden-packs/`. Ecosystem pages should describe Golden as the examples layer plus manifest-declared type pack, not as a second runtime.
 
 ## Post-Deploy Docs Content Check
 
@@ -53,7 +53,7 @@ done
 curl -fsSL https://openretriever-docs.pages.dev/robots.txt | grep -q 'sitemap-index.xml'
 ```
 
-Run `pixi run public-surface-check` after repository visibility and the required Pages/landing surfaces are live. Add `--custom-domains` after DNS cutover and `--package-index` after TestPyPI/PyPI publication; this content check is a narrower docs-deploy smoke.
+Run `pixi run public-surface-check` after repository visibility and the required Pages/landing surfaces are live. Add `--custom-domains` after final custom domains are active and `--package-index` after TestPyPI/PyPI publication; this content check is a narrower docs-deploy smoke.
 
 ## GitHub Settings
 
@@ -102,11 +102,11 @@ pixi run public-surface-check --package-index
 pixi run public-surface-check --all
 ```
 
-The default network-facing check verifies repository metadata, required live website URLs, and required DNS. The optional flags add custom-domain and `retriever-core` package-index verification. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
+The default network-facing check verifies repository metadata and required live website URLs. Optional stricter flags can verify final custom domains and the `retriever-core` package index after those launch surfaces are active. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
 
 ## Companion Repositories
 
-- Golden reference layer: `https://github.com/openretriever/golden-retriever`
+- Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
 Golden is the applied examples repository and applied type pack. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so Golden should launch as a Hub-distributed pack catalog rather than a second public PyPI product.
@@ -127,10 +127,10 @@ link or command dangles:
    verify its Hub-loadable applied type pack (`openretriever/golden-retriever`).
    Keep any Golden wheel as an optional future artifact, not a required public
    launch step.
-4. Publish the public Retriever Hub index and any optional policy modules only after the runtime package and Golden reference layer are live. Keep those modules separate from the core runtime release.
+4. Publish the public Retriever Hub index and any optional policy modules only after the runtime package and Golden examples are live. Keep those modules separate from the core runtime release.
 5. Redeploy the docs site (includes `llms.txt`, Standard Types, Concepts and
    Lineage, and Hub pages) and the landing site, then run a link check.
-6. DNS cutover for the docs domain, then update `site-links.js` in the
+6. After final docs/custom domains are active, update `site-links.js` in the
    landing repo from `.pages.dev` URLs to the final domain.
 
 Agent-facing entry points (`AGENTS.md` at each repo root, `/llms.txt` on

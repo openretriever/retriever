@@ -14,7 +14,7 @@
   <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
   <a href="https://github.com/openretriever/retriever"><img alt="Runtime source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
-  <a href="https://retriever-space.pages.dev/"><img alt="Golden reference" src="https://img.shields.io/badge/Golden-Reference%20Layer-92400e?style=for-the-badge"></a>
+  <a href="https://retriever-space.pages.dev/"><img alt="Golden examples" src="https://img.shields.io/badge/Golden-Examples-f97316?style=for-the-badge"></a>
 </p>
 
 </div>
@@ -31,7 +31,7 @@ Use Retriever when a robot system needs:
 - **Portable backends**: author one typed graph, then run it in-process, with multiprocessing, or on a distributed backend.
 - **Reusable components**: typed payloads, registries, and Hub surfaces make robot software easier to publish and compose.
 
-System-level robot integrations, simulator stacks, and heavier model packages belong in the reference layer: [GoldenRetriever](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
+System-level robot integrations, simulator stacks, and heavier model packages belong in the applied examples layer: [GoldenRetriever](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
 
 ## Canonical Runtime Workflow
 
@@ -133,7 +133,7 @@ The hosted Starlight docs are the public docs front door:
 - [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/) — mock smoke, webcam color detection, and Rerun.
 - [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/) — commands paired with expected output.
 - [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/) — graph render, stepper, record, and replay.
-- [Golden Reference Layer](https://retriever-space.pages.dev/) — maintained robot-facing examples, type packs, simulator/visualization lanes, and Hub-pack candidates after the core quickstart.
+- [Golden Examples](https://retriever-space.pages.dev/) — maintained robot-facing examples, type packs, simulator/visualization lanes, and Hub-pack candidates after the core quickstart.
 - [Golden Example Catalog](https://retriever-space.pages.dev/examples/) — applied perception, memory, language, composition, simulation, visualization, and typing guides.
 
 The repository `docs/` tree remains available for deeper source-local reference
@@ -163,7 +163,7 @@ Backend execution is for realistic scheduling, process boundaries, and deploymen
 The intended public split is:
 
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
-- **Golden reference layer**: [GoldenRetriever](https://retriever-space.pages.dev/) for robot-facing examples and pack candidates.
+- **Golden examples**: [GoldenRetriever](https://retriever-space.pages.dev/) for robot-facing examples and pack candidates.
 - **Project website**: [openretriever.org](https://openretriever.org/).
 
 ## Development

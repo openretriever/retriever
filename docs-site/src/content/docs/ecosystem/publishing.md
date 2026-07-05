@@ -101,22 +101,10 @@ Minimum expectations before publishing:
 
 ## Release boundary
 
-GoldenRetriever is the current reference catalog. Keep Golden as the reference layer with source examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
+GoldenRetriever is the current applied catalog. Keep Golden as the examples layer with source examples plus a manifest-declared Hub type pack; do not publish a second runtime package just to share applied robot payloads.
 
 ## Public-surface check
 
-Before a release announcement, maintainers should run the default external launch verifier from the core repo root:
+Before announcing a pack, run the repository's smallest public smoke command and verify that every documented link, import, and example output still matches the published docs. Keep hosting credentials, DNS operations, and organization-specific release cutover notes outside public package docs.
 
-```bash
-pixi run public-surface-check
-```
-
-The default check verifies repository metadata, required live website URLs, and required DNS. After custom-domain cutover and package publication, add the optional stricter gates:
-
-```bash
-pixi run public-surface-check --custom-domains
-pixi run public-surface-check --package-index
-pixi run public-surface-check --all
-```
-
-Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
+For the core Retriever release repository, maintainers can use `pixi run public-surface-check` as the local guardrail; pack authors should provide an equivalent small check for their own module.
