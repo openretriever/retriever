@@ -3,7 +3,7 @@ title: Install
 description: Choose the source-checkout path for demos, or the minimal runtime package for runtime-only use.
 ---
 
-Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. The runtime package target is `retriever-core`; keep the source checkout for examples and optional tutorial assets.
+Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. The planned runtime package target is `retriever-core`; keep the source checkout for examples and optional tutorial assets.
 
 ## One-Minute Source Path
 
@@ -27,9 +27,9 @@ Expected result: a deterministic mock camera graph runs without camera permissio
 | Track | Use it when | Command |
 | --- | --- | --- |
 | Source checkout | You want demos, examples, graph rendering, Rerun, replay artifacts, or tests. | `pixi install` then `pixi run demo-webcam-detection-mock` |
-| Minimal package | You only need the runtime API. | `python -m pip install retriever-core` |
+| Minimal package | You only need the runtime API after the package release is live. | `python -m pip install retriever-core` |
 
-The public runtime distribution name is `retriever-core`; the Python import package is `retriever`:
+The planned public runtime distribution name is `retriever-core`; the Python import package is `retriever`:
 
 ```python
 from retriever.flow import Flow, Pipeline, Rate, io
@@ -55,7 +55,7 @@ Repository demos such as `demo-webcam-detection`, graph-rendering helpers, Rerun
 | --- | --- | --- |
 | Clone or install is blocked | Stay on the hosted docs and retry the source checkout later. | The hosted docs remain useful even when a launch surface is temporarily unavailable. |
 | Camera permission or hardware fails | `pixi run demo-webcam-detection-mock` | Proves the runtime graph without local devices. |
-| Rerun does not open | Keep the stdout path or use `--visualize stdout`. | Separates viewer setup from runtime correctness. |
+| Rerun does not open | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize stdout --duration 10` | Separates viewer setup from runtime correctness. |
 | A graph behaves unexpectedly | `pixi run docs-tutorial-perception-html` | Inspect nodes, ports, clocks, and sync policies first. |
 | A result is hard to reproduce | `pixi run demo-webcam-record` then replay. | Turns timing-sensitive inputs into a stable artifact. |
 

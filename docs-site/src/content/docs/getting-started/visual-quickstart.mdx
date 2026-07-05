@@ -13,11 +13,11 @@ pixi install
 pixi run demo-webcam-detection-mock
 ```
 
-This is a source-checkout demo target. The package install target is `retriever-core`, but examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
+This is a source-checkout demo target. The planned runtime package target is `retriever-core`, but examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
 
-<div class="notebook-takeaway"><strong>Success criterion:</strong> the mock command runs without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the typical output and compare it later.</div>
+<div class="notebook-takeaway"><strong>Success criterion:</strong> the mock command runs without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the representative output and compare it later.</div>
 
-Typical output:
+Representative output (abridged):
 
 ```text
 Perception Demo - Live or Mock Camera to Detection
@@ -63,7 +63,7 @@ This uses the same tutorial pipeline with real camera input. On a machine with a
 | Symptom | Try first | Why |
 | --- | --- | --- |
 | No camera or camera permission issue | `pixi run demo-webcam-detection-mock` | Removes hardware from the question. |
-| Rerun viewer does not open | Use `--visualize stdout` | Keeps runtime verification separate from viewer setup. |
+| Rerun viewer does not open | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize stdout --duration 10` | Keeps runtime verification separate from viewer setup. |
 | Graph wiring is unclear | `pixi run docs-tutorial-perception-html` | Shows Flow nodes, ports, clocks, and sync policies. |
 | Detection output is surprising | `pixi run demo-perception-stepper` | Steps the detector with deterministic mock frames. |
 | Behavior changes between runs | `pixi run demo-webcam-record` then replay | Saves the input stream as a reusable artifact. |

@@ -45,11 +45,7 @@ pixi run demo-webcam-detection-mock
   </div>
 </details>
 
-Library install target:
-
-```bash
-python -m pip install retriever-core
-```
+Install note: the planned public runtime package target is `retriever-core`, but this documentation starts from the source checkout because that path includes demos, tutorial assets, graph rendering, and optional visualization. See [Install](/getting-started/install/) for the package/source split.
 
 ## Why Retriever For Robotics
 
@@ -68,12 +64,7 @@ python -m pip install retriever-core
 
 ## How Retriever Compares
 
-| Pattern | Typed boundary | Time and rates | Debug path | Replay story | Best fit |
-| --- | --- | --- | --- | --- | --- |
-| Raw Python loop | Ad hoc objects. | Sleeps, timers, and blocking calls live in user code. | Easy until threads, callbacks, or variable-latency models enter. | Manual logs. | Tiny single-rate demos. |
-| ROS / ROS 2 callbacks | Message schemas. | Timers and callback arrival order are mostly implicit at composition boundaries. | Strong device tooling, but hard to ask which synchronized snapshot a callback consumed. | Bags capture messages; extra logic is needed to recover exact decision inputs. | Device integration and transport. |
-| Dora graph | Operator/dataflow contracts. | Asynchronous graph execution with backend scheduling. | Good backend-level execution surface. | Depends on graph/runtime logging policy. | High-throughput distributed dataflow. |
-| Retriever | Typed <code>Flow</code> I/O contracts. | Per-Flow clocks and per-edge sync policies. | Render the graph, call <code>Pipeline.step(...)</code>, use stdout/Rerun. | Record and replay consumed input snapshots. | Closed-loop robot agents. |
+The full positioning matrix lives on [Why Retriever](/concepts/why-retriever/). Keep the homepage short: Retriever is for closed-loop robot agents where typed modules, explicit time, local debugging, and replay matter together.
 
 ## Guides
 
@@ -106,10 +97,4 @@ python -m pip install retriever-core
 
 ## For AI Agents
 
-Agents should start from [`llms.txt`](/llms.txt), then run the mock visual smoke before changing code. The reliable first command is:
-
-```bash
-pixi run demo-webcam-detection-mock
-```
-
-Use `/tutorials/examples-and-results/` for expected outputs and `/tutorials/debug-and-visualize/` for graph/render/replay commands.
+Agents should start from [`llms.txt`](/llms.txt), then follow the [Visual Quickstart](/getting-started/visual-quickstart/) before changing code. Use [Examples and Results](/tutorials/examples-and-results/) for expected outputs and [Debug and Visualize](/tutorials/debug-and-visualize/) for graph/render/replay commands.
