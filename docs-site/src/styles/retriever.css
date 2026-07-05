@@ -58,9 +58,9 @@
   margin: -1.1rem 0 2rem;
   padding: 1rem 1.1rem;
   border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, var(--sl-color-gray-5));
-  border-left: 4px solid var(--sl-color-accent);
-  border-radius: 16px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-low) 52%, transparent), transparent);
+  border-left: 2px solid var(--sl-color-accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sl-color-accent-low) 32%, transparent);
   color: var(--sl-color-gray-2);
 }
 
@@ -168,7 +168,7 @@
   margin: 0.25rem 0 1rem;
   padding: 1rem;
   border: 1px solid var(--sl-color-gray-5);
-  border-left: 4px solid var(--sl-color-accent);
+  border-left: 2px solid var(--sl-color-accent);
   border-radius: 16px;
   background: color-mix(in srgb, var(--sl-color-bg-nav) 88%, var(--sl-color-accent-low));
   color: var(--sl-color-gray-2);
@@ -192,7 +192,7 @@
 
 .output-label + .expressive-code,
 .output-label + pre {
-  border-left: 4px solid var(--sl-color-accent);
+  border-left: 2px solid var(--sl-color-accent);
   border-radius: 16px;
   box-shadow: 0 12px 34px rgba(124, 45, 18, 0.06);
 }

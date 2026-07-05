@@ -1,53 +1,67 @@
 # Design notes — Retriever (core) docs site
 
-Look-and-feel reference for this Starlight site. Read before changing
-`src/styles/retriever.css` or a page's visual structure.
+How this site should look and read. Read before touching
+`src/styles/retriever.css` or a page's structure.
 
-## Identity: keep it clean and light
+## North star
 
-The core runtime docs stay on a **clean, light (white/near-white) ground** — a
-precise, technical reference feel. This is **deliberately distinct** from the
-GoldenRetriever site, which uses a warmer "golden paper" tone. Two surfaces,
-two moods that still feel related through shared type and the orange accent:
+Two docs sites we want to feel like:
+
+- **Claude Code Docs** (code.claude.com) — white, calm, generous whitespace,
+  quiet active states, tabbed code, restrained accent.
+- **OpenAI Developers** (developers.openai.com) — white, minimal, numbered
+  setup steps, tabbed surfaces, near-monochrome with a single dark primary.
+
+Core Retriever docs are **clean and light** — a precise technical reference.
+This is deliberately distinct from GoldenRetriever's warm "golden paper" tone.
+Shared discipline, different ground:
 
 - **Core = white, precise, reference.**
 - **Golden = warm, applied, exploratory.**
 
-Do **not** copy Golden's cream background here.
+Keep core white. Do not import Golden's cream background.
 
-## What we borrow (principles, not colors)
+## What those references teach (and we follow)
 
-We admire **Claude/Anthropic** (calm, editorial restraint) and **Pixi**
-(concise, command-first, honest positioning) — borrow their *discipline*, not
-their palettes:
+1. **Restraint is the whole aesthetic.** Mostly ink-on-white with lots of air.
+   The accent (Retriever orange) appears in small doses — links, one active
+   state, a small highlight — never as loud bars, gradients, or big fills.
+   If a page has more than a couple of accent moments, pull back.
+2. **Quiet active states.** The active sidebar item is a soft neutral pill (a
+   faint gray/tinted background), not a bold colored bar. Look at Claude Code
+   Docs' sidebar.
+3. **Generous whitespace and a calm type scale.** Comfortable line-height,
+   clear heading steps, prose measure ~65–72ch. Let spacing carry hierarchy.
+4. **Tabbed code for multi-language / multi-surface** (Python | TypeScript, or
+   App | CLI | Cloud). One clean copy affordance.
+5. **Numbered steps for setup flows** (OpenAI's quickstart), not walls of prose.
+6. **One primary action per view.** A single strong button; everything else
+   ghost/text.
 
-1. **Restraint.** One accent (Retriever orange). Calm shadows. Hierarchy and
-   spacing over effects.
-2. **Command-first, concise (Pixi).** Lead with the runnable command + expected
-   output; pointed benefit phrases over paragraphs.
-3. **Honest positioning (Pixi).** Compare fairly — see `/concepts/why-retriever/`.
-4. **Technical-editorial type.** Monospace for eyebrows/labels and table
-   headers; clean sans for prose.
-5. **Keep** expected-output blocks and the agent-first layer (`llms.txt`,
-   `AGENTS.md`).
+## Writing (Pixi discipline + no slop)
 
-> Also align with the operator's previously-referenced docs — **confirm which
-> before a palette change.** When in doubt, keep the current light palette.
+- Command-first: lead with the runnable command and its expected output.
+- Concise, human prose. **Avoid AI-slop cadence** — the giveaways are
+  parallel "X gives you A, B, and C; Y adds D, E, and F" constructions,
+  empty tricolons, and sentences that restate the heading. Say the thing once,
+  plainly.
+- Honest positioning — see `/concepts/why-retriever/`.
+- Keep expected-output blocks and the agent-first layer (`llms.txt`, `AGENTS.md`).
 
-## Conventions (color-agnostic)
+## Tokens & conventions (source of truth: `src/styles/retriever.css`)
 
+- **Ground:** white / near-white in light; keep dark tasteful (not pure black).
+- **Accent:** Retriever orange, used sparingly. Prefer `--sl-color-text-accent`
+  for text and thin (1–2px) accent details over 4px bars and gradients.
 - **Eyebrow:** monospace, uppercase, wide tracking, subtle accent rule.
-- **Cards:** light surfaces on the white ground; gentle hover (accent border +
-  small lift). Keep shadows soft.
+- **Cards:** quiet — hairline border, minimal shadow, gentle hover; not floaty.
 - **Tables:** monospace headers, comfortable padding, quiet row-hover; spotlight
   the Retriever column in comparison matrices.
-- **CTAs:** one primary accent, the rest ghost.
 
 ## Guardrails
 
-Keep the light ground. No second accent hue, no webfonts (CSP/perf), no heavy
-effects. Prose measure ~60–68ch. `retriever.css` is the only home for
-site-wide visual tokens.
+Keep the light ground. One accent hue. No webfonts (CSP/perf). No heavy
+shadows or gradients. `retriever.css` is the only home for site-wide tokens.
 
-Companion: GoldenRetriever's `docs-site/DESIGN.md` documents the *warm* variant.
-Shared language, different grounds — that contrast is intentional.
+Companion: GoldenRetriever's `docs-site/DESIGN.md` (warm variant, same
+discipline). This pairing — clean core, warm Golden — is intentional.
