@@ -25,8 +25,6 @@ export default defineConfig({
             { label: 'Install', slug: 'getting-started/install' },
             { label: 'Landing', link: 'https://openretriever.org/' },
             { label: 'Continue: Golden Examples', link: 'https://retriever-space.pages.dev/examples/' },
-            { label: 'Core Source', link: 'https://github.com/openretriever/retriever' },
-            { label: 'Golden Source', link: 'https://github.com/openretriever/golden-retriever' },
             { label: 'Agent Map', link: '/llms.txt' },
           ],
         },

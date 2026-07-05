@@ -60,7 +60,7 @@ pixi run demo-webcam-replay-rrd
 
 ## Companion Sites
 
-- [Core Source](https://github.com/openretriever/retriever): runtime implementation and source-checkout demos.
-- [Golden Source](https://github.com/openretriever/golden-retriever): robot-facing examples, type packs, simulator lanes, and public-surface checks.
+- Core source target: `openretriever/retriever` for runtime implementation and source-checkout demos once public visibility is enabled.
+- Golden source target: `openretriever/golden-retriever` for robot-facing examples, type packs, simulator lanes, and public-surface checks once public visibility is enabled.
 - [Landing page](https://openretriever.org/): compact public front door.
 - [GoldenRetriever](https://retriever-space.pages.dev/): robot-facing reference examples, type packs, simulator/visualization lanes, and Hub-pack candidates.
