@@ -24,6 +24,15 @@ pixi run demo-webcam-replay-rrd
 | Record | Can I preserve the run as evidence? | `logs/perception.rrd`, `logs/perception.mcap` |
 | Replay | Can I debug the same events again? | replay stdout and recorded events |
 
+## The Debug Loop
+
+<div class="card-grid">
+  <div class="info-card"><strong>1. Inspect structure</strong><span>Render the graph before changing runtime code. Ports, clocks, sync policies, and feedback edges should be visible.</span></div>
+  <div class="info-card"><strong>2. Prove local logic</strong><span>Use the stepper path to set breakpoints in <code>Flow.step(...)</code> without backend scheduling noise.</span></div>
+  <div class="info-card"><strong>3. Remove hardware risk</strong><span>Use mock perception before live camera or Rerun. The output should be deterministic.</span></div>
+  <div class="info-card"><strong>4. Save evidence</strong><span>Record once, replay many times, then share the exact artifact instead of a timing-sensitive anecdote.</span></div>
+</div>
+
 ## 1. Render The Graph First
 
 ```bash
@@ -140,10 +149,32 @@ Replay consumes recorded events instead of relying on live camera timing. Use th
 | --- | --- | --- |
 | Graph shape is surprising | Render `artifacts/tutorial_perception.html` | Wiring, clocks, ports, and sync policies are visible there. |
 | Flow output is wrong | Run `demo-stepper` or `demo-perception-stepper` | Keeps debugging in ordinary Python before backend scheduling enters. |
-| Rerun does not open | Force stdout visualization | Separates runtime correctness from viewer setup. |
-| Webcam is unreliable | Use `demo-webcam-detection-mock` | Proves the graph without hardware or permissions. |
-| Run is hard to reproduce | Record once, replay many times | Turns timing-sensitive input into a stable artifact. |
+| Rerun does not open | Force stdout visualization with the command below | Separates runtime correctness from viewer setup. |
+| Webcam is unreliable | Use `pixi run demo-webcam-detection-mock` | Proves the graph without hardware or permissions. |
+| Run is hard to reproduce | Run `pixi run demo-webcam-record`, then `pixi run demo-webcam-replay-rrd` | Turns timing-sensitive input into a stable artifact. |
 | Backend differs from local stepping | Compare stepper output, rendered graph, and backend output | Clock/sync choices are often the real difference. |
+
+Exact stdout fallback when viewer setup is the suspected issue:
+
+```bash
+pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
+  --backend in-process \
+  --camera-mode mock \
+  --visualize stdout \
+  --duration 10
+```
+
+## What To Save When Asking For Help
+
+If you need another person or an AI agent to debug the run, include these instead of a screenshot alone:
+
+- the command you ran, including `--backend`, `--camera-mode`, and `--visualize`;
+- `artifacts/tutorial_perception.html` when graph shape is relevant;
+- the first 20-40 lines of stdout around the failure;
+- `logs/perception.rrd` or `logs/perception.mcap` when the issue depends on live sensor timing;
+- whether the failing path used mock frames, live webcam, Rerun, multiprocessing, or Dora.
+
+That bundle lets the next reader distinguish graph wiring, Flow logic, viewer setup, sensor timing, and backend scheduling.
 
 ## Continue
 
