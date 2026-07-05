@@ -1,9 +1,6 @@
 ---
 title: Debug and Visualize
 ---
-
-# Debug and Visualize
-
 Retriever debugging should start before a robot backend is involved. Use the same Pipeline source and move through four increasingly concrete views: graph, local stepper, live visualization, and replay artifact.
 
 ## The Debug Loop

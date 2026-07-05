@@ -1,9 +1,6 @@
 ---
 title: Install
 ---
-
-# Install
-
 Retriever has two install tracks. Use the source checkout today for working demos, examples, Rerun visualization, and repository tests. Use the minimal package track after `retriever-core==0.0.1` resolves from PyPI.
 
 ## Today: source checkout + Pixi

@@ -25,10 +25,9 @@ template: splash
   </div>
 </div>
 
-Source-checkout demos are the release target once public code visibility is enabled:
+For the current public preview, run examples from a source checkout:
 
 ```bash
-# once public source is open
 git clone https://github.com/openretriever/retriever.git
 cd retriever
 pixi install
@@ -64,8 +63,8 @@ Retriever core teaches the runtime contract. GoldenRetriever is the reference co
 
 <div class="card-grid">
   <a class="info-card" href="/ecosystem/golden-packs/"><strong>Prove the Hub boundary</strong><span>Load Golden robot payloads through Retriever Hub from a local source checkout.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Browse Golden examples</strong><span>Use Golden after the core visual demo works: Hub proof, robot type packs, simulator wrappers, and graph visualization.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Open Golden example catalog</strong><span>Browse the runnable examples, notebooks, type packs, and public-surface checks from the hosted Golden docs.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Browse Golden examples</strong><span>Move to maintained robot-facing demos: perception, memory, language, composition, simulation, and visualization.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/robot-type-packs/"><strong>Use robot type packs</strong><span>Pick payloads for world state, belief, skills, plans, trajectories, events, and dataset export.</span></a>
 </div>
 
 ## The Four Objects
@@ -79,7 +78,7 @@ Retriever core teaches the runtime contract. GoldenRetriever is the reference co
 
 ## For AI Agents
 
-Agents should start from `llms.txt`, then run the mock visual smoke before changing code. The reliable first command is:
+Agents should start from [`llms.txt`](/llms.txt), then run the mock visual smoke before changing code. The reliable first command is:
 
 ```bash
 pixi run demo-webcam-detection-mock

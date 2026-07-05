@@ -1,9 +1,6 @@
 ---
 title: Flow
 ---
-
-# Flow
-
 A Flow is the unit of robot computation in Retriever. The easiest way to read it is as an ordinary Python class with a synchronous `step(...)` method.
 
 ```python

@@ -1,9 +1,6 @@
 ---
 title: Publishing
 ---
-
-# Publishing
-
 Publish Hub packs or modules only after the boundary is stable, import-safe, and explicit about what it exports.
 
 ## Package layout

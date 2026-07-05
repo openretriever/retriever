@@ -1,9 +1,6 @@
 ---
 title: Golden Examples
 ---
-
-# Golden Examples
-
 GoldenRetriever is the maintained reference examples layer for robot-facing examples, reusable type packs, and Hub-pack candidates. The
 runtime stays in `retriever-core`; Golden provides maintained examples, robot
 payload types, simulator/visualization lanes, and small proof paths that show how a pack is loaded, inspected,

@@ -23,9 +23,6 @@ export default defineConfig({
             { label: 'Overview', link: '/' },
             { label: 'Visual Quickstart', slug: 'getting-started/visual-quickstart' },
             { label: 'Install', slug: 'getting-started/install' },
-            { label: 'Landing', link: 'https://openretriever.org/' },
-            { label: 'Continue: Golden Examples', link: 'https://retriever-space.pages.dev/examples/' },
-            { label: 'Agent Map', link: '/llms.txt' },
           ],
         },
         {

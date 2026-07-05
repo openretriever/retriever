@@ -1,9 +1,6 @@
 ---
 title: Composable Pipelines
 ---
-
-# Composable Pipelines
-
 Reusable robot subsystems often need two surfaces: a live graph that downstream users can inspect and modify, and a single-stage wrapper that fits inside a larger graph.
 
 ## 1. Export a live pipeline factory

@@ -1,9 +1,6 @@
 ---
 title: Hub Packs and Modules
 ---
-
-# Hub Packs and Modules
-
 A Retriever Hub pack or module is a normal Python package with a declared export table. Users load the exported class, function, type, or value directly; they do not import private source paths or depend on an in-repo layout.
 
 ## Hub reference format
