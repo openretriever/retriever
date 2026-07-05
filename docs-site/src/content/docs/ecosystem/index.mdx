@@ -8,7 +8,7 @@ Retriever has three public surfaces that should stay separate but connected:
 
 - **Core runtime**: Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, standard types, and backend execution.
 - **Retriever Hub**: the reusable pack/module protocol and index for Flows, type packs, transforms, and composed pipelines.
-- **GoldenRetriever**: the applied examples layer: maintained robot-facing examples, type packs, simulator/visualization lanes, and current manifest-declared Hub pack surface.
+- **GoldenRetriever**: the maintained reference examples layer: maintained robot-facing examples, type packs, simulator/visualization lanes, and current manifest-declared Hub pack surface.
 
 Use Hub when a robot system needs to reuse a stable boundary rather than copy code: a Flow class, a pipeline builder, a typed payload pack, or a representation transform.
 

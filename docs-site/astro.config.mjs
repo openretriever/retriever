@@ -52,7 +52,7 @@ export default defineConfig({
           label: 'Retriever Hub',
           items: [
             { label: 'Ecosystem Overview', slug: 'ecosystem' },
-            { label: 'Golden Pack Proof', slug: 'ecosystem/golden-packs' },
+            { label: 'Golden Hub Proof', slug: 'ecosystem/golden-packs' },
             { label: 'Hub Packs and Modules', slug: 'ecosystem/modules' },
             { label: 'Composable Pipelines', slug: 'ecosystem/composable-pipelines' },
             { label: 'Publishing', slug: 'ecosystem/publishing' },
