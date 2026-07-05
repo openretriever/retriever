@@ -46,6 +46,7 @@ The rest of the graph may be sleeping, catching up, or firing on different clock
 
 ```python
 from retriever.flow import Latest, Pipeline, Rate, Trigger
+from examples.shared.perception_flows import CameraSource, ColorDetector, DisplayFlow
 
 pipe = Pipeline("tutorial.perception")
 with pipe:
@@ -64,7 +65,7 @@ Read this as:
 - the display wakes at 3 Hz;
 - each edge samples the latest upstream value before the downstream `step(...)` runs.
 
-## EventStream And EventBuffer Syntax
+## Runtime EventStream And TimedBuffer Syntax
 
 At a lower level, Retriever treats streams as timestamped values. A sync policy consumes a buffer for one edge and returns the value used for the next `step(...)` call.
 
@@ -83,6 +84,25 @@ smoothed = Window(buffer_size=50, duration=0.5, agg="mean")(sensor_buffer, now=t
 ```
 
 Most users do not manipulate `TimedBuffer` directly. They declare `sync=Latest()` or `sync=Window(...)` on edges and let the runtime handle buffers.
+
+When you are recording, exporting, or joining robot datasets, use the higher-level immutable `EventBuffer` contracts under `retriever.types.data`:
+
+```python
+from retriever.types.data import Event, EventBuffer, StreamId
+
+frames = EventBuffer((
+    Event(
+        stream_id=StreamId("camera.rgb"),
+        event_time_ns=1_000_000,
+        ingest_time_ns=1_001_000,
+        seq=0,
+        value=camera_frame,
+    ),
+))
+latest_frame = frames.latest_value()
+```
+
+Use `TimedBuffer` for runtime sync adapters; use `EventBuffer` for durable event records and dataset/export surfaces.
 
 ## Why `Window(...)` Exists
 

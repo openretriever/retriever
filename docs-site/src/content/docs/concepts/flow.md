@@ -109,6 +109,7 @@ When timing matters, place the Flow in a `Pipeline` and declare clocks plus edge
 
 ```python
 from retriever.flow import Latest, Pipeline, Rate, Trigger
+from examples.shared.perception_flows import CameraSource, ColorDetector, DisplayFlow
 
 pipe = Pipeline("tutorial.perception")
 with pipe:
