@@ -109,7 +109,7 @@ The default network-facing check verifies repository metadata and required live 
 - Golden examples: `https://github.com/openretriever/golden-retriever`
 - Project website: `https://openretriever.org/` (source: `https://github.com/openretriever/landing-site`)
 
-Golden is the applied examples repository and applied type pack. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so Golden should launch as a Hub-distributed pack catalog rather than a second public PyPI product.
+Golden is the maintained reference examples repository and robot-facing type pack catalog. After the real `retriever-core` distribution is published, update Golden's runtime dependency to `retriever-core` while continuing to import the runtime as `retriever`. Its robotics/planning payloads are exported through the Retriever Hub manifest (`hub.use("openretriever/golden-retriever:WorldState")` once public), so Golden should launch as a Hub-distributed pack catalog rather than a second public PyPI product.
 
 ## Launch-Order Dependencies
 

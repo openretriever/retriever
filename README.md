@@ -31,7 +31,7 @@ Use Retriever when a robot system needs:
 - **Portable backends**: author one typed graph, then run it in-process, with multiprocessing, or on a distributed backend.
 - **Reusable components**: typed payloads, registries, and Hub surfaces make robot software easier to publish and compose.
 
-System-level robot integrations, simulator stacks, and heavier model packages belong in the applied examples layer: [GoldenRetriever](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
+System-level robot integrations, simulator stacks, and heavier model packages belong in the maintained reference examples layer: [GoldenRetriever](https://retriever-space.pages.dev/) and Retriever Hub packs. This repository stays focused on the runtime core.
 
 ## Canonical Runtime Workflow
 
