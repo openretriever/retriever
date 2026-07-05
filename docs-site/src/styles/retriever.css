@@ -323,12 +323,15 @@
 }
 
 .check-list p::before {
-  content: "✓";
+  content: "";
   position: absolute;
-  left: 0.95rem;
-  top: 0.88rem;
-  color: var(--sl-color-accent);
-  font-weight: 900;
+  left: 1rem;
+  top: 1.15rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: var(--sl-color-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sl-color-accent-low) 70%, transparent);
 }
 
 .check-list strong {
