@@ -1,42 +1,69 @@
 ---
 title: Debug and Visualize
+description: Inspect graphs, step locally, visualize perception, and replay recorded runs.
 ---
-Retriever debugging should start before a robot backend is involved. Use the same Pipeline source and move through four increasingly concrete views: graph, local stepper, live visualization, and replay artifact.
+Retriever debugging should start before a robot backend is involved. Use one source graph and move through four views: render the graph, step it locally, visualize events, then record and replay the same run.
 
-## The Debug Loop
+## Fast Path
 
-| Question | Command | Artifact |
+Run these in order when a graph feels wrong:
+
+```bash
+pixi run docs-tutorial-perception-html
+pixi run demo-stepper
+pixi run demo-webcam-detection-mock
+pixi run demo-webcam-record
+pixi run demo-webcam-replay-rrd
+```
+
+| Stage | Question it answers | Artifact to inspect |
 | --- | --- | --- |
-| Did I wire the graph I intended? | `pixi run docs-tutorial-perception-html` | `artifacts/tutorial_perception.html` |
-| Does Flow logic work in ordinary Python? | `pixi run demo-stepper` | stdout step trace |
-| Does perception work without camera/GUI risk? | `pixi run demo-webcam-detection-mock` | stdout detection events |
-| Does live perception visualize correctly? | `pixi run demo-webcam-detection` | Rerun viewer or stdout fallback |
-| Can I debug the same events again? | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` | `logs/perception.rrd`, `logs/perception.mcap` |
+| Render | Did I wire the graph I intended? | `artifacts/tutorial_perception.html` |
+| Step | Does Flow logic work in ordinary Python? | stdout step trace |
+| Mock perception | Does perception work without camera or GUI risk? | stdout detection events |
+| Record | Can I preserve the run as evidence? | `logs/perception.rrd`, `logs/perception.mcap` |
+| Replay | Can I debug the same events again? | replay stdout and recorded events |
 
-## Render the Graph
+## 1. Render The Graph First
 
 ```bash
 pixi run docs-tutorial-perception-html
 ```
 
-Open the generated HTML artifact and inspect:
+Typical output:
 
-- Flow nodes,
-- input/output ports,
-- each Flow clock,
-- each edge sync policy,
-- feedback edges and fan-in points.
+```text
+[Success] Visualization saved to: artifacts/tutorial_perception.html
+Open this file in your browser to view the interactive graph.
+```
 
-When a robot pipeline feels confusing, this is usually the first artifact to inspect because it shows timing and handoff decisions without requiring a backend.
+Open the generated HTML and check these before debugging backend behavior:
 
-## Step Locally
+- Flow nodes: is every module present?
+- Ports: do input and output names match what the code expects?
+- Clocks: which Flow wakes itself, and which Flow wakes on upstream events?
+- Sync policies: how is upstream history sampled before `step(...)` runs?
+- Feedback edges: where can closed-loop state re-enter the graph?
+
+If this graph is wrong, fix wiring first. Do not start by debugging multiprocessing, Rerun, or camera setup.
+
+## 2. Step Locally
 
 ```bash
 pixi run demo-stepper
-pixi run demo-perception-stepper
 ```
 
-The stepper path is useful because it keeps debugging inside ordinary Python:
+Typical output:
+
+```text
+=== step 0 ===
+[Sink] got value=2
+
+=== step 1 ===
+[Sink] got value=4
+```
+
+Use local stepping when you want to set breakpoints inside `Flow.step(...)`, inspect local state, or reduce a backend issue to a small deterministic case. The mental model is ordinary Python:
 
 ```python
 pipe.validate()
@@ -48,21 +75,37 @@ for _ in range(10):
 pipe.close_stepper()
 ```
 
-Use this mode when you want breakpoints inside `Flow.step(...)`, deterministic local state changes, or a short failing case before launching multiprocessing or dora.
+For perception-specific stepping without camera permissions or GUI windows:
 
-## Visualize Perception Runs
+```bash
+pixi run demo-perception-stepper
+```
 
-Use the deterministic mock/stdout path first when you are checking setup, running headless, or asking an agent to verify the graph:
+## 3. Visualize Perception Safely
+
+Start with mock frames and stdout. This is the reliable path for laptops, CI, remote machines, and AI-agent verification.
 
 ```bash
 pixi run demo-webcam-detection-mock
 ```
 
-Then use the live webcam path. It tries Rerun first and falls back to stdout when a viewer is not available:
+Typical output includes:
+
+```text
+Building perception pipeline:
+  Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
+
+Graph created: 3 nodes, 5 edges
+Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+```
+
+Then switch to a live webcam path:
 
 ```bash
 pixi run demo-webcam-detection
 ```
+
+That command uses real camera input with `--visualize auto`: Rerun when a viewer is available, stdout otherwise. Use Rerun when you need to inspect image frames, detections, and timing visually. Use stdout when the question is simply whether the graph runs and emits events.
 
 Useful variants:
 
@@ -75,23 +118,35 @@ pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
   --duration 10
 ```
 
-Use Rerun when you need to inspect image frames, detections, and timing visually. Use stdout when the question is simply whether the graph runs and emits events.
-
-## Record and Replay
+## 4. Record And Replay
 
 ```bash
 pixi run demo-webcam-record
 pixi run demo-webcam-replay-rrd
 ```
 
-A recorded run gives you a stable artifact for debugging, regression tests, and sharing evidence. The default record command writes `logs/perception.rrd` plus `logs/perception.mcap`, then the replay command consumes the recorded events instead of relying on live camera timing.
+The record command writes replayable artifacts:
+
+```text
+logs/perception.rrd
+logs/perception.mcap
+```
+
+Replay consumes recorded events instead of relying on live camera timing. Use this when behavior changes between runs, when you need to share evidence, or when downstream logic should be debugged without a sensor attached.
 
 ## Practical Triage
 
-- **Graph looks wrong:** render the graph and inspect nodes, ports, clocks, and edge sync policies.
-- **Flow logic looks wrong:** use the stepper commands and set breakpoints inside `step(...)`.
-- **Visualization is missing:** force `--visualize stdout` to separate runtime issues from viewer issues.
-- **Behavior changes between runs:** record once, then replay the same events.
-- **Backend behavior differs from local stepping:** keep the same Pipeline source, compare stepper output with multiprocessing/Rerun output, then inspect the rendered graph for clock or sync-policy differences.
+| Symptom | First action | Why |
+| --- | --- | --- |
+| Graph shape is surprising | Render `artifacts/tutorial_perception.html` | Wiring, clocks, ports, and sync policies are visible there. |
+| Flow output is wrong | Run `demo-stepper` or `demo-perception-stepper` | Keeps debugging in ordinary Python before backend scheduling enters. |
+| Rerun does not open | Force stdout visualization | Separates runtime correctness from viewer setup. |
+| Webcam is unreliable | Use `demo-webcam-detection-mock` | Proves the graph without hardware or permissions. |
+| Run is hard to reproduce | Record once, replay many times | Turns timing-sensitive input into a stable artifact. |
+| Backend differs from local stepping | Compare stepper output, rendered graph, and backend output | Clock/sync choices are often the real difference. |
 
-For concrete expected outputs, continue to [Examples and Results](/tutorials/examples-and-results/).
+## Continue
+
+- Use [Examples and Results](/tutorials/examples-and-results/) for notebook-style expected outputs.
+- Use [Time and Sync](/concepts/time-and-sync/) if the issue is event timing or edge sampling.
+- Use [Golden examples](https://retriever-space.pages.dev/examples/) after the core visual debugging path works.
