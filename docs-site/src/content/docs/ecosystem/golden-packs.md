@@ -35,9 +35,12 @@ Golden is not a second framework. It is the maintained reference examples layer 
 
 ## Local source proof
 
-From a GoldenRetriever source checkout, run the same pack contract locally before publishing or depending on an index entry:
+Run this only after `pixi run demo-webcam-detection-mock` succeeds in the core Retriever checkout. Golden is a separate source checkout; run the same pack contract there before publishing or depending on an index entry:
 
 ```bash
+git clone https://github.com/openretriever/golden-retriever.git
+cd golden-retriever
+pixi install
 pixi run demo-golden-hub-pack
 pixi run demo-pipeline-html-viz
 ```
@@ -64,7 +67,7 @@ Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR 
 
 Use this page as the bridge from runtime mechanics into the Golden examples path:
 
-1. Run `pixi run demo-golden-hub-pack` from a GoldenRetriever source checkout.
+1. Run the checkout block above from a GoldenRetriever source checkout.
 2. Open the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/), then browse the [Golden example catalog](https://retriever-space.pages.dev/examples/).
 3. Run the mock-safe Golden ladder: first proof, perception detection, robosuite mock, and pipeline HTML visualization.
 4. Treat only manifest-declared exports as Hub-loadable today; promoted demos remain source-checkout examples until exported, versioned, smoke-tested, and indexed.

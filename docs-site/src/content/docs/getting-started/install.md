@@ -1,9 +1,9 @@
 ---
 title: Install
-description: Choose the source-checkout path for demos, or the minimal runtime package for runtime-only use.
+description: Use the source checkout for demos, then use the runtime package track when you only need the API.
 ---
 
-Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. The planned runtime package target is `retriever-core`; keep the source checkout for examples and optional tutorial assets.
+Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. Keep the first path source-first; the runtime-only package track is for users who only need the API.
 
 ## One-Minute Source Path
 
@@ -27,9 +27,9 @@ Expected result: a deterministic mock camera graph runs without camera permissio
 | Track | Use it when | Command |
 | --- | --- | --- |
 | Source checkout | You want demos, examples, graph rendering, Rerun, replay artifacts, or tests. | `pixi install` then `pixi run demo-webcam-detection-mock` |
-| Minimal package | You only need the runtime API after the package release is live. | `python -m pip install retriever-core` |
+| Runtime-only package | You only need the API, not demos or repository tutorial assets. | `python -m pip install retriever-core` |
 
-The planned public runtime distribution name is `retriever-core`; the Python import package is `retriever`:
+The runtime distribution name is `retriever-core`; the Python import package is `retriever`:
 
 ```python
 from retriever.flow import Flow, Pipeline, Rate, io

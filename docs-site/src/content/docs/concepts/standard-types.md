@@ -42,7 +42,7 @@ class Detector(Flow[Image2D, DetectionBatch]):
 - **Golden packs**: import canonical runtime types directly, delegate to the
   runtime registry, and add what the runtime should not own directly: Arrow
   conversions plus higher-level robotics/planning payloads exported as a
-  Hub-loadable applied type pack.
+  Hub-loadable applied payload pack.
 - **Extension packs**: domain-specific type sets that do not belong in the
   runtime can be published as hub modules and loaded with
   `hub.use("org/types-pack:SomeType")` — built on top of, never instead of,
