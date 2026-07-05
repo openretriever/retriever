@@ -1,27 +1,124 @@
 ---
 title: Time and Sync
+description: How Retriever handles multi-rate robot systems without pretending there is one global timestep.
 ---
-Robots do not run on one global timestep. Cameras, state estimators, planners, policies, controllers, and operators all update on different schedules.
 
-Retriever makes this explicit with two graph-level choices:
+Robots do not run on one global timestep. Cameras stream, controllers run fast, planners block, policies have variable latency, and operators intervene at irregular times.
 
-- **Clock**: when a Flow wakes up.
-- **Sync policy**: how each incoming event buffer is sampled before `step(...)` runs.
+Retriever makes timing explicit with three graph-level concepts:
+
+| Concept | Short version |
+| --- | --- |
+| **Clock** | When this Flow wakes up: periodic with `Rate(...)`, event-driven with `Trigger(...)`, or a hybrid. |
+| **Event buffer** | The timestamped history accumulated on an incoming edge. |
+| **Sync policy** | How that edge's buffer is sampled before the downstream Flow receives one input object. |
+
+Run the first timing example here:
+
+```bash
+pixi run demo-webcam-detection-mock
+```
+
+## No Global Step
+
+A Flow fires at local clock times. At a firing time `t`, the runtime samples each incoming edge buffer, constructs one typed input object, and then calls the Flow's synchronous `step(...)`.
+
+```python
+# Conceptual runtime loop for one Flow, not a global robot timestep.
+def on_flow_clock_tick(t):
+    image = Latest()(camera_event_buffer, now=t)
+    state = Latest()(robot_state_event_buffer, now=t)
+    goal = Latest()(goal_event_buffer, now=t)
+
+    obs = SkillObs(image=image, state=state, goal=goal)
+    chunk = vla_flow.step(obs)
+    action_chunk_events.append((t, chunk))
+```
+
+The rest of the graph may be sleeping, catching up, or firing on different clocks. There is no shared `k` that means "the next step" for every Flow.
 
 <figure class="figure-card">
   <img src="/assets/figures/02_flow_sync.png" alt="Flow synchronization over event streams." />
   <figcaption>Each Flow has its own schedule. Each edge declares how upstream history becomes one aligned input.</figcaption>
 </figure>
 
-## The intuition
+## Wire Clocks And Sync Explicitly
 
 ```python
-# before this Flow steps:
-image = Latest(camera_events)
-state = Latest(robot_state_events)
-goal = Latest(goal_events)
-obs = SkillObs(image=image, state=state, goal=goal)
-chunk = vla_flow.step(obs)
+from retriever.flow import Latest, Pipeline, Rate, Trigger
+
+pipe = Pipeline("tutorial.perception")
+with pipe:
+    camera = CameraSource(use_real_camera=False) @ Rate(hz=30)
+    detector = ColorDetector(min_confidence=0.6) @ Trigger("image")
+    display = DisplayFlow(display="stdout") @ Rate(hz=3)
+
+    pipe.connect(camera, detector, sync=Latest())
+    pipe.connect(detector, display, sync=Latest())
 ```
 
-The important part is not the exact adapter name. The important part is that sampling is part of the graph instead of being hidden in callback timing.
+Read this as:
+
+- the camera source wakes periodically at 30 Hz;
+- the detector wakes when an `image` field arrives;
+- the display wakes at 3 Hz;
+- each edge samples the latest upstream value before the downstream `step(...)` runs.
+
+## EventStream And EventBuffer Syntax
+
+At a lower level, Retriever treats streams as timestamped values. A sync policy consumes a buffer for one edge and returns the value used for the next `step(...)` call.
+
+```python
+from retriever.flow import Latest, Window
+from retriever.flow.types import EventStream, TimedBuffer
+
+camera_stream: EventStream[CameraData]
+camera_buffer: TimedBuffer[CameraData] = camera_stream.events()
+
+# Most recent frame at this Flow's local firing time.
+frame = Latest()(camera_buffer, now=t)
+
+# Aggregate recent numeric sensor history before a slower Flow runs.
+smoothed = Window(buffer_size=50, duration=0.5, agg="mean")(sensor_buffer, now=t)
+```
+
+Most users do not manipulate `TimedBuffer` directly. They declare `sync=Latest()` or `sync=Window(...)` on edges and let the runtime handle buffers.
+
+## Why `Window(...)` Exists
+
+Use `Latest()` when one recent value is the right input. Use `Window(...)` when a slower Flow should see a short history summarized at its own clock time.
+
+```python
+sensor = Sensor() @ Rate(hz=30)
+smoother = Smoother() @ Rate(hz=10)
+printer = Printer() @ Rate(hz=1)
+
+sensor.then(
+    smoother,
+    sync=Window(buffer_size=50, duration=0.5, agg="mean"),
+)
+smoother.then(printer, sync=Latest())
+```
+
+Run that pattern with:
+
+```bash
+pixi run demo-multirate
+```
+
+## What To Check When Timing Looks Wrong
+
+| Symptom | Check first | Why |
+| --- | --- | --- |
+| A Flow never runs | Its clock: `Rate(...)`, `Trigger(...)`, or incoming field names. | A Flow only wakes when its local clock fires. |
+| A Flow runs with stale data | The edge `sync=` policy and upstream buffer size. | The downstream input is sampled from buffered history, not magic global state. |
+| A slow model blocks progress | Split the model into its own Flow and choose a clock/sync boundary. | Timing should be visible in the graph instead of hidden inside a callback. |
+| A run is hard to reproduce | Render the graph, then record/replay inputs. | Debugging should start from explicit clocks, ports, buffers, and artifacts. |
+
+## Continue
+
+<div class="card-grid">
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug timing visually</strong><span>Render graph structure, step locally, and record/replay timing-sensitive inputs.</span></a>
+  <a class="info-card" href="/tutorials/examples-and-results/"><strong>See expected outputs</strong><span>Run notebook-style cells for Flow, perception, graph render, and replay.</span></a>
+  <a class="info-card" href="/concepts/runtime/"><strong>Understand runtime execution</strong><span>Connect clocks and sync to validation, stepping, backend execution, and replay.</span></a>
+</div>
