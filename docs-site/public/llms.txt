@@ -53,7 +53,7 @@ pixi run demo-webcam-replay-rrd
 - [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
 - [Standard Types](https://openretriever-docs.pages.dev/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
 - [Concepts and Lineage](https://openretriever-docs.pages.dev/concepts/lineage/): relation to FRP and synchronous dataflow.
-- [Golden bridge page](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
+- [Golden examples bridge](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
 - [Golden first proof](https://retriever-space.pages.dev/examples/golden-hub-proof/): runnable Golden command path from the separate `openretriever/golden-retriever` source checkout.
 - [Modules](https://openretriever-docs.pages.dev/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")`.
 - [Composable Pipelines](https://openretriever-docs.pages.dev/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
