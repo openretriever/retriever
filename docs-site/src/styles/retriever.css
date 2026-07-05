@@ -280,3 +280,61 @@
 @media (max-width: 800px) {
   .route-hero { grid-template-columns: 1fr; }
 }
+
+
+.explain-details {
+  margin: 1rem 0 1.6rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 16px;
+  background: var(--sl-color-bg-nav);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+}
+
+.explain-details summary {
+  cursor: pointer;
+  padding: 0.9rem 1rem;
+  color: var(--sl-color-white);
+  font-weight: 800;
+}
+
+:root[data-theme='light'] .explain-details summary {
+  color: #111827;
+}
+
+.explain-details > div {
+  padding: 0 1rem 1rem;
+  color: var(--sl-color-gray-2);
+}
+
+.check-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1rem 0 1.8rem;
+}
+
+.check-list p {
+  margin: 0;
+  padding: 0.9rem 1rem 0.9rem 2.45rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 16px;
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-gray-2);
+  position: relative;
+}
+
+.check-list p::before {
+  content: "✓";
+  position: absolute;
+  left: 0.95rem;
+  top: 0.88rem;
+  color: var(--sl-color-accent);
+  font-weight: 900;
+}
+
+.check-list strong {
+  color: var(--sl-color-white);
+}
+
+:root[data-theme='light'] .check-list strong {
+  color: #111827;
+}

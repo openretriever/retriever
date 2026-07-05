@@ -25,7 +25,9 @@ template: splash
   </div>
 </div>
 
-For the current public preview, run examples from a source checkout:
+## Quick Start
+
+Run the source-checkout demo first. It proves the runtime graph without camera permission, GUI windows, Rerun, or robot hardware.
 
 ```bash
 git clone https://github.com/openretriever/retriever.git
@@ -34,43 +36,66 @@ pixi install
 pixi run demo-webcam-detection-mock
 ```
 
+<details class="explain-details">
+  <summary>What does this do?</summary>
+  <div>
+    <p><code>pixi install</code> creates the reproducible repository environment. <code>pixi run demo-webcam-detection-mock</code> runs a small graph: synthetic camera frames feed a color detector, then detections are printed to stdout. Use the webcam/Rerun path only after this smoke works.</p>
+  </div>
+</details>
+
 After `retriever-core==0.0.1` resolves from PyPI, the library install path becomes:
 
 ```bash
 python -m pip install retriever-core
 ```
 
-General-purpose robot agents rarely fit in one clean loop. Cameras stream, robot state updates faster than policies, VLM/VLA calls have variable latency, planners can block, operators intervene, and replay has to explain exactly what happened. Retriever puts timing and handoff decisions into the graph instead of scattering them across callbacks, queues, and sleeps.
+## Why Retriever For Robotics
+
+<div class="check-list">
+  <p><strong>No single global loop.</strong> Each Flow can run on its own clock, so cameras, policies, planners, monitors, and controllers do not need to pretend they share one timestep.</p>
+  <p><strong>Explicit data handoff.</strong> Each edge declares how upstream event history becomes the one input consumed by <code>step(...)</code>.</p>
+  <p><strong>Debuggable before deployment.</strong> Render the graph, step locally, use stdout/Rerun, record inputs, and replay the same run.</p>
+  <p><strong>Ordinary Python logic.</strong> User code stays in typed classes with synchronous <code>step(...)</code>; runtime timing lives around the graph.</p>
+</div>
 
 <figure class="figure-card">
   <img src="/assets/figures/01_pipeline.png" alt="Closed-loop Retriever robot agent pipeline." />
   <figcaption>A representative Retriever pipeline: slow reasoning, medium-rate skills, and high-rate control live in one explicit graph.</figcaption>
 </figure>
 
-## Choose Your Path
+## How Retriever Compares
+
+| Pattern | Good at | Retriever adds |
+| --- | --- | --- |
+| ROS callbacks | Device integration and message transport. | Typed graph boundaries, explicit sampling, local stepping, and replayable handoff. |
+| One Python loop | Simple demos and scripts. | Multi-rate modules without a fake global timestep. |
+| Actor/DAG systems | Distributed asynchronous execution. | Closed-loop cyclic graphs with clocks, sync policies, and robot-friendly debugging. |
+| Notebook prototypes | Fast iteration. | A path from cells to inspected, recorded, reusable runtime graphs. |
+
+## Guides
 
 <div class="card-grid">
-  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>Fastest first success</strong><span>Run mock color detection. It needs no camera, GUI, or robot backend.</span></a>
-  <a class="info-card" href="/concepts/flow/"><strong>Understand the programming model</strong><span>Learn the Flow class, typed IO, and why `step(...)` stays ordinary Python.</span></a>
-  <a class="info-card" href="/concepts/time-and-sync/"><strong>Understand explicit time</strong><span>Learn clocks, event streams, and sync policies before debugging backend timing.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Continue to Golden examples</strong><span>GoldenRetriever is the maintained applied examples layer: robot type packs, runnable examples, simulator wrappers, and Hub-pack candidates.</span></a>
+  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>Visual quickstart</strong><span>Run mock color detection, then switch to webcam and Rerun/stdout.</span></a>
+  <a class="info-card" href="/tutorials/examples-and-results/"><strong>Examples and results</strong><span>Compare expected output before reading implementation details.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug and visualize</strong><span>Render, step, record, and replay a graph.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Golden examples</strong><span>Continue to robot-facing examples and payload packs after the core path works.</span></a>
 </div>
 
+## Common Patterns
 
-## After The Core Quickstart
-
-Retriever core teaches the runtime contract. GoldenRetriever is the reference continuation: run the Hub-pack proof, then move through maintained robot-facing examples for perception, memory, language, composition, simulation, and visualization.
-
-<div class="card-grid">
-  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Prove the Hub boundary</strong><span>Load Golden robot payloads through Retriever Hub from a local source checkout.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>Browse Golden examples</strong><span>Move to maintained robot-facing demos: perception, memory, language, composition, simulation, and visualization.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/robot-type-packs/"><strong>Use robot type packs</strong><span>Pick payloads for world state, belief, skills, plans, trajectories, events, and dataset export.</span></a>
-</div>
+| Need | Start with |
+| --- | --- |
+| First reliable smoke | `pixi run demo-webcam-detection-mock` |
+| Live visual path | `pixi run demo-webcam-detection` |
+| Smallest Flow mental model | `pixi run demo-basic-flow` |
+| Graph inspection | `pixi run docs-tutorial-perception-html` |
+| Record and replay | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` |
+| Applied robot examples | GoldenRetriever example catalog |
 
 ## The Four Objects
 
 <div class="card-grid">
-  <a class="info-card" href="/concepts/flow/"><strong>Flow</strong><span>A typed Python class with local state and a synchronous `step(...)` method.</span></a>
+  <a class="info-card" href="/concepts/flow/"><strong>Flow</strong><span>A typed Python class with local state and a synchronous <code>step(...)</code> method.</span></a>
   <a class="info-card" href="/concepts/time-and-sync/"><strong>Clock</strong><span>Each Flow declares when it runs; there is no global robot timestep.</span></a>
   <a class="info-card" href="/concepts/time-and-sync/"><strong>Sync policy</strong><span>Each edge declares how upstream event history becomes one aligned input.</span></a>
   <a class="info-card" href="/concepts/runtime/"><strong>Pipeline</strong><span>The graph that validates, visualizes, steps, replays, and runs.</span></a>
