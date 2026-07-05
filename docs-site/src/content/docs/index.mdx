@@ -25,6 +25,8 @@ template: splash
   </div>
 </div>
 
+<p class="mental-model"><strong>Mental model:</strong> PyTorch composes <code>nn.Module</code>s that run immediately; Retriever composes typed <code>Flow</code>s that run in explicit time. Each Flow owns local state, wakes on its own clock, consumes one synchronized input record, and can be stepped locally before it runs on a backend.</p>
+
 ## Quick Start
 
 Run the source-checkout demo first. It proves the runtime graph without camera permission, GUI windows, Rerun, or robot hardware.
@@ -43,7 +45,7 @@ pixi run demo-webcam-detection-mock
   </div>
 </details>
 
-After `retriever-core==0.0.1` resolves from PyPI, the library install path becomes:
+Library install target:
 
 ```bash
 python -m pip install retriever-core
@@ -52,10 +54,11 @@ python -m pip install retriever-core
 ## Why Retriever For Robotics
 
 <div class="check-list">
-  <p><strong>No single global loop.</strong> Each Flow can run on its own clock, so cameras, policies, planners, monitors, and controllers do not need to pretend they share one timestep.</p>
-  <p><strong>Explicit data handoff.</strong> Each edge declares how upstream event history becomes the one input consumed by <code>step(...)</code>.</p>
-  <p><strong>Debuggable before deployment.</strong> Render the graph, step locally, use stdout/Rerun, record inputs, and replay the same run.</p>
-  <p><strong>Ordinary Python logic.</strong> User code stays in typed classes with synchronous <code>step(...)</code>; runtime timing lives around the graph.</p>
+  <p><strong>Compositional Flow contracts.</strong> Perception, memory, planning, skills, monitors, and controllers stay as reusable typed modules instead of callback glue.</p>
+  <p><strong>Explicit multi-rate time.</strong> Cameras, model calls, skills, and controllers do not need to pretend they share one global timestep.</p>
+  <p><strong>Deterministic input handoff.</strong> Each edge declares how upstream event history becomes the one input record consumed by <code>step(...)</code>.</p>
+  <p><strong>Debuggable before deployment.</strong> Render the graph, step locally, use stdout/Rerun, record consumed inputs, and replay the same run.</p>
+  <p><strong>Backend mapping when ready.</strong> Keep the graph semantics stable while moving from in-process stepping to multiprocessing or Dora-backed execution.</p>
 </div>
 
 <figure class="figure-card">
@@ -65,12 +68,12 @@ python -m pip install retriever-core
 
 ## How Retriever Compares
 
-| Pattern | Good at | Retriever adds |
-| --- | --- | --- |
-| ROS callbacks | Device integration and message transport. | Typed graph boundaries, explicit sampling, local stepping, and replayable handoff. |
-| One Python loop | Simple demos and scripts. | Multi-rate modules without a fake global timestep. |
-| Actor/DAG systems | Distributed asynchronous execution. | Closed-loop cyclic graphs with clocks, sync policies, and robot-friendly debugging. |
-| Notebook prototypes | Fast iteration. | A path from cells to inspected, recorded, reusable runtime graphs. |
+| Pattern | Typed boundary | Time and rates | Debug path | Replay story | Best fit |
+| --- | --- | --- | --- | --- | --- |
+| Raw Python loop | Ad hoc objects. | Sleeps, timers, and blocking calls live in user code. | Easy until threads, callbacks, or variable-latency models enter. | Manual logs. | Tiny single-rate demos. |
+| ROS / ROS 2 callbacks | Message schemas. | Timers and callback arrival order are mostly implicit at composition boundaries. | Strong device tooling, but hard to ask which synchronized snapshot a callback consumed. | Bags capture messages; extra logic is needed to recover exact decision inputs. | Device integration and transport. |
+| Dora graph | Operator/dataflow contracts. | Asynchronous graph execution with backend scheduling. | Good backend-level execution surface. | Depends on graph/runtime logging policy. | High-throughput distributed dataflow. |
+| Retriever | Typed <code>Flow</code> I/O contracts. | Per-Flow clocks and per-edge sync policies. | Render the graph, call <code>Pipeline.step(...)</code>, use stdout/Rerun. | Record and replay consumed input snapshots. | Closed-loop robot agents. |
 
 ## Guides
 

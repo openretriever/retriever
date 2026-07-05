@@ -4,34 +4,18 @@ description: Run the first visual Retriever demo.
 ---
 Start here if you want to see Retriever do something immediately. The first run is deterministic and hardware-free; the second run uses a real webcam and Rerun when available.
 
-This is a source-checkout demo target. The PyPI distribution target is `retriever-core`; examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
-
-<div class="command-grid">
-  <div class="command-card"><strong>1. Mock camera -> color detector -> stdout</strong><span>Reliable first smoke for laptops, headless machines, CI, and AI agents.</span><code>pixi run demo-webcam-detection-mock</code></div>
-  <div class="command-card"><strong>2. Webcam -> color detector -> Rerun/stdout</strong><span>Show a red or blue object to the camera. If Rerun cannot open, the demo falls back to stdout.</span><code>pixi run demo-webcam-detection</code></div>
-</div>
-
-## Step 0: Install the Source Environment
+Run one copy-paste path first:
 
 ```bash
 git clone https://github.com/openretriever/retriever.git
 cd retriever
 pixi install
-```
-
-If you only need the library API after release, install the package:
-
-```bash
-python -m pip install retriever-core
-```
-
-<div class="notebook-takeaway"><strong>Success criterion:</strong> after install, the mock command below should run without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the typical output and compare it later.</div>
-
-## Step 1: Run the Deterministic Smoke
-
-```bash
 pixi run demo-webcam-detection-mock
 ```
+
+This is a source-checkout demo target. The package install target is `retriever-core`, but examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
+
+<div class="notebook-takeaway"><strong>Success criterion:</strong> the mock command runs without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the typical output and compare it later.</div>
 
 Typical output:
 

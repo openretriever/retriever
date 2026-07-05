@@ -1,9 +1,9 @@
 ---
 title: Install
-description: Choose the source-checkout path for demos today, or the minimal runtime package after release.
+description: Choose the source-checkout path for demos, or the minimal runtime package for runtime-only use.
 ---
 
-Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. Use the package path only after `retriever-core==0.0.1` is available from PyPI.
+Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. The runtime package target is `retriever-core`; keep the source checkout for examples and optional tutorial assets.
 
 ## One-Minute Source Path
 
@@ -27,7 +27,7 @@ Expected result: a deterministic mock camera graph runs without camera permissio
 | Track | Use it when | Command |
 | --- | --- | --- |
 | Source checkout | You want demos, examples, graph rendering, Rerun, replay artifacts, or tests. | `pixi install` then `pixi run demo-webcam-detection-mock` |
-| Minimal package | You only need the runtime API after release. | `python -m pip install retriever-core` |
+| Minimal package | You only need the runtime API. | `python -m pip install retriever-core` |
 
 The public runtime distribution name is `retriever-core`; the Python import package is `retriever`:
 

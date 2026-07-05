@@ -28,6 +28,7 @@ export default defineConfig({
         {
           label: 'Core Concepts',
           items: [
+            { label: 'Why Retriever', slug: 'concepts/why-retriever' },
             { label: 'Flow', slug: 'concepts/flow' },
             { label: 'Time and Sync', slug: 'concepts/time-and-sync' },
             { label: 'Runtime', slug: 'concepts/runtime' },

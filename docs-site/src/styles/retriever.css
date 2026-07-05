@@ -54,6 +54,24 @@
   font-size: clamp(1.05rem, 2vw, 1.3rem);
 }
 
+.mental-model {
+  margin: -1.1rem 0 2rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, var(--sl-color-gray-5));
+  border-left: 4px solid var(--sl-color-accent);
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-low) 52%, transparent), transparent);
+  color: var(--sl-color-gray-2);
+}
+
+.mental-model strong {
+  color: var(--sl-color-white);
+}
+
+:root[data-theme='light'] .mental-model strong {
+  color: #13211f;
+}
+
 .action-grid,
 .card-grid,
 .command-grid {
