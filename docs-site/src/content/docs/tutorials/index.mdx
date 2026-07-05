@@ -1,14 +1,62 @@
 ---
 title: Tutorial Path
+description: A smooth builder route from first visual demo to reusable robot examples.
 ---
-The docs are organized as a builder path rather than a reference dump. Start with something visual, then learn the few concepts needed to scale that graph.
+
+Start here after install. The tutorial path is intentionally small: run one visual graph, compare expected output, learn the few concepts needed to scale it, then move to debugging, Hub reuse, or Golden robot examples.
+
+<div class="route-hero">
+  <div>
+    <p class="eyebrow">Recommended route</p>
+    <h2>Run one graph first. Add concepts only when they explain the next problem.</h2>
+    <p>The fastest path is not a reference tour. It is a sequence of working artifacts: stdout events, a rendered graph, local stepping, Rerun visualization, and replayable logs.</p>
+  </div>
+  <div class="route-command">
+    <span>First command</span>
+    <pre><code>pixi run demo-webcam-detection-mock</code></pre>
+    <p>No camera, no GUI, no robot backend. You should see deterministic red/blue detections in stdout.</p>
+  </div>
+</div>
+
+## The Builder Route
+
+<div class="route-grid">
+  <a class="route-step" href="/getting-started/visual-quickstart/"><span>01</span><strong>Visual quickstart</strong><p>Run mock color detection, then the webcam/Rerun path when local hardware is available.</p><code>pixi run demo-webcam-detection-mock</code></a>
+  <a class="route-step" href="/tutorials/examples-and-results/"><span>02</span><strong>Examples and results</strong><p>Follow notebook-style cells and compare expected output before reading implementation details.</p><code>pixi run demo-basic-flow</code></a>
+  <a class="route-step" href="/concepts/flow/"><span>03</span><strong>Flow fundamentals</strong><p>Understand the Python class boundary: typed IO, local state, and a synchronous <code>step(...)</code>.</p></a>
+  <a class="route-step" href="/concepts/time-and-sync/"><span>04</span><strong>Time and sync</strong><p>Add per-Flow clocks and per-edge sampling rules once multiple rates enter the graph.</p></a>
+  <a class="route-step" href="/tutorials/debug-and-visualize/"><span>05</span><strong>Debug and visualize</strong><p>Render the graph, step locally, use Rerun/stdout, record, and replay the same run.</p><code>pixi run docs-tutorial-perception-html</code></a>
+  <a class="route-step" href="/ecosystem/"><span>06</span><strong>Hub and reuse</strong><p>Package stable Flows and type packs through the Hub boundary instead of depending on source-tree layout.</p></a>
+</div>
+
+## What You Should Have After Each Stage
+
+| Stage | Artifact | You are ready to continue when... |
+| --- | --- | --- |
+| Visual quickstart | stdout detection events, optional Rerun viewer | The mock command is deterministic and the live command either opens Rerun or falls back to stdout. |
+| Examples and results | expected outputs for Flow, stepping, perception, graph render, replay | You can tell whether a command succeeded without reading source first. |
+| Flow fundamentals | a typed Python mental model | You know where user logic lives: inside `Flow.step(...)`. |
+| Time and sync | clocks and edge sampling vocabulary | You can explain which Flow wakes itself and how upstream history is sampled. |
+| Debug and visualize | `artifacts/tutorial_perception.html`, step traces, replay logs | You can inspect the graph before blaming backend scheduling. |
+| Hub and reuse | manifest/registry boundary | You know what is reusable as a pack and what is still source-only. |
+
+## Choose By Question
 
 <div class="card-grid">
-  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>A. Visual quickstart</strong><span>Run webcam color detection with Rerun.</span></a>
-  <a class="info-card" href="/tutorials/examples-and-results/"><strong>B. Examples and results</strong><span>Walk through runnable cells and compare expected output.</span></a>
-  <a class="info-card" href="/concepts/flow/"><strong>C. Flow fundamentals</strong><span>Write typed Python modules with `@io` and `step(...)`.</span></a>
-  <a class="info-card" href="/concepts/time-and-sync/"><strong>D. Time and sync</strong><span>Add per-Flow clocks and per-edge sampling rules.</span></a>
-  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>E. Debug and visualize</strong><span>Inspect graphs, step locally, record, and replay.</span></a>
-  <a class="info-card" href="/ecosystem/"><strong>F. Hub and reuse</strong><span>Share reusable Flows and composable pipelines.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>G. Golden examples</strong><span>Run applied robot examples and type packs after the core path works.</span></a>
+  <a class="info-card" href="/getting-started/install/"><strong>I just want to install</strong><span>Use source checkout plus Pixi for demos today; use <code>retriever-core</code> after the package release is live.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>I need to debug a graph</strong><span>Render graph structure first, then step locally, then record/replay timing-sensitive input.</span></a>
+  <a class="info-card" href="/concepts/runtime/"><strong>I need the runtime model</strong><span>Learn how validation, stepping, replay, and backend execution relate.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/"><strong>I want robot-facing examples</strong><span>Continue to GoldenRetriever after the core visual path works.</span></a>
 </div>
+
+## AI-Agent Route
+
+Agents should avoid broad repo spelunking on the first pass. Use this deterministic route instead:
+
+```bash
+pixi run demo-webcam-detection-mock
+pixi run docs-tutorial-perception-html
+pixi run demo-stepper
+```
+
+Then read [`llms.txt`](/llms.txt), inspect the rendered HTML graph, and only move to live webcam, Rerun, simulator, or Golden examples after the mock path works.
