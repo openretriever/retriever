@@ -105,10 +105,18 @@ GoldenRetriever is the current reference catalog. Keep Golden as the reference l
 
 ## Public-surface check
 
-Before a release announcement, maintainers should run the external launch verifier from the core repo root:
+Before a release announcement, maintainers should run the default external launch verifier from the core repo root:
 
 ```bash
 pixi run public-surface-check
 ```
 
-This check verifies that public routes, package indexes, and repository metadata match the release docs. Treat failures as release blockers or document them in maintainer-only release notes before publishing.
+The default check verifies repository metadata, required live website URLs, and required DNS. After custom-domain cutover and package publication, add the optional stricter gates:
+
+```bash
+pixi run public-surface-check --custom-domains
+pixi run public-surface-check --package-index
+pixi run public-surface-check --all
+```
+
+Treat failures as release blockers or record them in maintainer-only launch notes before publishing.

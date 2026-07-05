@@ -30,7 +30,7 @@ Use this when reviewing exactly what the docs Pages project will receive:
 python3 -m http.server 8781 --bind 127.0.0.1 --directory docs-site/dist
 ```
 
-Open `http://127.0.0.1:8781/`, `http://127.0.0.1:8781/ecosystem/`, and `http://127.0.0.1:8781/ecosystem/golden-packs/`. Ecosystem pages should describe Golden as an applied reference/catalog plus manifest-declared type pack, not as a second runtime.
+Open `http://127.0.0.1:8781/`, `http://127.0.0.1:8781/ecosystem/`, and `http://127.0.0.1:8781/ecosystem/golden-packs/`. Ecosystem pages should describe Golden as the reference layer plus manifest-declared type pack, not as a second runtime.
 
 ## Post-Deploy Docs Content Check
 
@@ -53,7 +53,7 @@ done
 curl -fsSL https://openretriever-docs.pages.dev/robots.txt | grep -q 'sitemap-index.xml'
 ```
 
-Run `pixi run public-surface-check` after repository visibility, DNS, and PyPI/TestPyPI are ready; this content check is a narrower docs-deploy smoke.
+Run `pixi run public-surface-check` after repository visibility and the required Pages/landing surfaces are live. Add `--custom-domains` after DNS cutover and `--package-index` after TestPyPI/PyPI publication; this content check is a narrower docs-deploy smoke.
 
 ## GitHub Settings
 
@@ -88,13 +88,21 @@ Do not publish a package named `retriever`; that name belongs to another project
 
 ## Final External Surface Check
 
-After repository visibility, DNS cutover, and TestPyPI/PyPI publication are complete, run:
+After repository visibility and the required hosted surfaces are live, run:
 
 ```bash
 pixi run public-surface-check
 ```
 
-This network-facing check verifies that repository metadata, live website URLs, DNS resolution, and `retriever-core` package indexes match the launch docs. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
+After DNS cutover and package publication, run the stricter optional gates:
+
+```bash
+pixi run public-surface-check --custom-domains
+pixi run public-surface-check --package-index
+pixi run public-surface-check --all
+```
+
+The default network-facing check verifies repository metadata, required live website URLs, and required DNS. The optional flags add custom-domain and `retriever-core` package-index verification. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
 
 ## Companion Repositories
 

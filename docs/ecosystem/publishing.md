@@ -98,12 +98,20 @@ Minimum expectations before publishing:
 - at least one semver tag exists
 - the declared module imports cleanly
 
-## Final public-surface check
+## Public-surface check
 
-After repository visibility, DNS cutover, and TestPyPI/PyPI publication are complete, run the external launch verifier from the core repo root:
+Before a release announcement, maintainers should run the default external launch verifier from the core repo root:
 
 ```bash
 pixi run public-surface-check
 ```
 
-This check verifies that repository metadata, live website URLs, DNS resolution, and `retriever-core` package indexes match the launch docs. Treat failures as release blockers or record them in maintainer-only launch notes before publishing.
+The default check verifies repository metadata, required live website URLs, and required DNS. After custom-domain cutover and package publication, add the optional stricter gates:
+
+```bash
+pixi run public-surface-check --custom-domains
+pixi run public-surface-check --package-index
+pixi run public-surface-check --all
+```
+
+Treat failures as release blockers or record them in maintainer-only launch notes before publishing.

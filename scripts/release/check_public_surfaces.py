@@ -25,21 +25,27 @@ class CheckResult:
     detail: str
 
 
-HTTP_TARGETS = (
+REQUIRED_HTTP_TARGETS = (
     ("landing", "https://openretriever.org/"),
     ("landing-www", "https://www.openretriever.org/"),
     ("core-docs-pages", "https://openretriever-docs.pages.dev/"),
-    ("core-docs-custom", "https://docs.openretriever.org/"),
     ("golden-pages", "https://retriever-space.pages.dev/"),
+)
+
+OPTIONAL_CUSTOM_HTTP_TARGETS = (
+    ("core-docs-custom", "https://docs.openretriever.org/"),
     ("golden-root-custom", "https://retriever.space/"),
     ("golden-space-custom", "https://golden.retriever.space/"),
     ("golden-systems-custom", "https://golden.retriever.systems/"),
     ("golden-build-custom", "https://golden.retriever.build/"),
 )
 
-DNS_TARGETS = (
+REQUIRED_DNS_TARGETS = (
     "openretriever.org",
     "www.openretriever.org",
+)
+
+OPTIONAL_CUSTOM_DNS_TARGETS = (
     "docs.openretriever.org",
     "retriever.space",
     "golden.retriever.space",
@@ -63,8 +69,8 @@ def _open(url: str, timeout: float) -> tuple[int, str]:
         return resp.status, resp.geturl()
 
 
-def check_http(timeout: float) -> Iterable[CheckResult]:
-    for name, url in HTTP_TARGETS:
+def check_http(timeout: float, targets: Iterable[tuple[str, str]]) -> Iterable[CheckResult]:
+    for name, url in targets:
         try:
             status, final_url = _open(url, timeout)
             ok = 200 <= status < 400
@@ -73,8 +79,8 @@ def check_http(timeout: float) -> Iterable[CheckResult]:
             yield CheckResult(f"http:{name}", False, f"{type(exc).__name__}: {exc}")
 
 
-def check_dns() -> Iterable[CheckResult]:
-    for host in DNS_TARGETS:
+def check_dns(targets: Iterable[str]) -> Iterable[CheckResult]:
+    for host in targets:
         try:
             answers = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
             ips = sorted({item[4][0] for item in answers})
@@ -130,13 +136,38 @@ def main() -> int:
     )
     parser.add_argument("--expected-default-branch", default="main")
     parser.add_argument("--timeout", type=float, default=10.0)
+    parser.add_argument(
+        "--custom-domains",
+        action="store_true",
+        help="Also require custom docs/Golden domains. Use after DNS cutover.",
+    )
+    parser.add_argument(
+        "--package-index",
+        action="store_true",
+        help="Also require retriever-core to resolve on TestPyPI/PyPI. Use after package publication.",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Require required surfaces, custom domains, and package indexes.",
+    )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     args = parser.parse_args()
 
+    include_custom_domains = args.custom_domains or args.all
+    include_package_index = args.package_index or args.all
+
+    http_targets = list(REQUIRED_HTTP_TARGETS)
+    dns_targets = list(REQUIRED_DNS_TARGETS)
+    if include_custom_domains:
+        http_targets.extend(OPTIONAL_CUSTOM_HTTP_TARGETS)
+        dns_targets.extend(OPTIONAL_CUSTOM_DNS_TARGETS)
+
     results = [check_github_default_branch(args.github_remote, args.expected_default_branch)]
-    results.extend(check_http(args.timeout))
-    results.extend(check_dns())
-    results.extend(check_pypi(args.timeout))
+    results.extend(check_http(args.timeout, http_targets))
+    results.extend(check_dns(dns_targets))
+    if include_package_index:
+        results.extend(check_pypi(args.timeout))
 
     if args.json:
         print(json.dumps([result.__dict__ for result in results], indent=2))
