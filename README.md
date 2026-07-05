@@ -133,11 +133,13 @@ The hosted Starlight docs are the public docs front door:
 - [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/) — mock smoke, webcam color detection, and Rerun.
 - [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/) — commands paired with expected output.
 - [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/) — graph render, stepper, record, and replay.
+- [Golden Reference Layer](https://retriever-space.pages.dev/) — maintained robot-facing examples, type packs, simulator/visualization lanes, and Hub-pack candidates after the core quickstart.
+- [Golden Example Catalog](https://retriever-space.pages.dev/examples/) — applied perception, memory, language, composition, simulation, visualization, and typing guides.
 
 The repository `docs/` tree remains available for deeper source-local reference
 and release maintenance.
 
-Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever reference examples and pack candidates live at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever).
+Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever source lives at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever), but most users should start from the hosted [Golden docs](https://retriever-space.pages.dev/).
 
 ## Runtime Surfaces
 
