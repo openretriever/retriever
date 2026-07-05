@@ -22,8 +22,10 @@ pixi install
 If you only need the library API after release, install the package:
 
 ```bash
-pip install retriever-core
+python -m pip install retriever-core
 ```
+
+<div class="notebook-takeaway"><strong>Success criterion:</strong> after install, the mock command below should run without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the typical output and compare it later.</div>
 
 ## Step 1: Run the Deterministic Smoke
 
@@ -49,10 +51,10 @@ Tip: This run is using mock frames. Use --camera-mode real to require a live web
 
 What happened:
 
-- a camera Flow emitted synthetic image frames,
-- a detector Flow sampled the latest frame when triggered,
-- a display Flow printed detections,
-- the graph ran without camera permission, GUI windows, or backend setup.
+- `CameraSource` emitted synthetic image frames,
+- `ColorDetector` sampled the latest frame when its trigger fired,
+- `DisplayFlow` printed detections,
+- the graph ran without camera permission, GUI windows, Rerun, or backend setup.
 
 ## Step 2: Switch to Webcam and Rerun
 
@@ -71,6 +73,16 @@ This uses the same tutorial pipeline with real camera input. On a machine with a
 | Live webcam with multiprocessing and forced Rerun | `pixi run demo-webcam-detection-mp-rerun` |
 | Mock frames with forced Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
 | Portable recording for replay/debugging | `pixi run demo-webcam-record` |
+
+## Step 4: If It Looks Wrong
+
+| Symptom | Try first | Why |
+| --- | --- | --- |
+| No camera or camera permission issue | `pixi run demo-webcam-detection-mock` | Removes hardware from the question. |
+| Rerun viewer does not open | Use `--visualize stdout` | Keeps runtime verification separate from viewer setup. |
+| Graph wiring is unclear | `pixi run docs-tutorial-perception-html` | Shows Flow nodes, ports, clocks, and sync policies. |
+| Detection output is surprising | `pixi run demo-perception-stepper` | Steps the detector with deterministic mock frames. |
+| Behavior changes between runs | `pixi run demo-webcam-record` then replay | Saves the input stream as a reusable artifact. |
 
 ## Why This Is First
 
