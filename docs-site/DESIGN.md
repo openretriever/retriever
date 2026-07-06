@@ -65,3 +65,54 @@ shadows or gradients. `retriever.css` is the only home for site-wide tokens.
 
 Companion: GoldenRetriever's `docs-site/DESIGN.md` (warm variant, same
 discipline). This pairing — clean core, warm Golden — is intentional.
+
+## Paper-grounded content (source of truth for claims)
+
+Docs claims must match the RSS 2026 paper. Use this canonical language:
+
+- **Thesis:** Retriever is a *programming model and runtime for closed-loop,
+  asynchronous robot agents*, grounded in time-aware stream semantics.
+- **Agent =** a graph of stateful *causal stream functions* (`Flow`s) on explicit
+  *run clocks*; edges carry *synchronization policies* for deterministic input
+  consumption.
+- **Headline property — functional determinism:** the same timestamped input
+  trace yields the same output trace regardless of runtime scheduling; this is
+  what makes replay and verification well-defined. Prefer this over vague
+  "reproducible".
+- **The problem (two mismatches), stated precisely:**
+  1. *Physics vs. compute* — big models (VLMs) have variable latency; control
+     needs deadlines. Blocking stalls; non-blocking gives stale decisions.
+  2. *Determinism vs. asynchrony* — middleware (ROS) uses implicit callback
+     ordering → schedule-dependent nondeterminism, hard to replay/verify.
+- **Positioning:** PyTorch assumes discrete steps; ROS assumes loose message
+  passing. Retriever is a behavior-level graph with explicit clocks/sync and
+  functional determinism, for closed-loop agent composition. It *coexists with*
+  (does not replace) transport middleware, compiles to an IR, and targets
+  backends (e.g. Dora).
+- **Do not overclaim.** Evidence = one real-robot case study + controlled
+  studies of runtime overhead and deterministic replay. No broad superiority.
+
+**Canonical hero example** (keep pages consistent with this shape):
+
+```python
+head_cam = CameraSource(id=0)    @ Rate(hz=30)
+belief   = BeliefMemoryFlow()    @ Trigger("inspection_done")
+planner  = VLMPlanFlow("gemini") @ Trigger("replan")
+vla      = VLASkillFlow("pi05")  @ Rate(hz=2)
+robot    = ControllerFlow(id=0)  @ Rate(hz=200)
+
+pipe = Pipeline("closed-loop agent")
+with pipe:
+    head_cam.then(belief, sync=Latest()).then(planner, sync=Latest()).then(vla, sync=Latest())
+
+pipe.step(dt=0.1)          # debug in-process
+pipe.run(backend="dora")   # deploy async
+```
+
+**Per-page alignment targets:**
+- `index` — thesis + functional determinism in the lede.
+- `concepts/why-retriever` — the two mismatches + determinism + comparison table.
+- `concepts/flow` — Flow = stateful causal stream function; `step()` is the unit.
+- `concepts/time-and-sync` — clocks = *when*; sync policies = *which input record*.
+- `concepts/runtime` — graph → IR → backends; local step preserves deploy timing; record/replay.
+- `tutorials/*` — command-first, expected output, the hero example's shape.
