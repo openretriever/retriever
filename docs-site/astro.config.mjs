@@ -24,6 +24,8 @@ addEventListener('DOMContentLoaded', () => {
   const h1 = document.querySelector('h1#_top') || document.querySelector('.sl-markdown-content h1') || document.querySelector('main h1');
   if (!h1 || document.querySelector('.md-actions')) return;
   const path = location.pathname.replace(/^\\/+|\\/+$/g, '') || 'index';
+  // Skip the splash/landing page — no source .md to view/copy there.
+  if (path === 'index' || document.querySelector('.hero')) return;
   const raw = '/raw/' + path + '.md';
   const wrap = document.createElement('div');
   wrap.className = 'md-actions';
