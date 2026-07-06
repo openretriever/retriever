@@ -72,3 +72,7 @@ references/
 
 # Cloudflare local deploy state
 /.wrangler/
+
+# Interactive graph artifacts embedded in the docs site are tracked
+!docs-site/public/artifacts/
+!docs-site/public/artifacts/**
