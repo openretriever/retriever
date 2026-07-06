@@ -56,6 +56,23 @@ Open the generated HTML and check these before debugging backend behavior:
 
 If this graph is wrong, fix wiring first. Do not start by debugging multiprocessing, Rerun, or camera setup.
 
+<div class="html-artifact-card">
+  <div class="artifact-card-header">
+    <div>
+      <p class="eyebrow">Live graph</p>
+      <strong>The perception pipeline, rendered by the runtime</strong>
+      <p>The same interactive HTML <code>pipe.visualize()</code> writes — pan, zoom, and inspect nodes, ports, clocks, and sync policies inline.</p>
+    </div>
+    <a href="/artifacts/tutorial_perception.html" target="_blank" rel="noreferrer">Open full graph</a>
+  </div>
+  <iframe
+    class="artifact-frame"
+    src="/artifacts/tutorial_perception.html"
+    title="Retriever perception pipeline graph"
+    loading="lazy"
+  ></iframe>
+</div>
+
 ## 2. Step Locally
 
 ```bash
@@ -89,6 +106,36 @@ For perception-specific stepping without camera permissions or GUI windows:
 ```bash
 pixi run demo-perception-stepper
 ```
+
+### Set a breakpoint in `Flow.step()` (VS Code)
+
+This is the payoff of stepping: `pipe.step()` runs the whole graph **in your
+own Python process**, so a normal debugger stops inside your Flow with full
+locals. No backend process to attach to, no remote debugger.
+
+1. Put a breakpoint in the Flow you want to inspect:
+
+   ```python
+   class ColorDetector(Flow[CameraOut, Detections]):
+       def step(self, input: CameraOut) -> Detections:
+           hsv = to_hsv(input.image)        # ← breakpoint here
+           hits = self.match(hsv)
+           return Detections(objects=hits)
+   ```
+
+2. Run the stepper script under the debugger — VS Code **Run and Debug** (F5)
+   on the file that calls `pipe.step()`, or attach to `pixi run demo-stepper`.
+
+3. Execution stops on that line. In the **Variables** pane you can read
+   `input._signals` (which ports fired), `self` state carried between steps,
+   and every intermediate — then step through `match()` line by line.
+
+Because the stepper is single-process and synchronous, `pipe.step(dt=0.1)`
+advances one tick and returns; the debugger treats your Flow like any other
+function. Get the logic right here first — then run it on `multiprocessing` or
+`dora`, where each Flow is a separate process and breakpoints are far harder.
+
+<!-- To add: a short screen recording of the debugger stopped inside step(). -->
 
 ## 3. Visualize Perception Safely
 

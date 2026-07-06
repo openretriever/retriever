@@ -359,3 +359,36 @@
 :root[data-theme='light'] .check-list strong {
   color: #111827;
 }
+
+/* Embedded HTML artifact (interactive graph) — clean, restrained. */
+.html-artifact-card {
+  margin: 1.75rem 0 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 14px;
+  background: var(--sl-color-bg-nav);
+  overflow: hidden;
+}
+.artifact-card-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.15rem 0.9rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+}
+.artifact-card-header .eyebrow { margin: 0 0 0.35rem; }
+.artifact-card-header strong { display: block; color: var(--sl-color-white); font-size: 1.02rem; }
+.artifact-card-header p:last-child { margin: 0.3rem 0 0; color: var(--sl-color-gray-2); }
+.artifact-card-header a {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 40%, var(--sl-color-gray-5));
+  border-radius: 999px;
+  color: var(--sl-color-text-accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.artifact-card-header a:hover { border-color: var(--sl-color-accent); background: color-mix(in srgb, var(--sl-color-accent-low) 60%, transparent); }
+.artifact-frame { display: block; width: 100%; min-height: min(64vh, 620px); border: 0; background: #fff; }
+@media (max-width: 720px) { .artifact-card-header { flex-direction: column; } .artifact-frame { min-height: 460px; } }
