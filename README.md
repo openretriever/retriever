@@ -1,20 +1,23 @@
 <div align="center">
-  <a href="https://openretriever.org/"><img width="400px" height="auto" src="assets/retriever-illustrative.jpeg" alt="Retriever logo"></a>
-</div>
 
-# 🐕 <span style="background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold; font-size: 1.1em;">**Retriever**</span>
+<a href="https://openretriever.org/"><img width="200" height="auto" src="assets/retriever-illustrative.jpeg" alt="Retriever logo"></a>
 
-## **Building Modular Closed-loop Robot Agents with Explicit Time**
+<br>
 
-<div align="center">
+<a href="https://openretriever.org/"><img src="assets/retriever-wordmark.svg" alt="Retriever" width="300"></a>
+
+### Building Modular Closed-loop Robot Agents with Explicit Time
 
 <p>A Python runtime for building closed-loop robot systems whose perception, reasoning, and control can run together with explicit time, typed handoff, graph inspection, and replay.</p>
 
 <p>
   <a href="https://openretriever-docs.pages.dev/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
   <a href="https://openretriever.org/"><img alt="Website" src="https://img.shields.io/badge/Website-openretriever.org-111827?style=for-the-badge"></a>
-  <a href="https://github.com/openretriever/retriever"><img alt="Runtime source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
-  <a href="https://retriever-space.pages.dev/examples/"><img alt="Golden examples" src="https://img.shields.io/badge/Golden-Examples-f97316?style=for-the-badge"></a>
+  <a href="https://github.com/openretriever/retriever"><img alt="Source" src="https://img.shields.io/badge/Source-GitHub-111827?style=for-the-badge&logo=github"></a>
+  <br>
+  <a href="https://retriever-space.pages.dev/examples/"><img alt="GoldenRetriever examples" src="https://img.shields.io/badge/GoldenRetriever-examples-f97316?style=for-the-badge"></a>
+  <a href="https://retriever-space.pages.dev/hub/"><img alt="Hub packs" src="https://img.shields.io/badge/Hub-packs-9333ea?style=for-the-badge"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-3b82f6?style=for-the-badge"></a>
 </p>
 
 </div>
