@@ -5,7 +5,10 @@ import { getCollection } from 'astro:content';
 // Powers the "Copy / View as Markdown" control (agent- and LLM-friendly).
 export const getStaticPaths: GetStaticPaths = async () => {
   const docs = await getCollection('docs');
-  return docs.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  return docs.map((entry) => {
+    const slug = String(entry.id ?? '').replace(/^\/+|\/+$/g, '') || 'index';
+    return { params: { slug }, props: { entry } };
+  });
 };
 
 export const GET: APIRoute = ({ props }) => {
