@@ -48,6 +48,18 @@
   text-transform: uppercase;
 }
 
+/* Rainbow wordmark — the Retriever brand gradient (mirrors the README hero title).
+   Renders in the header on every page; the logo image stays untouched. */
+.site-title {
+  background: linear-gradient(45deg, #e96443 0%, #904e95 25%, #e65c00 50%, #f9d423 75%, #fc00ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+}
+.site-title img { -webkit-text-fill-color: initial; }
+
 .lede {
   max-width: 760px;
   color: var(--sl-color-gray-2);
