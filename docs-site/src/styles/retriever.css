@@ -437,3 +437,33 @@
   .artifact-card-header { flex-direction: column; }
   .artifact-frame { min-height: 440px; }
 }
+
+/* ── "Copy / View as Markdown" control (agent-friendly, quiet) ── */
+.md-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.15rem 0 1.4rem;
+}
+.md-actions .md-copy,
+.md-actions .md-view {
+  font: 600 0.78rem/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.02em;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-gray-1);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .12s ease, color .12s ease, background .12s ease;
+}
+.md-actions .md-copy:hover,
+.md-actions .md-view:hover {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 55%, var(--sl-color-gray-5));
+  color: var(--sl-color-text-accent);
+}
+.md-actions .md-copy.is-done {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 60%, transparent);
+  color: var(--sl-color-text-accent);
+}

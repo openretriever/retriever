@@ -16,6 +16,35 @@ export default defineConfig({
       favicon: '/assets/logo.svg',
       customCss: ['./src/styles/retriever.css'],
       plugins: [starlightThemeNova()],
+      head: [
+        {
+          tag: 'script',
+          content: `
+addEventListener('DOMContentLoaded', () => {
+  const h1 = document.querySelector('h1#_top') || document.querySelector('.sl-markdown-content h1') || document.querySelector('main h1');
+  if (!h1 || document.querySelector('.md-actions')) return;
+  const path = location.pathname.replace(/^\\/+|\\/+$/g, '') || 'index';
+  const raw = '/raw/' + path + '.md';
+  const wrap = document.createElement('div');
+  wrap.className = 'md-actions';
+  const copy = document.createElement('button');
+  copy.type = 'button'; copy.className = 'md-copy'; copy.textContent = 'Copy as Markdown';
+  const view = document.createElement('a');
+  view.className = 'md-view'; view.href = raw; view.target = '_blank'; view.rel = 'noreferrer'; view.textContent = 'View as Markdown';
+  wrap.append(copy, view);
+  h1.insertAdjacentElement('afterend', wrap);
+  copy.addEventListener('click', async () => {
+    try {
+      const md = await (await fetch(raw)).text();
+      await navigator.clipboard.writeText(md);
+      const prev = copy.textContent; copy.textContent = 'Copied'; copy.classList.add('is-done');
+      setTimeout(() => { copy.textContent = prev; copy.classList.remove('is-done'); }, 1400);
+    } catch { window.open(raw, '_blank'); }
+  });
+});
+`,
+        },
+      ],
       sidebar: [
         {
           label: 'Start',
