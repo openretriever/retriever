@@ -3,65 +3,118 @@ title: Install
 description: Use the source checkout for demos, then use the runtime package track when you only need the API.
 ---
 
-Start with the source checkout if you want working demos, graph rendering, Rerun visualization, and repository tests. Keep the first path source-first; the runtime-only package track is for users who only need the API.
+Install from source. Retriever ships a repository of runnable demos, graph-rendering scripts, Rerun visualization, and tests — none of which are useful without the source tree. Pixi builds the environment and runs every demo through one command.
 
-## One-Minute Source Path
+**What you'll get:** a Python 3.11 environment with `retriever-core` installed editable, plus a working first demo you can run in under a minute — no camera, no GUI, no robot hardware.
+
+## 1. Clone and build the environment
 
 ```bash
 git clone https://github.com/openretriever/retriever.git
 cd retriever
 pixi install
+```
+
+`pixi install` reads `pixi.toml`, resolves conda and PyPI dependencies, pins Python to 3.11, and installs `retriever-core` as an editable package. Every demo is a Pixi task, so you never manage a virtualenv by hand.
+
+## 2. Run the first demo
+
+```bash
 pixi run demo-webcam-detection-mock
 ```
 
-Expected result: a deterministic mock camera graph runs without camera permission, GUI windows, Rerun, or robot hardware. You should see stdout lines for a camera Flow, color detector Flow, display Flow, and detected red/blue objects.
+This is the deterministic first smoke: synthetic camera frames, stdout output, no camera permission, no GUI, no backend to configure. Stripped of INFO log lines, it prints:
+
+```text
+============================================================
+Perception Demo - Live or Mock Camera to Detection
+
+Building perception pipeline:
+  Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
+
+✓ Graph created: 3 nodes, 5 edges
+
+Running for 0.1 seconds...
+Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
+------------------------------------------------------------
+  Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+------------------------------------------------------------
+```
+
+A camera Flow emitted a frame, a color detector sampled it, and a display Flow printed the detections. The graph ran to a fixed duration and stopped. If you see this, the runtime works.
 
 <div class="card-grid">
-  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>First visual run</strong><span>Run mock color detection, then switch to webcam and Rerun/stdout.</span></a>
-  <a class="info-card" href="/tutorials/examples-and-results/"><strong>Expected outputs</strong><span>Compare command output before reading implementation details.</span></a>
-  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug path</strong><span>Render the graph, step locally, record, and replay.</span></a>
+  <a class="info-card" href="/getting-started/visual-quickstart/"><strong>Visual quickstart</strong><span>The fastest first success, then the live webcam and Rerun path.</span></a>
+  <a class="info-card" href="/tutorials/examples-and-results/"><strong>Examples and results</strong><span>Several demos, each paired with its real output.</span></a>
+  <a class="info-card" href="/tutorials/"><strong>Tutorial path</strong><span>The ordered route from first demo to robot examples.</span></a>
 </div>
 
-## Install Tracks
+## The runtime API
 
-| Track | Use it when | Command |
-| --- | --- | --- |
-| Source checkout | You want demos, examples, graph rendering, Rerun, replay artifacts, or tests. | `pixi install` then `pixi run demo-webcam-detection-mock` |
-| Runtime-only package | You only need the API, not demos or repository tutorial assets. | `python -m pip install retriever-core` |
-
-The runtime distribution name is `retriever-core`; the Python import package is `retriever`:
+The distribution name is `retriever-core`; the import package is `retriever`:
 
 ```python
 from retriever.flow import Flow, Pipeline, Rate, io
 ```
 
-Repository demos such as `demo-webcam-detection`, graph-rendering helpers, Rerun examples, and tutorial assets require the source checkout unless their optional dependencies are installed separately.
+A Flow is a stateful stream function. You declare typed IO with `@io`, subclass `Flow`, and override `step()`:
 
-## First Command Choice
+```python
+@io
+class NumberInput:
+    value: int
+
+@io
+class NumberOutput:
+    result: int
+
+class DoubleFlow(Flow[NumberInput, NumberOutput]):
+    def step(self, input: NumberInput):
+        return NumberOutput(result=input.value * 2)
+```
+
+You compose Flows into a `Pipeline`, giving each edge an explicit `sync=` policy, then debug in-process before deploying async:
+
+```python
+pipe.step(dt=0.1)              # advance the graph in-process, deterministically
+pipe.run(backend="dora")       # deploy async; also "multiprocessing" or "in-process"
+```
+
+The same timestamped input trace yields the same output trace regardless of backend scheduling. That functional determinism is what makes local stepping, record, and replay well-defined.
+
+## Runtime-only package (target track)
+
+Once `retriever-core` is published to PyPI, users who only need the API — not the demos, graph renderer, or tutorial assets — will install it directly:
+
+```bash
+python -m pip install retriever-core   # planned; not yet on PyPI
+```
+
+Until then, the source checkout above is the supported path, and it is the only path that includes the repository demos, `docs-tutorial-*` graph renderers, Rerun examples, and tests.
+
+## First-command reference
 
 | Situation | Command |
 | --- | --- |
 | Reliable first smoke, no camera, no GUI | `pixi run demo-webcam-detection-mock` |
-| Live webcam plus Rerun/stdout fallback | `pixi run demo-webcam-detection` |
+| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
 | Understand the smallest Flow first | `pixi run demo-basic-flow` |
-| Render an HTML graph artifact | `pixi run docs-tutorial-perception-html` |
-| Record and replay a portable perception run | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` |
+| Render an interactive HTML graph | `pixi run docs-tutorial-perception-html` |
+| Record a run, then replay it | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` |
 
-`demo-webcam-detection-mock` is the deterministic first smoke: synthetic frames, stdout output, no camera permission, no GUI requirement. `demo-webcam-detection` is the live visual step: real webcam, `--visualize auto`, Rerun when available and stdout otherwise.
+`demo-webcam-detection` needs a real webcam and uses `--visualize auto` (Rerun when available, stdout otherwise). If you have no camera or a permission prompt blocks it, stay on `-mock`.
 
-## If Something Fails
+## If something fails
 
-| Symptom | Use this path first | Why |
+| Symptom | Try first | Why |
 | --- | --- | --- |
-| Clone or install is blocked | Stay on the hosted docs and retry the source checkout later. | The hosted docs remain useful even when a launch surface is temporarily unavailable. |
-| Camera permission or hardware fails | `pixi run demo-webcam-detection-mock` | Proves the runtime graph without local devices. |
-| Rerun does not open | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize stdout --duration 10` | Separates viewer setup from runtime correctness. |
+| Camera permission or hardware fails | `pixi run demo-webcam-detection-mock` | Proves the runtime graph with no local devices. |
+| Rerun viewer does not open | `pixi run demo-perception-stepper` | Separates viewer setup from runtime correctness. |
 | A graph behaves unexpectedly | `pixi run docs-tutorial-perception-html` | Inspect nodes, ports, clocks, and sync policies first. |
-| A result is hard to reproduce | `pixi run demo-webcam-record` then replay. | Turns timing-sensitive inputs into a stable artifact. |
+| A result is hard to reproduce | `pixi run demo-webcam-record` then replay | Turns timing-sensitive input into a stable artifact. |
 
-## Next Steps
+## Next steps
 
-- Run the [Visual Quickstart](/getting-started/visual-quickstart/).
-- Compare outputs in [Examples and Results](/tutorials/examples-and-results/).
-- Use [Debug and Visualize](/tutorials/debug-and-visualize/) for graph rendering, stepping, recording, and replay.
-- Move to [Retriever Hub](/ecosystem/) and [the first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) after the core runtime path is clear.
+- [Visual Quickstart](/getting-started/visual-quickstart/) — see the first run, then switch to live webcam and Rerun.
+- [Examples and Results](/tutorials/examples-and-results/) — compare real command output before reading source.
+- [Debug and Visualize](/tutorials/debug-and-visualize/) — render the graph, step locally, record, and replay.

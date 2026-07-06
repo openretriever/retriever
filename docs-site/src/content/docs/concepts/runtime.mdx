@@ -1,31 +1,169 @@
 ---
 title: Runtime
 ---
-A Retriever Pipeline is the executable graph. It validates Flow wiring, exposes an intermediate representation, renders visual graph artifacts, supports local stepping, and can run through different backends.
+
+**What you'll learn:** the path from an authored graph to a running one — `validate()` compiles a `Pipeline` to an IR, `step()` runs it in-process with the deploy-time timing preserved, and `run(backend=...)` executes the same IR on multiprocessing or Dora. The same timestamped input trace yields the same output trace at every stop.
+
+A `Pipeline` is the executable graph. You wire Flows with clocks and sync policies, then move through four surfaces on the same object:
 
 ```python
-from retriever.flow import Latest, Pipeline, Rate
+from retriever.flow import Latest, Pipeline, Rate, Trigger
 
 with Pipeline("agent") as pipe:
-    camera = CameraFlow() @ Rate(hz=30)
-    detector = ColorDetector() @ Rate(hz=10)
+    camera   = CameraSource(id=0) @ Rate(hz=30)
+    detector = ColorDetector()    @ Trigger("image")
     pipe.connect(camera, detector, sync=Latest())
 
-pipe.validate()
-pipe.visualize("artifacts/agent.html")
-pipe.run(duration=10)
+ir = pipe.validate()                 # 1. graph -> validated IR
+pipe.visualize("artifacts/agent.html")  # 2. render structure, clocks, ports, edges
+pipe.step(dt=0.1)                    # 3. run in-process (breakpoints work)
+pipe.run(backend="dora")            # 4. deploy asynchronously
 ```
 
-## Runtime surfaces
+## `validate()` compiles the graph to an IR
 
-<div class="card-grid">
-  <div class="info-card"><strong>Validate</strong><span>Catch missing ports, invalid sync policies, type-shape mistakes, and invalid loaded IR before launch.</span></div>
-  <div class="info-card"><strong>Visualize</strong><span>Render graph structure, clocks, ports, and edge policies as an HTML artifact.</span></div>
-  <div class="info-card"><strong>Step</strong><span>Debug in one process with normal Python breakpoints before launching backends.</span></div>
-  <div class="info-card"><strong>Replay</strong><span>Turn robot runs into repeatable evidence instead of relying on timing luck.</span></div>
-</div>
+`validate()` checks the wiring — ports exist, source and destination types match, clocks and adapters are well-formed — and returns an **IR**: the validated logic graph, with every node's clock and every edge's adapter made explicit. The IR is the artifact backends execute, visualizers render, and Hub modules load.
 
+```python
+import json
+from retriever.flow import Flow, io, Rate, Trigger, Pipeline, Latest
+from retriever.ir.core import IR
+from retriever.error import IRError
 
-## Loaded IR validation
+@io
+class Data:
+    value: int
 
-Retriever validates both authored pipelines and IR loaded from JSON. `IR.from_json(...)` rejects duplicate node ids, dangling edge or adjacency references, and unknown ports before a backend tries to execute the graph. That keeps graph artifacts useful for debugging, replay, and Hub-loaded modules without deferring structural errors to a later runtime process.
+class SourceFlow(Flow[None, Data]):
+    def step(self, _): return Data(value=42)
+
+class ProcessFlow(Flow[Data, Data]):
+    def step(self, input: Data): return Data(value=input.value * 2)
+
+class SinkFlow(Flow[Data, None]):
+    def step(self, input: Data): return None
+
+with Pipeline("pipeline") as pipe:
+    source  = SourceFlow()  @ Rate(hz=10)
+    process = ProcessFlow() @ Trigger("value")
+    sink    = SinkFlow()    @ Trigger("value")
+    source.then(process, sync=Latest())
+    process.then(sink, sync=Latest())
+
+ir = pipe.validate()
+print("version:", ir.version, "| nodes:", ir.topology.node_count, "| edges:", ir.topology.edge_count)
+for n in ir.nodes:
+    print(f"  node {n.id:12s} clock={list(n.config['clock'])[0]:8s} outputs={n.outputs}")
+for e in ir.edges:
+    print(f"  edge {e.source.node} -> {e.destination.node}  adapter={e.adapter}")
+
+# The IR serializes to JSON and reloads...
+reloaded = IR.from_json(ir.to_json())
+print("round-trip ok:", reloaded.topology.node_count == ir.topology.node_count)
+
+# ...and loaded IR is validated too. Tamper with it: duplicate a node id.
+bad = json.loads(ir.to_json())
+bad["nodes"].append(dict(bad["nodes"][0]))
+try:
+    IR.from_json(json.dumps(bad))
+except IRError as exc:
+    print("rejected tampered IR:", exc)
+```
+
+```text
+version: 1.0.0 | nodes: 3 | edges: 2
+  node SourceFlow   clock=Rate     outputs={'value': 'int'}
+  node ProcessFlow  clock=Trigger  outputs={'value': 'int'}
+  node SinkFlow     clock=Trigger  outputs={}
+  edge SourceFlow -> ProcessFlow  adapter={'Latest': {'buffer_size': 1}}
+  edge ProcessFlow -> SinkFlow  adapter={'Latest': {'buffer_size': 1}}
+round-trip ok: True
+rejected tampered IR: [IR_VAL_INVALID]: Duplicate node id 'SourceFlow'
+```
+
+```bash
+pixi run demo-ir-validation   # prints the full IR as JSON
+```
+
+`IR.from_json(...)` re-runs structural validation on load, so IR read from disk or a Hub module is not trusted blindly — duplicate node ids, dangling edge or adjacency references, and unknown ports fail with a named node or edge *before* a backend tries to execute the graph.
+
+## Local `step()` preserves deploy timing — and is deterministic
+
+`pipe.step(dt=...)` advances the graph in one process: it samples each edge, calls each `Flow.step()`, and publishes outputs, honoring the same clocks and sync policies a backend would. Breakpoints inside `step()` fire in your own process, and the trace is reproducible.
+
+```python
+from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
+
+@io
+class Value:
+    n: int
+
+class Ramp(Flow[None, Value]):
+    def reset(self): self.k = 0
+    def step(self, _): self.k += 1; return Value(n=self.k)
+
+class Double(Flow[Value, Value]):
+    def step(self, v): return Value(n=v.n * 2)
+
+class Recorder(Flow[Value, None]):
+    def reset(self): self.trace = []
+    def step(self, v): self.trace.append(v.n); return None
+
+def run_once():
+    recorder = Recorder()
+    with Pipeline("determinism") as pipe:
+        ramp = Ramp()   @ Rate(hz=10)
+        dbl  = Double() @ Trigger("n")
+        rec  = recorder @ Trigger("n")
+        pipe.connect(ramp, dbl, sync=Latest())
+        pipe.connect(dbl, rec, sync=Latest())
+    for _ in range(5):
+        pipe.step(dt=0.1)
+    pipe.close_stepper()
+    return recorder.trace
+
+print("run A:", run_once())
+print("run B:", run_once())
+```
+
+```text
+run A: [2, 4, 6, 8, 10]
+run B: [2, 4, 6, 8, 10]
+```
+
+Two independent runs produce the identical trace. This is Retriever's headline property — **functional determinism**: the same timestamped input trace yields the same output trace regardless of scheduling. It is why in-process debugging is trustworthy and why replay and verification are well-defined.
+
+```bash
+pixi run demo-stepper   # the shipped in-process stepper, with a --fail-at breakpoint
+```
+
+## Same IR, different backend
+
+The graph you debug in-process is the graph you deploy. Only the `backend` changes:
+
+| Backend | What it does | Use for |
+| --- | --- | --- |
+| `in-process` | One process; `step()` / `run()` in your interpreter. | Debugging, tests, deterministic replay. |
+| `multiprocessing` | One OS process per Flow, local channels. | Local async execution and parallelism. |
+| `dora` | Compiles to a Dora dataflow across processes/machines. | Deployment; distributed, high-rate control. |
+
+```python
+pipe.run(backend="multiprocessing", duration=3)
+pipe.run(backend="dora", duration=3)
+```
+
+```bash
+pixi run demo-multirate         # multiprocessing
+pixi run demo-webcam-detection-dora   # dora
+```
+
+## Record and replay turn runs into evidence
+
+Because a run is a timestamped input trace, recording it and replaying it reconstructs the exact outputs — a live incident and its replay produce the same diagnosis, not merely a similar one.
+
+```bash
+pixi run demo-record-replay     # record a run, then replay it step-for-step
+pixi run demo-incident-replay   # replay a captured incident and diff the diagnosis
+```
+
+Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay drives the same graph from the recording instead of live inputs. See [Debug and Visualize](/tutorials/debug-and-visualize/) for the full record/replay walkthrough.

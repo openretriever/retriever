@@ -1,21 +1,25 @@
 ---
 title: Publishing
 ---
-Publish Hub packs or modules only after the boundary is stable, import-safe, and explicit about what it exports.
+To make a repository hub-loadable you add one manifest section, keep the module import-safe, and register the repo in the Hub index. After that, `hub.use("your-org/your-module:Export")` resolves for anyone.
 
 ## Package layout
+
+The loader supports a flat package or the standard `src/` layout:
 
 ```text
 lidar-slam/
 ├── pyproject.toml
-└── lidar_slam/
+└── lidar_slam/          # or src/lidar_slam/
     ├── flow.py
     ├── pipeline.py
     ├── transforms.py
     └── types.py
 ```
 
-## `pyproject.toml`
+## The `[tool.retriever.module]` manifest
+
+This section is the entire contract the loader reads. `module` names the importable package; the `exports` table maps each public name to a `dotted.module:Attribute` path inside that package.
 
 ```toml
 [project]
@@ -28,20 +32,26 @@ module = "lidar_slam"
 min_retriever_version = "1.0.0"
 
 [tool.retriever.module.exports]
-LidarSlamFlow = "lidar_slam.flow:LidarSlamFlow"
-SE3Pose = "lidar_slam.types:SE3Pose"
-pose_to_matrix = "lidar_slam.transforms:pose_to_matrix"
-BuildSlamPipeline = "lidar_slam.pipeline:build_slam_pipeline"
+LidarSlamFlow         = "lidar_slam.flow:LidarSlamFlow"
+SE3Pose               = "lidar_slam.types:SE3Pose"
+pose_to_matrix        = "lidar_slam.transforms:pose_to_matrix"
+BuildSlamPipeline     = "lidar_slam.pipeline:build_slam_pipeline"
 BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
 ```
 
-The Hub loader reads `[tool.retriever.module]`, imports the declared package surface, and returns the requested export.
+Rules the loader enforces:
 
-## Import-safe modules
+- Every export value needs the `:` separator, and the module part must live inside the declared package (`lidar_slam.*`).
+- `min_retriever_version` is checked against the consumer's installed `retriever` version.
+- `[project].dependencies` are checked as PEP 508 requirements — a missing or version-incompatible dependency raises before your code imports.
 
-Module top-level code must be import-safe. Do not open cameras, sockets, SDK clients, GPU contexts, or files during import.
+An export can be anything importable: a Flow class, a `@io` envelope type, a plain domain type, a transform, or a pipeline builder ([Composable Pipelines](/ecosystem/composable-pipelines/) covers the builder exports).
 
-Preferred Flow resource pattern:
+## Keep modules import-safe
+
+The loader imports your package top-to-bottom. Top-level code must not open cameras, sockets, SDK clients, GPU contexts, or files — importing the module must be free of side effects.
+
+Push all resource acquisition into the Flow lifecycle:
 
 ```python
 from retriever.flow import Flow, io
@@ -52,32 +62,24 @@ class Frame:
 
 class Camera(Flow[None, Frame]):
     def __init__(self, *, device_id: str):
-        self.device_id = device_id
+        self.device_id = device_id      # lightweight config only
         self._camera = None
 
     def init_config(self) -> dict:
-        return {"device_id": self.device_id}
+        return {"device_id": self.device_id}  # serializable reconstruction data
 
     def reset(self) -> None:
-        self._camera = open_camera(self.device_id)
+        self._camera = open_camera(self.device_id)  # runtime-local resource
 ```
 
-Guidelines:
+- module top level: import-safe only
+- `__init__`: store lightweight, serializable configuration
+- `init_config()`: return serializable reconstruction data
+- `reset()` / `__lazy_init__()`: acquire runtime-local resources
 
-- module top-level: import-safe only
-- `__init__`: store lightweight, serializable configuration only
-- `init_config()`: return serializable reconstruction data only
-- `__lazy_init__()` / `reset()`: acquire runtime-local resources
+## Register in the Hub index
 
-## Hub index
-
-Retriever Hub uses an index repository with entries under:
-
-```text
-modules/{org}/{name}.toml
-```
-
-Example:
+The index is a git repo of TOML entries keyed by `modules/{org}/{name}.toml`. Each entry points at your repo:
 
 ```toml
 [module]
@@ -88,20 +90,18 @@ license = "MIT"
 tags = ["lidar", "slam", "mapping"]
 ```
 
-Minimum expectations before publishing:
+The default index is `openretriever/hub-index`; consumers can point elsewhere with `RETRIEVER_HUB_INDEX_URL`.
 
-- the repository is reachable
-- `pyproject.toml` contains a valid `[tool.retriever.module]` section
-- at least one semver tag exists
-- the declared module imports cleanly
+## Before you publish
+
+- the repo is reachable (add `RETRIEVER_HUB_TOKEN` support in mind for private repos)
+- `pyproject.toml` has a valid `[tool.retriever.module]` section
+- at least one semver tag exists — version resolution reads git tags like `v1.0.0`, and a repo with none raises `HUB_NO_SEMVER_TAGS`
+- the declared package imports cleanly with no side effects
 - the smallest public example runs without private credentials or local-only paths
+
+Run your module's smallest smoke command and confirm every documented import and output still matches before announcing. Keep hosting credentials, DNS, and org-specific release notes out of the public package docs.
 
 ## Release boundary
 
-GoldenRetriever is the current applied catalog. Keep Golden as the examples layer with source examples plus a manifest-declared Hub payload pack; do not publish a second runtime package just to share applied robot payloads.
-
-## Public-surface check
-
-Before announcing a pack, run the repository's smallest public smoke command and verify that every documented link, import, and example output still matches the published docs. Keep hosting credentials, DNS operations, and organization-specific release cutover notes outside public package docs.
-
-For the core Retriever release repository, maintainers can use `pixi run public-surface-check` as the local guardrail; pack authors should provide an equivalent small check for their own module.
+GoldenRetriever is the current applied catalog and the reference for this shape: source examples plus a manifest-declared Hub payload pack. Do not ship a second runtime package to share applied robot payloads — publish them as a Hub module instead. See [Golden Examples](/ecosystem/golden-packs/).

@@ -2,79 +2,94 @@
 title: "Visual Quickstart: Color Detection"
 description: Run the first visual Retriever demo.
 ---
-Start here if you want to see Retriever do something immediately. The first run is deterministic and hardware-free; the second run uses a real webcam and Rerun when available.
 
-Run one copy-paste path first:
+The fastest way to see Retriever work. One command builds a three-Flow perception graph — camera, color detector, display — and runs it on synthetic frames. No camera, no GUI, no Rerun, no robot backend.
+
+**What you'll get:** a deterministic detection run in stdout, and a graph you can then step, render, record, and replay.
+
+## Step 1: Run it
+
+From a source checkout with the environment built ([install](/getting-started/install/)):
 
 ```bash
-git clone https://github.com/openretriever/retriever.git
-cd retriever
-pixi install
 pixi run demo-webcam-detection-mock
 ```
 
-This is a source-checkout demo target. The runtime-only distribution is `retriever-core`, but examples, Rerun, graph rendering, and tutorial assets live in the repository environment.
-
-<div class="notebook-takeaway"><strong>Success criterion:</strong> the mock command runs without a camera, GUI, Rerun viewer, or robot backend. If you only want to read first, jump to the representative output and compare it later.</div>
-
-Representative output (abridged):
+Stripped of INFO log lines, the output is:
 
 ```text
+============================================================
 Perception Demo - Live or Mock Camera to Detection
 
 Building perception pipeline:
   Camera @ Rate(20Hz) -> ColorDetector @ Trigger -> Display @ Rate
 
-[ok] Graph created: 3 nodes, 5 edges
+✓ Graph created: 3 nodes, 5 edges
 
 Running for 0.1 seconds...
 Tip: This run is using mock frames. Use --camera-mode real to require a live webcam path.
 ------------------------------------------------------------
   Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
+------------------------------------------------------------
+
+============================================================
+Pipeline Summary
+
+Camera Input:
+  • Uses mock test pattern when mock mode is selected or auto fallback triggers
+
+Detection:
+  • Red objects: RGB(255, <100, <100)
+  • Blue objects: RGB(<100, <100, 255)
+
+Tip: Use red or blue paper/objects in front of camera!
+============================================================
 ```
 
-What happened:
+<div class="notebook-takeaway"><strong>Success criterion:</strong> you see <code>✓ Graph created: 3 nodes, 5 edges</code> and at least one <code>Frame N: ... objects</code> line. The mock run is short (0.1s) and deterministic, so the same frame result appears every time.</div>
 
-- `CameraSource` emitted synthetic image frames,
-- `ColorDetector` sampled the latest frame when its trigger fired,
-- `DisplayFlow` printed detections,
-- the graph ran without camera permission, GUI windows, Rerun, or backend setup.
+What just ran:
 
-## Step 2: Switch to Webcam and Rerun
+- `CameraSource @ Rate(20Hz)` emitted a synthetic frame,
+- `ColorDetector @ Trigger` sampled the latest frame when its trigger fired,
+- the display Flow printed the detections,
+- the graph ran to a fixed duration and stopped — no camera permission, GUI window, Rerun viewer, or backend setup.
+
+## Step 2: Switch to a live webcam and Rerun
 
 ```bash
 pixi run demo-webcam-detection
 ```
 
-This uses the same tutorial pipeline with real camera input. On a machine with a working viewer, Rerun shows image frames and detections over time. If Rerun is unavailable, the command still emits stdout events so you can separate runtime correctness from viewer setup.
+Same graph, real camera input. This target uses `--visualize auto`: on a machine with a working viewer, Rerun shows frames and detections over time; otherwise it falls back to stdout so runtime correctness stays separate from viewer setup. It needs a webcam — if you have none, stay on `-mock`.
 
-## Step 3: Pick the Right Variant
+## Step 3: Pick the right variant
 
 | Need | Command |
 | --- | --- |
 | Reliable first smoke, no hardware | `pixi run demo-webcam-detection-mock` |
-| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
-| Live webcam with multiprocessing and forced Rerun | `pixi run demo-webcam-detection-mp-rerun` |
-| Mock frames with forced Rerun | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode mock --visualize rerun --duration 10` |
-| Portable recording for replay/debugging | `pixi run demo-webcam-record` |
+| Live webcam, automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
+| Live webcam, multiprocessing backend, forced Rerun | `pixi run demo-webcam-detection-mp-rerun` |
+| Step the detector deterministically, no camera | `pixi run demo-perception-stepper` |
+| Portable recording for replay | `pixi run demo-webcam-record` |
 
-## Step 4: If It Looks Wrong
+## Step 4: If it looks wrong
 
 | Symptom | Try first | Why |
 | --- | --- | --- |
-| No camera or camera permission issue | `pixi run demo-webcam-detection-mock` | Removes hardware from the question. |
-| Rerun viewer does not open | `pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception --backend in-process --camera-mode real --visualize stdout --duration 10` | Keeps runtime verification separate from viewer setup. |
+| No camera or a permission prompt | `pixi run demo-webcam-detection-mock` | Removes hardware from the question. |
+| Rerun viewer does not open | `pixi run demo-perception-stepper` | Keeps runtime verification separate from viewer setup. |
 | Graph wiring is unclear | `pixi run docs-tutorial-perception-html` | Shows Flow nodes, ports, clocks, and sync policies. |
-| Detection output is surprising | `pixi run demo-perception-stepper` | Steps the detector with deterministic mock frames. |
+| Detection output is surprising | `pixi run demo-perception-stepper` | Steps the detector one frame at a time on deterministic mock frames. |
 | Behavior changes between runs | `pixi run demo-webcam-record` then replay | Saves the input stream as a reusable artifact. |
 
-## Why This Is First
+## Why this demo is first
 
-The color-detection path is small but representative: it has sensor input, typed Flow outputs, asynchronous timing, visualization, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live visual path. After this works, the same graph can be stepped, inspected, recorded, replayed, and moved to another backend.
+The color-detection path is small but complete: sensor input, typed Flow outputs, asynchronous timing, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live path. Because the same input trace produces the same output trace, this exact graph can then be stepped, rendered, recorded, and replayed without changing a line — which is the rest of the tutorial path.
 
 <div class="card-grid">
-  <a class="info-card" href="/tutorials/examples-and-results/"><strong>See more example outputs</strong><span>Notebook-style cells for Flow, stepping, perception, graph render, and replay.</span></a>
-  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug this graph</strong><span>Render the graph, step it locally, record events, and replay them.</span></a>
-  <a class="info-card" href="/concepts/time-and-sync/"><strong>Understand the timing</strong><span>Learn why Retriever uses clocks and per-edge sync policies instead of one global loop.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>Run the first Golden proof</strong><span>Move from the core visual demo to a maintained Hub-loaded robot payload proof, then browse examples.</span></a>
+  <a class="info-card" href="/tutorials/examples-and-results/"><strong>See more example outputs</strong><span>Flow, stepping, perception, graph render, and replay — each with real output.</span></a>
+  <a class="info-card" href="/tutorials/debug-and-visualize/"><strong>Debug this graph</strong><span>Render it, step it, record events, and replay them.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Understand the timing</strong><span>Why Retriever uses clocks and per-edge sync policies instead of one global loop.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>Run the first Golden proof</strong><span>Move from the core demo to a maintained Hub-loaded robot payload.</span></a>
 </div>

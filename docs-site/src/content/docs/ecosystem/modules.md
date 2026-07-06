@@ -1,59 +1,65 @@
 ---
 title: Hub Packs and Modules
 ---
-A Retriever Hub pack or module is a normal Python package with a declared export table. Users load the exported class, function, type, or value directly; they do not import private source paths or depend on an in-repo layout.
-
-## Hub reference format
-
-```text
-{org}/{module-name}[:{attribute}][@{version}]
-```
-
-Examples:
+A Hub module is a normal Python package that adds one thing: a `[tool.retriever.module]` manifest in its `pyproject.toml` declaring an export table. Consumers load a named export straight from the module's git repository — no PyPI wheel, no private source paths, no in-repo layout to reverse-engineer.
 
 ```python
 from retriever import hub
+from retriever.flow import Rate
 
-module = hub.use("your-org/lidar-slam")
-LidarSlamFlow = hub.use("your-org/lidar-slam:LidarSlamFlow")
-BuildSlamPipeline = hub.use("your-org/lidar-slam:BuildSlamPipeline@0.1.0")
+LidarSlam = hub.use("your-org/lidar-slam:LidarSlamFlow")
+slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
 ```
 
-## Loading semantics
+`hub.use("org/name:Export")` returns the exported object itself — a Flow class here, but it can be any declared attribute: a type, a transform, a pipeline builder, a small utility.
 
-- `hub.use("org/name:Export")` returns the actual exported class, function, type, or value, not a wrapper.
-- `hub.use("org/name")` returns a proxy over the declared export table, not the raw Python module.
-- Source-layout packages are supported: a module can keep implementation under `src/` as long as its manifest points to an importable package.
-- Different versions of the same module are isolated by commit-scoped internal namespaces, so `@0.9.0` and `@1.0.0` do not alias each other in one process.
-- Backend/runtime re-import can recover hub-loaded Flow classes from the local hub cache when a fresh process reconstructs nodes from IR.
+## Reference format
 
-> Current boundary: a serialized IR from hub-loaded code is not a self-contained artifact across machines by itself. The target machine must have the corresponding hub cache content available, or load the module through Hub first.
+```text
+{org}/{name}[:{attribute}][@{version}]
+```
 
-## What a module can export
+```python
+proxy         = hub.use("your-org/lidar-slam")                 # whole module
+LidarSlamFlow = hub.use("your-org/lidar-slam:LidarSlamFlow")   # one export
+pinned        = hub.use("your-org/lidar-slam:LidarSlamFlow@0.1.0")  # pinned tag
+```
 
-Hub exports are normal Python attributes. A module may export:
+## What `hub.use` does
 
-- Flow classes or Flow factories
-- live pipeline factories
-- pipeline-flow factories for in-process hierarchical composition
-- shared `@io` envelope types for Flow boundaries
-- shared domain or representation types
-- representation transforms and serialization helpers
+Given a ref, the loader:
 
-Types are a first-class use case. Runtime-wide standards live in `retriever.types.*`; domain-specific applied types can live in Hub packs so they evolve with the examples or product integration that owns them.
+1. Parses `{org}/{name}[:attribute][@version]`.
+2. Looks up `{org}/{name}` in the Hub index to get the module's GitHub repo URL.
+3. Resolves the version to a commit — the newest semver tag, or the tag matching `@version`.
+4. Downloads that commit's tarball and caches it at `~/.retriever/hub/cache/{org}/{name}/{sha}`. A cached commit is reused; `hub.use(ref, refresh=True)` forces a re-fetch.
+5. Reads `[tool.retriever.module]` from the repo's `pyproject.toml`, then enforces `min_retriever_version` and the project's declared dependencies against your environment.
+6. Imports the declared package under a private, commit-scoped namespace — without touching `sys.path` — and returns the requested export.
 
-Recommended public split:
+Two environment variables tune this: `RETRIEVER_HUB_INDEX_URL` points at a different index, and `RETRIEVER_HUB_TOKEN` is sent as a bearer token so private repos resolve.
 
-| File | Purpose |
-| --- | --- |
-| `types.py` | Shared envelope types and domain types. Use `@io` only for Flow-boundary envelopes. |
-| `transforms.py` | Pure representation conversion helpers. |
-| `flow.py` | Flow classes and lightweight factories. |
-| `pipeline.py` | Graph assembly and composition helpers. |
+## Return contract
 
-## Applied reference catalog
+- `hub.use("org/name:Export")` returns the actual class, function, type, or value — not a wrapper.
+- `hub.use("org/name")` returns a `ModuleProxy` over the declared export table. Attribute access reads the table, `dir(proxy)` lists the exports, and its repr names them:
 
-GoldenRetriever is the reference catalog for this release. Its current manifest-declared Hub surface exports robot-facing payloads such as `WorldState`, `BeliefGraph`, `Skill`, `Plan`, and `Trajectory` through the same ref shape:
+```python
+mod = hub.use("your-org/lidar-slam")
+mod            # <HubModule 'your-org/lidar-slam' exports=['LidarSlamFlow', 'SE3Pose', ...]>
+mod.LidarSlamFlow(resolution=0.05) @ Rate(hz=10)
+```
+
+A proxy exposes only declared exports. Reaching for an undeclared name raises `AttributeError` listing what is available, so the manifest — not the file tree — is the public surface.
+
+## Version isolation
+
+Each commit loads into its own namespace, so `@0.9.0` and `@1.0.0` of the same module coexist in one process without aliasing each other. Pin a ref per app when the schema matters.
+
+> **IR boundary:** a serialized IR from hub-loaded code is not self-contained across machines. The target machine must already have the matching hub cache, or load the module through `hub.use(...)` first, before it can reconstruct those nodes from IR.
+
+## Applied reference: GoldenRetriever
+
+GoldenRetriever is the maintained example of a real Hub type pack. Its manifest exports robot-facing payloads through the same ref shape:
 
 ```python
 from retriever import hub
@@ -61,4 +67,4 @@ from retriever import hub
 WorldState = hub.use("openretriever/golden-retriever:WorldState")
 ```
 
-Open [Golden Examples](/ecosystem/golden-packs/) for the local manifest proof path, then continue to the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) before browsing applied perception, memory, language, simulator, visualization, and robot payload lanes.
+Until the public index and repo are live, that networked call returns `HUB_MODULE_NOT_FOUND`. See [Golden Examples](/ecosystem/golden-packs/) for the source-checkout proof that loads the identical manifest through the real loader today, and [Publishing](/ecosystem/publishing/) to make your own repo hub-loadable.

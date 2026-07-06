@@ -1,88 +1,112 @@
 ---
 title: Composable Pipelines
 ---
-Reusable robot subsystems often need two surfaces: a live graph that downstream users can inspect and modify, and a single-stage wrapper that fits inside a larger graph.
+A pipeline is built by a function, so it distributes like one. A Hub module can export a builder that returns a live `Pipeline` (for downstream code to inspect and rewire) or a builder wrapped as a single Flow stage (to drop inside a larger graph). Both surfaces come from the same registered pipeline.
 
-## 1. Export a live pipeline factory
+Prove the mechanics locally first — this runs in the core checkout:
 
-Use this when downstream code wants to inspect, replace, or rewire internal Flows.
-
-```python
-from retriever import hub
-from retriever.flow import Rate
-
-pipe = hub.use("your-org/lidar-slam:BuildSlamPipeline")()
-frontend = pipe.select_flow("frontend")
-pipe.replace(frontend, ReplayFrontend() @ Rate(hz=10))
+```bash
+pixi run demo-composable-pipelines
 ```
 
-## 2. Export a Pipeline-as-Flow factory
+```text
+=== Extend Declared Pipeline ===
+internal flows: ['counter', 'policy']
+policy output after replacement: ProcOut(value=104)
 
-Use this when downstream code wants to treat the whole sub-pipeline as one reusable stage.
+=== Compose Pipeline As Flow ===
+[outer] value=5 aux=99
+wrapped stage output: Tutorial_Composable_CounterOutput(aux=99, value=5)
+```
+
+## 1. Register a pipeline with an explicit surface
+
+`register_pipeline` records a builder under a name and declares the external ports downstream code is allowed to touch. Name internal flows with `.named(...)` so those ports have stable ids.
+
+```python
+import retriever
+from retriever.flow import Flow, Pipeline, Rate, Latest
+
+@retriever.register_pipeline(
+    "tutorial.composable_counter",
+    surface_policy="explicit",
+    input_ports=["policy.bias"],
+    output_ports=["counter.aux", "policy.value"],
+    overwrite=True,
+)
+def build_composable_counter() -> Pipeline:
+    pipe = Pipeline("tutorial.composable_counter")
+    with pipe:
+        counter = (Counter() @ Rate(hz=10)).named("counter")
+        policy = (BiasPolicy() @ Rate(hz=10)).named("policy")
+        counter.then(policy, map={"value": "value"}, sync=Latest())
+    return pipe
+```
+
+## 2. Extend a live pipeline
+
+Call the builder to get a real `Pipeline`, then reach in by id and rewire it. This is what a downstream consumer does after `hub.use`-ing the builder:
+
+```python
+pipe = build_composable_counter()
+print("internal flows:", sorted(pipe.get_flow_dict().keys()))   # ['counter', 'policy']
+
+pipe.replace(pipe.select_flow("policy"), OverridePolicy(delta=100) @ Rate(hz=10))
+pipe.inject_input("policy", "bias", 3, timestamp=0.0)
+result = pipe.step(now=0.0)
+print(result.outputs["policy"])   # ProcOut(value=104)
+pipe.close_stepper()
+```
+
+## 3. Reuse the whole pipeline as one Flow stage
+
+`build_pipeline_flow(name)` returns the registered pipeline as a Flow you can name, rate, and wire like any other node:
+
+```python
+outer = Pipeline("outer.composable_counter")
+with outer:
+    bias_source = BiasSource(bias=4) @ Rate(hz=10)
+    stage = (retriever.build_pipeline_flow("tutorial.composable_counter") @ Rate(hz=10)).named("stage")
+    sink = DecisionPrinter() @ Rate(hz=10)
+    bias_source.then(stage, sync=Latest())
+    stage.then(sink, sync=Latest())
+
+result = outer.step(now=0.0)   # -> [outer] value=5 aux=99
+```
+
+Nesting boundary:
+
+- `stage.step(...)` in isolation is local and in-process.
+- The wrapper is not itself the backend artifact.
+- Inside a larger `Pipeline`, Retriever lowers the wrapper into flat IR, so the multiprocessing and dora backends execute the inner nodes directly.
+
+## Distributing a builder over Hub
+
+Export the two builders from your module's manifest ([Publishing](/ecosystem/publishing/)):
+
+```toml
+[tool.retriever.module.exports]
+BuildSlamPipeline     = "lidar_slam.pipeline:build_slam_pipeline"
+BuildSlamPipelineFlow = "lidar_slam.pipeline:build_slam_pipeline_flow"
+```
+
+Then a consumer reuses either surface exactly as above — a live graph to extend, or a stage to nest:
 
 ```python
 from retriever import hub
 from retriever.flow import Latest, Rate
 
+pipe = hub.use("your-org/lidar-slam:BuildSlamPipeline")()
+pipe.replace(pipe.select_flow("frontend"), ReplayFrontend() @ Rate(hz=10))
+
 slam_stage = hub.use("your-org/lidar-slam:BuildSlamPipelineFlow")() @ Rate(hz=10)
 camera.then(slam_stage, sync=Latest())
 ```
 
-Important boundary:
-
-- direct `flow.step(...)` on this wrapper is local/in-process
-- the wrapper itself is not the backend artifact
-- when nested inside a larger `Pipeline`, Retriever lowers the wrapper into flat IR so multiprocessing and dora backends can execute the inner nodes normally
-
 ## Surface grammar
 
-Explicit pipeline surfaces use:
+Explicit ports are `flow_id.port`. Selectors resolve by exact flow/node id first, then fall back to a unique flow class name. Prefer stable `.named(...)` handles and declare them in `input_ports=[...]` / `output_ports=[...]` so the public surface does not drift with internal renames.
 
-```text
-flow_id.port
-```
+`Pipeline.visualize(...)` and `IR.visualize(...)` keep wrapped-pipeline context: a nested `build_pipeline_flow(...)` stage renders as a grouped box around its lowered inner flows, with the pipeline name and surfaced port bindings. Render the tutorial graph with `pixi run docs-tutorial-composable-html`.
 
-Resolution order:
-
-1. exact flow id / node id
-2. unique flow class name fallback
-
-Recommendation:
-
-- name internal handles with `.named("camera")`, `.named("frontend")`, `.named("planner")`
-- use stable ids in `input_ports=[...]` and `output_ports=[...]`
-
-```python
-source = (Camera() @ Rate(hz=10)).named("camera")
-frontend = (Frontend() @ Rate(hz=10)).named("frontend")
-```
-
-Then publish the stable surface:
-
-```python
-@register_pipeline(
-    "slam_stage",
-    surface_policy="explicit",
-    input_ports=["frontend.threshold"],
-    output_ports=["camera.image", "frontend.pose"],
-)
-def build_slam_stage():
-    ...
-```
-
-## Visualizing composition
-
-`Pipeline.visualize(...)` and `IR.visualize(...)` preserve wrapped-pipeline context for `build_pipeline_flow(...)` stages. In HTML and ASCII views, a nested pipeline stage is rendered as a grouped pipeline box around the lowered inner Flows, with:
-
-- the wrapped pipeline name
-- surfaced input/output bindings
-- a summary of the internal Flow graph
-
-Run the core composition demo:
-
-```bash
-pixi run demo-composable-pipelines
-pixi run docs-tutorial-composable-html
-```
-
-For applied composition examples, start with the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/), then browse GoldenRetriever examples.
+For applied composition, see the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) and the GoldenRetriever examples.

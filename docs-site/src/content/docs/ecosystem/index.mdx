@@ -1,39 +1,59 @@
 ---
 title: Retriever Hub
 ---
-Retriever has three public surfaces that should stay separate but connected:
-
-- **Core runtime**: Flow, Clock, Sync Policy, Pipeline, stepping, replay, IR, standard types, and backend execution.
-- **Retriever Hub**: the reusable pack/module protocol and index for Flows, payload packs, transforms, and composed pipelines.
-- **GoldenRetriever**: the maintained reference examples layer: maintained robot-facing examples, payload packs, simulator/visualization lanes, and current manifest-declared Hub pack surface.
-
-Use Hub when a robot system needs to reuse a stable boundary rather than copy code: a Flow class, a pipeline builder, a typed payload pack, or a representation transform.
-
-<div class="card-grid">
-  <a class="info-card" href="/ecosystem/modules/"><strong>Hub packs and modules</strong><span>What a reusable Retriever export surface declares and how users import it with <code>hub.use(...)</code>.</span></a>
-  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Golden packs</strong><span>Concrete proof that GoldenRetriever exposes robot-facing payloads through the Hub manifest.</span></a>
-  <a class="info-card" href="/ecosystem/composable-pipelines/"><strong>Composable pipelines</strong><span>Reuse a whole pipeline as an inspectable graph or one Flow stage.</span></a>
-  <a class="info-card" href="/ecosystem/publishing/"><strong>Publishing</strong><span>Package conventions, import-safe modules, and index metadata.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>First Golden proof</strong><span>Robot-facing Hub-pack proof, followed by perception, memory, simulation, visualization, and robosuite examples.</span></a>
-</div>
-
-## The short version
+Retriever Hub loads reusable robot code straight from a git repository. Point it at `org/name:Export` and it returns the object — a Flow class, a type, a transform, or a pipeline builder — with no PyPI wheel and no copied source.
 
 ```python
 from retriever import hub
-from retriever.flow import Pipeline, Rate, Latest
+from retriever.flow import Rate
 
 LidarSlam = hub.use("your-org/lidar-slam:LidarSlamFlow")
 slam = LidarSlam(resolution=0.05) @ Rate(hz=10)
 ```
 
-`hub.use("org/name:Export")` returns the exported object itself. That object can be a Flow class, pipeline builder, type, transform, or small utility. Hub is therefore the same distribution path for reusable robot modules, reference example packs, and robot-facing payload packs.
+A module declares its public surface in one `[tool.retriever.module]` manifest section. `hub.use` reads that manifest from the repo, imports the declared package under a private commit-scoped namespace, and hands back the requested export.
+
+## Three surfaces, one distribution path
+
+- **Core runtime** — `retriever-core`, imported as `retriever`. Flow, Clock, sync policies, Pipeline, stepping, replay, IR, backends, and the standard types in `retriever.types.*`.
+- **Retriever Hub** — the manifest + index protocol that turns any repo into a loadable pack of Flows, types, transforms, and composed pipelines.
+- **GoldenRetriever** — the maintained applied catalog: a real Hub type pack of robot-facing payloads, plus example lanes. Built on the runtime, not a second one.
+
+Reach for Hub when a robot system should reuse a stable boundary instead of copying code.
+
+## One runnable proof
+
+The primitive Hub distributes is a composable pipeline. Prove it composes locally — this runs in the core checkout:
+
+```bash
+pixi run demo-composable-pipelines
+```
+
+```text
+=== Extend Declared Pipeline ===
+internal flows: ['counter', 'policy']
+policy output after replacement: ProcOut(value=104)
+
+=== Compose Pipeline As Flow ===
+[outer] value=5 aux=99
+wrapped stage output: Tutorial_Composable_CounterOutput(aux=99, value=5)
+```
+
+A registered pipeline can be extended in place or dropped in as a single Flow stage — the two surfaces a Hub module exports. For the loader running against a real manifest, see the [Golden pack proof](/ecosystem/golden-packs/).
+
+<div class="card-grid">
+  <a class="info-card" href="/ecosystem/modules/"><strong>Hub packs and modules</strong><span>How <code>hub.use(...)</code> resolves a ref: index, git tag, cache, and the return contract.</span></a>
+  <a class="info-card" href="/ecosystem/publishing/"><strong>Publishing</strong><span>Make your repo hub-loadable: the real <code>[tool.retriever.module]</code> manifest and import-safety rules.</span></a>
+  <a class="info-card" href="/ecosystem/composable-pipelines/"><strong>Composable pipelines</strong><span>Export a pipeline builder, then reuse it as a live graph or one Flow stage.</span></a>
+  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Golden packs</strong><span>GoldenRetriever as a Hub type pack, with a runnable manifest-load proof.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>First Golden proof</strong><span>The applied Hub-pack path, then perception, memory, simulation, and visualization lanes.</span></a>
+</div>
 
 ## Recommended route
 
-1. Run the core [visual quickstart](/getting-started/visual-quickstart/) first.
-2. Read [Hub packs and modules](/ecosystem/modules/) to understand refs and exports.
-3. Run [Golden Packs](/ecosystem/golden-packs/) to prove that robot-facing payloads load through Hub.
-4. Continue to the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) when you want the applied Hub path, then browse Golden for maintained perception, memory, language, simulator, visualization, or robot payload lanes.
+1. Run the core [visual quickstart](/getting-started/visual-quickstart/).
+2. Read [Hub packs and modules](/ecosystem/modules/) for refs, exports, and loading semantics.
+3. Run the [Golden pack proof](/ecosystem/golden-packs/) to watch a real manifest load through the Hub loader.
+4. Read [Publishing](/ecosystem/publishing/) when you want to expose your own repo the same way.
 
-The important boundary is that GoldenRetriever is **not** a second runtime package. The runtime is `retriever-core` and imports as `retriever`; Golden is the maintained examples site and pack-candidate surface built on top of it.
+The boundary to keep straight: GoldenRetriever is not a second runtime package. The runtime is `retriever-core` (imports as `retriever`); Golden is the maintained examples and pack surface on top of it.
