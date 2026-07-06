@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 132" width="480" height="132" role="img" aria-label="Retriever">
   <title>Retriever</title>
   <defs>
-    <linearGradient id="retrieverInk" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f766e"/>
-      <stop offset="60%" stop-color="#155e75"/>
-      <stop offset="100%" stop-color="#334155"/>
+    <linearGradient id="retrieverWarm" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="45%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ea580c"/>
     </linearGradient>
   </defs>
   <text x="240" y="92" text-anchor="middle"
         textLength="440" lengthAdjust="spacingAndGlyphs"
         font-family="'Segoe UI', Helvetica, Arial, sans-serif"
         font-weight="800" font-size="92" letter-spacing="-1.5"
-        fill="url(#retrieverInk)">Retriever</text>
+        fill="url(#retrieverWarm)">Retriever</text>
 </svg>
