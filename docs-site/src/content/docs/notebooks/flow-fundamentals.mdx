@@ -1,0 +1,130 @@
+---
+title: Flow Fundamentals (Notebook)
+description: Build, run, and step a Flow as plain Python — the notebook version of the Flow concept, with a downloadable .ipynb.
+---
+
+The notebook companion to [Flow](/concepts/flow/): build a `Flow`, run it as
+plain Python, then drop it into a graph and step it in-process. Every output
+block below is captured from a real run — nothing here needs a backend, camera,
+or robot.
+
+<a class="nb-download" href="/notebooks/flow-fundamentals.ipynb" download>⬇&nbsp; Download notebook (.ipynb)</a>
+
+## The smallest shape
+
+Inputs and outputs are `@io` dataclasses; their fields are the graph ports.
+`Flow[NumberInput, NumberOutput]` is the type boundary Retriever checks.
+
+```python
+from retriever.flow import Flow, io
+
+@io
+class NumberInput:
+    value: int
+
+@io
+class NumberOutput:
+    result: int
+
+class DoubleFlow(Flow[NumberInput, NumberOutput]):
+    def step(self, input: NumberInput) -> NumberOutput:
+        return NumberOutput(result=input.value * 2)
+
+flow = DoubleFlow()
+out = flow.step(NumberInput(value=5))
+print(out)
+print("ports:", flow.input_type.__name__, "->", flow.output_type.__name__)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+NumberOutput(result=10)
+ports: NumberInput -> NumberOutput
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> a Flow is callable directly — no pipeline, clock, or event loop. That is what makes it unit-testable and breakpoint-friendly on its own.</p>
+
+## `_signals` says what arrived
+
+`@io` makes every field `Optional`, so a Flow can receive a *partial* input.
+`_signals` lists the fields actually set, so `step()` can branch on what it got.
+
+```python
+print("empty  _signals:", NumberInput()._signals)
+print("filled _signals:", NumberInput(value=7)._signals)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+empty  _signals: []
+filled _signals: ['value']
+```
+
+## Local state with `reset()`
+
+Runtime-local state — counters, buffers, model handles — belongs in `reset()`,
+which the runtime calls once when a run starts. Keep `__init__` lightweight.
+
+```python
+class Counter(Flow[None, NumberOutput]):
+    def reset(self) -> None:
+        self.count = 0
+
+    def step(self, _) -> NumberOutput:
+        self.count += 1
+        return NumberOutput(result=self.count)
+
+c = Counter()
+c.reset()
+print("counter:", [c.step(None).result for _ in range(3)])
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+counter: [1, 2, 3]
+```
+
+## Put timing in the Pipeline, not the Flow
+
+A Flow never decides *when* it runs — the graph does, via a clock (`@`) and a
+sync policy on each edge. `pipe.step(dt=...)` advances the whole graph one tick
+at a time, in your process, where you can set a breakpoint inside any `step()`.
+
+```python
+from retriever.flow import Latest, Pipeline, Rate, Trigger
+
+class Source(Flow[None, NumberInput]):
+    def reset(self):
+        self.n = 0
+    def step(self, _):
+        self.n += 1
+        return NumberInput(value=self.n)
+
+pipe = Pipeline("flow_fundamentals")
+with pipe:
+    src = Source() @ Rate(hz=10)
+    dbl = DoubleFlow() @ Trigger("value")
+    pipe.connect(src, dbl, sync=Latest())
+
+for i in range(3):
+    result = pipe.step(dt=0.1)  # in-process; breakpoint-friendly
+    print(f"tick {i}: executed={sorted(result.executed)}")
+pipe.close_stepper()
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+tick 0: executed=['DoubleFlow', 'Source']
+tick 1: executed=['DoubleFlow', 'Source']
+tick 2: executed=['DoubleFlow', 'Source']
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the Flow owns local computation; the graph owns <em>when</em> it wakes and <em>which</em> upstream record it consumes. Next: <a href="/concepts/time-and-sync/">Time and Sync</a> shows how clocks and sync policies build the input passed to <code>step()</code>.</p>
+
+---
+
+This page is generated from [`notebooks/src/flow_fundamentals.py`](https://github.com/openretriever/retriever/blob/main/notebooks/src/flow_fundamentals.py) (jupytext `py:percent` source). Grab the [runnable notebook](/notebooks/flow-fundamentals.ipynb) and run every cell yourself.

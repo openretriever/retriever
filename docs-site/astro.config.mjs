@@ -76,10 +76,16 @@ addEventListener('DOMContentLoaded', () => {
           ],
         },
         {
+          label: 'Notebooks',
+          items: [
+            { label: 'Flow Fundamentals', slug: 'notebooks/flow-fundamentals' },
+          ],
+        },
+        {
           label: 'Retriever Hub',
           items: [
             { label: 'Ecosystem Overview', slug: 'ecosystem' },
-            { label: 'Golden Examples', slug: 'ecosystem/golden-packs' },
+            { label: 'GoldenRetriever Examples', slug: 'ecosystem/golden-packs' },
             { label: 'Hub Packs and Modules', slug: 'ecosystem/modules' },
             { label: 'Composable Pipelines', slug: 'ecosystem/composable-pipelines' },
             { label: 'Publishing', slug: 'ecosystem/publishing' },
