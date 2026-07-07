@@ -109,4 +109,4 @@ Explicit ports are `flow_id.port`. Selectors resolve by exact flow/node id first
 
 `Pipeline.visualize(...)` and `IR.visualize(...)` keep wrapped-pipeline context: a nested `build_pipeline_flow(...)` stage renders as a grouped box around its lowered inner flows, with the pipeline name and surfaced port bindings. Render the tutorial graph with `pixi run docs-tutorial-composable-html`.
 
-For applied composition, see the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) and the GoldenRetriever examples.
+For applied composition, see the [first GoldenRetriever proof](https://retriever-space.pages.dev/examples/golden-hub-proof/) and the GoldenRetriever examples.

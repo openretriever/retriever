@@ -39,21 +39,21 @@ policy output after replacement: ProcOut(value=104)
 wrapped stage output: Tutorial_Composable_CounterOutput(aux=99, value=5)
 ```
 
-A registered pipeline can be extended in place or dropped in as a single Flow stage — the two surfaces a Hub module exports. For the loader running against a real manifest, see the [Golden pack proof](/ecosystem/golden-packs/).
+A registered pipeline can be extended in place or dropped in as a single Flow stage — the two surfaces a Hub module exports. For the loader running against a real manifest, see the [GoldenRetriever pack proof](/ecosystem/golden-packs/).
 
 <div class="card-grid">
   <a class="info-card" href="/ecosystem/modules/"><strong>Hub packs and modules</strong><span>How <code>hub.use(...)</code> resolves a ref: index, git tag, cache, and the return contract.</span></a>
   <a class="info-card" href="/ecosystem/publishing/"><strong>Publishing</strong><span>Make your repo hub-loadable: the real <code>[tool.retriever.module]</code> manifest and import-safety rules.</span></a>
   <a class="info-card" href="/ecosystem/composable-pipelines/"><strong>Composable pipelines</strong><span>Export a pipeline builder, then reuse it as a live graph or one Flow stage.</span></a>
-  <a class="info-card" href="/ecosystem/golden-packs/"><strong>Golden packs</strong><span>GoldenRetriever as a Hub type pack, with a runnable manifest-load proof.</span></a>
-  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>First Golden proof</strong><span>The applied Hub-pack path, then perception, memory, simulation, and visualization lanes.</span></a>
+  <a class="info-card" href="/ecosystem/golden-packs/"><strong>GoldenRetriever packs</strong><span>GoldenRetriever as a Hub type pack, with a runnable manifest-load proof.</span></a>
+  <a class="info-card" href="https://retriever-space.pages.dev/examples/golden-hub-proof/"><strong>First GoldenRetriever proof</strong><span>The applied Hub-pack path, then perception, memory, simulation, and visualization lanes.</span></a>
 </div>
 
 ## Recommended route
 
 1. Run the core [visual quickstart](/getting-started/visual-quickstart/).
 2. Read [Hub packs and modules](/ecosystem/modules/) for refs, exports, and loading semantics.
-3. Run the [Golden pack proof](/ecosystem/golden-packs/) to watch a real manifest load through the Hub loader.
+3. Run the [GoldenRetriever pack proof](/ecosystem/golden-packs/) to watch a real manifest load through the Hub loader.
 4. Read [Publishing](/ecosystem/publishing/) when you want to expose your own repo the same way.
 
-The boundary to keep straight: GoldenRetriever is not a second runtime package. The runtime is `retriever-core` (imports as `retriever`); Golden is the maintained examples and pack surface on top of it.
+The boundary to keep straight: GoldenRetriever is not a second runtime package. The runtime is `retriever-core` (imports as `retriever`); GoldenRetriever is the maintained examples and pack surface on top of it.

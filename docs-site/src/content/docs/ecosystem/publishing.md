@@ -104,4 +104,4 @@ Run your module's smallest smoke command and confirm every documented import and
 
 ## Release boundary
 
-GoldenRetriever is the current applied catalog and the reference for this shape: source examples plus a manifest-declared Hub payload pack. Do not ship a second runtime package to share applied robot payloads — publish them as a Hub module instead. See [Golden Examples](/ecosystem/golden-packs/).
+GoldenRetriever is the current applied catalog and the reference for this shape: source examples plus a manifest-declared Hub payload pack. Do not ship a second runtime package to share applied robot payloads — publish them as a Hub module instead. See [GoldenRetriever Examples](/ecosystem/golden-packs/).

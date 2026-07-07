@@ -67,4 +67,4 @@ from retriever import hub
 WorldState = hub.use("openretriever/golden-retriever:WorldState")
 ```
 
-Until the public index and repo are live, that networked call returns `HUB_MODULE_NOT_FOUND`. See [Golden Examples](/ecosystem/golden-packs/) for the source-checkout proof that loads the identical manifest through the real loader today, and [Publishing](/ecosystem/publishing/) to make your own repo hub-loadable.
+Until the public index and repo are live, that networked call returns `HUB_MODULE_NOT_FOUND`. See [GoldenRetriever Examples](/ecosystem/golden-packs/) for the source-checkout proof that loads the identical manifest through the real loader today, and [Publishing](/ecosystem/publishing/) to make your own repo hub-loadable.

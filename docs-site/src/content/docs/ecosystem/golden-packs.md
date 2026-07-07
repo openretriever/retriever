@@ -1,9 +1,9 @@
 ---
-title: Golden Examples
+title: GoldenRetriever Examples
 ---
-GoldenRetriever is the reference for a real Hub type pack. It is not a second runtime — the runtime is `retriever-core`, imported as `retriever`. Golden is a maintained example repo whose `pyproject.toml` carries a `[tool.retriever.module]` manifest, so its robot-facing payloads load through the same `hub.use(...)` path as any other module.
+GoldenRetriever is the reference for a real Hub type pack. It is not a second runtime — the runtime is `retriever-core`, imported as `retriever`. GoldenRetriever is a maintained example repo whose `pyproject.toml` carries a `[tool.retriever.module]` manifest, so its robot-facing payloads load through the same `hub.use(...)` path as any other module.
 
-## Load Golden exports through Hub
+## Load GoldenRetriever exports through Hub
 
 ```python
 from retriever import hub
@@ -32,7 +32,7 @@ pixi run demo-golden-hub-pack
 ```
 
 ```text
-Golden pack exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to_arrow, convert_from_arrow
+GoldenRetriever pack exports: WorldState, BeliefGraph, Skill, Plan, Trajectory, convert_to_arrow, convert_from_arrow
 Registry WorldState: _retriever_hub.golden_hub_pack_smoke__retriever_typing.robotics_types.WorldState
 Constructed WorldState: ['cup']
 Constructed Plan skills: ['pick']
@@ -43,9 +43,9 @@ Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR 
 
 The smoke reads the repo's own `[tool.retriever.module]` manifest and loads it through `retriever.hub`'s loader — the same code path a networked `hub.use` runs after the download step. The namespaced `Registry WorldState` line is the commit-scoped import namespace the loader assigns; `Arrow round-trip: Action OK` confirms an `Action` payload survives `convert_to_arrow` → `convert_from_arrow` unchanged.
 
-That round-trip is the point: the cross-version contract for a Golden payload is its **registered schema and serialization behavior**, not Python class identity. Pin one ref per app and rely on the schema, not the class object.
+That round-trip is the point: the cross-version contract for a GoldenRetriever payload is its **registered schema and serialization behavior**, not Python class identity. Pin one ref per app and rely on the schema, not the class object.
 
-## What belongs in a Golden pack
+## What belongs in a GoldenRetriever pack
 
 Put a payload or helper here when it is useful across robot examples but not universal enough for the runtime standard library:
 
@@ -54,12 +54,12 @@ Put a payload or helper here when it is useful across robot examples but not uni
 - Arrow conversions for robot-facing payloads
 - domain examples that compose runtime standard types
 
-Canonical, broadly reusable primitives stay in `retriever.types.*`. Golden packs compose those types; they never redefine them.
+Canonical, broadly reusable primitives stay in `retriever.types.*`. GoldenRetriever packs compose those types; they never redefine them.
 
 ## Next step
 
-- Run `pixi run demo-golden-hub-pack` from a Golden checkout to reproduce the output above.
-- Open the [first Golden proof](https://retriever-space.pages.dev/examples/golden-hub-proof/), then the [Golden example catalog](https://retriever-space.pages.dev/examples/).
+- Run `pixi run demo-golden-hub-pack` from a GoldenRetriever checkout to reproduce the output above.
+- Open the [first GoldenRetriever proof](https://retriever-space.pages.dev/examples/golden-hub-proof/), then the [GoldenRetriever example catalog](https://retriever-space.pages.dev/examples/).
 - Read [Hub packs and modules](/ecosystem/modules/) for the general ref shape and [Publishing](/ecosystem/publishing/) to expose your own pack this way.
 
 Only manifest-declared exports are Hub-loadable. Promoted demos stay source-checkout examples until they are exported, versioned, smoke-tested, and indexed.

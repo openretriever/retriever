@@ -136,13 +136,13 @@ The hosted Starlight docs are the public docs front door:
 - [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/) — mock smoke, webcam color detection, and Rerun.
 - [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/) — commands paired with expected output.
 - [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/) — graph render, stepper, record, and replay.
-- [Golden Overview](https://retriever-space.pages.dev/) — GoldenRetriever as the applied examples and reference-pack layer.
-- [Golden Example Catalog](https://retriever-space.pages.dev/examples/) — applied perception, memory, language, composition, simulation, visualization, and typing guides.
+- [GoldenRetriever Overview](https://retriever-space.pages.dev/) — GoldenRetriever as the applied examples and reference-pack layer.
+- [GoldenRetriever Example Catalog](https://retriever-space.pages.dev/examples/) — applied perception, memory, language, composition, simulation, visualization, and typing guides.
 
 The repository `docs/` tree remains available for deeper source-local reference
 and release maintenance.
 
-Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever source lives at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever), but most users should start from the hosted [Golden example catalog](https://retriever-space.pages.dev/examples/).
+Source code lives at [github.com/openretriever/retriever](https://github.com/openretriever/retriever). GoldenRetriever source lives at [github.com/openretriever/golden-retriever](https://github.com/openretriever/golden-retriever), but most users should start from the hosted [GoldenRetriever example catalog](https://retriever-space.pages.dev/examples/).
 
 ## Runtime Surfaces
 
@@ -166,7 +166,7 @@ Backend execution is for realistic scheduling, process boundaries, and deploymen
 The intended public split is:
 
 - **Core runtime**: this repository, published as `retriever-core` and imported as `retriever`.
-- **Golden examples**: [GoldenRetriever](https://retriever-space.pages.dev/examples/) for robot-facing examples and pack candidates.
+- **GoldenRetriever examples**: [GoldenRetriever](https://retriever-space.pages.dev/examples/) for robot-facing examples and pack candidates.
 - **Project website**: [openretriever.org](https://openretriever.org/).
 
 ## Development
