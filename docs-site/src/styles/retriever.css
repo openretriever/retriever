@@ -202,10 +202,17 @@
   background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-low) 42%, transparent), transparent);
 }
 
+.nb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 0 1.7rem;
+}
+
 .nb-download {
   display: inline-flex;
   align-items: center;
-  margin: 0 0 1.7rem;
+  margin: 0;
   padding: 0.5rem 0.95rem;
   border: 1px solid var(--sl-color-gray-5);
   border-radius: 999px;
@@ -219,6 +226,15 @@
 .nb-download:hover {
   background: color-mix(in srgb, var(--sl-color-accent) 16%, transparent);
   border-color: var(--sl-color-accent);
+}
+
+.nb-colab {
+  background: color-mix(in srgb, #f9ab00 22%, transparent);
+}
+
+.nb-colab:hover {
+  background: color-mix(in srgb, #f9ab00 34%, transparent);
+  border-color: #f9ab00;
 }
 
 .output-label + .expressive-code,

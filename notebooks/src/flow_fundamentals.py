@@ -20,6 +20,22 @@
 # robot involved. Every cell runs in-process.
 
 # %% [markdown]
+# > **Running in Colab?** The next cell installs `retriever-core`. From a source
+# > checkout (or once it's already installed) the install is skipped.
+
+# %%
+# Colab setup: install retriever-core only if it isn't importable yet.
+try:
+    import retriever  # noqa: F401
+except ImportError:  # pragma: no cover
+    import subprocess
+    import sys
+
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "retriever-core"], check=True
+    )
+
+# %% [markdown]
 # ## The smallest shape
 #
 # Inputs and outputs are `@io` dataclasses; their fields are the graph ports.
