@@ -27,21 +27,30 @@ forward pass, so time is part of the program, not an accident of scheduling.
 
 ## How Retriever compares
 
-What you get by default: Yes = built in, Partial = possible with effort, No = not the default path.
+Retriever borrows from three familiar *categories* rather than competing with any
+single tool. So the comparison is by category — Yes = built in, Partial =
+possible with extra scaffolding, No = not what the category is designed for.
 
-| Capability | Raw Python | ROS 2 | Dora | Retriever |
+| | Plain Python | DL frameworks (PyTorch / TF) | Robotics dataflow (ROS 2 / Dora) | Retriever |
 | --- | :---: | :---: | :---: | :---: |
-| Typed port / message contracts | No | Partial | Partial | Yes: `@io` |
-| Explicit per-node rates | No | Partial | Yes | Yes |
-| Sampling / sync made explicit | No | No | Partial | Yes: `sync=` |
-| In-process step-debug | Partial | No | No | Yes: `Pipeline.step(...)` |
-| Record + replay artifacts | No | Partial: bags | Partial | Yes: MCAP/Rerun paths |
-| Same graph on multiple backends | N/A | No | Partial | Yes: in-process / mp / Dora |
-| Python-native authoring | Yes | Partial: `rclpy` | Partial | Yes |
+| **What it's for** | scripts & glue | building / training models | distributed message passing | closed-loop, multi-rate agents |
+| Typed port / message contracts | No | Partial: tensors | Partial | **Yes:** `@io` |
+| Explicit per-node rates | No | No | Yes | **Yes** |
+| Sampling / sync made explicit | No | No | Partial | **Yes:** `sync=` |
+| In-process step-debug | Partial | Yes: eager | No | **Yes:** `Pipeline.step(...)` |
+| Record + replay of the run | No | No: weights only | Partial: bags | **Yes:** MCAP/Rerun |
+| Same graph, many backends | N/A | Partial: export | Partial | **Yes:** in-process / mp / Dora |
+| Python-native authoring | Yes | Yes | Partial: bindings | **Yes** |
 
-`Partial` means achievable but not the default path, such as ROS 2 sync via
-`message_filters` or replay through bags. The point is what the framework gives
-you without extra scaffolding.
+Each category owns a different problem: **DL frameworks** own the *model* — a
+compute graph with autodiff, run one forward pass at a time; **robotics dataflow**
+owns *distributed messaging* between nodes; **Retriever** owns *closed-loop time* —
+how a graph of stateful components runs, samples its inputs, and stays reproducible
+across mismatched rates. Retriever keeps the PyTorch-style authoring feel (compose
+typed components) and adds the timing and replay guarantees a real robot loop needs.
+
+`Partial` means achievable but not the default path — ROS 2 sync via
+`message_filters`, replay through bags, or exporting a model with TorchScript.
 
 ## When to use it - and when not
 
