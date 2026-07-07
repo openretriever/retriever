@@ -192,6 +192,16 @@ pixi run public-surface-check
 
 See [docs/contributing.md](docs/contributing.md) for development workflow and QA details.
 
+## Clone and Stay in Sync
+
+```bash
+git clone https://github.com/openretriever/retriever
+cd retriever
+git pull   # normal pulls fast-forward
+```
+
+`main` is the canonical branch; a fresh clone and ordinary `git pull` are all you need.
+
 ## License
 
 Retriever is licensed under the Apache License 2.0 (`Apache-2.0`). See [LICENSE](LICENSE) for the full license text and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled third-party JavaScript notices.
