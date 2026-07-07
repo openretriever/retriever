@@ -79,6 +79,10 @@ addEventListener('DOMContentLoaded', () => {
           label: 'Notebooks',
           items: [
             { label: 'Flow Fundamentals', slug: 'notebooks/flow-fundamentals' },
+            { label: 'Time and Sync', slug: 'notebooks/time-and-sync' },
+            { label: 'Step, Debug, Replay', slug: 'notebooks/step-debug-replay' },
+            { label: 'Standard Types', slug: 'notebooks/standard-types' },
+            { label: 'Using the Hub', slug: 'notebooks/using-the-hub' },
           ],
         },
         {

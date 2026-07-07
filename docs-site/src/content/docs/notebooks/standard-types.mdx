@@ -1,0 +1,175 @@
+---
+title: Standard Types (Notebook)
+description: Import the shared retriever.types payloads, see why type identity is the contract, construct a couple, and drop one onto a Flow port — with a downloadable .ipynb.
+---
+
+The notebook companion to [Standard Types](/concepts/standard-types/): import a
+few payloads from `retriever.types.*`, see why type *identity* (not field shape)
+is the contract, construct a couple, and wire one onto a Flow port. Every output
+block below is captured from a real run — nothing here needs a backend, camera,
+or robot.
+
+<p class="nb-actions">
+  <a class="nb-download" href="/notebooks/standard-types.ipynb" download>⬇&nbsp; Download&nbsp;.ipynb</a>
+  <a class="nb-download nb-colab" href="https://colab.research.google.com/github/openretriever/retriever/blob/main/docs-site/public/notebooks/standard-types.ipynb" target="_blank" rel="noopener">▶&nbsp; Open in Colab</a>
+</p>
+
+## One import path per domain
+
+Standard payloads live under `retriever.types`, split by domain. You import the
+class you need directly — there is no separate registration step to do in your
+own code. Here we pull a few from three domains at once.
+
+```python
+from retriever.types.spatial import Header, Vector3, Quaternion, SE3Pose, PoseStamped
+from retriever.types.perception import BBox2D, Detection2D, DetectionBatch
+from retriever.types.language import Caption
+
+for cls in (Header, Vector3, SE3Pose, PoseStamped, DetectionBatch, Caption):
+    print(f"{cls.__name__:15s} <- {cls.__module__}")
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+Header          <- retriever.types.spatial.v1
+Vector3         <- retriever.types.spatial.v1
+SE3Pose         <- retriever.types.spatial.v1
+PoseStamped     <- retriever.types.spatial.v1
+DetectionBatch  <- retriever.types.perception.v1
+Caption         <- retriever.types.language.v1
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the stable surface (<code>retriever.types.spatial</code>) re-exports the versioned module's class, so you import from the short path while the runtime tracks the versioned home.</p>
+
+## Type identity is the contract
+
+The rule that makes these types useful is that they are the *same class object*
+everywhere — not two look-alikes with matching fields. The stable surface and
+the versioned module (`.v1`) re-export one object, so `is` holds. Every payload
+is also `@io`-decorated, which is what lets it sit on a Flow port.
+
+```python
+from retriever.flow.io import is_flow_io
+from retriever.types.spatial.v1 import PoseStamped as PoseStamped_v1
+
+print("same class object:", PoseStamped is PoseStamped_v1)
+print("PoseStamped   @io?", is_flow_io(PoseStamped))
+print("DetectionBatch @io?", is_flow_io(DetectionBatch))
+print("Caption       @io?", is_flow_io(Caption))
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+same class object: True
+PoseStamped   @io? True
+DetectionBatch @io? True
+Caption       @io? True
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> because it is one class, a component that emits <code>PoseStamped</code> and one that consumes it mean the identical type — no adapter, no "which PoseStamped?". Never redefine a standard type locally, even with identical fields.</p>
+
+## Construct a couple
+
+Composite spatial types (`SE3Pose`, `PoseStamped`) nest `Vector3`,
+`Quaternion`, and `Header`, so nested access reads the way you'd expect.
+Perception and language types compose the same way.
+
+```python
+pose = PoseStamped(
+    header=Header(stamp_ns=1_000_000, frame_id="base_link"),
+    pose=SE3Pose(
+        position=Vector3(x=0.4, y=0.0, z=0.2),
+        orientation=Quaternion(x=0.0, y=0.0, z=0.0, w=1.0),
+    ),
+)
+batch = DetectionBatch(
+    detections=(
+        Detection2D(
+            label="cup",
+            bbox=BBox2D(x=12, y=30, width=40, height=55),
+            confidence=0.91,
+        ),
+    ),
+    frame_index=7,
+)
+
+print("pose frame:", pose.header.frame_id, "x=", pose.pose.position.x)
+print("unit quaternion?", pose.pose.orientation.is_unit())
+print("detections:", [(d.label, d.confidence) for d in batch.detections])
+print("bbox area:", batch.detections[0].bbox.area())
+print("caption:", Caption(text="a red cup on the table").text)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+pose frame: base_link x= 0.4
+unit quaternion? True
+detections: [('cup', 0.91)]
+bbox area: 2200
+caption: a red cup on the table
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> composite payloads carry their own helpers — <code>Quaternion.is_unit()</code>, <code>BBox2D.area()</code> — so downstream code reads a payload instead of re-deriving it.</p>
+
+## `_signals` says which fields arrived
+
+`@io` makes every field optional, so a standard type can carry a *partial*
+payload. `_signals` reports the fields whose value is set (non-`None`) — the
+same mechanism a Flow uses to branch on what a `step()` actually received.
+
+```python
+partial = PoseStamped(header=Header(stamp_ns=1_000_000, frame_id="base_link"))
+print("empty   _signals:", PoseStamped()._signals)
+print("partial _signals:", partial._signals)
+print("full    _signals:", pose._signals)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+empty   _signals: []
+partial _signals: ['header']
+full    _signals: ['header', 'pose']
+```
+
+## Use a standard type as a Flow port
+
+Since each payload is already `@io`, it becomes a Flow input or output with no
+wrapping. `Flow[DetectionBatch, Caption]` is the type boundary Retriever
+checks, and the clock (`@ Trigger(...)`) fires on a field of the input type.
+
+```python
+from retriever.flow import Flow, Trigger
+
+class Detector(Flow[DetectionBatch, Caption]):   # standard types as ports
+    def step(self, batch: DetectionBatch) -> Caption:
+        labels = ", ".join(d.label for d in batch.detections)
+        return Caption(text=f"saw: {labels}")
+
+det = Detector()
+print("input port type: ", det.input_type.__name__)
+print("output port type:", det.output_type.__name__)
+print("step output:     ", det.step(batch))
+
+# clock triggers on a field of the standard input type
+node = Detector() @ Trigger("detections")
+print("wired node fires on field 'detections'")
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+input port type:  DetectionBatch
+output port type: Caption
+step output:      Caption(text='saw: cup', language='en', confidence=None, source=None)
+wired node fires on field 'detections'
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> standard types are the wire format between Flows. Because both ends import the same <code>@io</code> class, the graph type-checks the edge for free — see <a href="/concepts/flow/">Flow</a> for how ports and clocks fit together.</p>
+
+---
+
+This page is generated from [`notebooks/src/standard_types.py`](https://github.com/openretriever/retriever/blob/main/notebooks/src/standard_types.py) (jupytext `py:percent` source). Grab the [runnable notebook](/notebooks/standard-types.ipynb) and run every cell yourself.

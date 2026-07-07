@@ -64,6 +64,7 @@ optax = "*"
 mkdocs = ">=1.6"
 mkdocs-material = ">=9.5"
 pymdown-extensions = ">=10"
+jupytext = ">=1.16"
 
 [feature.control.pypi-dependencies]
 pynput = "*"       # Global keyboard control
@@ -222,6 +223,8 @@ p0-release-readiness-full = "python -m examples.tutorial.c_debug_and_replay.06_t
 p1-reliability-gates = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark --fail-on-drift && python -m examples.tutorial.c_debug_and_replay.07_incident_response_replay_drill --fail-on-mismatch"
 export-notebook-ready = "python scripts/docs/export_notebook_ready.py --docs-root docs/tutorials --out-dir out/jupyter-notebook --emit-ipynb"
 check-notebook-ready = "python scripts/docs/export_notebook_ready.py --docs-root docs/tutorials --out-dir out/jupyter-notebook --check"
+nb-sync = { cmd = "python scripts/docs/sync_notebooks.py", env = { PYTHONPATH = "." } }
+nb-check = { cmd = "python scripts/docs/sync_notebooks.py --check", env = { PYTHONPATH = "." } }
 verify-backend-parity = "python -m examples.tutorial.b_ir_and_execution.09_backend_parity_benchmark --fail-on-drift && python -c \"import json, pathlib; p=pathlib.Path('logs/tutorial_parity/tut032_backend_parity.json'); d=json.loads(p.read_text(encoding='utf-8')); assert d['parity']['overall_pass'] is True; assert d['metrics']['multiprocessing']['count'] > 0; assert d['metrics']['dora']['count'] > 0; print('backend parity verified')\""
 
 

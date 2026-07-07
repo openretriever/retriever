@@ -1,0 +1,232 @@
+---
+title: Time and Sync (Notebook)
+description: Build tiny multi-rate graphs and step them in-process to watch how clocks and sync policies change what each Flow sees — with a downloadable .ipynb.
+---
+
+The notebook companion to [Time and Sync](/concepts/time-and-sync/): a graph makes
+two independent decisions per Flow — a **clock** picks *when* a Flow wakes, and a
+**sync policy** on each edge picks *which* buffered record it reads. Below we build
+tiny multi-rate graphs and step them in-process so both knobs are visible. Every
+output block is captured from a real run — nothing here needs a backend, camera,
+or robot.
+
+<p class="nb-actions">
+  <a class="nb-download" href="/notebooks/time-and-sync.ipynb" download>⬇&nbsp; Download&nbsp;.ipynb</a>
+  <a class="nb-download nb-colab" href="https://colab.research.google.com/github/openretriever/retriever/blob/main/docs-site/public/notebooks/time-and-sync.ipynb" target="_blank" rel="noopener">▶&nbsp; Open in Colab</a>
+</p>
+
+## Two independent knobs
+
+Every Flow answers two separate questions. The clock (`@ Rate/Trigger/Hybrid`)
+answers *when do I wake?* The sync policy (`sync=` on each edge) answers *which
+buffered record do I read?* They compose freely, and each has a plain, inspectable
+repr.
+
+```python
+from retriever.flow import Events, Hold, Hybrid, Latest, Rate, Trigger, Window
+
+print("Clocks — decide WHEN a Flow wakes:")
+print("  Rate(hz=20)                 ->", Rate(hz=20), f"(every {Rate(hz=20).interval:.3f}s)")
+print("  Trigger('value')            ->", Trigger("value"))
+print("  Hybrid(hz=5, trigger=[...]) ->", Hybrid(hz=5, trigger=["value"]))
+print()
+print("Sync policies — decide WHICH upstream record step() gets:")
+print("  Latest()                    ->", Latest())
+print("  Window(20, 0.35s, 'mean')   ->", Window(buffer_size=20, duration=0.35, agg="mean"))
+print("  Hold(debounce=0.25)         ->", Hold(debounce=0.25))
+print("  Events(10, 0.35s)           ->", Events(buffer_size=10, duration=0.35, include_timestamps=False))
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+Clocks — decide WHEN a Flow wakes:
+  Rate(hz=20)                 -> Rate(hz=20) (every 0.050s)
+  Trigger('value')            -> Trigger('value')
+  Hybrid(hz=5, trigger=[...]) -> Hybrid(hz=5, trigger=['value'])
+
+Sync policies — decide WHICH upstream record step() gets:
+  Latest()                    -> Latest(buffer_size=1)
+  Window(20, 0.35s, 'mean')   -> Window(buffer_size=20, duration=0.35, agg='mean')
+  Hold(debounce=0.25)         -> Hold(buffer_size=1, debounce=0.25)
+  Events(10, 0.35s)           -> Events(buffer_size=10, duration=0.35, include_timestamps=False)
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> clock and sync are orthogonal. One says <em>when</em>; the other says <em>which record</em>. Every combination is legal, so cameras, controllers, and slow policies can coexist without a shared timestep.</p>
+
+## Clocks decide *when*
+
+A `Rate` Flow wakes on its own timer, every tick, whether or not new data arrived.
+A `Trigger` Flow wakes *only* when its named field arrives. A `Hybrid` Flow wakes on
+the timer **or** immediately on the event. Here a sensor fires every tick but only
+*emits* a reading on even ticks — watch which downstream Flows go quiet when nothing
+new arrives.
+
+```python
+from retriever.flow import Flow, Pipeline, io
+
+@io
+class Reading:
+    value: int
+
+class Sensor(Flow[None, Reading]):
+    """Wakes every tick, but only publishes a reading on even ticks."""
+    def reset(self):
+        self.tick = 0
+        self.emitted = 0
+    def step(self, _):
+        self.tick += 1
+        if self.tick % 2 == 1:  # emit on the 1st, 3rd, 5th tick...
+            self.emitted += 1
+            return Reading(value=self.emitted)
+        return Reading()  # nothing published this tick
+
+class Ticker(Flow[Reading, Reading]):       # @ Rate — wakes every tick
+    def step(self, r): return Reading(value=r.value)
+
+class Detector(Flow[Reading, Reading]):     # @ Trigger — wakes only on arrival
+    def step(self, r): return Reading(value=r.value)
+
+class RateOrEvent(Flow[Reading, Reading]):  # @ Hybrid — wakes on timer OR event
+    def step(self, r): return Reading(value=r.value)
+
+clocks = Pipeline("time.clocks")
+with clocks:
+    sensor   = Sensor()      @ Rate(hz=10)
+    ticker   = Ticker()      @ Rate(hz=10)
+    detector = Detector()    @ Trigger("value")
+    hybrid   = RateOrEvent() @ Hybrid(hz=10, trigger=["value"])
+    clocks.connect(sensor, ticker,   sync=Latest())
+    clocks.connect(sensor, detector, sync=Latest())
+    clocks.connect(sensor, hybrid,   sync=Latest())
+
+print("tick | Sensor emits | Ticker(Rate) | Detector(Trigger) | RateOrEvent(Hybrid)")
+for i in range(6):
+    res = clocks.step(dt=0.1)
+    emitted = res.outputs["Sensor"].value
+    emit_s = f"v={emitted}" if emitted is not None else "  -"
+    tick_seen = f"sees v={res.inputs['Ticker'].value}"
+    det = f"FIRED v={res.inputs['Detector'].value}" if "Detector" in res.executed else "idle"
+    hyb = "FIRED" if "RateOrEvent" in res.executed else "idle"
+    print(f"  {i}  |    {emit_s:5}    |  {tick_seen:9} | {det:11} | {hyb}")
+clocks.close_stepper()
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+tick | Sensor emits | Ticker(Rate) | Detector(Trigger) | RateOrEvent(Hybrid)
+  0  |    v=1      |  sees v=1  | FIRED v=1   | FIRED
+  1  |      -      |  sees v=1  | idle        | FIRED
+  2  |    v=2      |  sees v=2  | FIRED v=2   | FIRED
+  3  |      -      |  sees v=2  | idle        | FIRED
+  4  |    v=3      |  sees v=3  | FIRED v=3   | FIRED
+  5  |      -      |  sees v=3  | idle        | FIRED
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Detector</code> is the only Flow that goes quiet on odd ticks — its <code>Trigger</code> clock has nothing to fire on, while <code>Rate</code> and <code>Hybrid</code> wake every tick. The in-process stepper wakes <code>Rate</code> and <code>Hybrid</code> once per tick; the extra thing <code>Hybrid</code> buys you — waking <em>immediately</em> on an event instead of waiting for the next timer edge — is a live-scheduling property.</p>
+
+## Sync decides *which record*
+
+Every edge keeps a timestamped buffer of upstream outputs. The `sync=` policy
+consumes that buffer at wake time and returns exactly one input. Fan the *same*
+10 Hz ramp (emitting 1, 2, 3, ...) into three consumers with three policies and
+compare what each `step()` receives on the same tick.
+
+```python
+@io
+class Signal:
+    value: int
+
+class Ramp(Flow[None, Signal]):
+    def reset(self): self.n = 0
+    def step(self, _):
+        self.n += 1
+        return Signal(value=self.n)
+
+class Newest(Flow[Signal, Signal]):
+    def step(self, s): return Signal(value=s.value)
+
+class Averaged(Flow[Signal, Signal]):
+    def step(self, s): return Signal(value=s.value)
+
+class Recent(Flow[Signal, Signal]):
+    def step(self, s): return Signal(value=s.value)
+
+sync = Pipeline("time.sync")
+with sync:
+    ramp     = Ramp()     @ Rate(hz=10)
+    newest   = Newest()   @ Rate(hz=10)
+    averaged = Averaged() @ Rate(hz=10)
+    recent   = Recent()   @ Rate(hz=10)
+    sync.connect(ramp, newest,   sync=Latest())
+    sync.connect(ramp, averaged, sync=Window(buffer_size=20, duration=0.35, agg="mean"))
+    sync.connect(ramp, recent,   sync=Events(buffer_size=10, duration=0.35, include_timestamps=False))
+
+print("tick | Latest() | Window(mean, 0.35s) | Events(recent 0.35s)")
+for i in range(6):
+    res = sync.step(dt=0.1)
+    latest_v = res.inputs["Newest"].value
+    mean_v = res.inputs["Averaged"].value
+    recent_v = res.inputs["Recent"].value
+    print(f"  {i}  |    {latest_v:>2}    |        {mean_v:>4}         | {recent_v}")
+sync.close_stepper()
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+tick | Latest() | Window(mean, 0.35s) | Events(recent 0.35s)
+  0  |     1    |         1.0         | [1]
+  1  |     2    |         1.5         | [1, 2]
+  2  |     3    |         2.0         | [1, 2, 3]
+  3  |     4    |         2.5         | [1, 2, 3, 4]
+  4  |     5    |         3.5         | [2, 3, 4, 5]
+  5  |     6    |         4.5         | [3, 4, 5, 6]
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> same stream, same tick, three different inputs. <code>Latest()</code> hands over one fresh value; <code>Window(agg="mean")</code> summarizes the last 0.35&nbsp;s and slides forward; <code>Events(...)</code> returns the recent records themselves. Each policy is a pure function of the <em>buffered, timestamped records</em> — not of any global state.</p>
+
+## Hold: rate-limit a chatty stream
+
+`Hold` is a zero-order hold: it repeats the last accepted value. With `debounce=`,
+it also refuses to accept a new value until that many seconds have passed — a
+leading-edge rate limiter. Feed the same 10 Hz ramp through `Latest()` and
+`Hold(debounce=0.25)` side by side.
+
+```python
+class Debounced(Flow[Signal, Signal]):
+    def step(self, s): return Signal(value=s.value)
+
+hold = Pipeline("time.hold")
+with hold:
+    src    = Ramp()      @ Rate(hz=10)
+    live   = Newest()    @ Rate(hz=10)
+    steady = Debounced() @ Rate(hz=10)
+    hold.connect(src, live,   sync=Latest())
+    hold.connect(src, steady, sync=Hold(debounce=0.25))
+
+print("tick | Latest() | Hold(debounce=0.25)")
+for i in range(6):
+    res = hold.step(dt=0.1)
+    print(f"  {i}  |    {res.inputs['Newest'].value:>2}    | {res.inputs['Debounced'].value:>2}")
+hold.close_stepper()
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+tick | Latest() | Hold(debounce=0.25)
+  0  |     1    |  1
+  1  |     2    |  1
+  2  |     3    |  1
+  3  |     4    |  4
+  4  |     5    |  4
+  5  |     6    |  4
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Latest()</code> passes every reading; <code>Hold(debounce=0.25)</code> accepts one, ignores updates for 0.25&nbsp;s, then re-serves the held value — a calm, rate-limited signal with no extra state downstream. Clocks and sync are also the determinism boundary: the wall clock decides which records land in a buffer, but every sync policy is a pure function of those records, so replaying the same trace makes every <code>step()</code> see the same input. Next: <a href="/concepts/runtime/">Runtime</a> connects clocks and sync to validation, in-process stepping, backends, and replay.</p>
+
+---
+
+This page is generated from [`notebooks/src/time_and_sync.py`](https://github.com/openretriever/retriever/blob/main/notebooks/src/time_and_sync.py) (jupytext `py:percent` source). Grab the [runnable notebook](/notebooks/time-and-sync.ipynb) and run every cell yourself.

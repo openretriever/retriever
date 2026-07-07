@@ -1,0 +1,231 @@
+---
+title: Step, Debug, and Replay (Notebook)
+description: Advance a graph one tick at a time in-process, read back a StepResult, inspect the IR, and record a run to replay — the notebook version of the debug loop, with a downloadable .ipynb.
+---
+
+The notebook companion to [Debug and Visualize](/tutorials/debug-and-visualize/):
+`pipe.step(dt=...)` advances a graph one tick at a time **in your own Python
+process**, so a normal debugger stops inside `Flow.step()`. Here we step a small
+graph, read back a `StepResult`, inspect the validated IR, and record a run so it
+can be replayed deterministically. Every output block below is captured from a
+real run — nothing here needs a backend, camera, or robot.
+
+<p class="nb-actions">
+  <a class="nb-download" href="/notebooks/step-debug-replay.ipynb" download>⬇&nbsp; Download&nbsp;.ipynb</a>
+  <a class="nb-download nb-colab" href="https://colab.research.google.com/github/openretriever/retriever/blob/main/docs-site/public/notebooks/step-debug-replay.ipynb" target="_blank" rel="noopener">▶&nbsp; Open in Colab</a>
+</p>
+
+## A graph to debug
+
+Three tiny Flows: a `Counter` source on a clock, a `Doubler` that fires on each
+arrival, and a `Sink` that keeps the last value it saw. This is an ordinary
+Retriever graph — the only difference is that we'll drive it with `step()`
+instead of handing it to a backend.
+
+```python
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+
+@io
+class Value:
+    value: int
+
+class Counter(Flow[None, Value]):
+    def reset(self) -> None:
+        self.count = 0
+    def step(self, _) -> Value:
+        self.count += 1
+        return Value(value=self.count)
+
+class Doubler(Flow[Value, Value]):
+    def step(self, input: Value) -> Value:
+        return Value(value=input.value * 2)  # set a breakpoint here
+
+class Sink(Flow[Value, None]):
+    def reset(self) -> None:
+        self.last = None
+    def step(self, input: Value) -> None:
+        self.last = input.value
+        return None
+
+pipe = Pipeline("step_debug_replay")
+with pipe:
+    counter = Counter() @ Rate(hz=10)
+    doubler = Doubler() @ Trigger("value")
+    sink = Sink() @ Rate(hz=10)
+    pipe.connect(counter, doubler, sync=Latest())
+    pipe.connect(doubler, sink, sync=Latest())
+
+print("built:", pipe.get_name(), "with", len(pipe.get_handles()), "nodes")
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+built: step_debug_replay with 3 nodes
+```
+
+## `pipe.step(dt=...)` advances one tick
+
+`step(dt=0.1)` runs one `sample -> step -> publish` pass over the whole graph and
+advances a logical clock by `dt`. It returns synchronously, so a breakpoint in
+any `Flow.step()` stops here in this process — no remote debugger to attach.
+
+```python
+pipe.reset()  # gym-style: clear buffers and call Flow.reset() on every node
+
+first_now = None
+for i in range(4):
+    result = pipe.step(dt=0.1)
+    if first_now is None:
+        first_now = result.now
+    elapsed = round(result.now - first_now, 2)
+    print(f"tick {i}: t=+{elapsed:.1f}s  executed={sorted(result.executed)}")
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+tick 0: t=+0.0s  executed=['Counter', 'Doubler', 'Sink']
+tick 1: t=+0.1s  executed=['Counter', 'Doubler', 'Sink']
+tick 2: t=+0.2s  executed=['Counter', 'Doubler', 'Sink']
+tick 3: t=+0.3s  executed=['Counter', 'Doubler', 'Sink']
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> every tick advances logical time by <code>dt</code> and executes every node whose clock fires. Because the stepper is single-process and synchronous, the debugger treats <code>step()</code> like any other function call.</p>
+
+## Read back a `StepResult`
+
+Each `step()` returns a `StepResult` — a frozen record of what that tick did:
+`.executed` (node ids that ran), `.outputs` (each node's returned object), and
+`.inputs` (what each node consumed). No printing inside a Flow required; you read
+the tick's effects straight off the result.
+
+```python
+pipe.reset()
+result = pipe.step(dt=0.1)
+
+print("type    :", type(result).__name__)
+print("executed:", sorted(result.executed))
+for node_id in sorted(result.outputs):
+    print(f"output[{node_id}] = {result.outputs[node_id]}")
+print("sink.last =", sink.flow.last)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+type    : StepResult
+executed: ['Counter', 'Doubler', 'Sink']
+output[Counter] = Value(value=1)
+output[Doubler] = Value(value=2)
+output[Sink] = None
+sink.last = 2
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Counter</code> emitted <code>value=1</code>, <code>Doubler</code> turned it into <code>value=2</code>, and <code>Sink</code> returned <code>None</code> but stashed the value in its own state — exactly what a breakpoint would have shown you mid-tick.</p>
+
+## `pipe.validate()` gives you the IR
+
+Before debugging *runtime* behavior, check the graph you actually built.
+`pipe.validate()` compiles the authored graph to its Intermediate Representation:
+typed nodes, edges (with sync adapter and queue size), and the execution
+topology. This is the same IR the backends and `pipe.visualize()` consume.
+
+```python
+ir = pipe.validate()
+
+print(f"IR '{ir.metadata.name}' (v{ir.version}): "
+      f"{len(ir.nodes)} nodes, {len(ir.edges)} edges")
+
+print("nodes:")
+for node in ir.nodes:
+    print(f"  {node.id:8s} <- {node.type}")
+
+print("edges:")
+for edge in ir.edges:
+    src = f"{edge.source.node}.{edge.source.port}"
+    dst = f"{edge.destination.node}.{edge.destination.port}"
+    print(f"  {src:16s} -> {dst:16s} [{edge.adapter}, qsize={edge.qsize}]")
+
+print("topology:")
+print("  sources:", ir.topology.sources)
+print("  sinks  :", ir.topology.sinks)
+print("  groups :", ir.topology.groups)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+IR 'step_debug_replay' (v1.0.0): 3 nodes, 2 edges
+nodes:
+  Counter  <- Counter
+  Doubler  <- Doubler
+  Sink     <- Sink
+edges:
+  Counter.value    -> Doubler.value    [{'Latest': {'buffer_size': 1}}, qsize=10]
+  Doubler.value    -> Sink.value       [{'Latest': {'buffer_size': 1}}, qsize=10]
+topology:
+  sources: ['Counter']
+  sinks  : ['Sink']
+  groups : [['Counter'], ['Doubler'], ['Sink']]
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> if the IR is wrong — a missing edge, an unexpected adapter, the wrong execution order — fix the wiring first. Do not start by debugging backend scheduling, cameras, or multiprocessing.</p>
+
+## Record a run, then replay it
+
+`pipe.record(node, path, steps=...)` steps the graph and saves a node's output
+stream to disk. A `.pkl.gz` artifact is pure `gzip` + `pickle` — no extra
+dependencies — so it round-trips anywhere `retriever-core` runs.
+
+```python
+import tempfile
+from pathlib import Path
+
+rec_path = Path(tempfile.gettempdir()) / "retriever_counter_stream.pkl.gz"
+
+pipe.reset()
+buffer = pipe.record(counter, str(rec_path), steps=4, dt=0.1)
+
+print("recorded ", [item.value for _ts, item in buffer], "to", rec_path.name)
+print("exists  :", rec_path.exists())
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+recorded  [1, 2, 3, 4] to retriever_counter_stream.pkl.gz
+exists  : True
+```
+
+`pipe.replay(node, path=...)` swaps that node for an in-process replay source that
+re-emits the recorded values in order. The rest of the graph is untouched, so
+downstream Flows re-run against a fixed input — no live source needed, and every
+run is identical.
+
+```python
+pipe.replay(counter, path=str(rec_path))  # Counter -> recorded stream
+
+replayed = []
+for _ in range(4):
+    result = pipe.step(dt=0.1)
+    replayed.append(result.outputs["Doubler"].value)
+
+pipe.close_stepper()  # finalize flows created for stepping
+
+print("replayed source  :", [item.value for _ts, item in buffer])
+print("doubler output   :", replayed)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+replayed source  : [1, 2, 3, 4]
+doubler output   : [2, 4, 6, 8]
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the replayed source reproduces the recorded values exactly, and <code>Doubler</code> doubles each one deterministically. That is the debug loop: <strong>inspect</strong> the IR, <strong>step</strong> in-process with a debugger, then <strong>record once and replay many times</strong> to turn a timing-sensitive run into a stable artifact you can share. Next: <a href="/tutorials/debug-and-visualize/">Debug and Visualize</a> extends this to perception, Rerun, and MCAP recordings.</p>
+
+---
+
+This page is generated from [`notebooks/src/step_debug_replay.py`](https://github.com/openretriever/retriever/blob/main/notebooks/src/step_debug_replay.py) (jupytext `py:percent` source). Grab the [runnable notebook](/notebooks/step-debug-replay.ipynb) and run every cell yourself.

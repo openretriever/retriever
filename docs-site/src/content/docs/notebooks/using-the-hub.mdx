@@ -1,0 +1,138 @@
+---
+title: Using the Hub (Notebook)
+description: Resolve and load a module export at runtime with hub.use, against the live openretriever/hello-world module — the notebook version of Hub Packs and Modules, with a downloadable .ipynb.
+---
+
+The notebook companion to [Hub Packs and Modules](/ecosystem/modules/):
+`hub.use("org/name:Export")` fetches a module from its git repo and hands back
+the exported object itself. The public module `openretriever/hello-world` is live
+right now, so every output block below is captured from a real, networked run —
+the only requirement beyond `retriever-core` is a network connection.
+
+<p class="nb-actions">
+  <a class="nb-download" href="/notebooks/using-the-hub.ipynb" download>⬇&nbsp; Download&nbsp;.ipynb</a>
+  <a class="nb-download nb-colab" href="https://colab.research.google.com/github/openretriever/retriever/blob/main/docs-site/public/notebooks/using-the-hub.ipynb" target="_blank" rel="noopener">▶&nbsp; Open in Colab</a>
+</p>
+
+## Load one export by its ref
+
+A ref is `{org}/{name}:{Export}`. Here `openretriever/hello-world` is the module
+and `HelloFlow` is one name from its export table. `hub.use` fetches the repo,
+imports it under a private namespace, and returns the class itself — so you
+construct it and call `step()` exactly like a local Flow.
+
+```python
+from retriever import hub
+
+HelloFlow = hub.use("openretriever/hello-world:HelloFlow")
+
+flow = HelloFlow()
+print("returned:", HelloFlow.__name__)
+print("step:", flow.step(None).text)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+returned: HelloFlow
+step: hello, world
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the return value is the real class, not a wrapper — <code>HelloFlow()</code> builds an instance and <code>step(None)</code> runs it in-process, with no backend or clock involved.</p>
+
+## An export can be any Python object
+
+The export table is not limited to Flows. A module can publish plain functions,
+types, or values under the same ref shape. `greet` is a function export — load it
+and call it directly.
+
+```python
+greet = hub.use("openretriever/hello-world:greet")
+print(greet("retriever"))
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+hello, retriever
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>hub.use("org/name:Export")</code> returns whatever the manifest maps that name to — a class, a function, a type, a value — never a generic proxy.</p>
+
+## Load the whole module as a proxy
+
+Drop the `:attribute` and `hub.use` returns a `ModuleProxy` over the declared
+export table. `dir(proxy)` lists the exports and its repr names them.
+
+```python
+mod = hub.use("openretriever/hello-world")
+print("repr:", repr(mod))
+print("exports:", dir(mod))
+print("via proxy:", mod.HelloFlow().step(None).text)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+repr: <HubModule 'openretriever/hello-world' exports=['HelloFlow', 'greet']>
+exports: ['HelloFlow', 'greet']
+via proxy: hello, world
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the proxy is a convenient handle when you want several exports from one module without repeating the ref.</p>
+
+## The manifest is the public surface
+
+A proxy exposes *only* declared exports. Reaching for a name that is not in the
+manifest raises `AttributeError` listing what is actually available — so the
+`[tool.retriever.module]` table, not the file tree, defines what consumers see.
+
+```python
+try:
+    mod.SecretFlow
+except AttributeError as exc:
+    print("AttributeError:", exc)
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+AttributeError: Module 'openretriever/hello-world' has no export 'SecretFlow'. Available exports: ['HelloFlow', 'greet']
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> undeclared names are invisible, so a module author can refactor internals freely as long as the export table stays stable.</p>
+
+## The resolution chain, once
+
+Given a ref, the loader walks a fixed chain: parse `{org}/{name}[:attribute][@version]`,
+look `{org}/{name}` up in the Hub **index** to get the git repo URL, resolve the
+version to a commit (newest semver tag, or the tag you pinned), download and
+cache that commit under `~/.retriever/hub/cache/`, read `[tool.retriever.module]`
+from the repo's `pyproject.toml` for the export table, then import the package
+under a private, commit-scoped namespace and return the export. The result is
+cached in-process, so a second `hub.use` of the same ref returns the *same*
+object without re-fetching.
+
+```python
+first = hub.use("openretriever/hello-world:HelloFlow")
+second = hub.use("openretriever/hello-world:HelloFlow")
+print("same object cached in-process:", first is second)
+
+from retriever.hub._ref import parse_ref
+
+ref = parse_ref("openretriever/hello-world:HelloFlow")
+print("parsed ->", f"org={ref.org} name={ref.name} attr={ref.attribute} version={ref.version}")
+```
+
+<p class="notebook-label output-label">Output</p>
+
+```text
+same object cached in-process: True
+parsed -> org=openretriever name=hello-world attr=HelloFlow version=None
+```
+
+<p class="notebook-takeaway"><strong>Takeaway:</strong> index → repo → commit → <code>[tool.retriever.module]</code> exports is the whole chain; add <code>@version</code> to pin a tag and <code>refresh=True</code> to bypass the cache. Next: <a href="/ecosystem/publishing/">Publishing</a> makes your own repo hub-loadable through the same loader.</p>
+
+---
+
+This page is generated from [`notebooks/src/using_the_hub.py`](https://github.com/openretriever/retriever/blob/main/notebooks/src/using_the_hub.py) (jupytext `py:percent` source). Grab the [runnable notebook](/notebooks/using-the-hub.ipynb) and run every cell yourself.
