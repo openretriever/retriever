@@ -28,14 +28,14 @@ class CheckResult:
 REQUIRED_HTTP_TARGETS = (
     ("landing", "https://openretriever.org/"),
     ("landing-www", "https://www.openretriever.org/"),
-    ("core-docs-pages", "https://openretriever-docs.pages.dev/"),
-    ("golden-pages", "https://retriever-space.pages.dev/"),
+    ("core-docs-pages", "https://retriever.build/"),
+    ("golden-pages", "https://golden.retriever.build/"),
 )
 
 OPTIONAL_CUSTOM_HTTP_TARGETS = (
-    ("core-docs-custom", "https://docs.openretriever.org/"),
-    ("golden-root-custom", "https://retriever.space/"),
-    ("golden-space-custom", "https://golden.retriever.space/"),
+    ("core-docs-custom", "https://retriever.build/"),
+    ("golden-root-custom", "https://golden.retriever.build/"),
+    ("golden-space-custom", "https://golden.golden.retriever.build/"),
     ("golden-systems-custom", "https://golden.retriever.systems/"),
     ("golden-build-custom", "https://golden.retriever.build/"),
 )
@@ -46,9 +46,9 @@ REQUIRED_DNS_TARGETS = (
 )
 
 OPTIONAL_CUSTOM_DNS_TARGETS = (
-    "docs.openretriever.org",
-    "retriever.space",
-    "golden.retriever.space",
+    "retriever.build",
+    "golden.retriever.build",
+    "golden.golden.retriever.build",
     "golden.retriever.systems",
     "golden.retriever.build",
 )

@@ -4,7 +4,7 @@ import { defineConfig } from 'astro/config';
 import starlightThemeNova from 'starlight-theme-nova';
 
 export default defineConfig({
-  site: 'https://openretriever-docs.pages.dev',
+  site: 'https://retriever.build',
   integrations: [
     starlight({
       title: 'Retriever',

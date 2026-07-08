@@ -15,7 +15,7 @@ then either single-step it deterministically in-process (`pipe.step()`) or
 run it on a backend (`multiprocessing`, `dora`, `in-process`).
 
 - Python: **3.11+** (syntax uses `X | None`; 3.9/3.10 will fail at import).
-- License: Apache-2.0. Docs: <https://openretriever-docs.pages.dev/>.
+- License: Apache-2.0. Docs: <https://retriever.build/>.
 
 ## Documentation goals (keep these when editing anything)
 
@@ -117,7 +117,7 @@ pipe.run(backend="multiprocessing", duration=1.0, blocking=True)
 | Error codes (all `FlowError`/`IRError`/`HubError` codes) | `src/retriever/error.py` |
 | Runtime tests (the ones CI runs) | `tests/**/test_*_rt.py` |
 | Canonical examples | `examples/tutorial/` |
-| Deployed public docs (Starlight, source of truth) | `docs-site/` → openretriever-docs.pages.dev |
+| Deployed public docs (Starlight, source of truth) | `docs-site/` → retriever.build |
 | MkDocs content, maintained in parallel during the Starlight migration | `docs/` |
 
 ## Editing rules for this repo

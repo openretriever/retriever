@@ -384,7 +384,7 @@ pixi run p0-release-readiness
 pixi run build
 ```
 
-The project website should link install and source actions directly to the public surfaces: `https://openretriever.org/`, `https://openretriever-docs.pages.dev/`, `https://github.com/openretriever/retriever`, and `https://github.com/openretriever/golden-retriever`. If repository visibility changes, verify anonymous browser access before redeploying public links.
+The project website should link install and source actions directly to the public surfaces: `https://openretriever.org/`, `https://retriever.build/`, `https://github.com/openretriever/retriever`, and `https://github.com/openretriever/golden-retriever`. If repository visibility changes, verify anonymous browser access before redeploying public links.
 
 ### Continuous Integration
 

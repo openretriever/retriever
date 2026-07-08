@@ -14,7 +14,7 @@ Retriever has three connected public layers:
   <a href="/ecosystem/modules/"><strong>Hub Packs and Modules</strong><span>What a reusable Retriever export surface can declare and how users import it.</span></a>
   <a href="/ecosystem/composable_pipelines/"><strong>Composable Pipelines</strong><span>How to reuse a whole pipeline as an inspectable graph or one Flow stage.</span></a>
   <a href="/ecosystem/publishing/"><strong>Publishing</strong><span>Packaging conventions, import-safe modules, and index metadata.</span></a>
-  <a href="https://retriever-space.pages.dev/examples/"><strong>Golden reference layer</strong><span>Applied robotics examples and Retriever Hub pack candidates for perception, memory, language, notebooks, and robotics.</span></a>
+  <a href="https://golden.retriever.build/examples/"><strong>Golden reference layer</strong><span>Applied robotics examples and Retriever Hub pack candidates for perception, memory, language, notebooks, and robotics.</span></a>
 </div>
 
 ## API In A Nutshell

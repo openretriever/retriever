@@ -43,25 +43,25 @@ pixi run demo-webcam-replay-rrd
 
 ## Docs
 
-- [Overview](https://openretriever-docs.pages.dev/): recommended path and conceptual map.
-- [Install](https://openretriever-docs.pages.dev/getting-started/install/): source-checkout setup today, plus the runtime-only package/source split.
-- [Visual Quickstart](https://openretriever-docs.pages.dev/getting-started/visual-quickstart/): deterministic mock color-detection smoke, then live webcam/Rerun.
-- [Examples and Results](https://openretriever-docs.pages.dev/tutorials/examples-and-results/): commands paired with expected output.
-- [Debug and Visualize](https://openretriever-docs.pages.dev/tutorials/debug-and-visualize/): graph render, local stepping, Rerun, record, replay.
-- [Flow](https://openretriever-docs.pages.dev/concepts/flow/): typed Flow authoring.
-- [Time and Sync](https://openretriever-docs.pages.dev/concepts/time-and-sync/): clocks, event streams, and sync policies.
-- [Runtime](https://openretriever-docs.pages.dev/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
-- [Standard Types](https://openretriever-docs.pages.dev/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
-- [Concepts and Lineage](https://openretriever-docs.pages.dev/concepts/lineage/): relation to FRP and synchronous dataflow.
-- [Golden examples bridge](https://openretriever-docs.pages.dev/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
-- [Golden first proof](https://retriever-space.pages.dev/examples/golden-hub-proof/): runnable Golden command path from the separate `openretriever/golden-retriever` source checkout.
-- [Modules](https://openretriever-docs.pages.dev/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")`.
-- [Composable Pipelines](https://openretriever-docs.pages.dev/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
-- [Publishing](https://openretriever-docs.pages.dev/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
+- [Overview](https://retriever.build/): recommended path and conceptual map.
+- [Install](https://retriever.build/getting-started/install/): source-checkout setup today, plus the runtime-only package/source split.
+- [Visual Quickstart](https://retriever.build/getting-started/visual-quickstart/): deterministic mock color-detection smoke, then live webcam/Rerun.
+- [Examples and Results](https://retriever.build/tutorials/examples-and-results/): commands paired with expected output.
+- [Debug and Visualize](https://retriever.build/tutorials/debug-and-visualize/): graph render, local stepping, Rerun, record, replay.
+- [Flow](https://retriever.build/concepts/flow/): typed Flow authoring.
+- [Time and Sync](https://retriever.build/concepts/time-and-sync/): clocks, event streams, and sync policies.
+- [Runtime](https://retriever.build/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
+- [Standard Types](https://retriever.build/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
+- [Concepts and Lineage](https://retriever.build/concepts/lineage/): relation to FRP and synchronous dataflow.
+- [Golden examples bridge](https://retriever.build/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
+- [Golden first proof](https://golden.retriever.build/examples/golden-hub-proof/): runnable Golden command path from the separate `openretriever/golden-retriever` source checkout.
+- [Modules](https://retriever.build/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")`.
+- [Composable Pipelines](https://retriever.build/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
+- [Publishing](https://retriever.build/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
 
 ## Companion Sites
 
 - Core source target: `openretriever/retriever` for runtime implementation and source-checkout demos. Use hosted docs for stable public instructions.
 - Golden source target: `openretriever/golden-retriever` for robot-facing examples, payload packs, simulator lanes, and public-surface checks. Use the Golden first proof before heavier examples.
 - [Landing page](https://openretriever.org/): compact public front door.
-- [GoldenRetriever](https://retriever-space.pages.dev/): robot-facing reference examples, payload packs, simulator/visualization lanes, and Hub-pack candidates. Start with [First Golden Proof](https://retriever-space.pages.dev/examples/golden-hub-proof/).
+- [GoldenRetriever](https://golden.retriever.build/): robot-facing reference examples, payload packs, simulator/visualization lanes, and Hub-pack candidates. Start with [First Golden Proof](https://golden.retriever.build/examples/golden-hub-proof/).

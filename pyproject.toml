@@ -111,7 +111,7 @@ vision = [
 
 [project.urls]
 Homepage = "https://github.com/openretriever/retriever"
-Documentation = "https://openretriever-docs.pages.dev/"
+Documentation = "https://retriever.build/"
 "Bug Tracker" = "https://github.com/openretriever/retriever/issues"
 
 [tool.black]

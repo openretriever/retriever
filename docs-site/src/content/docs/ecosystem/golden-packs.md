@@ -59,7 +59,7 @@ Canonical, broadly reusable primitives stay in `retriever.types.*`. GoldenRetrie
 ## Next step
 
 - Run `pixi run demo-golden-hub-pack` from a GoldenRetriever checkout to reproduce the output above.
-- Open the [first GoldenRetriever proof](https://retriever-space.pages.dev/examples/golden-hub-proof/), then the [GoldenRetriever example catalog](https://retriever-space.pages.dev/examples/).
+- Open the [first GoldenRetriever proof](https://golden.retriever.build/examples/golden-hub-proof/), then the [GoldenRetriever example catalog](https://golden.retriever.build/examples/).
 - Read [Hub packs and modules](/ecosystem/modules/) for the general ref shape and [Publishing](/ecosystem/publishing/) to expose your own pack this way.
 
 Only manifest-declared exports are Hub-loadable. Promoted demos stay source-checkout examples until they are exported, versioned, smoke-tested, and indexed.

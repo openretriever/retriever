@@ -26,17 +26,17 @@ from typing import Any
 API_BASE = "https://api.cloudflare.com/client/v4"
 
 PAGES_DOMAINS = (
-    ("openretriever-docs", "docs.openretriever.org"),
-    ("retriever-space", "retriever.space"),
-    ("retriever-space", "golden.retriever.space"),
+    ("openretriever-docs", "retriever.build"),
+    ("retriever-space", "golden.retriever.build"),
+    ("retriever-space", "golden.golden.retriever.build"),
     ("retriever-space", "golden.retriever.systems"),
 )
 
 DNS_RECORDS = (
-    ("openretriever.org", "CNAME", "docs.openretriever.org", "openretriever-docs.pages.dev", True),
-    ("retriever.space", "CNAME", "retriever.space", "retriever-space.pages.dev", True),
-    ("retriever.space", "CNAME", "golden.retriever.space", "retriever-space.pages.dev", True),
-    ("retriever.systems", "CNAME", "golden.retriever.systems", "retriever-space.pages.dev", True),
+    ("openretriever.org", "CNAME", "retriever.build", "retriever.build", True),
+    ("golden.retriever.build", "CNAME", "golden.retriever.build", "golden.retriever.build", True),
+    ("golden.retriever.build", "CNAME", "golden.golden.retriever.build", "golden.retriever.build", True),
+    ("retriever.systems", "CNAME", "golden.retriever.systems", "golden.retriever.build", True),
 )
 
 

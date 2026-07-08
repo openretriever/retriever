@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://openretriever-docs.pages.dev/sitemap-index.xml
-# Agent map: https://openretriever-docs.pages.dev/llms.txt
+Sitemap: https://retriever.build/sitemap-index.xml
+# Agent map: https://retriever.build/llms.txt

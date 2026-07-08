@@ -38,11 +38,11 @@ After deploying core docs, verify that the live Starlight site and agent map use
 
 ```bash
 for url in \
-  https://openretriever-docs.pages.dev/ecosystem/ \
-  https://openretriever-docs.pages.dev/ecosystem/golden-packs/ \
-  https://openretriever-docs.pages.dev/ecosystem/modules/ \
-  https://openretriever-docs.pages.dev/llms.txt \
-  https://openretriever-docs.pages.dev/robots.txt; do
+  https://retriever.build/ecosystem/ \
+  https://retriever.build/ecosystem/golden-packs/ \
+  https://retriever.build/ecosystem/modules/ \
+  https://retriever.build/llms.txt \
+  https://retriever.build/robots.txt; do
   html=$(curl -fsSL "$url")
   printf '%s\n' "$url"
   legacy_subtitle='first applied robotics Hub'' module'
@@ -50,7 +50,7 @@ for url in \
   legacy_module='GoldenRetriever'' module'
   ! printf '%s' "$html" | grep -q "$legacy_module"
 done
-curl -fsSL https://openretriever-docs.pages.dev/robots.txt | grep -q 'sitemap-index.xml'
+curl -fsSL https://retriever.build/robots.txt | grep -q 'sitemap-index.xml'
 ```
 
 Run `pixi run public-surface-check` after repository visibility and the required Pages/landing surfaces are live. Add `--custom-domains` after final custom domains are active and `--package-index` after TestPyPI/PyPI publication; this content check is a narrower docs-deploy smoke.
@@ -62,7 +62,7 @@ Before making the repository public:
 - Set the default branch to `main`; verify with `pixi run public-surface-check` or `git ls-remote --symref git@github.com:openretriever/retriever.git HEAD`.
 - Keep `release/mirror-alignment-20260621` as an audit/reference branch if useful.
 - Confirm the repository URL is `https://github.com/openretriever/retriever`.
-- Confirm the hosted docs URL is `https://openretriever-docs.pages.dev/`; after DNS cutover, also confirm `https://docs.openretriever.org/`.
+- Confirm the hosted docs URL is `https://retriever.build/`; after DNS cutover, also confirm `https://retriever.build/`.
 - Build docs with `pixi run -e docs docs-build`; deploy `docs-site/dist/` through the configured static hosting target.
 
 ## Package Publish

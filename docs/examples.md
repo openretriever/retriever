@@ -19,7 +19,7 @@ Use the examples in this order. The core repo teaches the runtime itself; Golden
     <p>Typed payloads, Flow classes, clocks, sync policies, and pipeline wiring.</p>
     <code>pixi run demo-basic-flow</code>
   </a>
-  <a class="rt-path-step" href="https://retriever-space.pages.dev/examples/">
+  <a class="rt-path-step" href="https://golden.retriever.build/examples/">
     <span>03</span>
     <strong>Golden reference layer</strong>
     <p>Perception, memory, language, notebooks, robotics integration lanes, and pack candidates live in the GoldenRetriever applied examples site.</p>
@@ -57,4 +57,4 @@ Rerun is the first visual path for Retriever examples. Use `pixi run demo-webcam
 
 - [Tutorial Tracks](tutorials/index.md) for the ordered core curriculum.
 - [Runtime Handbook](handbook.md) for the canonical reference path.
-- [GoldenRetriever site](https://retriever-space.pages.dev/examples/) for applied examples and pack candidates.
+- [GoldenRetriever site](https://golden.retriever.build/examples/) for applied examples and pack candidates.
