@@ -109,6 +109,9 @@ vision = [
     "timm",
 ]
 
+[project.scripts]
+retriever = "retriever.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/openretriever/retriever"
 Documentation = "https://retriever.build/"

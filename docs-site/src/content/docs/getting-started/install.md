@@ -96,13 +96,29 @@ Until then, the source checkout above is the supported path, and it is the only 
 
 | Situation | Command |
 | --- | --- |
-| Reliable first smoke, no camera, no GUI | `pixi run demo-webcam-detection-mock` |
-| Live webcam with automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
-| Understand the smallest Flow first | `pixi run demo-basic-flow` |
-| Render an interactive HTML graph | `pixi run docs-tutorial-perception-html` |
-| Record a run, then replay it | `pixi run demo-webcam-record` then `pixi run demo-webcam-replay-rrd` |
+| Reliable first smoke, no camera, no GUI | `retriever webcam-mock` or `pixi run demo-webcam-detection-mock` |
+| Live webcam with automatic Rerun/stdout fallback | `retriever webcam` or `pixi run demo-webcam-detection` |
+| Understand the smallest Flow first | `retriever basic-flow` or `pixi run demo-basic-flow` |
+| Render an interactive HTML graph | `retriever graph` or `pixi run docs-tutorial-perception-html` |
+| Record a run, then replay it | `retriever record` then `retriever replay` |
 
 `demo-webcam-detection` needs a real webcam and uses `--visualize auto` (Rerun when available, stdout otherwise). If you have no camera or a permission prompt blocks it, stay on `-mock`.
+
+
+## Retriever CLI wrapper
+
+The source checkout also installs a small `retriever` console script. It does not
+replace Pixi; it wraps the same Pixi tasks with shorter names:
+
+```bash
+retriever webcam-mock      # pixi run demo-webcam-detection-mock
+retriever webcam           # pixi run demo-webcam-detection
+retriever graph            # pixi run docs-tutorial-perception-html
+retriever run demo-basic-flow
+```
+
+Use `retriever tasks` to see the curated aliases. Use raw `pixi run ...` whenever
+you want the exact task name or Pixi environment flags.
 
 ## If something fails
 

@@ -94,7 +94,7 @@ The current working path is source checkout plus Pixi because the examples and v
 git clone https://github.com/openretriever/retriever
 cd retriever
 pixi install
-pixi run demo-webcam-detection-mock
+retriever webcam-mock
 ```
 
 The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. After `retriever-core==0.0.1` resolves from PyPI, the minimal runtime install is:
@@ -108,8 +108,8 @@ For repository demos, use Pixi because it includes example files and optional vi
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash
 pixi install
-pixi run demo-webcam-detection-mock
-pixi run demo-webcam-detection
+retriever webcam-mock      # same as: pixi run demo-webcam-detection-mock
+retriever webcam           # same as: pixi run demo-webcam-detection
 ```
 
 `demo-webcam-detection-mock` runs `camera -> color detector -> display` with
@@ -121,11 +121,14 @@ paper/objects in front of the camera to see detections.
 Useful follow-up commands:
 
 ```bash
-pixi run demo-basic-flow
-pixi run demo-rt-execution
-pixi run demo-stepper
-pixi run demo-webcam-record
+retriever basic-flow
+retriever run demo-rt-execution
+retriever stepper
+retriever record
+retriever tasks
 ```
+
+`retriever` is intentionally a thin wrapper over Pixi tasks. Use `retriever run <task>` for any raw task name, or use `pixi run <task>` directly when you need Pixi environment flags.
 
 ## Documentation Path
 

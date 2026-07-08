@@ -1,6 +1,6 @@
 ---
 title: Why Retriever
-description: How Retriever positions against raw Python, ROS 2, and Dora - the mental model and an at-a-glance comparison.
+description: How Retriever positions against raw Python, Ray, ROS 2, and Dora - the mental model and an at-a-glance comparison.
 ---
 
 If you know PyTorch, you already have the mental model: you compose `Flow`s the
@@ -27,30 +27,34 @@ forward pass, so time is part of the program, not an accident of scheduling.
 
 ## How Retriever compares
 
-Retriever borrows from three familiar *categories* rather than competing with any
+Retriever borrows from familiar *categories* rather than competing with any
 single tool. So the comparison is by category — Yes = built in, Partial =
 possible with extra scaffolding, No = not what the category is designed for.
 
-| | Plain Python | DL frameworks (PyTorch / TF) | Robotics dataflow (ROS 2 / Dora) | Retriever |
-| --- | :---: | :---: | :---: | :---: |
-| **What it's for** | scripts & glue | building / training models | distributed message passing | closed-loop, multi-rate agents |
-| Typed port / message contracts | No | Partial: tensors | Partial | **Yes:** `@io` |
-| Explicit per-node rates | No | No | Yes | **Yes** |
-| Sampling / sync made explicit | No | No | Partial | **Yes:** `sync=` |
-| In-process step-debug | Partial | Yes: eager | No | **Yes:** `Pipeline.step(...)` |
-| Record + replay of the run | No | No: weights only | Partial: bags | **Yes:** MCAP/Rerun |
-| Same graph, many backends | N/A | Partial: export | Partial | **Yes:** in-process / mp / Dora |
-| Python-native authoring | Yes | Yes | Partial: bindings | **Yes** |
+| | Plain Python | DL frameworks (PyTorch / TF) | Distributed Python (Ray) | Robotics dataflow (ROS 2 / Dora) | Retriever |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| **What it's for** | scripts & glue | building / training models | distributed Python tasks and actors | distributed message passing | closed-loop, multi-rate agents |
+| Typed port / message contracts | No | Partial: tensors | Partial: Python APIs | Partial | **Yes:** `@io` |
+| Explicit per-node rates | No | No | No | Yes | **Yes** |
+| Sampling / sync made explicit | No | No | No | Partial | **Yes:** `sync=` |
+| In-process step-debug | Partial | Yes: eager | Partial: local mode / logs | No | **Yes:** `Pipeline.step(...)` |
+| Record + replay of the run | No | No: weights only | Partial: logs / artifacts | Partial: bags | **Yes:** MCAP/Rerun |
+| Same graph, many backends | N/A | Partial: export | Partial: local / cluster | Partial | **Yes:** in-process / mp / Dora |
+| Python-native authoring | Yes | Yes | Yes | Partial: bindings | **Yes** |
 
 Each category owns a different problem: **DL frameworks** own the *model* — a
-compute graph with autodiff, run one forward pass at a time; **robotics dataflow**
-owns *distributed messaging* between nodes; **Retriever** owns *closed-loop time* —
-how a graph of stateful components runs, samples its inputs, and stays reproducible
-across mismatched rates. Retriever keeps the PyTorch-style authoring feel (compose
-typed components) and adds the timing and replay guarantees a real robot loop needs.
+compute graph with autodiff, run one forward pass at a time; **Ray** owns
+*distributed Python execution* with tasks, actors, and cluster scheduling;
+**robotics dataflow** owns *distributed messaging* between nodes; **Retriever**
+owns *closed-loop time* — how a graph of stateful components runs, samples its
+inputs, and stays reproducible across mismatched rates. Retriever keeps the
+PyTorch-style authoring feel (compose typed components), borrows the actor/DAG
+intuition from Ray, and adds the timing and replay guarantees a real robot loop
+needs.
 
 `Partial` means achievable but not the default path — ROS 2 sync via
-`message_filters`, replay through bags, or exporting a model with TorchScript.
+`message_filters`, replay through bags, Ray logs/artifacts, or exporting a model
+with TorchScript.
 
 ## When to use it - and when not
 
