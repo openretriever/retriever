@@ -12,7 +12,7 @@ The fastest way to see Retriever work. One command builds a three-Flow perceptio
 From a source checkout with the environment built ([install](/getting-started/install/)):
 
 ```bash
-pixi run demo-webcam-detection-mock
+./scripts/retriever run webcam-mock
 ```
 
 Stripped of INFO log lines, the output is:
@@ -58,30 +58,30 @@ What just ran:
 ## Step 2: Switch to a live webcam and Rerun
 
 ```bash
-pixi run demo-webcam-detection
+./scripts/retriever run webcam
 ```
 
-Same graph, real camera input. This target uses `--visualize auto`: on a machine with a working viewer, Rerun shows frames and detections over time; otherwise it falls back to stdout so runtime correctness stays separate from viewer setup. It needs a webcam — if you have none, stay on `-mock`.
+Same graph, real camera input. This target uses `--visualize auto`: on a machine with a working viewer, Rerun shows frames and detections over time; otherwise it falls back to stdout so runtime correctness stays separate from viewer setup. It needs a webcam — if you have none, stay on `webcam-mock`.
 
 ## Step 3: Pick the right variant
 
 | Need | Command |
 | --- | --- |
-| Reliable first smoke, no hardware | `pixi run demo-webcam-detection-mock` |
-| Live webcam, automatic Rerun/stdout fallback | `pixi run demo-webcam-detection` |
-| Live webcam, multiprocessing backend, forced Rerun | `pixi run demo-webcam-detection-mp-rerun` |
-| Step the detector deterministically, no camera | `pixi run demo-perception-stepper` |
-| Portable recording for replay | `pixi run demo-webcam-record` |
+| Reliable first smoke, no hardware | `./scripts/retriever run webcam-mock` |
+| Live webcam, automatic Rerun/stdout fallback | `./scripts/retriever run webcam` |
+| Live webcam, multiprocessing backend, forced Rerun | `./scripts/retriever run webcam-rerun` |
+| Step the detector deterministically, no camera | `./scripts/retriever run perception-stepper` |
+| Portable recording for replay | `./scripts/retriever run record` |
 
 ## Step 4: If it looks wrong
 
 | Symptom | Try first | Why |
 | --- | --- | --- |
-| No camera or a permission prompt | `pixi run demo-webcam-detection-mock` | Removes hardware from the question. |
-| Rerun viewer does not open | `pixi run demo-perception-stepper` | Keeps runtime verification separate from viewer setup. |
-| Graph wiring is unclear | `pixi run docs-tutorial-perception-html` | Shows Flow nodes, ports, clocks, and sync policies. |
-| Detection output is surprising | `pixi run demo-perception-stepper` | Steps the detector one frame at a time on deterministic mock frames. |
-| Behavior changes between runs | `pixi run demo-webcam-record` then replay | Saves the input stream as a reusable artifact. |
+| No camera or a permission prompt | `./scripts/retriever run webcam-mock` | Removes hardware from the question. |
+| Rerun viewer does not open | `./scripts/retriever run perception-stepper` | Keeps runtime verification separate from viewer setup. |
+| Graph wiring is unclear | `./scripts/retriever run graph` | Shows Flow nodes, ports, clocks, and sync policies. |
+| Detection output is surprising | `./scripts/retriever run perception-stepper` | Steps the detector one frame at a time on deterministic mock frames. |
+| Behavior changes between runs | `./scripts/retriever run record` then `./scripts/retriever run replay` | Saves the input stream as a reusable artifact. |
 
 ## Why this demo is first
 

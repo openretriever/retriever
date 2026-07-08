@@ -6,7 +6,7 @@ A pipeline is built by a function, so it distributes like one. A Hub module can 
 Prove the mechanics locally first — this runs in the core checkout:
 
 ```bash
-pixi run demo-composable-pipelines
+./scripts/retriever run composable-pipelines
 ```
 
 ```text
@@ -107,6 +107,6 @@ camera.then(slam_stage, sync=Latest())
 
 Explicit ports are `flow_id.port`. Selectors resolve by exact flow/node id first, then fall back to a unique flow class name. Prefer stable `.named(...)` handles and declare them in `input_ports=[...]` / `output_ports=[...]` so the public surface does not drift with internal renames.
 
-`Pipeline.visualize(...)` and `IR.visualize(...)` keep wrapped-pipeline context: a nested `build_pipeline_flow(...)` stage renders as a grouped box around its lowered inner flows, with the pipeline name and surfaced port bindings. Render the tutorial graph with `pixi run docs-tutorial-composable-html`.
+`Pipeline.visualize(...)` and `IR.visualize(...)` keep wrapped-pipeline context: a nested `build_pipeline_flow(...)` stage renders as a grouped box around its lowered inner flows, with the pipeline name and surfaced port bindings. Render the tutorial graph with `./scripts/retriever run graph-composable`.
 
 For applied composition, see the [GoldenRetriever Hub quickstart](https://golden.retriever.build/examples/golden-hub-proof/) and the GoldenRetriever examples.

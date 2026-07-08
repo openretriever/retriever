@@ -82,7 +82,7 @@ rejected tampered IR: [IR_VAL_INVALID]: Duplicate node id 'SourceFlow'
 ```
 
 ```bash
-pixi run demo-ir-validation   # prints the full IR as JSON
+./scripts/retriever run ir-validation   # prints the full IR as JSON
 ```
 
 `IR.from_json(...)` re-runs structural validation on load, so IR read from disk or a Hub module is not trusted blindly — duplicate node ids, dangling edge or adjacency references, and unknown ports fail with a named node or edge *before* a backend tries to execute the graph.
@@ -134,7 +134,7 @@ run B: [2, 4, 6, 8, 10]
 Two independent runs produce the identical trace. This is Retriever's headline property — **functional determinism**: the same timestamped input trace yields the same output trace regardless of scheduling. It is why in-process debugging is trustworthy and why replay and verification are well-defined.
 
 ```bash
-pixi run demo-stepper   # the shipped in-process stepper, with a --fail-at breakpoint
+./scripts/retriever run stepper   # the shipped in-process stepper, with a --fail-at breakpoint
 ```
 
 ## Same IR, different backend
@@ -153,8 +153,8 @@ pipe.run(backend="dora", duration=3)
 ```
 
 ```bash
-pixi run demo-multirate         # multiprocessing
-pixi run demo-webcam-detection-dora   # dora
+./scripts/retriever run multirate         # multiprocessing
+./scripts/retriever run webcam-dora   # dora
 ```
 
 ## Record and replay turn runs into evidence
@@ -162,8 +162,8 @@ pixi run demo-webcam-detection-dora   # dora
 Because a run is a timestamped input trace, recording it and replaying it reconstructs the exact outputs — a live incident and its replay produce the same diagnosis, not merely a similar one.
 
 ```bash
-pixi run demo-record-replay     # record a run, then replay it step-for-step
-pixi run demo-incident-replay   # replay a captured incident and diff the diagnosis
+./scripts/retriever run record-replay     # record a run, then replay it step-for-step
+./scripts/retriever run incident-replay   # replay a captured incident and diff the diagnosis
 ```
 
 Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay drives the same graph from the recording instead of live inputs. See [Debug and Visualize](/tutorials/debug-and-visualize/) for the full record/replay walkthrough.

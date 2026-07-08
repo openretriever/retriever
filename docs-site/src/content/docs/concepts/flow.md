@@ -97,7 +97,7 @@ Keep `__init__()` lightweight and serializable. Backends reconstruct a Flow from
 ## Run the shipped example
 
 ```bash
-pixi run demo-basic-flow
+./scripts/retriever run basic-flow
 ```
 
 This runs `examples/tutorial/a_flow_fundamentals/01_basic_flow.py`, which exercises both `DoubleFlow` and the `_signals` branch and prints each step.

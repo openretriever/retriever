@@ -1,82 +1,172 @@
-"""Small command-line wrapper around Retriever repo Pixi tasks.
+"""Retriever command-line surface for package and source-checkout workflows.
 
-The CLI intentionally delegates task execution to Pixi instead of becoming a
-second task registry. Retriever owns the friendly command names; Pixi owns the
-reproducible environment and task definitions.
+The PyPI package installs this executable through ``[project.scripts]``. The CLI
+owns Retriever verbs such as ``init``, ``install``, and ``run``; the source
+checkout currently uses Pixi as the reproducible environment and task backend.
 """
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+from importlib import metadata
 from pathlib import Path
 from typing import Sequence
 
-ALIASES: dict[str, str] = {
+RUN_TARGETS: dict[str, str] = {
     "basic": "demo-basic-flow",
     "basic-flow": "demo-basic-flow",
+    "composable-pipelines": "demo-composable-pipelines",
+    "ir-validation": "demo-ir-validation",
+    "multirate": "demo-multirate",
+    "record-replay": "demo-record-replay",
+    "rt-execution": "demo-rt-execution",
     "webcam": "demo-webcam-detection",
     "webcam-live": "demo-webcam-detection",
     "webcam-mock": "demo-webcam-detection-mock",
     "webcam-rerun": "demo-webcam-detection-mp-rerun",
+    "webcam-dora": "demo-webcam-detection-dora",
+    "dora-perception": "demo-webcam-detection-dora",
     "stepper": "demo-stepper",
+    "perception-stepper": "demo-perception-stepper",
     "webcam-stepper": "demo-webcam-stepper",
     "graph": "docs-tutorial-perception-html",
     "graph-perception": "docs-tutorial-perception-html",
     "graph-composable": "docs-tutorial-composable-html",
     "record": "demo-webcam-record",
     "replay": "demo-webcam-replay-rrd",
+    "incident-replay": "demo-incident-replay",
     "docs": "docs-serve",
     "docs-build": "docs-build",
     "test": "test",
 }
 
-COMPOUND_ALIASES: dict[tuple[str, str], str] = {
+COMPOUND_RUN_TARGETS: dict[tuple[str, str], str] = {
     ("demo", "basic"): "demo-basic-flow",
     ("demo", "webcam"): "demo-webcam-detection",
     ("demo", "mock"): "demo-webcam-detection-mock",
     ("demo", "rerun"): "demo-webcam-detection-mp-rerun",
-    ("debug", "stepper"): "demo-stepper",
-    ("debug", "record"): "demo-webcam-record",
-    ("debug", "replay"): "demo-webcam-replay-rrd",
     ("graph", "perception"): "docs-tutorial-perception-html",
     ("graph", "composable"): "docs-tutorial-composable-html",
 }
 
+PIXI_INSTALL_COMMAND = "curl -fsSL https://pixi.sh/install.sh | sh"
+STARTER_PIXI = """[workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["osx-arm64", "linux-64", "win-64"]
+
+[dependencies]
+python = "3.11.*"
+pip = "*"
+
+[pypi-dependencies]
+retriever-core = "*"
+
+[tasks]
+hello = "python main.py"
+"""
+STARTER_MAIN = """from dataclasses import dataclass
+
+from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+
+
+@io
+@dataclass
+class Number:
+    value: int
+
+
+@io
+@dataclass
+class Doubled:
+    value: int
+
+
+class Source(Flow[None, Number]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.count = 0
+
+    def step(self, _inp: None = None) -> Number:
+        self.count += 1
+        return Number(self.count)
+
+
+class Double(Flow[Number, Doubled]):
+    def step(self, inp: Number) -> Doubled:
+        return Doubled(inp.value * 2)
+
+
+class Printer(Flow[Doubled, None]):
+    def step(self, inp: Doubled) -> None:
+        print(f"doubled={inp.value}")
+        return None
+
+
+pipe = Pipeline("hello-retriever")
+with pipe:
+    source = Source() @ Rate(hz=2)
+    double = Double() @ Trigger("value")
+    printer = Printer() @ Trigger("value")
+
+    source.then(double, sync=Latest())
+    double.then(printer, sync=Latest())
+
+pipe.validate()
+pipe.run(backend="in-process", duration=1.0)
+"""
 HELP = """Retriever CLI
 
 Usage:
-  retriever <alias-or-pixi-task> [-- task args...]
-  retriever run <pixi-task> [-- task args...]
+  retriever --version
+  retriever init [path] [--bootstrap-pixi]
+  retriever install [--bootstrap-pixi]
+  retriever run <target-or-pixi-task> [-- task args...]
   retriever tasks
-  retriever --dry-run <alias-or-pixi-task> [-- task args...]
+  retriever --dry-run run <target-or-pixi-task> [-- task args...]
 
-Common aliases:
-  webcam-mock       -> pixi run demo-webcam-detection-mock
-  webcam            -> pixi run demo-webcam-detection
-  webcam-rerun      -> pixi run demo-webcam-detection-mp-rerun
-  basic-flow        -> pixi run demo-basic-flow
-  graph             -> pixi run docs-tutorial-perception-html
-  record            -> pixi run demo-webcam-record
-  replay            -> pixi run demo-webcam-replay-rrd
-  docs              -> pixi run docs-serve
+PyPI path:
+  python -m pip install retriever-core
+  retriever init my-retriever-app --bootstrap-pixi
+  cd my-retriever-app
+  retriever run hello
 
-Raw Pixi task forwarding:
-  retriever run demo-pipeline-ergonomics
-  retriever demo-pipeline-ergonomics
+Source-checkout path:
+  git clone https://github.com/openretriever/retriever
+  cd retriever
+  ./scripts/retriever install --bootstrap-pixi
+  ./scripts/retriever run webcam-mock
 
-Arguments after -- are passed to the Pixi task command.
+Common source-checkout run targets:
+  retriever run webcam-mock         # deterministic first smoke, no camera/GUI
+  retriever run webcam              # live webcam with Rerun/stdout fallback
+  retriever run graph               # render the perception tutorial graph
+  retriever run perception-stepper  # step perception without camera/GUI
+  retriever run record              # record a perception run
+  retriever run replay              # replay the recorded Rerun artifact
+  retriever run basic-flow          # smallest Flow tutorial
+
+Arguments after -- are passed to the task command.
 """
 
 
 @dataclass(frozen=True)
 class Command:
-    task: str | None
+    action: str
+    task: str | None = None
+    path: Path | None = None
     args: tuple[str, ...] = ()
     dry_run: bool = False
-    list_tasks: bool = False
-    show_help: bool = False
+    bootstrap_pixi: bool = False
+
+
+def package_version() -> str:
+    try:
+        return metadata.version("retriever-core")
+    except metadata.PackageNotFoundError:
+        return "0+source"
 
 
 def find_pixi_workspace(start: Path | None = None) -> Path | None:
@@ -95,85 +185,222 @@ def _strip_separator(args: Sequence[str]) -> tuple[str, ...]:
     return tuple(args)
 
 
-def parse_command(argv: Sequence[str]) -> Command:
-    args = list(argv)
+def _pop_global_flags(args: list[str]) -> tuple[bool, list[str]]:
     dry_run = False
-    if args and args[0] == "--dry-run":
+    while args and args[0] == "--dry-run":
         dry_run = True
         args.pop(0)
+    return dry_run, args
+
+
+def parse_command(argv: Sequence[str]) -> Command:
+    args = list(argv)
+    dry_run, args = _pop_global_flags(args)
 
     if not args or args[0] in {"-h", "--help", "help"}:
-        return Command(task=None, dry_run=dry_run, show_help=True)
+        return Command(action="help", dry_run=dry_run)
+
+    if args[0] in {"--version", "version"}:
+        return Command(action="version", dry_run=dry_run)
 
     if args[0] in {"tasks", "list"}:
-        return Command(task=None, dry_run=dry_run, list_tasks=True)
+        return Command(action="tasks", dry_run=dry_run)
+
+    if args[0] == "init":
+        rest = [arg for arg in args[1:] if arg != "--bootstrap-pixi"]
+        path = Path(rest[0]) if rest else Path("retriever-app")
+        return Command(
+            action="init",
+            path=path,
+            dry_run=dry_run,
+            bootstrap_pixi="--bootstrap-pixi" in args[1:],
+        )
+
+    if args[0] == "install":
+        return Command(
+            action="install",
+            dry_run=dry_run,
+            bootstrap_pixi="--bootstrap-pixi" in args[1:],
+        )
 
     if args[0] == "run":
         if len(args) == 1:
-            return Command(task=None, dry_run=dry_run, show_help=True)
+            return Command(action="help", dry_run=dry_run)
+        run_args = args[1:]
+        if len(run_args) >= 2:
+            compound = COMPOUND_RUN_TARGETS.get((run_args[0], run_args[1]))
+            if compound is not None:
+                return Command(
+                    action="run",
+                    task=compound,
+                    args=_strip_separator(run_args[2:]),
+                    dry_run=dry_run,
+                )
         return Command(
-            task=args[1],
-            args=_strip_separator(args[2:]),
+            action="run",
+            task=RUN_TARGETS.get(run_args[0], run_args[0]),
+            args=_strip_separator(run_args[1:]),
             dry_run=dry_run,
         )
 
-    if len(args) >= 2:
-        compound = COMPOUND_ALIASES.get((args[0], args[1]))
-        if compound is not None:
-            return Command(
-                task=compound,
-                args=_strip_separator(args[2:]),
-                dry_run=dry_run,
-            )
-
-    return Command(
-        task=ALIASES.get(args[0], args[0]),
-        args=_strip_separator(args[1:]),
-        dry_run=dry_run,
-    )
+    return Command(action="error", dry_run=dry_run)
 
 
-def build_pixi_command(command: Command) -> list[str]:
+def build_run_command(command: Command) -> list[str]:
     if command.task is None:
-        raise ValueError("cannot build a Pixi command without a task")
+        raise ValueError("cannot build a run command without a task")
     return ["pixi", "run", command.task, *command.args]
 
 
+def build_install_commands(command: Command) -> list[str]:
+    commands = []
+    if command.bootstrap_pixi:
+        commands.append(PIXI_INSTALL_COMMAND)
+    commands.append("pixi install")
+    return commands
+
+
 def render_tasks() -> str:
-    rows = ["Retriever aliases (thin wrappers over pixi run):"]
-    width = max(len(alias) for alias in ALIASES)
-    for alias, task in sorted(ALIASES.items()):
-        rows.append(f"  {alias:<{width}}  ->  pixi run {task}")
+    rows = ["Retriever run targets for the source checkout:"]
+    width = max(len(alias) for alias in RUN_TARGETS)
+    for alias, task in sorted(RUN_TARGETS.items()):
+        rows.append(f"  {alias:<{width}}  ->  {task}")
     rows.append("")
-    rows.append("Any Pixi task also works directly: retriever run <task>")
+    rows.append("Source checkout task escape hatch: retriever run <task>")
     return "\n".join(rows)
+
+
+def _pixi_executable() -> str | None:
+    found = shutil.which("pixi")
+    if found is not None:
+        return found
+    for candidate in (
+        Path.home() / ".pixi" / "bin" / "pixi",
+        Path.home() / ".local" / "bin" / "pixi",
+    ):
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def _ensure_pixi(command: Command) -> str | None:
+    pixi = _pixi_executable()
+    if pixi is not None:
+        return pixi
+    if not command.bootstrap_pixi:
+        print(
+            "retriever: Pixi is not installed. Install it yourself or rerun with "
+            "--bootstrap-pixi to use the official Pixi installer.",
+            file=sys.stderr,
+        )
+        print(f"manual Pixi installer: {PIXI_INSTALL_COMMAND}", file=sys.stderr)
+        return None
+    code = subprocess.call(["sh", "-c", PIXI_INSTALL_COMMAND])
+    if code != 0:
+        return None
+    pixi = _pixi_executable()
+    if pixi is None:
+        print(
+            "retriever: Pixi installer finished, but `pixi` was not found in "
+            "PATH, ~/.pixi/bin, or ~/.local/bin. Restart your shell, then run "
+            "`retriever install`.",
+            file=sys.stderr,
+        )
+    return pixi
+
+
+def _run_install(command: Command, workspace: Path) -> int:
+    if command.dry_run:
+        print("\n".join(build_install_commands(command)))
+        return 0
+
+    pixi = _ensure_pixi(command)
+    if pixi is None:
+        return 2
+
+    return subprocess.call([pixi, "install"], cwd=str(workspace))
+
+
+def _run_init(command: Command) -> int:
+    target = (command.path or Path("retriever-app")).resolve()
+    if command.dry_run:
+        print(f"mkdir -p {target}")
+        print(f"write {target / 'pixi.toml'}")
+        print(f"write {target / 'main.py'}")
+        for line in build_install_commands(command):
+            print(line)
+        return 0
+
+    target.mkdir(parents=True, exist_ok=True)
+    pixi_file = target / "pixi.toml"
+    main_file = target / "main.py"
+    if pixi_file.exists() or main_file.exists():
+        print(
+            "retriever: refusing to overwrite existing pixi.toml or main.py in "
+            f"{target}",
+            file=sys.stderr,
+        )
+        return 2
+    pixi_file.write_text(STARTER_PIXI, encoding="utf-8")
+    main_file.write_text(STARTER_MAIN, encoding="utf-8")
+    print(f"created Retriever starter workspace: {target}")
+    return _run_install(command, target)
+
+
+def _run_workspace_action(command: Command, workspace: Path) -> int:
+    if command.action == "install":
+        return _run_install(command, workspace)
+
+    if command.action != "run":
+        print(HELP, file=sys.stderr)
+        return 2
+
+    run_command = build_run_command(command)
+    if command.dry_run:
+        print(" ".join(run_command))
+        return 0
+
+    pixi = _pixi_executable()
+    if pixi is None:
+        print(
+            "retriever: Pixi is not installed. Run `retriever install --bootstrap-pixi` "
+            "from this workspace first.",
+            file=sys.stderr,
+        )
+        return 2
+    run_command[0] = pixi
+    return subprocess.call(run_command, cwd=str(workspace))
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     command = parse_command(sys.argv[1:] if argv is None else argv)
 
-    if command.show_help:
+    if command.action == "help":
         print(HELP)
         return 0
-    if command.list_tasks:
+    if command.action == "version":
+        print(package_version())
+        return 0
+    if command.action == "tasks":
         print(render_tasks())
         return 0
-
-    pixi_command = build_pixi_command(command)
-    if command.dry_run:
-        print(" ".join(pixi_command))
-        return 0
+    if command.action == "error":
+        print(HELP, file=sys.stderr)
+        return 2
+    if command.action == "init":
+        return _run_init(command)
 
     workspace = find_pixi_workspace()
     if workspace is None:
         print(
-            "retriever: no pixi.toml found in this directory or its parents; "
-            "run from a Retriever source checkout.",
+            "retriever: no pixi.toml found in this directory or its parents. "
+            "Use `retriever init <path>` for a new package workspace, or run from "
+            "a Retriever source checkout for repository demos.",
             file=sys.stderr,
         )
         return 2
 
-    return subprocess.call(pixi_command, cwd=str(workspace))
+    return _run_workspace_action(command, workspace)
 
 
 if __name__ == "__main__":  # pragma: no cover

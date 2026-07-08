@@ -3,7 +3,7 @@ title: Examples and Results
 description: A notebook-style walkthrough through the first Retriever examples.
 ---
 
-Run one cell, compare its real output, then read what the graph did. The commands below are Pixi tasks from the source checkout; the output blocks are captured verbatim (INFO log lines stripped). Because Retriever is functionally deterministic, these results reproduce run to run.
+Run one cell, compare its real output, then read what the graph did. The commands below use the source-checkout CLI surface; the output blocks are captured verbatim (INFO log lines stripped). Because Retriever is functionally deterministic, these results reproduce run to run.
 
 **What you'll get:** a concrete path from a one-Flow function up to visual perception, a rendered graph, and a recorded run you can replay.
 
@@ -12,7 +12,7 @@ Run one cell, compare its real output, then read what the graph did. The command
 <p class="notebook-label">Command</p>
 
 ```bash
-pixi run demo-basic-flow
+./scripts/retriever run basic-flow
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -48,7 +48,7 @@ SignalAwareFlow - _signals pattern matching
 <p class="notebook-label">Command</p>
 
 ```bash
-pixi run demo-stepper
+./scripts/retriever run stepper
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -77,7 +77,7 @@ pixi run demo-stepper
 <p class="notebook-label">Command</p>
 
 ```bash
-pixi run demo-perception-stepper
+./scripts/retriever run perception-stepper
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -100,7 +100,7 @@ pixi run demo-perception-stepper
 <p class="notebook-label">Command: deterministic first smoke</p>
 
 ```bash
-pixi run demo-webcam-detection-mock
+./scripts/retriever run webcam-mock
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -135,7 +135,7 @@ Detection:
 <p class="notebook-label">Command: live webcam and Rerun/stdout</p>
 
 ```bash
-pixi run demo-webcam-detection
+./scripts/retriever run webcam
 ```
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> the visual demo is the same three-Flow graph — camera, detector, display — as the stepper. The mock target gives a stable expected result for docs, tests, and remote machines; the live target runs the identical graph on a real webcam with Rerun when available.</p>
@@ -145,7 +145,7 @@ pixi run demo-webcam-detection
 <p class="notebook-label">Command</p>
 
 ```bash
-pixi run docs-tutorial-perception-html
+./scripts/retriever run graph
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -162,7 +162,7 @@ Open this file in your browser to view the interactive graph.
 <p class="notebook-label">Command: record 10 mock steps</p>
 
 ```bash
-pixi run demo-webcam-record
+./scripts/retriever run record
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -175,7 +175,7 @@ pixi run demo-webcam-record
 <p class="notebook-label">Command: replay the recording</p>
 
 ```bash
-pixi run demo-webcam-replay-rrd
+./scripts/retriever run replay
 ```
 
 <p class="notebook-label output-label">Output</p>

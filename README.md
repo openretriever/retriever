@@ -88,28 +88,24 @@ The important pieces are small:
 
 Use Python 3.11 or newer.
 
-The current working path is source checkout plus Pixi because the examples and visualization assets live in the repository:
+The public package target is `retriever-core`; the Python import package and executable command are both `retriever`:
+
+```bash
+python -m pip install retriever-core
+retriever --version
+retriever init my-retriever-app --bootstrap-pixi
+cd my-retriever-app
+retriever run hello
+```
+
+For repository demos, clone the source checkout because the example files, graph renderers, and visualization assets live in the repository. The source launcher works before the editable package is installed:
 
 ```bash
 git clone https://github.com/openretriever/retriever
 cd retriever
-pixi install
-retriever webcam-mock
-```
-
-The public PyPI distribution target is `retriever-core`; the Python import package is `retriever`. After `retriever-core==0.0.1` resolves from PyPI, the minimal runtime install is:
-
-```bash
-python -m pip install retriever-core
-```
-
-For repository demos, use Pixi because it includes example files and optional visualization dependencies. Start with the deterministic color-detection smoke, then run the live webcam visual demo:
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-pixi install
-retriever webcam-mock      # same as: pixi run demo-webcam-detection-mock
-retriever webcam           # same as: pixi run demo-webcam-detection
+./scripts/retriever install --bootstrap-pixi
+./scripts/retriever run webcam-mock
+./scripts/retriever run webcam
 ```
 
 `demo-webcam-detection-mock` runs `camera -> color detector -> display` with
@@ -118,17 +114,37 @@ runs. `demo-webcam-detection` requests a real webcam and uses `--visualize auto`
 so Rerun is used when available and stdout is used otherwise. Hold red or blue
 paper/objects in front of the camera to see detections.
 
-Useful follow-up commands:
+Useful follow-up commands from the source checkout:
 
 ```bash
-retriever basic-flow
-retriever run demo-rt-execution
-retriever stepper
-retriever record
-retriever tasks
+./scripts/retriever run basic-flow
+./scripts/retriever run rt-execution
+./scripts/retriever run stepper
+./scripts/retriever run record
+./scripts/retriever tasks
 ```
 
-`retriever` is intentionally a thin wrapper over Pixi tasks. Use `retriever run <task>` for any raw task name, or use `pixi run <task>` directly when you need Pixi environment flags.
+`retriever run <name>` is the stable command surface for examples and diagnostics. Raw repository task names still work with `retriever run <task>` as a source-checkout escape hatch, but curated names are the public path.
+
+## Step And Checkpoint Graphs
+
+Checkpointable graph debugging is a Python API, not a separate CLI namespace. Define the graph in Python, inspect or render its IR, then step it in-process with normal breakpoints and your own checkpoint artifact:
+
+```python
+import json
+from pathlib import Path
+
+pipe.validate()
+
+for i in range(10):
+    result = pipe.step(dt=0.1)
+    checkpoint = {"now": result.now, "executed": result.executed}
+    Path(f"checkpoint-{i:03d}.json").write_text(json.dumps(checkpoint, indent=2))
+
+pipe.close_stepper()
+```
+
+Python is the executable source of truth. Saved IR/HTML is the portable graph description for inspection and reproducibility; executing directly from saved IR should remain a future, versioned contract rather than the default promise.
 
 ## Documentation Path
 

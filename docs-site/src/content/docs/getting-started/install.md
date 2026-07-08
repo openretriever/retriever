@@ -3,24 +3,43 @@ title: Install
 description: Use the source checkout for demos, then use the runtime package track when you only need the API.
 ---
 
-Install from source. Retriever ships a repository of runnable demos, graph-rendering scripts, Rerun visualization, and tests — none of which are useful without the source tree. Pixi builds the environment and runs every demo through one command.
+Use the package when you want the runtime API and the `retriever` command. Use the source checkout when you want the bundled demos, graph renderers, Rerun visualization, and tests.
 
-**What you'll get:** a Python 3.11 environment with `retriever-core` installed editable, plus a working first demo you can run in under a minute — no camera, no GUI, no robot hardware.
+**What you'll get from the source path:** a Python 3.11 environment with `retriever-core` installed editable, plus a working first demo you can run in under a minute — no camera, no GUI, no robot hardware.
 
-## 1. Clone and build the environment
+## 1. Package install
+
+The public package target is `retriever-core`; the import package and executable command are both `retriever`:
+
+```bash
+python -m pip install retriever-core
+retriever --version
+```
+
+After package install, create a tiny reproducible starter workspace:
+
+```bash
+retriever init my-retriever-app --bootstrap-pixi
+cd my-retriever-app
+retriever run hello
+```
+
+`retriever init` creates a minimal Pixi workspace and a `main.py` that imports the runtime. Use this path for new projects that do not need the repository demos.
+
+## 2. Source checkout for demos
 
 ```bash
 git clone https://github.com/openretriever/retriever.git
 cd retriever
-pixi install
+./scripts/retriever install --bootstrap-pixi
 ```
 
-`pixi install` reads `pixi.toml`, resolves conda and PyPI dependencies, pins Python to 3.11, and installs `retriever-core` as an editable package. Every demo is a Pixi task, so you never manage a virtualenv by hand.
+`./scripts/retriever install` installs the source checkout environment. It can bootstrap Pixi first, then runs the checkout install.
 
-## 2. Run the first demo
+## 3. Run the first demo
 
 ```bash
-pixi run demo-webcam-detection-mock
+./scripts/retriever run webcam-mock
 ```
 
 This is the deterministic first smoke: synthetic camera frames, stdout output, no camera permission, no GUI, no backend to configure. Stripped of INFO log lines, it prints:
@@ -84,50 +103,52 @@ The same timestamped input trace yields the same output trace regardless of back
 
 ## Runtime-only package (target track)
 
-Once `retriever-core` is published to PyPI, users who only need the API — not the demos, graph renderer, or tutorial assets — will install it directly:
+Users who only need the API — not the repository demos, graph renderer, or tutorial assets — install the runtime package directly:
 
 ```bash
-python -m pip install retriever-core   # planned; not yet on PyPI
+python -m pip install retriever-core
 ```
 
-Until then, the source checkout above is the supported path, and it is the only path that includes the repository demos, `docs-tutorial-*` graph renderers, Rerun examples, and tests.
+The source checkout remains the path for repository demos, `docs-tutorial-*` graph renderers, Rerun examples, and tests.
 
 ## First-command reference
 
 | Situation | Command |
 | --- | --- |
-| Reliable first smoke, no camera, no GUI | `retriever webcam-mock` or `pixi run demo-webcam-detection-mock` |
-| Live webcam with automatic Rerun/stdout fallback | `retriever webcam` or `pixi run demo-webcam-detection` |
-| Understand the smallest Flow first | `retriever basic-flow` or `pixi run demo-basic-flow` |
-| Render an interactive HTML graph | `retriever graph` or `pixi run docs-tutorial-perception-html` |
-| Record a run, then replay it | `retriever record` then `retriever replay` |
+| Reliable first smoke, no camera, no GUI | `./scripts/retriever run webcam-mock` |
+| Live webcam with automatic Rerun/stdout fallback | `./scripts/retriever run webcam` |
+| Understand the smallest Flow first | `./scripts/retriever run basic-flow` |
+| Render an interactive HTML graph | `./scripts/retriever run graph` |
+| Record a run, then `./scripts/retriever run replay` it | `./scripts/retriever run record` then `./scripts/retriever run replay` |
 
 `demo-webcam-detection` needs a real webcam and uses `--visualize auto` (Rerun when available, stdout otherwise). If you have no camera or a permission prompt blocks it, stay on `-mock`.
 
 
-## Retriever CLI wrapper
+## Retriever command surface
 
-The source checkout also installs a small `retriever` console script. It does not
-replace Pixi; it wraps the same Pixi tasks with shorter names:
+`retriever` is the package executable. In a fresh source checkout, use the bundled
+launcher before the editable package is installed:
 
 ```bash
-retriever webcam-mock      # pixi run demo-webcam-detection-mock
-retriever webcam           # pixi run demo-webcam-detection
-retriever graph            # pixi run docs-tutorial-perception-html
-retriever run demo-basic-flow
+./scripts/retriever run webcam-mock
+./scripts/retriever run webcam
+./scripts/retriever run graph
+./scripts/retriever run basic-flow
 ```
 
-Use `retriever tasks` to see the curated aliases. Use raw `pixi run ...` whenever
-you want the exact task name or Pixi environment flags.
+Use `retriever tasks` or `./scripts/retriever tasks` to see curated run targets.
+Raw repository task names still work through `retriever run <task>` when you need
+an exact source-checkout entrypoint. Curated names are the public path; raw task
+names are an escape hatch for repository contributors.
 
 ## If something fails
 
 | Symptom | Try first | Why |
 | --- | --- | --- |
-| Camera permission or hardware fails | `pixi run demo-webcam-detection-mock` | Proves the runtime graph with no local devices. |
-| Rerun viewer does not open | `pixi run demo-perception-stepper` | Separates viewer setup from runtime correctness. |
-| A graph behaves unexpectedly | `pixi run docs-tutorial-perception-html` | Inspect nodes, ports, clocks, and sync policies first. |
-| A result is hard to reproduce | `pixi run demo-webcam-record` then replay | Turns timing-sensitive input into a stable artifact. |
+| Camera permission or hardware fails | `./scripts/retriever run webcam-mock` | Proves the runtime graph with no local devices. |
+| Rerun viewer does not open | `./scripts/retriever run perception-stepper` | Separates viewer setup from runtime correctness. |
+| A graph behaves unexpectedly | `./scripts/retriever run graph` | Inspect nodes, ports, clocks, and sync policies first. |
+| A result is hard to reproduce | `./scripts/retriever run record` then `./scripts/retriever run replay` | Turns timing-sensitive input into a stable artifact. |
 
 ## Next steps
 

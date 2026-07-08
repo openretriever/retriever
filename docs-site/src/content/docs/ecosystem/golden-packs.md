@@ -28,7 +28,7 @@ Until the public index and repo are live, that networked call returns `HUB_MODUL
 From a GoldenRetriever source checkout, run the pack smoke:
 
 ```bash
-pixi run demo-golden-hub-pack
+retriever run demo-golden-hub-pack
 ```
 
 ```text
@@ -38,7 +38,7 @@ Constructed WorldState: ['cup']
 Constructed Plan skills: ['pick']
 Arrow round-trip: Action OK
 Hub reference: hub.use("openretriever/golden-retriever:WorldState")
-Graph proof: run `pixi run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
+Graph proof: run `retriever run demo-pipeline-html-viz` to validate and render an IR HTML artifact.
 ```
 
 The smoke reads the repo's own `[tool.retriever.module]` manifest and loads it through `retriever.hub`'s loader — the same code path a networked `hub.use` runs after the download step. The namespaced `Registry WorldState` line is the commit-scoped import namespace the loader assigns; `Arrow round-trip: Action OK` confirms an `Action` payload survives `convert_to_arrow` → `convert_from_arrow` unchanged.
@@ -58,7 +58,7 @@ Canonical, broadly reusable primitives stay in `retriever.types.*`. GoldenRetrie
 
 ## Next step
 
-- Run `pixi run demo-golden-hub-pack` from a GoldenRetriever checkout to reproduce the output above.
+- Run `retriever run demo-golden-hub-pack` from a GoldenRetriever checkout to reproduce the output above.
 - Open the [GoldenRetriever Hub quickstart](https://golden.retriever.build/examples/golden-hub-proof/), then the [GoldenRetriever example catalog](https://golden.retriever.build/examples/).
 - Read [Hub packs and modules](/ecosystem/modules/) for the general ref shape and [Publishing](/ecosystem/publishing/) to expose your own pack this way.
 
