@@ -12,6 +12,11 @@ _CACHE_ROOT = Path.home() / ".retriever" / "hub" / "cache"
 _MARKER = ".retriever_cached"
 
 
+def cache_root() -> Path:
+    """Return the root directory used for downloaded Hub modules."""
+    return _CACHE_ROOT
+
+
 def cache_dir_for(org: str, name: str, commit_sha: str) -> Path:
     """Return the cache directory path for a specific module@commit."""
     return _CACHE_ROOT / org / name / commit_sha
@@ -34,7 +39,7 @@ def mark_cached(org: str, name: str, commit_sha: str) -> None:
     marker.touch()
 
 
-def clear_cache(org: str | None = None, name: str | None = None) -> int:
+def clear_cache(org: str | None = None, name: str | None = None) -> int:  # noqa: C901
     """Clear cached modules. Returns number of entries removed.
 
     - clear_cache() removes everything

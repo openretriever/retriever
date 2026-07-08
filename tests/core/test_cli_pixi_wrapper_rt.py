@@ -1,4 +1,5 @@
 import ast
+import json
 from pathlib import Path
 
 from retriever.cli import (
@@ -123,3 +124,43 @@ def test_cli_unknown_command_is_an_error() -> None:
     command = parse_command(["steper"])
 
     assert command.action == "error"
+
+
+def test_cli_parses_hub_parse_command() -> None:
+    command = parse_command(["hub", "parse", "openretriever/hello-world:HelloFlow@0.1.0", "--json"])
+
+    assert command.action == "hub"
+    assert command.hub_command == "parse"
+    assert command.hub_ref == "openretriever/hello-world:HelloFlow@0.1.0"
+    assert command.json_output is True
+
+
+def test_cli_parses_hub_inspect_refresh_command() -> None:
+    command = parse_command(["hub", "inspect", "openretriever/hello-world", "--refresh"])
+
+    assert command.action == "hub"
+    assert command.hub_command == "inspect"
+    assert command.hub_ref == "openretriever/hello-world"
+    assert command.refresh is True
+
+
+def test_cli_parses_hub_cache_dir_command() -> None:
+    command = parse_command(["hub", "cache-dir"])
+
+    assert command.action == "hub"
+    assert command.hub_command == "cache-dir"
+
+
+def test_cli_hub_parse_prints_json(capsys) -> None:
+    from retriever.cli import main
+
+    assert main(["hub", "parse", "openretriever/hello-world:HelloFlow", "--json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "attribute": "HelloFlow",
+        "name": "hello-world",
+        "org": "openretriever",
+        "ref": "openretriever/hello-world:HelloFlow",
+        "version": None,
+    }

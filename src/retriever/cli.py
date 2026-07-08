@@ -7,13 +7,14 @@ checkout currently uses Pixi as the reproducible environment and task backend.
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from importlib import metadata
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 RUN_TARGETS: dict[str, str] = {
     "basic": "demo-basic-flow",
@@ -124,6 +125,9 @@ Usage:
   retriever init [path] [--bootstrap-pixi]
   retriever install [--bootstrap-pixi]
   retriever run <target-or-pixi-task> [-- task args...]
+  retriever hub parse <ref> [--json]
+  retriever hub inspect <ref> [--refresh] [--json]
+  retriever hub cache-dir [--json]
   retriever tasks
   retriever --dry-run run <target-or-pixi-task> [-- task args...]
 
@@ -148,6 +152,11 @@ Common source-checkout run targets:
   retriever run replay              # replay the recorded Rerun artifact
   retriever run basic-flow          # smallest Flow tutorial
 
+Hub commands:
+  retriever hub parse openretriever/hello-world:HelloFlow
+  retriever hub inspect openretriever/hello-world --json
+  retriever hub cache-dir
+
 Arguments after -- are passed to the task command.
 """
 
@@ -160,6 +169,10 @@ class Command:
     args: tuple[str, ...] = ()
     dry_run: bool = False
     bootstrap_pixi: bool = False
+    hub_command: str | None = None
+    hub_ref: str | None = None
+    refresh: bool = False
+    json_output: bool = False
 
 
 def package_version() -> str:
@@ -193,6 +206,38 @@ def _pop_global_flags(args: list[str]) -> tuple[bool, list[str]]:
     return dry_run, args
 
 
+def _parse_init_command(args: list[str], *, dry_run: bool) -> Command:
+    rest = [arg for arg in args[1:] if arg != "--bootstrap-pixi"]
+    path = Path(rest[0]) if rest else Path("retriever-app")
+    return Command(
+        action="init",
+        path=path,
+        dry_run=dry_run,
+        bootstrap_pixi="--bootstrap-pixi" in args[1:],
+    )
+
+
+def _parse_run_command(args: list[str], *, dry_run: bool) -> Command:
+    if len(args) == 1:
+        return Command(action="help", dry_run=dry_run)
+    run_args = args[1:]
+    if len(run_args) >= 2:
+        compound = COMPOUND_RUN_TARGETS.get((run_args[0], run_args[1]))
+        if compound is not None:
+            return Command(
+                action="run",
+                task=compound,
+                args=_strip_separator(run_args[2:]),
+                dry_run=dry_run,
+            )
+    return Command(
+        action="run",
+        task=RUN_TARGETS.get(run_args[0], run_args[0]),
+        args=_strip_separator(run_args[1:]),
+        dry_run=dry_run,
+    )
+
+
 def parse_command(argv: Sequence[str]) -> Command:
     args = list(argv)
     dry_run, args = _pop_global_flags(args)
@@ -200,47 +245,54 @@ def parse_command(argv: Sequence[str]) -> Command:
     if not args or args[0] in {"-h", "--help", "help"}:
         return Command(action="help", dry_run=dry_run)
 
-    if args[0] in {"--version", "version"}:
+    command = args[0]
+    if command in {"--version", "version"}:
         return Command(action="version", dry_run=dry_run)
-
-    if args[0] in {"tasks", "list"}:
+    if command in {"tasks", "list"}:
         return Command(action="tasks", dry_run=dry_run)
-
-    if args[0] == "init":
-        rest = [arg for arg in args[1:] if arg != "--bootstrap-pixi"]
-        path = Path(rest[0]) if rest else Path("retriever-app")
-        return Command(
-            action="init",
-            path=path,
-            dry_run=dry_run,
-            bootstrap_pixi="--bootstrap-pixi" in args[1:],
-        )
-
-    if args[0] == "install":
+    if command == "hub":
+        return _parse_hub_command(args[1:], dry_run=dry_run)
+    if command == "init":
+        return _parse_init_command(args, dry_run=dry_run)
+    if command == "install":
         return Command(
             action="install",
             dry_run=dry_run,
             bootstrap_pixi="--bootstrap-pixi" in args[1:],
         )
+    if command == "run":
+        return _parse_run_command(args, dry_run=dry_run)
 
-    if args[0] == "run":
-        if len(args) == 1:
-            return Command(action="help", dry_run=dry_run)
-        run_args = args[1:]
-        if len(run_args) >= 2:
-            compound = COMPOUND_RUN_TARGETS.get((run_args[0], run_args[1]))
-            if compound is not None:
-                return Command(
-                    action="run",
-                    task=compound,
-                    args=_strip_separator(run_args[2:]),
-                    dry_run=dry_run,
-                )
+    return Command(action="error", dry_run=dry_run)
+
+
+def _parse_hub_command(args: list[str], *, dry_run: bool) -> Command:
+    json_output = "--json" in args
+    refresh = "--refresh" in args
+    rest = [arg for arg in args if arg not in {"--json", "--refresh"}]
+
+    if not rest or rest[0] in {"-h", "--help", "help"}:
+        return Command(action="help", dry_run=dry_run)
+
+    subcommand = rest[0]
+    if subcommand == "cache-dir":
         return Command(
-            action="run",
-            task=RUN_TARGETS.get(run_args[0], run_args[0]),
-            args=_strip_separator(run_args[1:]),
+            action="hub",
+            hub_command="cache-dir",
             dry_run=dry_run,
+            json_output=json_output,
+        )
+
+    if subcommand in {"parse", "inspect"}:
+        if len(rest) < 2:
+            return Command(action="help", dry_run=dry_run)
+        return Command(
+            action="hub",
+            hub_command=subcommand,
+            hub_ref=rest[1],
+            dry_run=dry_run,
+            refresh=refresh,
+            json_output=json_output,
         )
 
     return Command(action="error", dry_run=dry_run)
@@ -347,6 +399,97 @@ def _run_init(command: Command) -> int:
     return _run_install(command, target)
 
 
+def _format_hub_ref(ref: str) -> dict[str, Any]:
+    from retriever.hub._ref import parse_ref
+
+    parsed = parse_ref(ref)
+    return {
+        "ref": ref,
+        "org": parsed.org,
+        "name": parsed.name,
+        "attribute": parsed.attribute,
+        "version": parsed.version,
+    }
+
+
+def _describe_hub_object(ref: str, *, refresh: bool = False) -> dict[str, Any]:
+    from retriever import hub
+    from retriever.hub._loader import ModuleProxy
+
+    obj = hub.use(ref, refresh=refresh)
+    data = _format_hub_ref(ref)
+    data["repr"] = repr(obj)
+
+    if isinstance(obj, ModuleProxy):
+        data["kind"] = "module"
+        data["exports"] = sorted(dir(obj))
+        return data
+
+    data["kind"] = "export"
+    data["type"] = type(obj).__name__
+    data["module"] = getattr(obj, "__module__", None)
+    data["qualname"] = getattr(obj, "__qualname__", getattr(obj, "__name__", None))
+    return data
+
+
+def _print_hub_data(data: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        print(json.dumps(data, indent=2, sort_keys=True))
+        return
+
+    for key in ("ref", "org", "name", "attribute", "version", "kind", "type", "module", "qualname"):
+        if key in data and data[key] is not None:
+            print(f"{key}: {data[key]}")
+    if "exports" in data:
+        print("exports:")
+        for export in data["exports"]:
+            print(f"  - {export}")
+    if "cache_dir" in data:
+        print(f"cache_dir: {data['cache_dir']}")
+    if "repr" in data:
+        print(f"repr: {data['repr']}")
+
+
+def _run_hub_command(command: Command) -> int:
+    from retriever.error import HubError
+    from retriever.hub._cache import cache_root
+
+    try:
+        if command.hub_command == "cache-dir":
+            _print_hub_data(
+                {"cache_dir": str(cache_root())},
+                json_output=command.json_output,
+            )
+            return 0
+
+        if command.hub_ref is None:
+            print(HELP, file=sys.stderr)
+            return 2
+
+        if command.hub_command == "parse":
+            _print_hub_data(
+                _format_hub_ref(command.hub_ref),
+                json_output=command.json_output,
+            )
+            return 0
+
+        if command.hub_command == "inspect":
+            if command.dry_run:
+                data = _format_hub_ref(command.hub_ref)
+                data["dry_run"] = True
+                data["would_call"] = "retriever.hub.use"
+            else:
+                data = _describe_hub_object(command.hub_ref, refresh=command.refresh)
+            _print_hub_data(data, json_output=command.json_output)
+            return 0
+    except HubError as exc:
+        print(f"retriever hub: {exc}", file=sys.stderr)
+        return 2
+
+    print(HELP, file=sys.stderr)
+    return 2
+
+
 def _run_workspace_action(command: Command, workspace: Path) -> int:
     if command.action == "install":
         return _run_install(command, workspace)
@@ -387,6 +530,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command.action == "error":
         print(HELP, file=sys.stderr)
         return 2
+    if command.action == "hub":
+        return _run_hub_command(command)
     if command.action == "init":
         return _run_init(command)
 
