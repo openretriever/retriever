@@ -146,6 +146,18 @@ pipe.close_stepper()
 
 Python is the executable source of truth. Saved IR/HTML is the portable graph description for inspection and reproducibility; executing directly from saved IR should remain a future, versioned contract rather than the default promise.
 
+## Retriever Hub
+
+Hub refs are ordinary strings: `{org}/{name}[:Export][@version]`. Use the CLI to validate the ref shape offline, inspect a module through the same loader as `hub.use(...)`, and locate the local cache:
+
+```bash
+retriever hub parse openretriever/hello-world:HelloFlow
+retriever hub inspect openretriever/hello-world --json
+retriever hub cache-dir
+```
+
+`hub inspect` may fetch from the Hub index and GitHub unless the module is already cached. Use `retriever --dry-run hub inspect <ref>` when you only want to check the ref shape without network access. In Python, load the same export with `from retriever import hub; hub.use("openretriever/hello-world:HelloFlow")`.
+
 ## Documentation Path
 
 The hosted Starlight docs are the public docs front door:

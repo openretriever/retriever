@@ -141,6 +141,16 @@ Raw repository task names still work through `retriever run <task>` when you nee
 an exact source-checkout entrypoint. Curated names are the public path; raw task
 names are an escape hatch for repository contributors.
 
+Hub commands do not require a source checkout. They operate on Hub refs and use the same loader as `hub.use(...)`:
+
+```bash
+retriever hub parse openretriever/hello-world:HelloFlow
+retriever hub inspect openretriever/hello-world --json
+retriever hub cache-dir
+```
+
+Use `retriever --dry-run hub inspect <ref>` when you want to validate the ref shape without fetching anything. Use `--refresh` when you intentionally want to bypass an existing cache entry.
+
 ## If something fails
 
 | Symptom | Try first | Why |

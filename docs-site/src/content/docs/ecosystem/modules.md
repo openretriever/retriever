@@ -25,6 +25,18 @@ LidarSlamFlow = hub.use("your-org/lidar-slam:LidarSlamFlow")   # one export
 pinned        = hub.use("your-org/lidar-slam:LidarSlamFlow@0.1.0")  # pinned tag
 ```
 
+## CLI inspection
+
+The CLI gives humans and agents a quick way to validate and inspect refs before writing code:
+
+```bash
+retriever hub parse openretriever/hello-world:HelloFlow
+retriever hub inspect openretriever/hello-world --json
+retriever hub cache-dir
+```
+
+`hub parse` is offline. `hub inspect` calls the same loader as `hub.use(...)`, so it may contact the Hub index and GitHub unless the module is cached. Add `--refresh` to intentionally bypass cache, or run `retriever --dry-run hub inspect <ref>` to validate the ref shape without fetching.
+
 ## What `hub.use` does
 
 Given a ref, the loader:

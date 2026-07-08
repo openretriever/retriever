@@ -7,10 +7,10 @@
 If you are an AI agent working in the source repo, do this before editing code:
 
 ```bash
-pixi install
-pixi run demo-webcam-detection-mock
-pixi run demo-stepper
-pixi run docs-tutorial-perception-html
+./scripts/retriever install --bootstrap-pixi
+./scripts/retriever run webcam-mock
+./scripts/retriever run stepper
+./scripts/retriever run graph
 ```
 
 Use the mock visual smoke first. Do not start with live camera, dora, or multiprocessing unless the user specifically asks for that backend.
@@ -31,14 +31,16 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 ## Canonical Commands
 
 ```bash
-pixi run demo-basic-flow
-pixi run demo-stepper
-pixi run demo-perception-stepper
-pixi run demo-webcam-detection-mock
-pixi run demo-webcam-detection
-pixi run docs-tutorial-perception-html
-pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
+./scripts/retriever run basic-flow
+./scripts/retriever run stepper
+./scripts/retriever run perception-stepper
+./scripts/retriever run webcam-mock
+./scripts/retriever run webcam
+./scripts/retriever run graph
+./scripts/retriever run record
+./scripts/retriever run replay
+retriever hub parse openretriever/hello-world:HelloFlow
+retriever hub inspect openretriever/hello-world --json
 ```
 
 ## Docs
@@ -55,7 +57,7 @@ pixi run demo-webcam-replay-rrd
 - [Concepts and Lineage](https://retriever.build/concepts/lineage/): relation to FRP and synchronous dataflow.
 - [Golden examples bridge](https://retriever.build/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
 - [Golden first proof](https://golden.retriever.build/examples/golden-hub-proof/): runnable Golden command path from the separate `openretriever/golden-retriever` source checkout.
-- [Modules](https://retriever.build/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")`.
+- [Modules](https://retriever.build/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")` plus `retriever hub parse/inspect` for command-line checks.
 - [Composable Pipelines](https://retriever.build/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
 - [Publishing](https://retriever.build/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
 

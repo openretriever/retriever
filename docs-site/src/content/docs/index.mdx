@@ -84,6 +84,7 @@ The full positioning matrix lives on [Why Retriever](/concepts/why-retriever/). 
 | Smallest Flow mental model | `./scripts/retriever run basic-flow` |
 | Graph inspection | `./scripts/retriever run graph` |
 | Record and replay | `./scripts/retriever run record` then `./scripts/retriever run replay` |
+| Hub ref inspection | `retriever hub parse openretriever/hello-world:HelloFlow` then `retriever hub inspect openretriever/hello-world --json` |
 | Applied robot examples | GoldenRetriever first proof, then the example catalog |
 
 For checkpointable debugging, use the Python stepping API: `Pipeline.step(...)` or the top-level `retriever.step(...)` helper on the active pipeline. Saved IR/HTML is for inspection and reproducibility; Python remains the executable graph source.

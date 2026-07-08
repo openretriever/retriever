@@ -21,6 +21,17 @@ A module declares its public surface in one `[tool.retriever.module]` manifest s
 
 Reach for Hub when a robot system should reuse a stable boundary instead of copying code.
 
+## Inspect a ref first
+
+Before importing a Hub export in Python, use the CLI to check the public surface:
+
+```bash
+retriever hub parse openretriever/hello-world:HelloFlow
+retriever hub inspect openretriever/hello-world --json
+```
+
+`parse` is offline; `inspect` resolves the module through the real Hub loader and lists the declared exports. Use `retriever --dry-run hub inspect <ref>` when you need a no-network check.
+
 ## One runnable proof
 
 The primitive Hub distributes is a composable pipeline. Prove it composes locally — this runs in the core checkout:
