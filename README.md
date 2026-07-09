@@ -153,16 +153,17 @@ Python is the executable source of truth. Saved IR/HTML is the portable graph de
 ## Retriever Hub
 
 Hub loads a module by name from a public repo — no clone, no checkout. Install the
-runtime, then run a live webcam demo in one line:
+debug runtime plus Rerun, then run a 60-second live webcam demo in one line:
 
 ```bash
-pip install "retriever-core[demo]"
-python -c "from retriever import hub; hub.use('openretriever/webcam-demo:run')()"
+python -m pip install "debug-retriever[demo]==0.1.6" rerun-sdk && python -c "from retriever import hub; hub.use('openretriever/webcam-demo:run', refresh=True)(seconds=60, visualize='rerun')"
 ```
 
 `hub.use(...)` fetches the [`openretriever/webcam-demo`](https://github.com/openretriever/webcam-demo)
 pack, checks its dependencies, and hands back the `run` function, which drives a
-`Camera -> ColorDetector -> Display` closed loop over your webcam.
+`Camera -> ColorDetector -> Rerun` closed loop over your webcam. Use
+`visualize='stdout'` for terminal-only output or `visualize='both'` for Rerun plus
+stdout.
 
 Hub refs are ordinary strings: `{org}/{name}[:Export][@version]`. Use the CLI to validate the ref shape offline, inspect a module through the same loader as `hub.use(...)`, and locate the local cache:
 
