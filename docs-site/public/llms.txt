@@ -55,8 +55,8 @@ retriever hub inspect openretriever/hello-world --json
 - [Runtime](https://retriever.build/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
 - [Standard Types](https://retriever.build/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
 - [Concepts and Lineage](https://retriever.build/concepts/lineage/): relation to FRP and synchronous dataflow.
-- [Golden examples bridge](https://retriever.build/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
-- [Golden first proof](https://golden.retriever.build/examples/golden-hub-proof/): runnable Golden command path from the separate `openretriever/golden-retriever` source checkout.
+- [GoldenRetriever examples bridge](https://retriever.build/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
+- [GoldenRetriever first proof](https://golden.retriever.build/examples/golden-hub-proof/): runnable GoldenRetriever command path from the separate `openretriever/golden-retriever` source checkout.
 - [Modules](https://retriever.build/ecosystem/modules/): Retriever Hub module loading with `hub.use("org/name:Export")` plus `retriever hub parse/inspect` for command-line checks.
 - [Composable Pipelines](https://retriever.build/ecosystem/composable-pipelines/): reusable pipelines as inspectable graphs or Flow stages.
 - [Publishing](https://retriever.build/ecosystem/publishing/): make a repo hub-loadable with `[tool.retriever.module]`.
@@ -64,6 +64,6 @@ retriever hub inspect openretriever/hello-world --json
 ## Companion Sites
 
 - Core source target: `openretriever/retriever` for runtime implementation and source-checkout demos. Use hosted docs for stable public instructions.
-- Golden source target: `openretriever/golden-retriever` for robot-facing examples, payload packs, simulator lanes, and public-surface checks. Use the Golden first proof before heavier examples.
+- GoldenRetriever source target: `openretriever/golden-retriever` for robot-facing examples, payload packs, simulator lanes, and public-surface checks. Use the GoldenRetriever first proof before heavier examples.
 - [Landing page](https://openretriever.org/): compact public front door.
-- [GoldenRetriever](https://golden.retriever.build/): robot-facing reference examples, payload packs, simulator/visualization lanes, and Hub-pack candidates. Start with [First Golden Proof](https://golden.retriever.build/examples/golden-hub-proof/).
+- [GoldenRetriever](https://golden.retriever.build/): robot-facing reference examples, payload packs, simulator/visualization lanes, and Hub-pack candidates. Start with [First GoldenRetriever Proof](https://golden.retriever.build/examples/golden-hub-proof/).
