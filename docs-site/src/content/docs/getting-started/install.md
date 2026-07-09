@@ -3,7 +3,12 @@ title: Install
 description: Use the source checkout for demos, then use the runtime package track when you only need the API.
 ---
 
-Use the package when you want the runtime API and the `retriever` command. Use the source checkout when you want the bundled demos, graph renderers, Rerun visualization, and tests.
+The `retriever` command lives in the `retriever-core` package. There are two ways to get it:
+
+- **Package install** — `pip install retriever-core`. This is all you need for the runtime API and the `retriever` CLI.
+- **Source checkout** — clone the repo for the bundled demos, graph renderers, Rerun visualization, and tests.
+
+On the source path you do **not** run `pip install` yourself: Retriever uses [Pixi](https://pixi.sh) as its package and environment manager, and the checkout installs `retriever-core` (editable) into a Pixi environment for you. The `retriever` command wraps Pixi, so you rarely call `pixi` directly.
 
 **What you'll get from the source path:** a Python 3.11 environment with `retriever-core` installed editable, plus a working first demo you can run in under a minute — no camera, no GUI, no robot hardware.
 
