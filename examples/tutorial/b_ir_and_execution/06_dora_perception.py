@@ -30,7 +30,7 @@ if __package__ in {None, ""}:
 import argparse
 
 from examples.shared.perception_flows import build_tutorial_perception_pipeline
-from retriever.lib.perception import optional_cv2
+from examples.shared.perception_lib import optional_cv2
 
 
 def build_perception_pipeline(*, show_window: bool, camera_index: int, use_real_camera: bool):

@@ -3,7 +3,7 @@ Tutorial perception flows and pipeline factories.
 
 Defines the concrete Flow subclasses and Pipeline builders used by the
 tutorial examples. Data types and visualization helpers live in
-`retriever.lib.perception` so they can be imported without pulling in
+`examples.shared.perception_lib` so they can be imported without pulling in
 the full example stack.
 """
 
@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
-from retriever.lib.perception import (
+from examples.shared.perception_lib import (
     BBox,
     CameraData,
     Detection,

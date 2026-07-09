@@ -55,12 +55,12 @@ def require_demo_deps(*, require_cv2: bool = False) -> None:
     """Raise a clear error when demo dependencies (numpy / cv2) are missing."""
     if np is None:
         raise RuntimeError(
-            "retriever.lib.perception requires demo dependencies (numpy). "
+            "examples.shared.perception_lib requires demo dependencies (numpy). "
             "Install retriever with the demo extras: pip install 'retriever[demo]'"
         )
     if require_cv2 and optional_cv2() is None:
         raise RuntimeError(
-            "retriever.lib.perception requires OpenCV for live camera capture and cv2 windows. "
+            "examples.shared.perception_lib requires OpenCV for live camera capture and cv2 windows. "
             "Install retriever with the demo extras: pip install 'retriever[demo]'"
         )
 
