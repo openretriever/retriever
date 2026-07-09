@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tomllib
+import warnings
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -52,30 +53,65 @@ def check_min_retriever_version(required: str) -> None:
         )
 
 
-def check_dependencies(dependencies: list[str]) -> None:
-    """Check that all PEP 508 dependencies are installed and version-compatible.
+def _runtime_distributions() -> set[str]:
+    """Distribution names that provide the already-imported `retriever` package.
 
-    Skips extras and environment markers for now.
+    A consumer calling `hub.use(...)` is, by definition, already running
+    retriever -- possibly installed under a different distribution name such as
+    `debug-retriever`. So a module listing the retriever runtime among its
+    dependencies must never be re-required here.
     """
+    names = {"retriever-core", "retriever", "debug-retriever"}
+    try:
+        from importlib.metadata import packages_distributions
+
+        names.update(packages_distributions().get("retriever", []))
+    except Exception:
+        pass
+    return {n.lower().replace("_", "-") for n in names}
+
+
+def check_dependencies(dependencies: list[str], *, strict: bool = False) -> None:
+    """Check that a module's declared dependencies are installed.
+
+    This is advisory by default: consuming a single lightweight export should not
+    require a pack's full (possibly heavy) dependency set, so missing or
+    version-mismatched dependencies emit one warning and loading proceeds. If an
+    export actually needs a missing package, importing it raises a normal
+    ImportError. The retriever runtime is always skipped (see
+    `_runtime_distributions`). Pass ``strict=True`` to raise instead of warn.
+    """
+    runtime = _runtime_distributions()
+    problems: list[str] = []
     for dep_str in dependencies:
         req = Requirement(dep_str)
 
-        # Skip deps with environment markers
+        # Skip environment-marked deps and the retriever runtime self-reference.
         if req.marker is not None:
+            continue
+        if req.name.lower().replace("_", "-") in runtime:
             continue
 
         try:
             installed_version = metadata.version(req.name)
         except metadata.PackageNotFoundError:
-            raise HubError(
-                ErrCode.HUB_DEPENDENCY_MISSING,
-                f"Required package '{req.name}' is not installed. "
-                f"Install it with: pip install '{dep_str}'",
-            )
+            problems.append(f"'{req.name}' is not installed (pip install '{dep_str}')")
+            continue
 
         if req.specifier and not req.specifier.contains(installed_version):
-            raise HubError(
-                ErrCode.HUB_DEPENDENCY_VERSION,
-                f"Requires '{dep_str}' but you have "
-                f"{req.name}=={installed_version}",
-            )
+            problems.append(f"'{req.name}=={installed_version}' does not satisfy '{dep_str}'")
+
+    if not problems:
+        return
+
+    detail = "\n  - ".join(problems)
+    if strict:
+        raise HubError(
+            ErrCode.HUB_DEPENDENCY_MISSING,
+            f"Module dependencies are not satisfied:\n  - {detail}",
+        )
+    warnings.warn(
+        "Retriever Hub module has unmet optional dependencies; loading anyway. "
+        "Install these if the module errors:\n  - " + detail,
+        stacklevel=2,
+    )
