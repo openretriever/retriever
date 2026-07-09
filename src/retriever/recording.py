@@ -292,6 +292,47 @@ class McapRecordingReader:
         return None
 
 
+def _load_rrd_recording(path: str | Path) -> Any:
+    """Open an `.rrd` recording, tolerating rerun-sdk's relocation of the loader."""
+    try:
+        import rerun as rr
+    except ImportError:
+        raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
+
+    loader = getattr(getattr(rr, "recording", None), "load_recording", None)
+    if loader is None:
+        loader = rr.dataframe.load_recording
+    return loader(str(path))
+
+
+def _read_rrd_columns(recording: Any) -> dict[str, Any]:
+    """Select every column from a recording view.
+
+    `Recording.view()` accepts different keyword arguments across rerun-sdk
+    releases: `include_indicator_columns` was removed in 0.28. Try the richest
+    signature first and degrade only on an unknown-keyword error, so a single
+    build works against both old and new rerun.
+    """
+    base = {"index": "log_time", "contents": "/**"}
+    attempts = (
+        {"include_semantically_empty_columns": True, "include_indicator_columns": True},
+        {"include_semantically_empty_columns": True},
+        {},
+    )
+    for extra in attempts:
+        try:
+            view = recording.view(**base, **extra)
+        except TypeError as exc:
+            if "unexpected keyword argument" not in str(exc):
+                raise
+            continue
+        return view.select().read_all().to_pydict()
+
+    raise RuntimeError(
+        "Unsupported rerun-sdk: `Recording.view()` rejected every known argument set."
+    )
+
+
 class RrdRecordingReader:
     """Read node streams from Rerun `.rrd` recordings."""
 
@@ -299,19 +340,7 @@ class RrdRecordingReader:
         self.path = Path(path)
 
     def list_node_ids(self) -> list[str]:
-        try:
-            import rerun as rr
-        except ImportError:
-            raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
-
-        recording = rr.dataframe.load_recording(str(self.path))
-        table = recording.view(
-            index="log_time",
-            contents="/**",
-            include_semantically_empty_columns=True,
-            include_indicator_columns=True,
-        ).select().read_all()
-        columns = table.to_pydict()
+        columns = _read_rrd_columns(_load_rrd_recording(self.path))
         prefix = f"/{_RRD_REPLAY_ROOT}/flows/"
         payload_suffix = "/output/payload:TensorData"
         spec_suffix = "/spec:TensorData"
@@ -329,20 +358,9 @@ class RrdRecordingReader:
         *,
         output_type: Optional[Type[Any]] = None,
     ) -> list[tuple[float, Any]]:
-        try:
-            import rerun as rr
-        except ImportError:
-            raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
         recorded_node_id = _resolve_recorded_node_id(node_id, self.list_node_ids())
 
-        recording = rr.dataframe.load_recording(str(self.path))
-        table = recording.view(
-            index="log_time",
-            contents="/**",
-            include_semantically_empty_columns=True,
-            include_indicator_columns=True,
-        ).select().read_all()
-        columns = table.to_pydict()
+        columns = _read_rrd_columns(_load_rrd_recording(self.path))
         payload_key = f"/{_rrd_replay_payload_path(recorded_node_id)}:TensorData"
         if payload_key not in columns:
             raise RuntimeError(
@@ -388,22 +406,10 @@ class RrdRecordingReader:
         return buffer
 
     def get_stream_spec(self, node_id: str) -> Optional[RecordingStreamSpec]:
-        try:
-            import rerun as rr
-        except ImportError:
-            raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
-
         available = self.list_node_ids()
         recorded_node_id = _resolve_recorded_node_id(node_id, available)
 
-        recording = rr.dataframe.load_recording(str(self.path))
-        table = recording.view(
-            index="log_time",
-            contents="/**",
-            include_semantically_empty_columns=True,
-            include_indicator_columns=True,
-        ).select().read_all()
-        columns = table.to_pydict()
+        columns = _read_rrd_columns(_load_rrd_recording(self.path))
         spec_key = f"/{_rrd_replay_spec_path(recorded_node_id)}:TensorData"
         raw_specs = columns.get(spec_key) or []
         for cell in raw_specs:

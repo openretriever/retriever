@@ -8,7 +8,7 @@ name: Docs build check
 # (Workers & Pages -> the docs project -> Settings -> Builds & deployments):
 #   Production branch:        main
 #   Root (monorepo) directory: docs-site
-#   Build command:            npm ci && npm run build
+#   Build command:            npm install && npm run build
 #   Build output directory:   dist          (i.e. docs-site/dist)
 #   Node version:             pinned by docs-site/.node-version
 # Pushes to other branches and pull requests get automatic preview deployments.
@@ -44,6 +44,10 @@ jobs:
           node-version-file: docs-site/.node-version
       - name: Build docs site
         working-directory: docs-site
+        # `npm install`, not `npm ci`: astro's toolchain pulls wasm32-wasi
+        # bindings whose nested @emnapi deps npm will not record into the
+        # lockfile when it is generated on macOS, so `npm ci` fails on the
+        # linux runner. Top-level deps are pinned exactly in package.json.
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run build
