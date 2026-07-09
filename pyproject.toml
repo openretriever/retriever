@@ -53,12 +53,12 @@ demo = [
 recording = [
     "mcap>=1.0.0",
     "numpy",
-    # Upper bound is deliberate: rerun 0.28 reworked the dataframe API that the
-    # `.rrd` reader in retriever.recording depends on -- it both dropped
-    # `Recording.view(include_indicator_columns=...)` and changed the column
-    # schema, so recorded node streams come back empty. Lift once the reader
-    # supports the new schema.
-    "rerun-sdk>=0.21.0,<0.28",
+    # Upper bound is deliberate. The `.rrd` reader in retriever.recording depends
+    # on rerun's dataframe API, which changed twice: 0.24+ renamed the view
+    # columns the reader keys off (node streams come back empty) and 0.28 also
+    # dropped `Recording.view(include_indicator_columns=...)`. 0.23.x is the
+    # range we actually test. Lift once the reader supports the new schema.
+    "rerun-sdk>=0.21.0,<0.24",
 ]
 
 mcp = ["mcp>=1.25.0,<2"]
