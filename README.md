@@ -6,9 +6,9 @@
 
 <a href="https://openretriever.org/"><img src="assets/retriever-wordmark.svg" alt="Retriever" width="300"></a>
 
-### Building Modular Closed-loop Robot Agents with Explicit Time
+### Programming Closed-Loop Modular Robot Agents
 
-<p>A Python runtime for building closed-loop robot systems whose perception, reasoning, and control can run together with explicit time, typed handoff, graph inspection, and replay.</p>
+<p>A Python programming model and runtime for robot agents whose perception, planning, and control run at different rates. You write down how often each part runs and how it handles data that arrives out of sync, so the timing lives in the graph instead of in hand-written glue code — and any run can be recorded and replayed exactly.</p>
 
 <p>
   <a href="https://retriever.build/"><img alt="Docs" src="https://img.shields.io/badge/Docs-open-0f766e?style=for-the-badge"></a>
