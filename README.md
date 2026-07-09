@@ -108,9 +108,9 @@ cd retriever
 ./scripts/retriever run webcam
 ```
 
-`demo-webcam-detection-mock` runs `camera -> color detector -> display` with
+`retriever run webcam-mock` runs `camera -> color detector -> display` with
 synthetic frames and stdout, so it works on headless machines and in agent
-runs. `demo-webcam-detection` requests a real webcam and uses `--visualize auto`
+runs. `retriever run webcam` requests a real webcam and uses `--visualize auto`
 so Rerun is used when available and stdout is used otherwise. Hold red or blue
 paper/objects in front of the camera to see detections.
 
@@ -124,7 +124,7 @@ Useful follow-up commands from the source checkout:
 ./scripts/retriever tasks
 ```
 
-`retriever run <name>` is the stable command surface for examples and diagnostics. Raw repository task names still work with `retriever run <task>` as a source-checkout escape hatch, but curated names are the public path.
+`retriever run <name>` is the stable command surface for examples and diagnostics. Curated names (`webcam-mock`, `stepper`, `record`, …) are the public path; raw repository task names still work with `retriever run <task>` as a source-checkout escape hatch.
 
 ## Step And Checkpoint Graphs
 
@@ -202,26 +202,26 @@ The intended public split is:
 
 ## Development
 
+Contributor tasks run through the same `retriever` command from a source
+checkout:
+
 ```bash
-pixi install
-pixi run test
-pixi run p0-release-readiness
+retriever install                     # set up the environment
+retriever run test                    # full test suite
+retriever run p0-release-readiness
+retriever run public-surface-check    # external launch check before announcing
 ```
 
-Focused public-surface checks:
+The source checkout uses [Pixi](https://pixi.sh) as its environment and task
+backend, and `retriever run <task>` wraps it. For focused test subsets, run
+pytest in the environment directly:
 
 ```bash
 pixi run python -m pytest tests/core/test_public_surface_rt.py -q
 pixi run python -m pytest tests/core/test_hub_ref_rt.py tests/core/test_hub_check_rt.py tests/core/test_hub_loader_rt.py tests/core/test_hub_use_rt.py -q
 ```
 
-Final external launch check before a public release announcement:
-
-```bash
-pixi run public-surface-check
-```
-
-See [docs/contributing.md](docs/contributing.md) for development workflow and QA details.
+See [docs/contributing.md](docs/contributing.md) for the full development workflow.
 
 ## Clone and Stay in Sync
 
