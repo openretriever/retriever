@@ -156,13 +156,13 @@ Hub loads a module by name from a public repo — no clone, no checkout. Install
 debug runtime plus Rerun, then run a 60-second live webcam demo in one line:
 
 ```bash
-python -m pip install "debug-retriever[demo]==0.1.6" rerun-sdk && python -c "from retriever import hub; hub.use('openretriever/webcam-demo:run', refresh=True)(seconds=60, visualize='rerun')"
+python -m pip install "debug-retriever[demo]==0.1.8" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
 `hub.use(...)` fetches the [`openretriever/webcam-demo`](https://github.com/openretriever/webcam-demo)
-pack, checks its dependencies, and hands back the `run` function, which drives a
-`Camera -> ColorDetector -> Rerun` closed loop over your webcam. Use
-`visualize='stdout'` for terminal-only output or `visualize='both'` for Rerun plus
+pack, checks its dependencies, and drives a `Camera -> ColorDetector -> Rerun`
+closed loop over your webcam with image and bounding-box overlays. Use
+`--visualize stdout` for terminal-only output or `--visualize both` for Rerun plus
 stdout.
 
 Hub refs are ordinary strings: `{org}/{name}[:Export][@version]`. Use the CLI to validate the ref shape offline, inspect a module through the same loader as `hub.use(...)`, and locate the local cache:

@@ -4,6 +4,8 @@ from pathlib import Path
 
 from retriever.cli import (
     STARTER_MAIN,
+    WEBCAM_HUB_REF,
+    build_demo_invocation,
     build_install_commands,
     build_run_command,
     find_pixi_workspace,
@@ -85,6 +87,122 @@ def test_cli_exposes_runtime_guide_targets() -> None:
             "run",
             task,
         ]
+
+
+def test_cli_parses_no_clone_webcam_demo() -> None:
+    command = parse_command([
+        "demo",
+        "webcam",
+        "--seconds",
+        "60",
+        "--hz",
+        "15",
+        "--camera-index",
+        "2",
+        "--visualize",
+        "rerun",
+        "--refresh",
+        "--no-rerun-spawn",
+    ])
+
+    assert command.action == "demo"
+    assert command.demo_name == "webcam"
+    assert command.refresh is True
+    assert build_demo_invocation(command) == (
+        WEBCAM_HUB_REF,
+        {
+            "seconds": 60.0,
+            "hz": 15.0,
+            "camera_index": 2,
+            "visualize": "rerun",
+            "rerun_spawn": False,
+        },
+    )
+
+
+def test_cli_demo_webcam_runs_hub_without_pixi(tmp_path: Path, monkeypatch) -> None:
+    from retriever import cli
+
+    calls = {}
+
+    def fake_hub_use(ref: str, *, refresh: bool = False):
+        calls["ref"] = ref
+        calls["refresh"] = refresh
+
+        def run(**kwargs):
+            calls["kwargs"] = kwargs
+
+        return run
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "_hub_use", fake_hub_use)
+    monkeypatch.setattr(cli, "_ensure_rerun_available", lambda command: True)
+
+    assert (tmp_path / "pixi.toml").exists() is False
+    assert cli.main([
+        "demo",
+        "webcam",
+        "--seconds",
+        "1",
+        "--hz",
+        "5",
+        "--camera-index",
+        "2",
+        "--visualize",
+        "both",
+        "--refresh",
+        "--no-rerun-spawn",
+    ]) == 0
+
+    assert calls == {
+        "ref": WEBCAM_HUB_REF,
+        "refresh": True,
+        "kwargs": {
+            "seconds": 1.0,
+            "hz": 5.0,
+            "camera_index": 2,
+            "visualize": "both",
+            "rerun_spawn": False,
+        },
+    }
+
+
+def test_cli_demo_webcam_help_after_subcommand() -> None:
+    assert parse_command(["demo", "webcam", "--help"]).action == "help"
+    assert parse_command(["demo", "webcam", "help"]).action == "help"
+
+
+def test_cli_demo_webcam_rejects_malformed_numeric_flags() -> None:
+    bad_argvs = [
+        ["demo", "webcam", "--seconds", "abc"],
+        ["demo", "webcam", "--hz", "abc"],
+        ["demo", "webcam", "--camera-index", "abc"],
+    ]
+
+    for argv in bad_argvs:
+        assert parse_command(argv).action == "error"
+
+
+def test_cli_demo_webcam_checks_rerun_before_loading_hub(monkeypatch) -> None:
+    from retriever import cli
+
+    def fail_hub_use(ref: str, *, refresh: bool = False):  # pragma: no cover
+        raise AssertionError("hub should not load when rerun-sdk is missing")
+
+    monkeypatch.setattr(cli, "_hub_use", fail_hub_use)
+    monkeypatch.setattr(cli, "_ensure_rerun_available", lambda command: False)
+
+    assert cli.main(["demo", "webcam", "--visualize", "rerun"]) == 2
+
+
+def test_cli_demo_webcam_dry_run_prints_hub_call(capsys) -> None:
+    from retriever.cli import main
+
+    assert main(["--dry-run", "demo", "webcam", "--seconds", "0"]) == 0
+
+    out = capsys.readouterr().out
+    assert "hub.use('openretriever/webcam-demo:run', refresh=False)" in out
+    assert "seconds=0.0" in out
 
 
 def test_cli_install_can_bootstrap_pixi() -> None:

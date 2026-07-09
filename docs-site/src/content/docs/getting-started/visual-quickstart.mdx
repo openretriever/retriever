@@ -57,18 +57,27 @@ What just ran:
 
 ## Step 2: Switch to a live webcam and Rerun
 
+From an installed package, no source checkout is required:
+
+```bash
+python -m pip install "debug-retriever[demo]==0.1.8" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
+```
+
+From a source checkout, the equivalent Pixi-backed task is:
+
 ```bash
 retriever run webcam
 ```
 
-Same graph, real camera input. This target uses `--visualize auto`: on a machine with a working viewer, Rerun shows frames and detections over time; otherwise it falls back to stdout so runtime correctness stays separate from viewer setup. It needs a webcam — if you have none, stay on `webcam-mock`.
+Both paths run the same shape of graph on real camera input. Rerun shows frames and `Boxes2D` detection overlays over time; stdout remains available through `--visualize stdout` or the source-checkout fallback. It needs a webcam — if you have none, stay on `webcam-mock`.
 
 ## Step 3: Pick the right variant
 
 | Need | Command |
 | --- | --- |
 | Reliable first smoke, no hardware | `retriever run webcam-mock` |
-| Live webcam, automatic Rerun/stdout fallback | `retriever run webcam` |
+| No-clone live webcam with Rerun boxes | `retriever demo webcam --seconds 60 --visualize rerun --refresh` |
+| Source-checkout live webcam, automatic Rerun/stdout fallback | `retriever run webcam` |
 | Live webcam, multiprocessing backend, forced Rerun | `retriever run webcam-rerun` |
 | Step the detector deterministically, no camera | `retriever run perception-stepper` |
 | Portable recording for replay | `retriever run record` |

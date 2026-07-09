@@ -52,6 +52,7 @@ COMPOUND_RUN_TARGETS: dict[tuple[str, str], str] = {
     ("graph", "composable"): "docs-tutorial-composable-html",
 }
 
+WEBCAM_HUB_REF = "openretriever/webcam-demo:run"
 PIXI_INSTALL_COMMAND = "curl -fsSL https://pixi.sh/install.sh | sh"
 STARTER_PIXI = """[workspace]
 channels = ["https://prefix.dev/conda-forge"]
@@ -123,6 +124,7 @@ Usage:
   retriever --version
   retriever init [path] [--bootstrap-pixi]
   retriever install [--bootstrap-pixi]
+  retriever demo webcam [--seconds N] [--hz N] [--camera-index N] [--visualize stdout|rerun|both] [--refresh]
   retriever run <target-or-pixi-task> [-- task args...]
   retriever hub parse <ref> [--json]
   retriever hub inspect <ref> [--refresh] [--json]
@@ -131,6 +133,10 @@ Usage:
   retriever --dry-run run <target-or-pixi-task> [-- task args...]
 
 PyPI path:
+  python -m pip install "debug-retriever[demo]" rerun-sdk
+  retriever demo webcam --seconds 60 --visualize rerun --refresh
+
+Project workspace path:
   python -m pip install retriever-core
   retriever init my-retriever-app --bootstrap-pixi
   cd my-retriever-app
@@ -172,6 +178,12 @@ class Command:
     hub_ref: str | None = None
     refresh: bool = False
     json_output: bool = False
+    demo_name: str | None = None
+    seconds: float = 60.0
+    hz: float = 20.0
+    camera_index: int = 0
+    visualize: str = "rerun"
+    rerun_spawn: bool = True
 
 
 def package_version() -> str:
@@ -238,6 +250,95 @@ def _parse_run_command(args: list[str], *, dry_run: bool) -> Command:
     )
 
 
+def _parse_demo_float(value: str) -> float | None:
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _parse_demo_int(value: str) -> int | None:
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _parse_demo_command(args: list[str], *, dry_run: bool) -> Command:
+    if len(args) < 2 or args[1] in {"-h", "--help", "help"}:
+        return Command(action="help", dry_run=dry_run)
+    if args[1] != "webcam":
+        return Command(action="error", dry_run=dry_run)
+
+    seconds = 60.0
+    hz = 20.0
+    camera_index = 0
+    visualize = "rerun"
+    refresh = False
+    rerun_spawn = True
+    rest = args[2:]
+    if rest and rest[0] in {"-h", "--help", "help"}:
+        return Command(action="help", dry_run=dry_run)
+    i = 0
+    while i < len(rest):
+        flag = rest[i]
+        if flag in {"--refresh", "--no-cache"}:
+            refresh = True
+            i += 1
+        elif flag == "--no-rerun-spawn":
+            rerun_spawn = False
+            i += 1
+        elif flag in {"--seconds", "--duration"}:
+            i += 1
+            if i >= len(rest):
+                return Command(action="error", dry_run=dry_run)
+            parsed = _parse_demo_float(rest[i])
+            if parsed is None:
+                return Command(action="error", dry_run=dry_run)
+            seconds = parsed
+            i += 1
+        elif flag == "--hz":
+            i += 1
+            if i >= len(rest):
+                return Command(action="error", dry_run=dry_run)
+            parsed = _parse_demo_float(rest[i])
+            if parsed is None:
+                return Command(action="error", dry_run=dry_run)
+            hz = parsed
+            i += 1
+        elif flag == "--camera-index":
+            i += 1
+            if i >= len(rest):
+                return Command(action="error", dry_run=dry_run)
+            parsed = _parse_demo_int(rest[i])
+            if parsed is None:
+                return Command(action="error", dry_run=dry_run)
+            camera_index = parsed
+            i += 1
+        elif flag == "--visualize":
+            i += 1
+            if i >= len(rest):
+                return Command(action="error", dry_run=dry_run)
+            visualize = rest[i]
+            if visualize not in {"stdout", "rerun", "both"}:
+                return Command(action="error", dry_run=dry_run)
+            i += 1
+        else:
+            return Command(action="error", dry_run=dry_run)
+
+    return Command(
+        action="demo",
+        demo_name="webcam",
+        dry_run=dry_run,
+        refresh=refresh,
+        seconds=seconds,
+        hz=hz,
+        camera_index=camera_index,
+        visualize=visualize,
+        rerun_spawn=rerun_spawn,
+    )
+
+
 def parse_command(argv: Sequence[str]) -> Command:
     args = list(argv)
     dry_run, args = _pop_global_flags(args)
@@ -252,6 +353,8 @@ def parse_command(argv: Sequence[str]) -> Command:
         return Command(action="tasks", dry_run=dry_run)
     if command == "hub":
         return _parse_hub_command(args[1:], dry_run=dry_run)
+    if command == "demo":
+        return _parse_demo_command(args, dry_run=dry_run)
     if command == "init":
         return _parse_init_command(args, dry_run=dry_run)
     if command == "install":
@@ -310,6 +413,21 @@ def build_install_commands(command: Command) -> list[str]:
         commands.append(PIXI_INSTALL_COMMAND)
     commands.append("pixi install")
     return commands
+
+
+def build_demo_invocation(command: Command) -> tuple[str, dict[str, Any]]:
+    if command.demo_name != "webcam":
+        raise ValueError("only the webcam demo is currently supported")
+    return (
+        WEBCAM_HUB_REF,
+        {
+            "seconds": command.seconds,
+            "hz": command.hz,
+            "camera_index": command.camera_index,
+            "visualize": command.visualize,
+            "rerun_spawn": command.rerun_spawn,
+        },
+    )
 
 
 def render_tasks() -> str:
@@ -450,6 +568,52 @@ def _print_hub_data(data: dict[str, Any], *, json_output: bool) -> None:
         print(f"repr: {data['repr']}")
 
 
+def _hub_use(ref: str, *, refresh: bool = False) -> Any:
+    from retriever import hub
+
+    return hub.use(ref, refresh=refresh)
+
+
+def _ensure_rerun_available(command: Command) -> bool:
+    if command.visualize not in {"rerun", "both"}:
+        return True
+    try:
+        import rerun  # noqa: F401
+    except ImportError:
+        print(
+            "retriever demo webcam: Rerun visualization needs rerun-sdk. "
+            "Install it with: python -m pip install rerun-sdk",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
+def _run_demo_command(command: Command) -> int:
+    from retriever.error import HubError
+
+    if command.dry_run:
+        ref, kwargs = build_demo_invocation(command)
+        args = ", ".join(f"{key}={value!r}" for key, value in kwargs.items())
+        print(f"from retriever import hub; hub.use({ref!r}, refresh={command.refresh!r})({args})")
+        return 0
+
+    if not _ensure_rerun_available(command):
+        return 2
+
+    try:
+        ref, kwargs = build_demo_invocation(command)
+        run = _hub_use(ref, refresh=command.refresh)
+        run(**kwargs)
+        return 0
+    except HubError as exc:
+        print(f"retriever demo webcam: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(f"retriever demo webcam: {exc}", file=sys.stderr)
+        return 2
+
+
 def _run_hub_command(command: Command) -> int:
     from retriever.error import HubError
     from retriever.hub._cache import cache_root
@@ -532,6 +696,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     if command.action == "hub":
         return _run_hub_command(command)
+    if command.action == "demo":
+        return _run_demo_command(command)
     if command.action == "init":
         return _run_init(command)
 

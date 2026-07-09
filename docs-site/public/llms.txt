@@ -11,6 +11,10 @@ retriever install --bootstrap-pixi
 retriever run webcam-mock
 retriever run stepper
 retriever run graph
+
+# Installed-package no-clone visual demo:
+python -m pip install "debug-retriever[demo]" rerun-sdk
+retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
 Use the mock visual smoke first. Do not start with live camera, dora, or multiprocessing unless the user specifically asks for that backend.
@@ -20,7 +24,7 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 - Python 3.11+.
 - PyPI distribution target: `retriever-core`.
 - Import package: `retriever`.
-- The source checkout is still the canonical path for demos, examples, Rerun visualization, and repository tests.
+- The source checkout is canonical for repository demos, examples, and tests; the installed package also supports the no-clone `retriever demo webcam` Rerun path.
 - Define payloads with `@io` from `retriever.flow`.
 - Override `Flow.step(...)`; do not invent `run(...)` methods for Flow logic.
 - Edge sync should be explicit with `connect(..., sync=...)` unless a default sync policy is intentionally configured.
@@ -31,6 +35,7 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 ## Canonical Commands
 
 ```bash
+retriever demo webcam --seconds 60 --visualize rerun --refresh
 retriever run basic-flow
 retriever run stepper
 retriever run perception-stepper
