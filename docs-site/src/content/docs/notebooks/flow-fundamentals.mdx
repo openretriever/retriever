@@ -97,7 +97,7 @@ sync policy on each edge. `pipe.step(dt=...)` advances the whole graph one tick
 at a time, in your process, where you can set a breakpoint inside any `step()`.
 
 ```python
-from retriever.flow import Latest, Pipeline, Rate, Trigger
+from retriever import Latest, Pipeline, Rate, Trigger
 
 class Source(Flow[None, NumberInput]):
     def reset(self):
@@ -110,7 +110,7 @@ pipe = Pipeline("flow_fundamentals")
 with pipe:
     src = Source() @ Rate(hz=10)
     dbl = DoubleFlow() @ Trigger("value")
-    pipe.connect(src, dbl, sync=Latest())
+    src.then(dbl, sync=Latest())
 
 for i in range(3):
     result = pipe.step(dt=0.1)  # in-process; breakpoint-friendly
@@ -126,7 +126,7 @@ tick 1: executed=['DoubleFlow', 'Source']
 tick 2: executed=['DoubleFlow', 'Source']
 ```
 
-<p class="notebook-takeaway"><strong>Takeaway:</strong> the Flow owns local computation; the graph owns <em>when</em> it wakes and <em>which</em> upstream record it consumes. Next: <a href="/concepts/time-and-sync/">Time and Sync</a> shows how clocks and sync policies build the input passed to <code>step()</code>.</p>
+<p class="notebook-takeaway"><strong>Takeaway:</strong> the Flow owns local computation; the graph owns <em>when</em> it wakes and <em>which</em> upstream record it consumes. <code>src.then(dbl, sync=Latest())</code> is the fluent composition form; <code>connect(src, dbl, sync=Latest())</code> is the explicit equivalent. Next: <a href="/concepts/time-and-sync/">Time and Sync</a> shows how clocks and sync policies build the input passed to <code>step()</code>.</p>
 
 ---
 

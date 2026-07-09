@@ -69,7 +69,7 @@ hello = "python main.py"
 """
 STARTER_MAIN = """from dataclasses import dataclass
 
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io

@@ -78,7 +78,7 @@ A camera Flow emitted a frame, a color detector sampled it, and a display Flow p
 The distribution name is `retriever-core`; the import package is `retriever`:
 
 ```python
-from retriever.flow import Flow, Pipeline, Rate, io
+from retriever import Flow, Pipeline, Rate, io
 ```
 
 A Flow is a stateful stream function. You declare typed IO with `@io`, subclass `Flow`, and override `step()`:

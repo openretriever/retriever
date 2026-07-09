@@ -96,9 +96,9 @@ with clocks:
     ticker   = Ticker()      @ Rate(hz=10)
     detector = Detector()    @ Trigger("value")
     hybrid   = RateOrEvent() @ Hybrid(hz=10, trigger=["value"])
-    clocks.connect(sensor, ticker,   sync=Latest())
-    clocks.connect(sensor, detector, sync=Latest())
-    clocks.connect(sensor, hybrid,   sync=Latest())
+    sensor.then(ticker,   sync=Latest())
+    sensor.then(detector, sync=Latest())
+    sensor.then(hybrid,   sync=Latest())
 
 print("tick | Sensor emits | Ticker(Rate) | Detector(Trigger) | RateOrEvent(Hybrid)")
 for i in range(6):
@@ -159,9 +159,9 @@ with sync:
     newest   = Newest()   @ Rate(hz=10)
     averaged = Averaged() @ Rate(hz=10)
     recent   = Recent()   @ Rate(hz=10)
-    sync.connect(ramp, newest,   sync=Latest())
-    sync.connect(ramp, averaged, sync=Window(buffer_size=20, duration=0.35, agg="mean"))
-    sync.connect(ramp, recent,   sync=Events(buffer_size=10, duration=0.35, include_timestamps=False))
+    ramp.then(newest,   sync=Latest())
+    ramp.then(averaged, sync=Window(buffer_size=20, duration=0.35, agg="mean"))
+    ramp.then(recent,   sync=Events(buffer_size=10, duration=0.35, include_timestamps=False))
 
 print("tick | Latest() | Window(mean, 0.35s) | Events(recent 0.35s)")
 for i in range(6):
@@ -203,8 +203,8 @@ with hold:
     src    = Ramp()      @ Rate(hz=10)
     live   = Newest()    @ Rate(hz=10)
     steady = Debounced() @ Rate(hz=10)
-    hold.connect(src, live,   sync=Latest())
-    hold.connect(src, steady, sync=Hold(debounce=0.25))
+    src.then(live,   sync=Latest())
+    src.then(steady, sync=Hold(debounce=0.25))
 
 print("tick | Latest() | Hold(debounce=0.25)")
 for i in range(6):

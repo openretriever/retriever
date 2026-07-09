@@ -140,7 +140,7 @@ class VLAFlow(Flow[SkillObs, ActionChunk]):
 A Flow never decides when it runs. That belongs to the graph. You attach a clock with `@` and declare how each edge is sampled with `sync=`:
 
 ```python
-from retriever.flow import Latest, Pipeline, Rate, Trigger
+from retriever import Latest, Pipeline, Rate, Trigger
 from examples.shared.perception_flows import CameraSource, ColorDetector, DisplayFlow
 
 pipe = Pipeline("tutorial.perception")
@@ -149,9 +149,11 @@ with pipe:
     detector = ColorDetector(min_confidence=0.6)    @ Trigger("image")
     display  = DisplayFlow(display="stdout")         @ Rate(hz=3)
 
-    pipe.connect(camera, detector, sync=Latest())
-    pipe.connect(detector, display, sync=Latest())
+    camera.then(detector, sync=Latest())
+    detector.then(display, sync=Latest())
 ```
+
+`.then(...)` is the fluent Flow-to-Flow composition form: it reads like a stream pipeline, returns the destination Flow for chaining, and records the edge in the active graph context. The explicit equivalent is `connect(camera, detector, sync=Latest())`, which is useful for code generators, conditional wiring, or cases where chaining hides too much. Keep the mental model split clean: Flows own composition edges; `Pipeline` owns validation, visualization, stepping, replay, and backend execution.
 
 This split is the whole design: a Flow owns local computation; the graph owns when the Flow wakes up and which upstream record it consumes. Keep out of a Flow anything that belongs to the graph or runtime — do not start a private event loop for timing, do not read "whatever message last arrived" from global state, and do not fold backend launch, logging, or replay into the model logic.
 

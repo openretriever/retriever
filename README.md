@@ -36,10 +36,12 @@ Use Retriever when a robot system needs:
 
 System-level robot integrations, simulator stacks, and heavier model packages belong in the maintained reference examples layer: [GoldenRetriever](https://golden.retriever.build/examples/) and Retriever Hub packs. This repository stays focused on the runtime core.
 
+The authoring style is intentionally close to functional reactive programming: compose small stateful stream functions, make time explicit, and put the sampling rule on the edge. In day-to-day code, `.then(...)` is the fluent composition surface; `retriever.connect(...)` is the same edge written as a standalone function.
+
 ## Canonical Runtime Workflow
 
 ```python
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever import Flow, Latest, Pipeline, Rate, Trigger, io
 
 
 @io
@@ -68,9 +70,10 @@ class Double(Flow[Number, Doubled]):
 
 
 pipe = Pipeline("quickstart")
-source = Source() @ Rate(hz=2)
-double = Double() @ Trigger("value")
-pipe.connect(source, double, sync=Latest())
+with pipe:
+    source = Source() @ Rate(hz=2)
+    double = Double() @ Trigger("value")
+    source.then(double, sync=Latest())
 
 pipe.run(backend="multiprocessing", duration=1.0)
 ```
@@ -80,7 +83,8 @@ The important pieces are small:
 - `@io` defines typed message envelopes.
 - `Flow[I, O]` defines node logic.
 - `flow @ clock` declares when a node runs.
-- `Pipeline.connect(..., sync=...)` declares how data crosses an edge.
+- `source.then(target, sync=...)` wires a Flow-to-Flow edge in the fluent style.
+- `retriever.connect(source, target, sync=...)` is the explicit equivalent when chaining is not the clearest shape.
 - `Pipeline.run(...)` executes on a backend.
 - `Pipeline.step(...)` runs in-process for debugging and replay.
 

@@ -23,7 +23,7 @@ Retriever graph — the only difference is that we'll drive it with `step()`
 instead of handing it to a backend.
 
 ```python
-from retriever.flow import Flow, Latest, Pipeline, Rate, Trigger, io
+from retriever import Flow, Latest, Pipeline, Rate, Trigger, io
 
 @io
 class Value:
@@ -52,8 +52,8 @@ with pipe:
     counter = Counter() @ Rate(hz=10)
     doubler = Doubler() @ Trigger("value")
     sink = Sink() @ Rate(hz=10)
-    pipe.connect(counter, doubler, sync=Latest())
-    pipe.connect(doubler, sink, sync=Latest())
+    counter.then(doubler, sync=Latest())
+    doubler.then(sink, sync=Latest())
 
 print("built:", pipe.get_name(), "with", len(pipe.get_handles()), "nodes")
 ```

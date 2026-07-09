@@ -21,7 +21,7 @@ A Flow fires at its own clock times. There is no shared `k` that means "the next
 - `Hybrid(hz=10, "replan")` — periodic *and* event-driven; fire on the timer or immediately on the named field.
 
 ```python
-from retriever.flow import Latest, Pipeline, Rate, Trigger
+from retriever import Latest, Pipeline, Rate, Trigger
 from examples.shared.perception_flows import CameraSource, ColorDetector, DisplayFlow
 
 pipe = Pipeline("tutorial.perception")
@@ -30,11 +30,11 @@ with pipe:
     detector = ColorDetector(min_confidence=0.6)    @ Trigger("image")
     display  = DisplayFlow(display="stdout")         @ Rate(hz=3)
 
-    pipe.connect(camera, detector, sync=Latest())
-    pipe.connect(detector, display, sync=Latest())
+    camera.then(detector, sync=Latest())
+    detector.then(display, sync=Latest())
 ```
 
-The camera source wakes periodically; the detector wakes when a frame arrives; the display wakes at its own slower rate. Run it:
+The camera source wakes periodically; the detector wakes when a frame arrives; the display wakes at its own slower rate. The `.then(..., sync=...)` calls are the reactive graph edges: upstream event history flows forward, and the sync policy decides which record is visible when the downstream Flow wakes. Run it:
 
 ```bash
 retriever run webcam-mock
@@ -84,7 +84,7 @@ Every edge accumulates a timestamped buffer of upstream outputs. The `sync=` pol
 `Latest()` is right when one fresh value is enough. `Window(...)` is right when a slower Flow should see a short history summarized at its own clock time — the classic fast-producer, slow-consumer bridge:
 
 ```python
-from retriever.flow import Flow, Pipeline, Rate, Window, io
+from retriever import Flow, Pipeline, Rate, Window, io
 
 sensor   = Sensor()   @ Rate(hz=30)   # fast producer
 smoother = Smoother() @ Rate(hz=10)   # mid-rate consumer

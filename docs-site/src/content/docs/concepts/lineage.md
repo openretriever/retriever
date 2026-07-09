@@ -20,6 +20,7 @@ come from" companion.
 | `Latest()` / `Hold()` sampling | FRP *behaviors* [1, 2] | Holding the last event gives a continuous time-varying value (zero-order hold). |
 | `Window(duration=..., agg=...)` | Stream processing windows | Aggregate a bounded slice of history instead of one sample. |
 | `Rate` / `Tick` / `Trigger` / `Hybrid` clocks | Synchronous dataflow clocks [4, 5, 6] | *When* a node runs is part of the program, not an accident of arrival order. |
+| Fluent `a.then(b, sync=...)` composition | FRP / stream operator chains [1, 7] | Read the robot graph as a chain of stateful stream functions, with explicit sampling at each edge. |
 | Mandatory `sync=` on every edge | Synchronous languages' explicit sampling [4] | No implicit races: how a consumer samples its inputs is written in the graph. |
 | Typed `Flow[I, O]` graph → IR → backend | Dataflow process networks [3, 6] | The multiprocessing backend is close to a Kahn network with bounded queues and explicit drop policies. |
 | `pipe.step(dt=...)` in-process stepper | Synchronous semantics [4, 5] | A deterministic logical clock you can single-step, breakpoint, and replay. |
@@ -29,7 +30,8 @@ come from" companion.
 
 ## Functional reactive programming, made operational
 
-Classic FRP [1] models a reactive system with two types:
+Classic FRP [1] models a reactive system with two types. If you want an approachable starting point before the papers, read the ReactiveX Observable/operator docs [7] or the Elm Architecture guide [11]; Retriever borrows the same intuition that a program can be described as values changing over time plus transformations between them.
+
 
 - **Event**: a discrete stream of timestamped occurrences.
 - **Behavior**: a continuous function of time, `t -> value`.
@@ -44,6 +46,7 @@ hiding it behind denotational elegance:
   zero-order hold; `Events()` hands you the raw occurrences; `Window()`
   aggregates a slice.
 - A **clock policy** decides *when* sampling happens at all.
+- A `.then(..., sync=...)` edge is the practical composition operator: connect one stateful stream function to the next, and write the temporal sampling rule directly on that connection.
 
 The clock/adapter split is the FRP event/behavior split, refactored for
 robots: *when do I run* (clock) is independent of *what do I see when I run*
@@ -90,11 +93,14 @@ of silent queue growth.
    Design, Semantics, Implementation.* Science of Computer Programming, 1992.
 6. E. A. Lee and D. G. Messerschmitt. *Synchronous Data Flow.* Proceedings
    of the IEEE, 1987.
-7. ReactiveX documentation. <https://reactivex.io/>
+7. ReactiveX Observable and operator documentation.
+   <https://reactivex.io/documentation/observable.html> and
+   <https://reactivex.io/documentation/operators.html>
 8. dora-rs: a dataflow runtime for robotics. <https://github.com/dora-rs/dora>
 9. PyTorch `nn.Module` documentation.
    <https://pytorch.org/docs/stable/generated/torch.nn.Module.html>
 10. ROS 2 design documentation. <https://design.ros2.org/>
+11. Elm Architecture guide. <https://guide.elm-lang.org/architecture/>
 
 Further reading: Z. Wan and P. Hudak, *Functional Reactive Programming from
 First Principles* (PLDI 2000), for the semantics of sampling; E. Czaplicki

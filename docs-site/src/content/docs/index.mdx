@@ -25,7 +25,7 @@ template: splash
   </div>
 </div>
 
-<p class="mental-model"><strong>Mental model:</strong> PyTorch composes <code>nn.Module</code>s that run immediately; Retriever composes typed <code>Flow</code>s that run in explicit time. Each Flow owns local state, wakes on its own clock, consumes one synchronized input record, and can be stepped locally before it runs on a backend.</p>
+<p class="mental-model"><strong>Mental model:</strong> PyTorch composes <code>nn.Module</code>s that run immediately; functional reactive programming composes values over time; Retriever composes typed <code>Flow</code>s that run in explicit robot time. Each Flow owns local state, wakes on its own clock, consumes one synchronized input record, and can be stepped locally before it runs on a backend.</p>
 
 ## Quick Start
 

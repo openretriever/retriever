@@ -4,15 +4,15 @@ title: Runtime
 
 **What you'll learn:** the path from an authored graph to a running one — `validate()` compiles a `Pipeline` to an IR, `step()` runs it in-process with the deploy-time timing preserved, and `run(backend=...)` executes the same IR on multiprocessing or Dora. The same timestamped input trace yields the same output trace at every stop.
 
-A `Pipeline` is the executable graph. You wire Flows with clocks and sync policies, then move through four surfaces on the same object:
+A `Pipeline` is the executable graph. You normally wire Flows with the fluent `source.then(target, sync=...)` form; the examples on this page use the explicit `connect(source, target, sync=...)` equivalent because runtime validation and IR examples benefit from naming both endpoints. After wiring, the same object exposes four surfaces:
 
 ```python
-from retriever.flow import Latest, Pipeline, Rate, Trigger
+from retriever import Latest, Pipeline, Rate, Trigger, connect
 
 with Pipeline("agent") as pipe:
     camera   = CameraSource(id=0) @ Rate(hz=30)
     detector = ColorDetector()    @ Trigger("image")
-    pipe.connect(camera, detector, sync=Latest())
+    connect(camera, detector, sync=Latest())
 
 ir = pipe.validate()                 # 1. graph -> validated IR
 pipe.visualize("artifacts/agent.html")  # 2. render structure, clocks, ports, edges
@@ -26,7 +26,7 @@ pipe.run(backend="dora")            # 4. deploy asynchronously
 
 ```python
 import json
-from retriever.flow import Flow, io, Rate, Trigger, Pipeline, Latest
+from retriever import Flow, Latest, Pipeline, Rate, Trigger, connect, io
 from retriever.ir.core import IR
 from retriever.error import IRError
 
@@ -47,8 +47,8 @@ with Pipeline("pipeline") as pipe:
     source  = SourceFlow()  @ Rate(hz=10)
     process = ProcessFlow() @ Trigger("value")
     sink    = SinkFlow()    @ Trigger("value")
-    source.then(process, sync=Latest())
-    process.then(sink, sync=Latest())
+    connect(source, process, sync=Latest())
+    connect(process, sink, sync=Latest())
 
 ir = pipe.validate()
 print("version:", ir.version, "| nodes:", ir.topology.node_count, "| edges:", ir.topology.edge_count)
@@ -92,7 +92,7 @@ retriever run ir-validation   # prints the full IR as JSON
 `pipe.step(dt=...)` advances the graph in one process: it samples each edge, calls each `Flow.step()`, and publishes outputs, honoring the same clocks and sync policies a backend would. Breakpoints inside `step()` fire in your own process, and the trace is reproducible.
 
 ```python
-from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
+from retriever import Flow, Latest, Pipeline, Rate, Trigger, connect, io
 
 @io
 class Value:
@@ -115,8 +115,8 @@ def run_once():
         ramp = Ramp()   @ Rate(hz=10)
         dbl  = Double() @ Trigger("n")
         rec  = recorder @ Trigger("n")
-        pipe.connect(ramp, dbl, sync=Latest())
-        pipe.connect(dbl, rec, sync=Latest())
+        connect(ramp, dbl, sync=Latest())
+        connect(dbl, rec, sync=Latest())
     for _ in range(5):
         pipe.step(dt=0.1)
     pipe.close_stepper()

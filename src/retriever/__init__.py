@@ -40,8 +40,8 @@ def _resolve_version() -> str:
 
 __version__ = _resolve_version()
 
-from retriever.flow import Flow, Rate, Clock
-from retriever.flow.adapter import Latest
+from retriever.flow import Flow, Rate, Clock, Trigger, Hybrid, Tick
+from retriever.flow.adapter import Latest, Hold, Window, Events
 from retriever.flow.pipeline import (
     Pipeline,
     clear_default_pipeline,
@@ -85,7 +85,7 @@ def init(
         backend_config: Default backend configuration dict. Values are merged
                         with (and overridden by) `pipe.run(backend_config=...)`.
         default_sync: Default sync adapter for connections (e.g. Latest()).
-                      Pass None explicitly to clear it so every pipe.connect()
+                      Pass None explicitly to clear it so every explicit connection
                       must specify sync=.
         default_viz: Default visualization policy for all output ports that do not
                      have an explicit viz= on their .then() connection.
@@ -149,7 +149,13 @@ __all__ = [
     "Flow",
     "Rate",
     "Clock",
+    "Trigger",
+    "Hybrid",
+    "Tick",
     "Latest",
+    "Hold",
+    "Window",
+    "Events",
     "Pipeline",
     "connect",
     "default_pipeline",
