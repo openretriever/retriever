@@ -10,13 +10,35 @@ small scripts can stay terse. The preferred explicit surfaces still live in:
 """
 
 from importlib import import_module
-from importlib.metadata import PackageNotFoundError, version as _package_version
+from importlib.metadata import (
+    PackageNotFoundError,
+    packages_distributions as _packages_distributions,
+    version as _package_version,
+)
 from types import ModuleType
 
-try:
-    __version__ = _package_version("retriever-core")
-except PackageNotFoundError:
-    __version__ = "0.0.0+local"
+
+def _resolve_version() -> str:
+    # The `retriever` import package may be shipped by more than one
+    # distribution (the canonical `retriever-core`, or the interim
+    # `debug-retriever` used before the core package is published). Resolve the
+    # version from whichever distribution actually installed this package rather
+    # than assuming one dist name, so `retriever.__version__` is correct either
+    # way. Fall back to a source-tree marker when running uninstalled.
+    candidates: list[str] = []
+    try:
+        candidates = list(_packages_distributions().get("retriever", []))
+    except Exception:
+        candidates = []
+    for dist in [*candidates, "retriever-core"]:
+        try:
+            return _package_version(dist)
+        except PackageNotFoundError:
+            continue
+    return "0.0.0+local"
+
+
+__version__ = _resolve_version()
 
 from retriever.flow import Flow, Rate, Clock
 from retriever.flow.adapter import Latest

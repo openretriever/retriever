@@ -12,7 +12,6 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from importlib import metadata
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -176,10 +175,11 @@ class Command:
 
 
 def package_version() -> str:
-    try:
-        return metadata.version("retriever-core")
-    except metadata.PackageNotFoundError:
-        return "0+source"
+    # Resolve from whichever distribution installed the `retriever` package
+    # (retriever-core or the interim debug-retriever), not a fixed dist name.
+    from retriever import __version__
+
+    return __version__
 
 
 def find_pixi_workspace(start: Path | None = None) -> Path | None:
