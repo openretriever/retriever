@@ -68,7 +68,7 @@ discipline). This pairing — clean core, warm Golden — is intentional.
 
 ## Paper-grounded content (source of truth for claims)
 
-Docs claims must match the RSS 2026 paper. Use this canonical language:
+Docs claims must match the current project paper draft. Use this canonical language:
 
 - **Thesis:** Retriever is a *programming model and runtime for closed-loop,
   asynchronous robot agents*, grounded in time-aware stream semantics.
