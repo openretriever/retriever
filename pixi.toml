@@ -148,7 +148,7 @@ package = "python scripts/release/package_dist.py"
 
 # Documentation site
 # Run: pixi run -e docs docs-build
-docs-build = "npm --prefix docs-site ci && npm --prefix docs-site run build"
+docs-build = "npm --prefix docs-site install --no-audit --no-fund && npm --prefix docs-site run build"
 docs-serve = "npm --prefix docs-site run dev"
 
 # Test tasks
