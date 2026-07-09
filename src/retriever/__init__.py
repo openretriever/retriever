@@ -19,12 +19,9 @@ from types import ModuleType
 
 
 def _resolve_version() -> str:
-    # The `retriever` import package may be shipped by more than one
-    # distribution (the canonical `retriever-core`, or the interim
-    # `debug-retriever` used before the core package is published). Resolve the
-    # version from whichever distribution actually installed this package rather
-    # than assuming one dist name, so `retriever.__version__` is correct either
-    # way. Fall back to a source-tree marker when running uninstalled.
+    # Resolve the version from whichever installed distribution provides the
+    # `retriever` import package, rather than assuming one dist name. Fall back
+    # to a source-tree marker when running uninstalled.
     candidates: list[str] = []
     try:
         candidates = list(_packages_distributions().get("retriever", []))

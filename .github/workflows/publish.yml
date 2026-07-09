@@ -31,7 +31,7 @@ jobs:
         run: pixi run build
       - name: Check package metadata
         run: |
-          python -m pip install --upgrade twine
+          python -m pip install --upgrade twine packaging
           python -m twine check dist/*
       - uses: actions/upload-artifact@v4
         with:

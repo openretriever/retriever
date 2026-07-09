@@ -57,11 +57,10 @@ def _runtime_distributions() -> set[str]:
     """Distribution names that provide the already-imported `retriever` package.
 
     A consumer calling `hub.use(...)` is, by definition, already running
-    retriever -- possibly installed under a different distribution name such as
-    `debug-retriever`. So a module listing the retriever runtime among its
-    dependencies must never be re-required here.
+    retriever. So a module listing the retriever runtime among its dependencies
+    must never be re-required here.
     """
-    names = {"retriever-core", "retriever", "debug-retriever"}
+    names = {"retriever-core", "retriever"}
     try:
         from importlib.metadata import packages_distributions
 

@@ -3,10 +3,10 @@ title: Retriever Hub
 ---
 Retriever Hub loads reusable robot code straight from a git repository. Point it at `org/name:Export` and it returns the object — a Flow class, a type, a transform, or a pipeline builder — with no PyPI wheel and no copied source.
 
-Try it right now — install the debug runtime plus Rerun, then run a 60-second live webcam demo in one line:
+Try it right now — install the runtime package plus Rerun, then run a 60-second live webcam demo in one line:
 
 ```bash
-python -m pip install "debug-retriever[demo]==0.1.8" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
+python -m pip install "retriever-core[demo]" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
 That command fetches the [`openretriever/webcam-demo`](https://github.com/openretriever/webcam-demo) pack, checks its dependencies, and runs a `Camera → ColorDetector → Rerun` closed loop over your webcam with image and bounding-box overlays. Use `--visualize stdout` for terminal-only output or `--visualize both` for Rerun plus stdout. The same mechanism returns any export — a Flow class, a type, a transform, or a pipeline builder:

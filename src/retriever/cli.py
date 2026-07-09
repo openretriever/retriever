@@ -133,7 +133,7 @@ Usage:
   retriever --dry-run run <target-or-pixi-task> [-- task args...]
 
 PyPI path:
-  python -m pip install "debug-retriever[demo]" rerun-sdk
+  python -m pip install "retriever-core[demo]" rerun-sdk
   retriever demo webcam --seconds 60 --visualize rerun --refresh
 
 Project workspace path:
@@ -187,8 +187,8 @@ class Command:
 
 
 def package_version() -> str:
-    # Resolve from whichever distribution installed the `retriever` package
-    # (retriever-core or the interim debug-retriever), not a fixed dist name.
+    # Resolve from the installed `retriever` import package rather than hard-coding
+    # a distribution name.
     from retriever import __version__
 
     return __version__

@@ -8,11 +8,11 @@ template: splash
 <div class="hero-panel">
   <p class="eyebrow">Retriever runtime</p>
   <h1>Build robot agents whose perception, reasoning, and control run at their own clocks.</h1>
-  <p class="lede">Retriever is a programming model and runtime for closed-loop, asynchronous robot agents. Compose typed <code>Flow</code>s on explicit clocks, and let each edge declare how it samples its inputs. The same timestamped inputs produce the same outputs no matter how the runtime schedules them — so you can step, record, and replay the whole agent.</p>
+  <p class="lede">Retriever is a programming model and runtime for closed-loop, asynchronous robot agents. Compose typed <code>Flow</code>s on explicit clocks, and let each edge declare how it samples its inputs. The same timestamped inputs produce the same outputs no matter how the runtime schedules them. That makes stepping, recording, and replay part of the normal workflow.</p>
   <div class="action-grid">
     <a class="action-card" href="/getting-started/visual-quickstart/">
       <strong>Run the visual demo</strong>
-      <span>Start with mock color detection, then switch to webcam and Rerun.</span>
+      <span>Open the webcam demo with Rerun boxes, then fall back to mock input if needed.</span>
     </a>
     <a class="action-card" href="/tutorials/examples-and-results/">
       <strong>Follow the notebook path</strong>
@@ -25,36 +25,42 @@ template: splash
   </div>
 </div>
 
-<p class="mental-model"><strong>Mental model:</strong> PyTorch composes <code>nn.Module</code>s that run immediately; functional reactive programming composes values over time; Retriever composes typed <code>Flow</code>s that run in explicit robot time. Each Flow owns local state, wakes on its own clock, consumes one synchronized input record, and can be stepped locally before it runs on a backend.</p>
+<p class="mental-model"><strong>Mental model:</strong> PyTorch composes <code>nn.Module</code>s that run now. Functional reactive programming treats values as changing over time. Retriever brings that shape to robotics: typed <code>Flow</code>s run on explicit clocks, consume one synchronized input record, and keep local state in one place.</p>
 
 ## Quick Start
 
-Run the source-checkout demo first. It proves the runtime graph without camera permission, GUI windows, Rerun, or robot hardware.
+If you just want to see Retriever do something visible, start here. This installs the runtime package, opens a 60-second webcam color detector, and logs the camera stream plus bounding boxes to Rerun.
 
 ```bash
-git clone https://github.com/openretriever/retriever.git
-cd retriever
-retriever install --bootstrap-pixi
-retriever run webcam-mock
+python -m pip install "retriever-core[demo]" rerun-sdk
+retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
+Hold up a red or blue object. You should see the live image in Rerun with boxes under `camera/image/boxes`.
+
 <details class="explain-details">
-  <summary>What does this do?</summary>
+  <summary>If the camera or viewer gets in the way</summary>
   <div>
-    <p><code>retriever install --bootstrap-pixi</code> prepares the source checkout. <code>retriever run webcam-mock</code> runs a small graph: synthetic camera frames feed a color detector, then detections are printed to stdout. Use the webcam/Rerun path only after this smoke works.</p>
+    <p>Use the repo smoke test. It skips camera permissions and GUI windows, feeds synthetic red and blue frames through a small <code>Camera -> ColorDetector -> Display</code> graph, and prints detections to stdout.</p>
+    <pre><code>git clone https://github.com/openretriever/retriever.git
+cd retriever
+retriever install --bootstrap-pixi
+retriever run webcam-mock</code></pre>
   </div>
 </details>
 
-Use the source checkout for demos today: it includes examples, tutorial assets, graph rendering, and optional visualization. The runtime-only distribution name is `retriever-core`, and the Python import remains `retriever`; see [Install](/getting-started/install/) for the package/source split.
+`retriever-core` is the PyPI distribution. The import package and CLI command are still `retriever`. See [Install](/getting-started/install/) for the package/source split.
 
-## Why Retriever For Robotics
+## Why use Retriever for robots?
+
+Robots do not run like one clean Python loop. A camera might produce frames at 30 Hz, a model call might pause for hundreds of milliseconds, and a controller still has to keep moving. Retriever gives those pieces one graph without hiding timing inside callback code.
 
 <div class="check-list">
-  <p><strong>Compositional Flow contracts.</strong> Perception, memory, planning, skills, monitors, and controllers stay as reusable typed modules instead of callback glue.</p>
-  <p><strong>Explicit multi-rate time.</strong> Cameras, model calls, skills, and controllers do not need to pretend they share one global timestep.</p>
-  <p><strong>Deterministic input handoff.</strong> Each edge declares how upstream event history becomes the one input record consumed by <code>step(...)</code>.</p>
-  <p><strong>Debuggable before deployment.</strong> Render the graph, step locally, use stdout/Rerun, record consumed inputs, and replay the same run.</p>
-  <p><strong>Backend mapping when ready.</strong> Keep the graph semantics stable while moving from in-process stepping to multiprocessing or Dora-backed execution.</p>
+  <p><strong>Flows are ordinary Python.</strong> Put perception, memory, planning, skill monitors, and controllers in typed classes with <code>step(...)</code>. The graph stays readable.</p>
+  <p><strong>Time is explicit.</strong> A camera, a model call, and a 200 Hz controller can run on different clocks without pretending there is one global timestep.</p>
+  <p><strong>Handoffs are named.</strong> Each edge says whether a Flow sees the latest value, a time window, or another sync policy before <code>step(...)</code> runs.</p>
+  <p><strong>You can debug before touching a robot.</strong> Render the graph, step it in-process, print stdout, open Rerun, record inputs, and replay the same run.</p>
+  <p><strong>The backend comes later.</strong> Start in-process. Move to multiprocessing or Dora when the graph is stable.</p>
 </div>
 
 <figure class="figure-card">
@@ -80,20 +86,20 @@ The full positioning matrix lives on [Why Retriever](/concepts/why-retriever/). 
 | Need | Start with |
 | --- | --- |
 | First reliable smoke | `retriever run webcam-mock` |
-| Live visual path | `retriever run webcam` |
+| Live visual path | `retriever demo webcam --seconds 60 --visualize rerun --refresh` |
 | Smallest Flow mental model | `retriever run basic-flow` |
 | Graph inspection | `retriever run graph` |
 | Record and replay | `retriever run record` then `retriever run replay` |
 | Hub ref inspection | `retriever hub parse openretriever/hello-world:HelloFlow` then `retriever hub inspect openretriever/hello-world --json` |
 | Applied robot examples | GoldenRetriever first proof, then the example catalog |
 
-For checkpointable debugging, use the Python stepping API: `Pipeline.step(...)` or the top-level `retriever.step(...)` helper on the active pipeline. Saved IR/HTML is for inspection and reproducibility; Python remains the executable graph source.
+For checkpointable debugging, use the Python stepping API: `Pipeline.step(...)` or the top-level `retriever.step(...)` helper on the active pipeline. Saved IR/HTML is for inspection and reproducibility. Python remains the executable graph source.
 
 ## The Four Objects
 
 <div class="card-grid">
   <a class="info-card" href="/concepts/flow/"><strong>Flow</strong><span>A typed Python class with local state and a synchronous <code>step(...)</code> method.</span></a>
-  <a class="info-card" href="/concepts/time-and-sync/"><strong>Clock</strong><span>Each Flow declares when it runs; there is no global robot timestep.</span></a>
+  <a class="info-card" href="/concepts/time-and-sync/"><strong>Clock</strong><span>Each Flow declares when it runs. There is no global robot timestep.</span></a>
   <a class="info-card" href="/concepts/time-and-sync/"><strong>Sync policy</strong><span>Each edge declares how upstream event history becomes one aligned input.</span></a>
   <a class="info-card" href="/concepts/runtime/"><strong>Pipeline</strong><span>The graph that validates, visualizes, steps, replays, and runs.</span></a>
 </div>

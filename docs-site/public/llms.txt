@@ -13,7 +13,7 @@ retriever run stepper
 retriever run graph
 
 # Installed-package no-clone visual demo:
-python -m pip install "debug-retriever[demo]" rerun-sdk
+python -m pip install "retriever-core[demo]" rerun-sdk
 retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
@@ -24,7 +24,7 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 - Python 3.11+.
 - PyPI distribution target: `retriever-core`.
 - Import package: `retriever`.
-- The source checkout is canonical for repository demos, examples, and tests; the installed package also supports the no-clone `retriever demo webcam` Rerun path.
+- The source checkout is canonical for repository demos, examples, and tests. The installed package supports the no-clone `retriever demo webcam` Rerun path.
 - Define payloads with `@io` from `retriever.flow`.
 - Override `Flow.step(...)`; do not invent `run(...)` methods for Flow logic.
 - Edge sync should be explicit with `connect(..., sync=...)` unless a default sync policy is intentionally configured.
@@ -51,13 +51,13 @@ retriever hub inspect openretriever/hello-world --json
 ## Docs
 
 - [Overview](https://retriever.build/): recommended path and conceptual map.
-- [Install](https://retriever.build/getting-started/install/): source-checkout setup today, plus the runtime-only package/source split.
+- [Install](https://retriever.build/getting-started/install/): source checkout setup today, plus the runtime-only package/source split.
 - [Visual Quickstart](https://retriever.build/getting-started/visual-quickstart/): deterministic mock color-detection smoke, then live webcam/Rerun.
 - [Examples and Results](https://retriever.build/tutorials/examples-and-results/): commands paired with expected output.
 - [Debug and Visualize](https://retriever.build/tutorials/debug-and-visualize/): graph render, local stepping, Rerun, record, replay.
 - [Flow](https://retriever.build/concepts/flow/): typed Flow authoring.
 - [Time and Sync](https://retriever.build/concepts/time-and-sync/): clocks, event streams, and sync policies.
-- [Runtime](https://retriever.build/concepts/runtime/): validate -> IR -> backends; stepping; recording and replay.
+- [Runtime](https://retriever.build/concepts/runtime/): validate -> IR -> backends, stepping, recording, and replay.
 - [Standard Types](https://retriever.build/concepts/standard-types/): runtime-owned type primitives and what belongs outside core.
 - [Concepts and Lineage](https://retriever.build/concepts/lineage/): relation to FRP and synchronous dataflow.
 - [GoldenRetriever examples bridge](https://retriever.build/ecosystem/golden-packs/): how GoldenRetriever extends core Retriever through a manifest-declared payload pack.
@@ -68,7 +68,7 @@ retriever hub inspect openretriever/hello-world --json
 
 ## Companion Sites
 
-- Core source target: `openretriever/retriever` for runtime implementation and source-checkout demos. Use hosted docs for stable public instructions.
+- Core source target: `openretriever/retriever` for runtime implementation and source checkout demos. Use hosted docs for stable public instructions.
 - GoldenRetriever source target: `openretriever/golden-retriever` for robot-facing examples, payload packs, simulator lanes, and public-surface checks. Use the GoldenRetriever first proof before heavier examples.
 - [Landing page](https://openretriever.org/): compact public front door.
 - [GoldenRetriever](https://golden.retriever.build/): robot-facing reference examples, payload packs, simulator/visualization lanes, and Hub-pack candidates. Start with [First GoldenRetriever Proof](https://golden.retriever.build/examples/golden-hub-proof/).

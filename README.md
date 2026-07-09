@@ -153,10 +153,10 @@ Python is the executable source of truth. Saved IR/HTML is the portable graph de
 ## Retriever Hub
 
 Hub loads a module by name from a public repo — no clone, no checkout. Install the
-debug runtime plus Rerun, then run a 60-second live webcam demo in one line:
+runtime package plus Rerun, then run a 60-second live webcam demo in one line:
 
 ```bash
-python -m pip install "debug-retriever[demo]==0.1.8" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
+python -m pip install "retriever-core[demo]" rerun-sdk && retriever demo webcam --seconds 60 --visualize rerun --refresh
 ```
 
 `hub.use(...)` fetches the [`openretriever/webcam-demo`](https://github.com/openretriever/webcam-demo)
