@@ -53,11 +53,13 @@ demo = [
 recording = [
     "mcap>=1.0.0",
     "numpy",
-    # Upper bound is deliberate. The `.rrd` reader in retriever.recording depends
-    # on rerun's dataframe API, which changed twice: 0.24+ renamed the view
-    # columns the reader keys off (node streams come back empty) and 0.28 also
-    # dropped `Recording.view(include_indicator_columns=...)`. 0.23.x is the
-    # range we actually test. Lift once the reader supports the new schema.
+    # TODO(rerun-latest): support current rerun (0.34+). The `.rrd` reader in
+    # retriever.recording reads recordings back into Python via rerun's dataframe
+    # query API (rr.dataframe), which rerun deprecated in 0.28 and REMOVED by 0.29
+    # (absent in 0.34) -- querying moved out of the Python SDK. rerun's write/viz
+    # path (rr.log/RecordingStream) still works on latest, so the migration is:
+    # narrow rerun to visualization and route replay through the MCAP path (which
+    # is already rerun-independent), then drop this upper bound. Not a version bump.
     "rerun-sdk>=0.21.0,<0.24",
 ]
 
@@ -101,17 +103,12 @@ otel = ["uptrace", "opentelemetry-api", "opentelemetry-sdk"]
 web = [
     "fastapi",
     "uvicorn[standard]",
-    "pydantic",
-    "jinja2",            # Often used with FastAPI for templates
 ]
 
 vision = [
     "torch>=2.0.0",
-    "torchvision",
     "transformers",
     "pillow",
-    "openpi",
-    "timm",
 ]
 
 [project.scripts]

@@ -292,6 +292,11 @@ class McapRecordingReader:
         return None
 
 
+# TODO(rerun-latest): this `.rrd` reader depends on rerun's dataframe query API
+# (rr.dataframe / Recording.view), which rerun deprecated in 0.28 and removed by
+# 0.29 (absent in 0.34), so the `recording` extra pins rerun-sdk<0.24. The write/
+# viz path still works on latest; migrate replay to the rerun-independent MCAP
+# reader below, then lift the pin. Tracked in pyproject `recording` extra.
 def _load_rrd_recording(path: str | Path) -> Any:
     """Open an `.rrd` recording, tolerating rerun-sdk's relocation of the loader."""
     try:
