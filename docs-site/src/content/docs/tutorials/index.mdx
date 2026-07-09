@@ -13,7 +13,7 @@ Run one graph first, then add concepts only when they explain the next problem. 
   </div>
   <div class="route-command">
     <span>First command</span>
-    <pre><code>./scripts/retriever run webcam-mock</code></pre>
+    <pre><code>retriever run webcam-mock</code></pre>
     <p>No camera, no GUI, no backend. Deterministic red/blue detections in stdout.</p>
   </div>
 </div>
@@ -21,12 +21,12 @@ Run one graph first, then add concepts only when they explain the next problem. 
 ## The route
 
 <div class="route-grid">
-  <a class="route-step" href="/getting-started/install/"><span>01</span><strong>Install</strong><p>Clone the repo and build the environment with Pixi.</p><code>./scripts/retriever install --bootstrap-pixi</code></a>
-  <a class="route-step" href="/getting-started/visual-quickstart/"><span>02</span><strong>Visual quickstart</strong><p>Run the mock perception graph, then the live webcam and Rerun path.</p><code>./scripts/retriever run webcam-mock</code></a>
-  <a class="route-step" href="/tutorials/examples-and-results/"><span>03</span><strong>Examples and results</strong><p>Six demos, each with its real output, from a one-Flow function to replay.</p><code>./scripts/retriever run basic-flow</code></a>
+  <a class="route-step" href="/getting-started/install/"><span>01</span><strong>Install</strong><p>Clone the repo and build the environment with Pixi.</p><code>retriever install --bootstrap-pixi</code></a>
+  <a class="route-step" href="/getting-started/visual-quickstart/"><span>02</span><strong>Visual quickstart</strong><p>Run the mock perception graph, then the live webcam and Rerun path.</p><code>retriever run webcam-mock</code></a>
+  <a class="route-step" href="/tutorials/examples-and-results/"><span>03</span><strong>Examples and results</strong><p>Six demos, each with its real output, from a one-Flow function to replay.</p><code>retriever run basic-flow</code></a>
   <a class="route-step" href="/concepts/flow/"><span>04</span><strong>Flow fundamentals</strong><p>The Python boundary: typed <code>@io</code>, local state, and a synchronous <code>step()</code>.</p></a>
   <a class="route-step" href="/concepts/time-and-sync/"><span>05</span><strong>Time and sync</strong><p>Clocks decide when a Flow runs; per-edge <code>sync=</code> decides which input it reads.</p></a>
-  <a class="route-step" href="/tutorials/debug-and-visualize/"><span>06</span><strong>Debug and visualize</strong><p>Render the graph, step in-process, then record and replay the same run.</p><code>./scripts/retriever run graph</code></a>
+  <a class="route-step" href="/tutorials/debug-and-visualize/"><span>06</span><strong>Debug and visualize</strong><p>Render the graph, step in-process, then record and replay the same run.</p><code>retriever run graph</code></a>
   <a class="route-step" href="/concepts/runtime/"><span>07</span><strong>Runtime model</strong><p>Graph compiles to an IR; <code>pipe.step()</code> preserves the timing that <code>pipe.run()</code> deploys.</p></a>
   <a class="route-step" href="/ecosystem/"><span>08</span><strong>Hub and reuse</strong><p>Package stable Flows and payloads through the Hub boundary, not source-tree layout.</p></a>
 </div>
@@ -56,7 +56,7 @@ Run one graph first, then add concepts only when they explain the next problem. 
 Skip broad repo spelunking on the first pass. Run this deterministic route, then read [`llms.txt`](/llms.txt) and inspect the rendered HTML graph before moving to live webcam, Rerun, or GoldenRetriever examples:
 
 ```bash
-./scripts/retriever run webcam-mock
-./scripts/retriever run graph
-./scripts/retriever run perception-stepper
+retriever run webcam-mock
+retriever run graph
+retriever run perception-stepper
 ```

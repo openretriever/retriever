@@ -36,15 +36,15 @@ retriever run hello
 ```bash
 git clone https://github.com/openretriever/retriever.git
 cd retriever
-./scripts/retriever install --bootstrap-pixi
+retriever install --bootstrap-pixi
 ```
 
-`./scripts/retriever install` installs the source checkout environment. It can bootstrap Pixi first, then runs the checkout install.
+`retriever install` installs the source checkout environment. It can bootstrap Pixi first, then runs the checkout install.
 
 ## 3. Run the first demo
 
 ```bash
-./scripts/retriever run webcam-mock
+retriever run webcam-mock
 ```
 
 This is the deterministic first smoke: synthetic camera frames, stdout output, no camera permission, no GUI, no backend to configure. Stripped of INFO log lines, it prints:
@@ -120,31 +120,31 @@ The source checkout remains the path for repository demos, `docs-tutorial-*` gra
 
 | Situation | Command |
 | --- | --- |
-| Reliable first smoke, no camera, no GUI | `./scripts/retriever run webcam-mock` |
-| Live webcam with automatic Rerun/stdout fallback | `./scripts/retriever run webcam` |
-| Understand the smallest Flow first | `./scripts/retriever run basic-flow` |
-| Render an interactive HTML graph | `./scripts/retriever run graph` |
-| Record a run, then `./scripts/retriever run replay` it | `./scripts/retriever run record` then `./scripts/retriever run replay` |
+| Reliable first smoke, no camera, no GUI | `retriever run webcam-mock` |
+| Live webcam with automatic Rerun/stdout fallback | `retriever run webcam` |
+| Understand the smallest Flow first | `retriever run basic-flow` |
+| Render an interactive HTML graph | `retriever run graph` |
+| Record a run, then `retriever run replay` it | `retriever run record` then `retriever run replay` |
 
 `demo-webcam-detection` needs a real webcam and uses `--visualize auto` (Rerun when available, stdout otherwise). If you have no camera or a permission prompt blocks it, stay on `-mock`.
 
 
 ## Retriever command surface
 
-`retriever` is the package executable. In a fresh source checkout, use the bundled
-launcher before the editable package is installed:
+`retriever` is the package executable, installed by `pip install retriever-core`.
+From a source checkout with the environment built, run the demos with it directly:
 
 ```bash
-./scripts/retriever run webcam-mock
-./scripts/retriever run webcam
-./scripts/retriever run graph
-./scripts/retriever run basic-flow
+retriever run webcam-mock
+retriever run webcam
+retriever run graph
+retriever run basic-flow
 ```
 
-Use `retriever tasks` or `./scripts/retriever tasks` to see curated run targets.
-Raw repository task names still work through `retriever run <task>` when you need
-an exact source-checkout entrypoint. Curated names are the public path; raw task
-names are an escape hatch for repository contributors.
+Use `retriever tasks` to see the curated run targets. Raw repository task names
+still work through `retriever run <task>` when you need an exact source-checkout
+entrypoint. Curated names are the public path; raw task names are an escape hatch
+for repository contributors.
 
 Hub commands do not require a source checkout. They operate on Hub refs and use the same loader as `hub.use(...)`:
 
@@ -160,10 +160,10 @@ Use `retriever --dry-run hub inspect <ref>` when you want to validate the ref sh
 
 | Symptom | Try first | Why |
 | --- | --- | --- |
-| Camera permission or hardware fails | `./scripts/retriever run webcam-mock` | Proves the runtime graph with no local devices. |
-| Rerun viewer does not open | `./scripts/retriever run perception-stepper` | Separates viewer setup from runtime correctness. |
-| A graph behaves unexpectedly | `./scripts/retriever run graph` | Inspect nodes, ports, clocks, and sync policies first. |
-| A result is hard to reproduce | `./scripts/retriever run record` then `./scripts/retriever run replay` | Turns timing-sensitive input into a stable artifact. |
+| Camera permission or hardware fails | `retriever run webcam-mock` | Proves the runtime graph with no local devices. |
+| Rerun viewer does not open | `retriever run perception-stepper` | Separates viewer setup from runtime correctness. |
+| A graph behaves unexpectedly | `retriever run graph` | Inspect nodes, ports, clocks, and sync policies first. |
+| A result is hard to reproduce | `retriever run record` then `retriever run replay` | Turns timing-sensitive input into a stable artifact. |
 
 ## Next steps
 

@@ -12,7 +12,7 @@ Run one cell, compare its real output, then read what the graph did. The command
 <p class="notebook-label">Command</p>
 
 ```bash
-./scripts/retriever run basic-flow
+retriever run basic-flow
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -48,7 +48,7 @@ SignalAwareFlow - _signals pattern matching
 <p class="notebook-label">Command</p>
 
 ```bash
-./scripts/retriever run stepper
+retriever run stepper
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -77,7 +77,7 @@ SignalAwareFlow - _signals pattern matching
 <p class="notebook-label">Command</p>
 
 ```bash
-./scripts/retriever run perception-stepper
+retriever run perception-stepper
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -100,7 +100,7 @@ SignalAwareFlow - _signals pattern matching
 <p class="notebook-label">Command: deterministic first smoke</p>
 
 ```bash
-./scripts/retriever run webcam-mock
+retriever run webcam-mock
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -135,7 +135,7 @@ Detection:
 <p class="notebook-label">Command: live webcam and Rerun/stdout</p>
 
 ```bash
-./scripts/retriever run webcam
+retriever run webcam
 ```
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> the visual demo is the same three-Flow graph — camera, detector, display — as the stepper. The mock target gives a stable expected result for docs, tests, and remote machines; the live target runs the identical graph on a real webcam with Rerun when available.</p>
@@ -145,7 +145,7 @@ Detection:
 <p class="notebook-label">Command</p>
 
 ```bash
-./scripts/retriever run graph
+retriever run graph
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -162,7 +162,7 @@ Open this file in your browser to view the interactive graph.
 <p class="notebook-label">Command: record 10 mock steps</p>
 
 ```bash
-./scripts/retriever run record
+retriever run record
 ```
 
 <p class="notebook-label output-label">Output</p>
@@ -175,7 +175,7 @@ Open this file in your browser to view the interactive graph.
 <p class="notebook-label">Command: replay the recording</p>
 
 ```bash
-./scripts/retriever run replay
+retriever run replay
 ```
 
 <p class="notebook-label output-label">Output</p>

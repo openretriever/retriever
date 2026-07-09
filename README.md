@@ -98,14 +98,14 @@ cd my-retriever-app
 retriever run hello
 ```
 
-For repository demos, clone the source checkout because the example files, graph renderers, and visualization assets live in the repository. The source launcher works before the editable package is installed:
+For repository demos, clone the source checkout because the example files, graph renderers, and visualization assets live in the repository. With `retriever-core` installed, run everything through the `retriever` command:
 
 ```bash
 git clone https://github.com/openretriever/retriever
 cd retriever
-./scripts/retriever install --bootstrap-pixi
-./scripts/retriever run webcam-mock
-./scripts/retriever run webcam
+retriever install --bootstrap-pixi
+retriever run webcam-mock
+retriever run webcam
 ```
 
 `retriever run webcam-mock` runs `camera -> color detector -> display` with
@@ -117,11 +117,11 @@ paper/objects in front of the camera to see detections.
 Useful follow-up commands from the source checkout:
 
 ```bash
-./scripts/retriever run basic-flow
-./scripts/retriever run rt-execution
-./scripts/retriever run stepper
-./scripts/retriever run record
-./scripts/retriever tasks
+retriever run basic-flow
+retriever run rt-execution
+retriever run stepper
+retriever run record
+retriever tasks
 ```
 
 `retriever run <name>` is the stable command surface for examples and diagnostics. Curated names (`webcam-mock`, `stepper`, `record`, …) are the public path; raw repository task names still work with `retriever run <task>` as a source-checkout escape hatch.

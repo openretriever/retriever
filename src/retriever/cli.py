@@ -137,11 +137,11 @@ PyPI path:
   cd my-retriever-app
   retriever run hello
 
-Source-checkout path:
+Source-checkout path (after `pip install retriever-core`):
   git clone https://github.com/openretriever/retriever
   cd retriever
-  ./scripts/retriever install --bootstrap-pixi
-  ./scripts/retriever run webcam-mock
+  retriever install --bootstrap-pixi
+  retriever run webcam-mock
 
 Common source-checkout run targets:
   retriever run webcam-mock         # deterministic first smoke, no camera/GUI

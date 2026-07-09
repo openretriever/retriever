@@ -9,11 +9,11 @@ Retriever debugging should start before a robot backend is involved. Use one sou
 Run these in order when a graph feels wrong:
 
 ```bash
-./scripts/retriever run graph
-./scripts/retriever run stepper
-./scripts/retriever run webcam-mock
-./scripts/retriever run record
-./scripts/retriever run replay
+retriever run graph
+retriever run stepper
+retriever run webcam-mock
+retriever run record
+retriever run replay
 ```
 
 | Stage | Question it answers | Artifact to inspect |
@@ -36,7 +36,7 @@ Run these in order when a graph feels wrong:
 ## 1. Render The Graph First
 
 ```bash
-./scripts/retriever run graph
+retriever run graph
 ```
 
 Typical output:
@@ -76,7 +76,7 @@ If this graph is wrong, fix wiring first. Do not start by debugging multiprocess
 ## 2. Step Locally
 
 ```bash
-./scripts/retriever run stepper
+retriever run stepper
 ```
 
 Typical output:
@@ -104,7 +104,7 @@ pipe.close_stepper()
 For perception-specific stepping without camera permissions or GUI windows:
 
 ```bash
-./scripts/retriever run perception-stepper
+retriever run perception-stepper
 ```
 
 ### Checkpoint the step loop
@@ -162,7 +162,7 @@ function. Get the logic right here first — then run it on `multiprocessing` or
 Start with mock frames and stdout. This is the reliable path for laptops, CI, remote machines, and AI-agent verification.
 
 ```bash
-./scripts/retriever run webcam-mock
+retriever run webcam-mock
 ```
 
 Typical output includes:
@@ -178,7 +178,7 @@ Frame 1: 2 objects - [('red_object', '0.95'), ('blue_object', '0.95')]
 Then switch to a live webcam path:
 
 ```bash
-./scripts/retriever run webcam
+retriever run webcam
 ```
 
 That command uses real camera input with `--visualize auto`: Rerun when a viewer is available, stdout otherwise. Use Rerun when you need to inspect image frames, detections, and timing visually. Use stdout when the question is simply whether the graph runs and emits events.
@@ -186,7 +186,7 @@ That command uses real camera input with `--visualize auto`: Rerun when a viewer
 Useful variants:
 
 ```bash
-./scripts/retriever run webcam-rerun
+retriever run webcam-rerun
 pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
   --backend in-process \
   --camera-mode mock \
@@ -197,8 +197,8 @@ pixi run python -m examples.tutorial.b_ir_and_execution.06_dora_perception \
 ## 4. Record And Replay
 
 ```bash
-./scripts/retriever run record
-./scripts/retriever run replay
+retriever run record
+retriever run replay
 ```
 
 The record command writes replayable artifacts:
@@ -215,10 +215,10 @@ Replay consumes recorded events instead of relying on live camera timing. Use th
 | Symptom | First action | Why |
 | --- | --- | --- |
 | Graph shape is surprising | Render `artifacts/tutorial_perception.html` | Wiring, clocks, ports, and sync policies are visible there. |
-| Flow output is wrong | Run `./scripts/retriever run stepper` or `./scripts/retriever run perception-stepper` | Keeps debugging in ordinary Python before backend scheduling enters. |
+| Flow output is wrong | Run `retriever run stepper` or `retriever run perception-stepper` | Keeps debugging in ordinary Python before backend scheduling enters. |
 | Rerun does not open | Force stdout visualization with the command below | Separates runtime correctness from viewer setup. |
-| Webcam is unreliable | Use `./scripts/retriever run webcam-mock` | Proves the graph without hardware or permissions. |
-| Run is hard to reproduce | Run `./scripts/retriever run record`, then `./scripts/retriever run replay` | Turns timing-sensitive input into a stable artifact. |
+| Webcam is unreliable | Use `retriever run webcam-mock` | Proves the graph without hardware or permissions. |
+| Run is hard to reproduce | Run `retriever run record`, then `retriever run replay` | Turns timing-sensitive input into a stable artifact. |
 | Backend differs from local stepping | Compare stepper output, rendered graph, and backend output | Clock/sync choices are often the real difference. |
 
 Exact stdout fallback when viewer setup is the suspected issue:

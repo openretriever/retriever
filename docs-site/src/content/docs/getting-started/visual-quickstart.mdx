@@ -12,7 +12,7 @@ The fastest way to see Retriever work. One command builds a three-Flow perceptio
 From a source checkout with the environment built ([install](/getting-started/install/)):
 
 ```bash
-./scripts/retriever run webcam-mock
+retriever run webcam-mock
 ```
 
 Stripped of INFO log lines, the output is:
@@ -58,7 +58,7 @@ What just ran:
 ## Step 2: Switch to a live webcam and Rerun
 
 ```bash
-./scripts/retriever run webcam
+retriever run webcam
 ```
 
 Same graph, real camera input. This target uses `--visualize auto`: on a machine with a working viewer, Rerun shows frames and detections over time; otherwise it falls back to stdout so runtime correctness stays separate from viewer setup. It needs a webcam — if you have none, stay on `webcam-mock`.
@@ -67,21 +67,21 @@ Same graph, real camera input. This target uses `--visualize auto`: on a machine
 
 | Need | Command |
 | --- | --- |
-| Reliable first smoke, no hardware | `./scripts/retriever run webcam-mock` |
-| Live webcam, automatic Rerun/stdout fallback | `./scripts/retriever run webcam` |
-| Live webcam, multiprocessing backend, forced Rerun | `./scripts/retriever run webcam-rerun` |
-| Step the detector deterministically, no camera | `./scripts/retriever run perception-stepper` |
-| Portable recording for replay | `./scripts/retriever run record` |
+| Reliable first smoke, no hardware | `retriever run webcam-mock` |
+| Live webcam, automatic Rerun/stdout fallback | `retriever run webcam` |
+| Live webcam, multiprocessing backend, forced Rerun | `retriever run webcam-rerun` |
+| Step the detector deterministically, no camera | `retriever run perception-stepper` |
+| Portable recording for replay | `retriever run record` |
 
 ## Step 4: If it looks wrong
 
 | Symptom | Try first | Why |
 | --- | --- | --- |
-| No camera or a permission prompt | `./scripts/retriever run webcam-mock` | Removes hardware from the question. |
-| Rerun viewer does not open | `./scripts/retriever run perception-stepper` | Keeps runtime verification separate from viewer setup. |
-| Graph wiring is unclear | `./scripts/retriever run graph` | Shows Flow nodes, ports, clocks, and sync policies. |
-| Detection output is surprising | `./scripts/retriever run perception-stepper` | Steps the detector one frame at a time on deterministic mock frames. |
-| Behavior changes between runs | `./scripts/retriever run record` then `./scripts/retriever run replay` | Saves the input stream as a reusable artifact. |
+| No camera or a permission prompt | `retriever run webcam-mock` | Removes hardware from the question. |
+| Rerun viewer does not open | `retriever run perception-stepper` | Keeps runtime verification separate from viewer setup. |
+| Graph wiring is unclear | `retriever run graph` | Shows Flow nodes, ports, clocks, and sync policies. |
+| Detection output is surprising | `retriever run perception-stepper` | Steps the detector one frame at a time on deterministic mock frames. |
+| Behavior changes between runs | `retriever run record` then `retriever run replay` | Saves the input stream as a reusable artifact. |
 
 ## Why this demo is first
 

@@ -7,10 +7,10 @@
 If you are an AI agent working in the source repo, do this before editing code:
 
 ```bash
-./scripts/retriever install --bootstrap-pixi
-./scripts/retriever run webcam-mock
-./scripts/retriever run stepper
-./scripts/retriever run graph
+retriever install --bootstrap-pixi
+retriever run webcam-mock
+retriever run stepper
+retriever run graph
 ```
 
 Use the mock visual smoke first. Do not start with live camera, dora, or multiprocessing unless the user specifically asks for that backend.
@@ -31,14 +31,14 @@ Use the mock visual smoke first. Do not start with live camera, dora, or multipr
 ## Canonical Commands
 
 ```bash
-./scripts/retriever run basic-flow
-./scripts/retriever run stepper
-./scripts/retriever run perception-stepper
-./scripts/retriever run webcam-mock
-./scripts/retriever run webcam
-./scripts/retriever run graph
-./scripts/retriever run record
-./scripts/retriever run replay
+retriever run basic-flow
+retriever run stepper
+retriever run perception-stepper
+retriever run webcam-mock
+retriever run webcam
+retriever run graph
+retriever run record
+retriever run replay
 retriever hub parse openretriever/hello-world:HelloFlow
 retriever hub inspect openretriever/hello-world --json
 ```
