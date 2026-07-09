@@ -77,8 +77,13 @@ class TestCheckDependencies:
         from importlib.metadata import PackageNotFoundError
         mock_metadata.PackageNotFoundError = PackageNotFoundError
         mock_metadata.version.side_effect = PackageNotFoundError("nonexistent-pkg")
-        with pytest.raises(HubError) as exc_info:
+        # Advisory by default: warns and proceeds so a lightweight export is not
+        # blocked by a pack's heavier optional deps.
+        with pytest.warns(UserWarning, match="nonexistent-pkg"):
             check_dependencies(["nonexistent-pkg"])
+        # strict=True restores the raising behavior.
+        with pytest.raises(HubError) as exc_info:
+            check_dependencies(["nonexistent-pkg"], strict=True)
         assert exc_info.value.code == ErrCode.HUB_DEPENDENCY_MISSING
         assert "nonexistent-pkg" in exc_info.value.message
 
@@ -86,9 +91,11 @@ class TestCheckDependencies:
     def test_version_mismatch(self, mock_metadata):
         mock_metadata.version.return_value = "1.23.0"
         mock_metadata.PackageNotFoundError = Exception
-        with pytest.raises(HubError) as exc_info:
+        with pytest.warns(UserWarning, match="1.23.0"):
             check_dependencies(["numpy>=1.24,<2"])
-        assert exc_info.value.code == ErrCode.HUB_DEPENDENCY_VERSION
+        with pytest.raises(HubError) as exc_info:
+            check_dependencies(["numpy>=1.24,<2"], strict=True)
+        assert exc_info.value.code == ErrCode.HUB_DEPENDENCY_MISSING
         assert "1.23.0" in exc_info.value.message
 
     @patch("retriever.hub._check.metadata")
