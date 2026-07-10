@@ -15,7 +15,23 @@ export default defineConfig({
       },
       favicon: '/assets/logo.svg',
       customCss: ['./src/styles/retriever.css'],
-      plugins: [starlightThemeNova()],
+      social: [
+        { icon: 'external', label: 'Retriever project home', href: 'https://openretriever.org/' },
+        { icon: 'open-book', label: 'GoldenRetriever examples', href: 'https://golden.retriever.build/' },
+        { icon: 'github', label: 'Retriever source on GitHub', href: 'https://github.com/openretriever/retriever' },
+        { icon: 'discord', label: 'Retriever community on Discord', href: 'https://discord.gg/V79H7TwwNg' },
+      ],
+      plugins: [
+        starlightThemeNova({
+          nav: [
+            { label: 'Project home', href: 'https://openretriever.org/' },
+            { label: 'GoldenRetriever', href: 'https://golden.retriever.build/' },
+          ],
+        }),
+      ],
+      components: {
+        PageTitle: './src/components/PageTitleWithSource.astro',
+      },
       head: [
         {
           tag: 'script',
@@ -34,7 +50,8 @@ addEventListener('DOMContentLoaded', () => {
   const view = document.createElement('a');
   view.className = 'md-view'; view.href = raw; view.target = '_blank'; view.rel = 'noreferrer'; view.textContent = 'View as Markdown';
   wrap.append(copy, view);
-  h1.insertAdjacentElement('afterend', wrap);
+  const titleBlock = h1.closest('.page-title-row') || h1;
+  titleBlock.insertAdjacentElement('afterend', wrap);
   copy.addEventListener('click', async () => {
     try {
       const md = await (await fetch(raw)).text();
