@@ -60,10 +60,17 @@ class PythonBufferEngine(BufferEngine[T]):
     def __post_init__(self) -> None:
         if self.buffer_size < 1:
             raise ValueError(f"buffer_size must be >= 1 (got {self.buffer_size})")
-        self._buffer: Deque[tuple[float, T]] = deque(maxlen=self.buffer_size)
+        self._buffer: Deque[tuple[float, T]] = deque()
 
     def push(self, timestamp: float, value: T) -> None:
-        self._buffer.append((timestamp, value))
+        # Keep buffer semantics timestamp-based even when transports drain fan-in
+        # queues in a different append order. Ties preserve arrival order.
+        items = list(self._buffer)
+        items.append((timestamp, value))
+        items.sort(key=lambda item: item[0])
+        if len(items) > self.buffer_size:
+            items = items[-self.buffer_size:]
+        self._buffer = deque(items)
 
     def empty(self) -> bool:
         return len(self._buffer) == 0
@@ -80,8 +87,13 @@ class PythonBufferEngine(BufferEngine[T]):
 
         # Fast-path common adapters where performance is critical and logic is trivial.
         if isinstance(adapter, Latest):
-            return self._buffer[-1][1]
-        
+            candidates = self._buffer
+            if now is not None:
+                candidates = deque((ts, value) for ts, value in self._buffer if ts <= now)
+            if not candidates:
+                raise IndexError("cannot sample Latest() from buffer before first event")
+            return candidates[-1][1]
+
         # For complex adapters (Window, Events, Hold, Custom), delegate to the Adapter implementation.
         # This ensures the Adapter class (and EventStream/TimedBuffer definitions) is the single source of truth.
         # Note: This involves converting deque -> TimedBuffer (list copy), which is O(N).

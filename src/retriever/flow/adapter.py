@@ -144,14 +144,16 @@ def is_adapter(cls) -> bool:
 @register_adapter("latest")
 @dataclass
 class Latest(Adapter[T]):
-    """Samples the most recent value from the buffer."""
+    """Samples the newest-by-timestamp value available at ``now``."""
     buffer_size: int = 1
 
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         if not buffer:
             raise IndexError("list index out of range")
-        # Use declarative method (mypy: latest can return None if empty, guarded above)
-        return buffer.latest()  # type: ignore[return-value]
+        value = buffer.latest(now=now)
+        if value is None:
+            raise IndexError("cannot sample Latest() from buffer before first event")
+        return value
 
 
 @register_adapter("hold")

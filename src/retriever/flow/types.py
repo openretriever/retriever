@@ -96,12 +96,14 @@ class EventStream(Generic[T]):
         """
         return adapter.sample(self.events(), now=now)
 
-    def latest(self) -> Optional[T]:
-        """Return the most recent value from the stream, or None if empty."""
+    def latest(self, now: Optional[float] = None) -> Optional[T]:
+        """Return the newest-by-timestamp value, or None if empty."""
         buf = self.events()
+        if now is not None:
+            buf = TimedBuffer((ts, value) for ts, value in buf if ts <= now)
         if not buf:
             return None
-        return buf[-1][1]
+        return max(buf, key=lambda item: item[0])[1]
 
     def within(self, *, duration: float, now: float) -> "TimedBuffer[T]":
         """

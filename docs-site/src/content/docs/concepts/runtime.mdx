@@ -87,9 +87,9 @@ retriever run ir-validation   # prints the full IR as JSON
 
 `IR.from_json(...)` re-runs structural validation on load, so IR read from disk or a Hub module is not trusted blindly — duplicate node ids, dangling edge or adjacency references, and unknown ports fail with a named node or edge *before* a backend tries to execute the graph.
 
-## Local `step()` preserves deploy timing — and is deterministic
+## Local `step()` is a debugger-friendly graph tick
 
-`pipe.step(dt=...)` advances the graph in one process: it samples each edge, calls each `Flow.step()`, and publishes outputs, honoring the same clocks and sync policies a backend would. Breakpoints inside `step()` fire in your own process, and the trace is reproducible.
+`pipe.step(dt=...)` advances the graph in one process: it samples each edge, calls each `Flow.step()`, and publishes outputs. This is intentionally a local debug tick, not a full backend scheduler: `Rate(...)` flows execute once per `step()` call, while `Trigger(...)` flows still wait for new inputs. Breakpoints inside `step()` fire in your own process, and the trace is reproducible. Use an async backend when you want wall-clock `Rate(...)` scheduling.
 
 ```python
 from retriever import Flow, Latest, Pipeline, Rate, Trigger, connect, io
@@ -132,6 +132,16 @@ run B: [2, 4, 6, 8, 10]
 ```
 
 Two independent runs produce the identical trace. This is Retriever's headline property — **functional determinism**: the same timestamped input trace yields the same output trace regardless of scheduling. It is why in-process debugging is trustworthy and why replay and verification are well-defined.
+
+**The contract, precisely.** Fix a graph with deterministic `Flow.step()` bodies, deterministic clocks and `sync` policies, fixed initial states, strictly causal cycles, and the same timestamped external input history; replay any stochastic model calls from logged seeds or logged outputs. Then the output history is uniquely determined — independent of runtime scheduling. Two implementation details do the work: each edge samples only events timestamped *strictly before* the consumer's tick (ties need an explicit, deterministic tie rule), and execution order is pinned by the IR's topology (a stable ordering that a saved IR is re-validated against on load). We've verified this empirically: identical output traces across processes and Python hash seeds on cyclic multi-rate graphs, plus the `verify-incident-replay` gate asserting live-vs-replay equality.
+
+Boundaries worth knowing:
+
+- `step(now=...)` and replaying a recording are exact. `step(dt=...)` keeps all *deltas* deterministic but anchors the logical clock at the first step's wall time.
+- Determinism concerns the discrete event path, not bitwise GPU numerics.
+- A *live* async run (`multiprocessing`, `dora`) does not replay its scheduling — arrival timing is real. Record the run; the recording replays exactly.
+
+The idea has deep roots: Kahn process networks showed deterministic processes over ordered channels compose deterministically ([Kahn 1974](https://en.wikipedia.org/wiki/Kahn_process_networks)), and functional reactive programming made time-indexed streams a first-class semantics ([Elliott &amp; Hudak 1997](https://dl.acm.org/doi/10.1145/258948.258973), [Wan &amp; Hudak 2000](https://dl.acm.org/doi/10.1145/349299.349331)). The Retriever paper states this property as the *functional determinism* theorem and proves it as trace determinism.
 
 ```bash
 retriever run stepper   # the shipped in-process stepper, with a --fail-at breakpoint

@@ -31,6 +31,33 @@ def test_python_buffer_engine_samples_builtin_adapters_without_list_materializat
     assert eng.sample(events, now=5.0) == [5, 9]
 
 
+def test_latest_samples_by_timestamp_not_append_order():
+    eng = PythonBufferEngine(buffer_size=10)
+    eng.push(0.03, "newer")
+    eng.push(0.01, "older")
+
+    assert eng.sample(Latest()) == "newer"
+    assert eng.sample(Latest(), now=0.02) == "older"
+
+
+def test_latest_ignores_future_records_at_sample_time():
+    eng = PythonBufferEngine(buffer_size=10)
+    eng.push(0.01, "ready")
+    eng.push(0.03, "future")
+
+    assert eng.sample(Latest(), now=0.02) == "ready"
+    assert eng.sample(Latest(), now=0.03) == "future"
+
+
+def test_bounded_buffer_drops_oldest_timestamp_not_first_append():
+    eng = PythonBufferEngine(buffer_size=1)
+    eng.push(0.03, "newer")
+    eng.push(0.01, "older")
+
+    assert list(eng.events()) == [(0.03, "newer")]
+    assert eng.sample(Latest(), now=0.04) == "newer"
+
+
 def test_signal_prefers_subscriber_sample_fast_path():
     class SampleOnlySubscriber:
         def __init__(self, value):
@@ -66,3 +93,20 @@ def test_signal_prefers_subscriber_sample_fast_path():
     assert sig.instance.x == 123
     assert sub.sample_called is True
 
+
+
+def test_multiprocessing_fanin_latest_is_independent_of_queue_drain_order():
+    from multiprocessing import Queue
+
+    from retriever.rt.backend.multiprocessing.channel import MPChannel
+
+    q1 = Queue()
+    q2 = Queue()
+    channel = MPChannel(q1, buffer_size=1)
+    channel.add_queue(q2)
+
+    q1.put((0.03, "newer-from-q1"))
+    q2.put((0.01, "older-from-q2"))
+    channel.drain()
+
+    assert channel.sample(Latest(), now=0.04) == "newer-from-q1"
