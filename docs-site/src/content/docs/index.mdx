@@ -8,7 +8,7 @@ template: splash
 <div class="hero-panel">
   <p class="eyebrow">Retriever runtime</p>
   <h1>Build robot agents whose perception, reasoning, and control run at their own clocks.</h1>
-  <p class="lede">Retriever is a programming model and runtime for closed-loop, asynchronous robot agents. Compose typed <code>Flow</code>s on explicit clocks, and let each edge declare how it samples its inputs. The same timestamped inputs produce the same outputs no matter how the runtime schedules them. That makes stepping, recording, and replay part of the normal workflow.</p>
+  <p class="lede">Retriever is a programming model and runtime for closed-loop, asynchronous robot agents. Compose typed <code>Flow</code>s on explicit clocks, and let each edge declare how it samples its inputs. Given the same ordered timestamped input history, deterministic Flows produce the same discrete-event output history. That makes stepping, recording, and replay part of the normal workflow.</p>
   <div class="action-grid">
     <a class="action-card" href="/getting-started/visual-quickstart/">
       <strong>Run the visual demo</strong>

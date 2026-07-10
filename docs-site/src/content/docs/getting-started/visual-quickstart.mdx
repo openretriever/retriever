@@ -94,7 +94,7 @@ Both paths run the same shape of graph on real camera input. Rerun shows frames 
 
 ## Why this demo is first
 
-The color-detection path is small but complete: sensor input, typed Flow outputs, asynchronous timing, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live path. Because the same input trace produces the same output trace, this exact graph can then be stepped, rendered, recorded, and replayed without changing a line — which is the rest of the tutorial path.
+The color-detection path is small but complete: sensor input, typed Flow outputs, asynchronous timing, and an immediate debugging story. The mock run proves the graph without hardware; the webcam run proves the live path. The fixed mock input trace produces the same output trace, while a recorded webcam trace can be replayed through the same graph — which is the rest of the tutorial path.
 
 <div class="card-grid">
   <a class="info-card" href="/tutorials/examples-and-results/"><strong>See more example outputs</strong><span>Flow, stepping, perception, graph render, and replay — each with real output.</span></a>

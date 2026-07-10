@@ -8,7 +8,7 @@
 
 ### Programming Closed-Loop Modular Robot Agents
 
-<p>A Python programming model and runtime for robot agents whose perception, planning, and control run at different rates. You write down how often each part runs and how it handles data that arrives out of sync, so the timing lives in the graph instead of in hand-written glue code — and any run can be recorded and replayed exactly.</p>
+<p>A Python programming model and runtime for robot agents whose perception, planning, and control run at different rates. You write down how often each part runs and how it handles data that arrives out of sync, so the timing lives in the graph instead of in hand-written glue code — and recorded input traces can be replayed through the same graph.</p>
 
 <p>
   <a href="https://retriever.build/"><img alt="Docs" src="https://img.shields.io/badge/Docs-retriever.build-0f766e?style=for-the-badge"></a>
@@ -24,7 +24,7 @@
 
 ---
 
-Robot systems rarely run as one neat synchronous loop: cameras, estimators, planners, VLMs, VLAs, and controllers all update at different rates. **Retriever** lets you declare how often each `Flow` runs and how each edge samples data — so the timing lives in the graph, not in glue code. Step the same graph in-process to debug, or run it on a backend to deploy; every run records and replays exactly.
+Robot systems rarely run as one neat synchronous loop: cameras, estimators, planners, VLMs, VLAs, and controllers all update at different rates. **Retriever** lets you declare how often each `Flow` runs and how each edge samples data — so the timing lives in the graph, not in glue code. Step the graph in-process to debug it, then run the same graph on a backend; record the consumed input trace when you need an exact replay.
 
 ## See it run
 
@@ -114,7 +114,7 @@ print(result.executed)
 pipe.close_stepper()
 ```
 
-The same timestamped input trace yields the same output trace regardless of backend — that determinism is what makes local stepping, record, and replay well-defined. See [Debug and Visualize](https://retriever.build/tutorials/debug-and-visualize/).
+Given the same ordered timestamped input history — including a fixed order for equal timestamps — deterministic Flows produce the same discrete-event output trace. Live backend timing decides which history is captured; replay drives the graph from that captured history. See [Runtime](https://retriever.build/concepts/runtime/) for the precise contract and [Debug and Visualize](https://retriever.build/tutorials/debug-and-visualize/) for the workflow.
 
 </details>
 

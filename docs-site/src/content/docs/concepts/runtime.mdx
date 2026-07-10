@@ -2,7 +2,7 @@
 title: Runtime
 ---
 
-**What you'll learn:** the path from an authored graph to a running one — `validate()` compiles a `Pipeline` to an IR, `step()` runs it in-process with the deploy-time timing preserved, and `run(backend=...)` executes the same IR on multiprocessing or Dora. The same timestamped input trace yields the same output trace at every stop.
+**What you'll learn:** the path from an authored graph to a running one — `validate()` compiles a `Pipeline` to an IR, `step()` advances one debugger-friendly graph tick, and `run(backend=...)` schedules the same IR on multiprocessing or Dora. Given the same ordered timestamped input history, deterministic Flows produce the same discrete-event output history.
 
 A `Pipeline` is the executable graph. You normally wire Flows with the fluent `source.then(target, sync=...)` form; the examples on this page use the explicit `connect(source, target, sync=...)` equivalent because runtime validation and IR examples benefit from naming both endpoints. After wiring, the same object exposes four surfaces:
 
@@ -131,15 +131,33 @@ run A: [2, 4, 6, 8, 10]
 run B: [2, 4, 6, 8, 10]
 ```
 
-Two independent runs produce the identical trace. This is Retriever's headline property — **functional determinism**: the same timestamped input trace yields the same output trace regardless of scheduling. It is why in-process debugging is trustworthy and why replay and verification are well-defined.
+Two independent runs produce the identical trace because they use the same fixed input history, deterministic `Flow.step()` bodies, and the same graph state. This is Retriever's **functional determinism** boundary: fix the ordered timestamped input history and the discrete-event output history is fixed too.
 
-**The contract, precisely.** Fix a graph with deterministic `Flow.step()` bodies, deterministic clocks and `sync` policies, fixed initial states, strictly causal cycles, and the same timestamped external input history; replay any stochastic model calls from logged seeds or logged outputs. Then the output history is uniquely determined — independent of runtime scheduling. Two implementation details do the work: each edge samples only events timestamped *strictly before* the consumer's tick (ties need an explicit, deterministic tie rule), and execution order is pinned by the IR's topology (a stable ordering that a saved IR is re-validated against on load). We've verified this empirically: identical output traces across processes and Python hash seeds on cyclic multi-rate graphs, plus the `verify-incident-replay` gate asserting live-vs-replay equality.
+**The contract, precisely.** Fix a graph with deterministic `Flow.step()` bodies and sync policies, fixed initial states, strictly causal cycles, and the same ordered timestamped external input history; replay stochastic model calls from logged seeds or logged outputs. Then the discrete-event output history is uniquely determined. `Latest(now=t)` selects the event with the greatest timestamp satisfying `timestamp <= t`; without `now`, it selects the greatest timestamp in the buffer. Buffers retain timestamp order even when a transport drains fan-in queues in another arrival order. Events with equal timestamps currently preserve insertion order, so scheduler-independent replay requires that tie order to be part of the recorded input history (or that producers attach a deterministic sequence key).
+
+### `Latest()` uses event time, not append order
+
+Suppose a transport appends these records out of order:
+
+```text
+append (0.03, "newer")
+append (0.01, "older")
+```
+
+Retriever orders the buffer by timestamp before sampling:
+
+| Sample | Result | Reason |
+| --- | --- | --- |
+| `Latest()` | `"newer"` | `0.03` is the greatest timestamp. |
+| `Latest(now=0.02)` | `"older"` | `0.01` is the greatest timestamp at or before `0.02`. |
+| `Latest(now=0.005)` | raises `IndexError` | No event is available at that logical time. |
 
 Boundaries worth knowing:
 
-- `step(now=...)` and replaying a recording are exact. `step(dt=...)` keeps all *deltas* deterministic but anchors the logical clock at the first step's wall time.
+- `step(now=...)` is exact relative to the supplied ordered input history. `step(dt=...)` keeps logical deltas stable but anchors the first tick at the stepper's starting time.
 - Determinism concerns the discrete event path, not bitwise GPU numerics.
-- A *live* async run (`multiprocessing`, `dora`) does not replay its scheduling — arrival timing is real. Record the run; the recording replays exactly.
+- A live async run (`multiprocessing`, `dora`) does not replay its wall-clock scheduling. Its scheduling determines the captured input history; replay reproduces that history, not the original process schedule.
+- Equal timestamps require a fixed tie order. Release `0.0.2` preserves insertion order for ties; use monotonic timestamps or sequence keys when multiple producers can emit at exactly the same time.
 
 The idea has deep roots: Kahn process networks showed deterministic processes over ordered channels compose deterministically ([Kahn 1974](https://en.wikipedia.org/wiki/Kahn_process_networks)), and functional reactive programming made time-indexed streams a first-class semantics ([Elliott &amp; Hudak 1997](https://dl.acm.org/doi/10.1145/258948.258973), [Wan &amp; Hudak 2000](https://dl.acm.org/doi/10.1145/349299.349331)). The Retriever paper states this property as the *functional determinism* theorem and proves it as trace determinism.
 
@@ -169,7 +187,7 @@ retriever run webcam-dora   # dora
 
 ## Record and replay turn runs into evidence
 
-Because a run is a timestamped input trace, recording it and replaying it reconstructs the exact outputs — a live incident and its replay produce the same diagnosis, not merely a similar one.
+Recording preserves the consumed, ordered input history. Replaying that history through deterministic Flows reconstructs the same discrete-event outputs; stochastic model calls must come from logged seeds or logged outputs.
 
 ```bash
 retriever run record-replay     # record a run, then replay it step-for-step

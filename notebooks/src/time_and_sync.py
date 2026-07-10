@@ -197,8 +197,8 @@ sync.close_stepper()
 # Same stream, same tick, three different inputs. `Latest()` hands over one fresh
 # value. `Window(agg="mean")` summarizes the last 0.35 s and slides forward.
 # `Events(...)` returns the recent records themselves, for Flows that reason over
-# a short history. The policy is a pure function of the *buffered, timestamped
-# records* — not of any global state.
+# a short history. The policy is a function of the *buffered, timestamped
+# records and their defined order* — not of any global state.
 
 # %% [markdown]
 # ## Hold: rate-limit a chatty stream
@@ -233,7 +233,7 @@ hold.close_stepper()
 # accepts one, then ignores updates for 0.25 s and re-serves the held value —
 # so a downstream Flow sees a calm, rate-limited signal without adding its own
 # state. Clocks and sync are also the determinism boundary: the wall clock
-# decides which records land in a buffer, but every sync policy is a pure
-# function of those records — replay the same trace and every `step()` sees the
-# same input. Next: [Runtime](/concepts/runtime/) connects clocks and sync to
-# validation, in-process stepping, backends, and replay.
+# decides which records land in a buffer, while replay preserves the ordered
+# timestamped history consumed by each sync policy. Replay that history and
+# every deterministic `step()` sees the same input. Next:
+# [Runtime](/concepts/runtime/) states the exact timestamp and tie-order contract.

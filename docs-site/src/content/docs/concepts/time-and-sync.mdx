@@ -111,7 +111,7 @@ The 30 Hz sensor, 10 Hz smoother, and 1 Hz printer never share a step. The `Wind
 
 ## Why this is the determinism boundary
 
-The clock is where wall-clock nondeterminism lives: exactly which frames land in a window depends on scheduling, so the numbers above shift run to run. The sync policy is a pure function of the buffered, timestamped records. That separation is what makes Retriever **functionally deterministic**: replay the same timestamped input trace and every `sync` samples the same records and every `step()` produces the same output — regardless of how the live run happened to be scheduled. Timing you can see in the graph is timing you can replay and verify.
+The clock is where wall-clock nondeterminism lives: exactly which frames land in a window depends on scheduling, so the numbers above shift run to run. A sync policy is a function of the buffered, timestamped records and their defined order. That separation is Retriever's **functional determinism** boundary: replay the same ordered input history and every `sync` samples the same records, so deterministic `step()` bodies produce the same discrete-event outputs. Live scheduling chooses the history; recording makes that history available to replay and verify.
 
 ## When timing looks wrong
 

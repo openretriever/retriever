@@ -75,10 +75,11 @@ Docs claims must match the current project paper draft. Use this canonical langu
 - **Agent =** a graph of stateful *causal stream functions* (`Flow`s) on explicit
   *run clocks*; edges carry *synchronization policies* for deterministic input
   consumption.
-- **Headline property — functional determinism:** the same timestamped input
-  trace yields the same output trace regardless of runtime scheduling; this is
-  what makes replay and verification well-defined. Prefer this over vague
-  "reproducible".
+- **Headline property — functional determinism:** given the same ordered,
+  timestamped input history (including a fixed tie order), deterministic Flows
+  and sync policies yield the same discrete-event output history. Live
+  scheduling determines which history is recorded; replay and verification are
+  defined over that captured history. Prefer this over vague "reproducible".
 - **The problem (two mismatches), stated precisely:**
   1. *Physics vs. compute* — big models (VLMs) have variable latency; control
      needs deadlines. Blocking stalls; non-blocking gives stale decisions.
@@ -114,5 +115,5 @@ pipe.run(backend="dora")   # deploy async
 - `concepts/why-retriever` — the two mismatches + determinism + comparison table.
 - `concepts/flow` — Flow = stateful causal stream function; `step()` is the unit.
 - `concepts/time-and-sync` — clocks = *when*; sync policies = *which input record*.
-- `concepts/runtime` — graph → IR → backends; local step preserves deploy timing; record/replay.
+- `concepts/runtime` — graph → IR → backends; local step is a debugger tick, while backends schedule wall-clock rates; record/replay.
 - `tutorials/*` — command-first, expected output, the hero example's shape.

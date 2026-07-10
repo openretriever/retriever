@@ -100,11 +100,11 @@ class DoubleFlow(Flow[NumberInput, NumberOutput]):
 You compose Flows into a `Pipeline`, giving each edge an explicit `sync=` policy, then debug in-process before deploying async:
 
 ```python
-pipe.step(dt=0.1)              # advance the graph in-process, deterministically
+pipe.step(dt=0.1)              # advance one debugger-friendly graph tick
 pipe.run(backend="dora")       # deploy async; also "multiprocessing" or "in-process"
 ```
 
-The same timestamped input trace yields the same output trace regardless of backend scheduling. That functional determinism is what makes local stepping, record, and replay well-defined.
+Given the same ordered timestamped input history, deterministic Flows and sync policies produce the same discrete-event output history. Live backend scheduling determines which history is captured; record and replay let you drive the graph from that same captured history.
 
 ## Runtime-only package (target track)
 

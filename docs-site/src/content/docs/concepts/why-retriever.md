@@ -15,9 +15,10 @@ forward pass, so time is part of the program, not an accident of scheduling.
   inspectable before you run it.
 - **Time is explicit.** Every node has a clock (`Rate` / `Trigger` / `Hybrid`)
   and every edge a sampling policy (`sync=`). There is no implicit "latest message wins" hidden at graph boundaries.
-- **Functional determinism.** The same timestamped input trace produces the same
-  output trace regardless of how the runtime schedules the graph. That property
-  is what makes replay and verification well-defined — not best-effort.
+- **Functional determinism.** Given the same ordered timestamped input history,
+  deterministic Flows and sync policies produce the same discrete-event output
+  history. Live scheduling determines which history is captured; replay and
+  verification operate on that captured history.
 - **Step-debug in-process.** `Pipeline.step(...)` runs the graph in your Python
   process with real breakpoints before you scale to a backend.
 - **Record and replay.** Recording-enabled runs can persist MCAP or Rerun

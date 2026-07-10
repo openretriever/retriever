@@ -185,7 +185,7 @@ tick | Latest() | Window(mean, 0.35s) | Events(recent 0.35s)
   5  |     6    |         4.5         | [3, 4, 5, 6]
 ```
 
-<p class="notebook-takeaway"><strong>Takeaway:</strong> same stream, same tick, three different inputs. <code>Latest()</code> hands over one fresh value; <code>Window(agg="mean")</code> summarizes the last 0.35&nbsp;s and slides forward; <code>Events(...)</code> returns the recent records themselves. Each policy is a pure function of the <em>buffered, timestamped records</em> — not of any global state.</p>
+<p class="notebook-takeaway"><strong>Takeaway:</strong> same stream, same tick, three different inputs. <code>Latest()</code> hands over one fresh value; <code>Window(agg="mean")</code> summarizes the last 0.35&nbsp;s and slides forward; <code>Events(...)</code> returns the recent records themselves. Each policy is a function of the <em>buffered, timestamped records and their defined order</em> — not of any global state.</p>
 
 ## Hold: rate-limit a chatty stream
 
@@ -225,7 +225,7 @@ tick | Latest() | Hold(debounce=0.25)
   5  |     6    |  4
 ```
 
-<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Latest()</code> passes every reading; <code>Hold(debounce=0.25)</code> accepts one, ignores updates for 0.25&nbsp;s, then re-serves the held value — a calm, rate-limited signal with no extra state downstream. Clocks and sync are also the determinism boundary: the wall clock decides which records land in a buffer, but every sync policy is a pure function of those records, so replaying the same trace makes every <code>step()</code> see the same input. Next: <a href="/concepts/runtime/">Runtime</a> connects clocks and sync to validation, in-process stepping, backends, and replay.</p>
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Latest()</code> passes every reading; <code>Hold(debounce=0.25)</code> accepts one, ignores updates for 0.25&nbsp;s, then re-serves the held value — a calm, rate-limited signal with no extra state downstream. Clocks and sync are also the determinism boundary: the wall clock decides which records land in a buffer, while replay preserves the ordered timestamped history consumed by each sync policy. Replay that history and every deterministic <code>step()</code> sees the same input. Next: <a href="/concepts/runtime/">Runtime</a> states the exact timestamp and tie-order contract.</p>
 
 ---
 
