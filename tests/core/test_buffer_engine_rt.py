@@ -95,6 +95,25 @@ def test_signal_prefers_subscriber_sample_fast_path():
 
 
 
+def test_equal_timestamp_ties_resolve_identically_on_both_sampling_paths():
+    """The stepper path (TimedBuffer.latest via Latest.__call__) and the
+    buffer-engine fast path must pick the same winner for equal timestamps,
+    or replaying a backend-recorded trace through step() flips tie samples.
+    The documented rule: insertion order — last-inserted among ties wins."""
+    from retriever.flow.types import TimedBuffer
+
+    tie_events = [(0.02, "first-arrived"), (0.02, "second-arrived")]
+
+    eng = PythonBufferEngine(buffer_size=10)
+    for ts, value in tie_events:
+        eng.push(ts, value)
+    engine_winner = eng.sample(Latest(), now=0.03)
+
+    types_winner = Latest()(TimedBuffer(tie_events), now=0.03)
+
+    assert engine_winner == types_winner == "second-arrived"
+
+
 def test_multiprocessing_fanin_latest_is_independent_of_queue_drain_order():
     from multiprocessing import Queue
 

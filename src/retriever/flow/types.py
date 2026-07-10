@@ -97,13 +97,22 @@ class EventStream(Generic[T]):
         return adapter.sample(self.events(), now=now)
 
     def latest(self, now: Optional[float] = None) -> Optional[T]:
-        """Return the newest-by-timestamp value, or None if empty."""
+        """Return the newest-by-timestamp value, or None if empty.
+
+        Equal timestamps resolve to the last-inserted event — the same
+        insertion-order tie rule the buffer-engine fast path applies — so
+        in-process stepping and backend channels sample identically.
+        """
         buf = self.events()
         if now is not None:
             buf = TimedBuffer((ts, value) for ts, value in buf if ts <= now)
         if not buf:
             return None
-        return max(buf, key=lambda item: item[0])[1]
+        best_ts, best_value = buf[0]
+        for ts, value in buf:
+            if ts >= best_ts:
+                best_ts, best_value = ts, value
+        return best_value
 
     def within(self, *, duration: float, now: float) -> "TimedBuffer[T]":
         """
