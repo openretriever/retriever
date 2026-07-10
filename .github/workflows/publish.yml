@@ -52,6 +52,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          # Re-runs must not fail on an already-uploaded version.
+          skip-existing: true
 
   publish-pypi:
     if: ${{ github.event.inputs.target == 'pypi' }}
@@ -64,4 +66,11 @@ jobs:
           name: python-package
           path: dist
       - name: Publish to PyPI
+        # Requires a PyPI "trusted publisher" registered for retriever-core:
+        # pypi.org -> project retriever-core -> Settings -> Publishing ->
+        # owner=openretriever, repo=retriever, workflow=publish.yml, environment=pypi.
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Re-runs must not fail on an already-uploaded version (0.0.1 was
+          # uploaded manually via twine before trusted publishing was set up).
+          skip-existing: true
