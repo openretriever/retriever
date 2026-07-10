@@ -317,10 +317,18 @@ class IOStep:
                 adapter = _DEFAULT_LATEST
 
             # Tier B.3 fast-path: Subscribers may implement `sample(adapter, now=...)`
-            if hasattr(subscriber, "sample"):
-                value = subscriber.sample(adapter, now=effective_now)
-            else:
-                value = adapter.sample(subscriber.get_all(), now=effective_now)
+            try:
+                if hasattr(subscriber, "sample"):
+                    value = subscriber.sample(adapter, now=effective_now)
+                else:
+                    value = adapter.sample(subscriber.get_all(), now=effective_now)
+            except IndexError:
+                # Nothing visible at this tick: a buffered event stamped after
+                # `now` (e.g. a producer clock running ahead of the consumer's
+                # across machines) is treated exactly like an empty buffer. The
+                # field carries no signal this tick; the event becomes visible
+                # once `now` passes its timestamp.
+                continue
 
             # Set signal on input instance (FlowIO treats None as "no signal")
             self.instance._set_signal(field_name, value)

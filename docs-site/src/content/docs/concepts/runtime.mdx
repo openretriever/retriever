@@ -157,7 +157,8 @@ Boundaries worth knowing:
 - `step(now=...)` is exact relative to the supplied ordered input history. `step(dt=...)` keeps logical deltas stable but anchors the first tick at the stepper's starting time.
 - Determinism concerns the discrete event path, not bitwise GPU numerics.
 - A live async run (`multiprocessing`, `dora`) does not replay its wall-clock scheduling. Its scheduling determines the captured input history; replay reproduces that history, not the original process schedule.
-- Equal timestamps require a fixed tie order. Release `0.0.2` preserves insertion order for ties; use monotonic timestamps or sequence keys when multiple producers can emit at exactly the same time.
+- Equal timestamps require a fixed tie order. The runtime resolves ties as last-inserted on every sampling path; use monotonic timestamps or sequence keys when multiple producers can emit at exactly the same time.
+- An event stamped after the sampling tick is not yet visible: the field reads as absent that tick and the event is delivered once `now` passes its timestamp. On distributed transports this also absorbs producer/consumer clock skew instead of erroring.
 
 The idea has deep roots: Kahn process networks showed deterministic processes over ordered channels compose deterministically ([Kahn 1974](https://en.wikipedia.org/wiki/Kahn_process_networks)), and functional reactive programming made time-indexed streams a first-class semantics ([Elliott &amp; Hudak 1997](https://dl.acm.org/doi/10.1145/258948.258973), [Wan &amp; Hudak 2000](https://dl.acm.org/doi/10.1145/349299.349331)). The Retriever paper states this property as the *functional determinism* theorem and proves it as trace determinism.
 

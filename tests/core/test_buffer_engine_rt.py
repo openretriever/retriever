@@ -95,6 +95,71 @@ def test_signal_prefers_subscriber_sample_fast_path():
 
 
 
+def test_all_future_events_read_as_no_signal_not_node_death():
+    """A non-empty buffer whose every event is stamped after `now` (producer
+    clock ahead of the consumer's, e.g. cross-machine dora skew) must behave
+    like an empty buffer at the runtime call site: no signal this tick, no
+    exception escaping into the executor loop (which would kill the node).
+    The adapter itself stays strict and raises; IOStep absorbs it."""
+
+    @io
+    class In:
+        x: int
+
+    # Path 1: subscriber.sample fast path (mp/dora channels -> buffer engine).
+    class EngineSubscriber:
+        def __init__(self):
+            self._eng = PythonBufferEngine(buffer_size=1)
+            self._eng.push(10.0, 42)  # stamped after the sampling tick below
+
+        def new_arrival(self) -> bool:
+            return True
+
+        def empty(self) -> bool:
+            return self._eng.empty()
+
+        def clear(self) -> None:
+            self._eng.clear()
+
+        def sample(self, adapter, *, now=None):
+            return self._eng.sample(adapter, now=now)
+
+        def get_all(self):
+            return self._eng.events()
+
+    sig = IOStep({"x": EngineSubscriber()}, fields_filter=["..."], now=1.0).sample(
+        In, adapters={"x": Latest()}, now=1.0
+    )
+    assert sig.instance.x is None  # no signal this tick, no crash
+
+    # Path 2: get_all fallback (in-process stepper channels).
+    class PlainSubscriber:
+        def new_arrival(self) -> bool:
+            return True
+
+        def empty(self) -> bool:
+            return False
+
+        def clear(self) -> None:
+            return None
+
+        def get_all(self):
+            from retriever.flow.types import TimedBuffer
+
+            return TimedBuffer([(10.0, 42)])
+
+    sig2 = IOStep({"x": PlainSubscriber()}, fields_filter=["..."], now=1.0).sample(
+        In, adapters={"x": Latest()}, now=1.0
+    )
+    assert sig2.instance.x is None
+
+    # The engine itself keeps the documented strict contract.
+    eng = PythonBufferEngine(buffer_size=1)
+    eng.push(10.0, 42)
+    with pytest.raises(IndexError):
+        eng.sample(Latest(), now=1.0)
+
+
 def test_equal_timestamp_ties_resolve_identically_on_both_sampling_paths():
     """The stepper path (TimedBuffer.latest via Latest.__call__) and the
     buffer-engine fast path must pick the same winner for equal timestamps,
@@ -115,7 +180,12 @@ def test_equal_timestamp_ties_resolve_identically_on_both_sampling_paths():
 
 
 def test_multiprocessing_fanin_latest_is_independent_of_queue_drain_order():
-    from multiprocessing import Queue
+    # This exercises MPChannel's drain + buffer semantics, not the transport.
+    # multiprocessing.Queue hands puts to a feeder thread, so an immediate
+    # drain races it (flaky); stdlib queue.Queue has the identical
+    # get_nowait()/queue.Empty interface with no feeder thread, making the
+    # drain deterministic while running the exact same channel code path.
+    from queue import Queue
 
     from retriever.rt.backend.multiprocessing.channel import MPChannel
 
@@ -126,6 +196,6 @@ def test_multiprocessing_fanin_latest_is_independent_of_queue_drain_order():
 
     q1.put((0.03, "newer-from-q1"))
     q2.put((0.01, "older-from-q2"))
-    channel.drain()
+    channel.drain()  # drains q1 fully, then q2: the older event is pushed LAST
 
     assert channel.sample(Latest(), now=0.04) == "newer-from-q1"
