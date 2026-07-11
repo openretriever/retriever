@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-      - release/mirror-alignment-20260621
+      # Release staging branches get full CI so they can be reviewed with
+      # green checks before merging to main (release-branch-first flow).
+      - release/**
       - docs/starlight-nova-v1
   pull_request:
     branches:
