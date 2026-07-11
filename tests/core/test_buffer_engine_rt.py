@@ -179,6 +179,43 @@ def test_equal_timestamp_ties_resolve_identically_on_both_sampling_paths():
     assert engine_winner == types_winner == "second-arrived"
 
 
+def test_out_of_order_pushes_keep_events_timestamp_sorted():
+    """EventStream.events() documents a chronologically-ordered snapshot, and
+    consumers rely on it (Window agg="first"/"last" pick by buffer position;
+    Behavior.hold early-breaks on sortedness). Out-of-order arrival must not
+    leak arrival order into the snapshot; equal timestamps keep arrival order."""
+    eng = PythonBufferEngine(buffer_size=8)
+    for ts, value in [(0.30, "c"), (0.10, "a"), (0.20, "b"), (0.20, "b-tie")]:
+        eng.push(ts, value)
+
+    assert list(eng.events()) == [(0.10, "a"), (0.20, "b"), (0.20, "b-tie"), (0.30, "c")]
+
+
+def test_stepper_channel_buffers_identically_to_backend_engine():
+    """The in-process channel is backed by the same buffer engine as the
+    backends, so inject_input() with out-of-order custom timestamps yields the
+    same retained set, order, and Latest winner as multiprocessing/dora —
+    previously it appended in arrival order and evicted by arrival, not
+    timestamp."""
+    from retriever.rt.stepper import InMemoryChannel
+
+    # Out-of-order arrival plus an equal-timestamp tie, one over capacity.
+    events = [(0.50, "n1"), (0.70, "n2"), (0.10, "late-old"), (0.70, "n2-tie")]
+
+    eng = PythonBufferEngine(buffer_size=3)
+    chan = InMemoryChannel(buffer_size=3)
+    for ts, value in events:
+        eng.push(ts, value)
+        chan.put_one(value, ts, block=False)
+
+    # Identical retained set and order; the late old event is the one evicted.
+    assert list(chan.get_all()) == list(eng.events())
+    assert list(chan.get_all()) == [(0.50, "n1"), (0.70, "n2"), (0.70, "n2-tie")]
+
+    # And the sampled winner agrees across paths, including the tie rule.
+    assert Latest()(chan.get_all(), now=1.0) == eng.sample(Latest(), now=1.0) == "n2-tie"
+
+
 def test_multiprocessing_fanin_latest_is_independent_of_queue_drain_order():
     # This exercises MPChannel's drain + buffer semantics, not the transport.
     # multiprocessing.Queue hands puts to a feeder thread, so an immediate

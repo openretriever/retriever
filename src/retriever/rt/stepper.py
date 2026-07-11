@@ -17,7 +17,6 @@ import gzip
 import pickle
 import time
 import types
-from collections import deque
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +30,7 @@ from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
 from retriever.flow.builder import PipelineBuilder
 from retriever.flow.temporal import TemporalFlow
 from retriever.ir.core import IR, IREdge
+from retriever.rt.buffer_engine import PythonBufferEngine
 from retriever.rt.step import IOStep, IOView
 from retriever.rt.lifecycle import initialize_flow_runtime
 
@@ -52,18 +52,23 @@ class InMemoryChannel:
 
     Implements the minimal Publisher/Subscriber protocol used by `Signal` and
     schedulers: `put_one`, `get_all`, `new_arrival`, `empty`, `clear`.
+
+    Backed by the same `PythonBufferEngine` the backend channels use, so
+    buffering semantics — timestamp-sorted history, arrival-order ties,
+    oldest-timestamp eviction — are identical on the in-process path, including
+    for `inject_input()` calls with out-of-order custom timestamps.
     """
 
     def __init__(self, buffer_size: int):
-        self._buffer = deque(maxlen=buffer_size)
+        self._engine: PythonBufferEngine[Any] = PythonBufferEngine(buffer_size=buffer_size)
         self._arrival_flag = False
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:  # noqa: ARG002
-        self._buffer.append((timestamp, value))
+        self._engine.push(timestamp, value)
         self._arrival_flag = True
 
     def get_all(self):
-        return TimedBuffer(self._buffer)
+        return self._engine.events()
 
     def new_arrival(self) -> bool:
         result = self._arrival_flag
@@ -71,10 +76,10 @@ class InMemoryChannel:
         return result
 
     def empty(self) -> bool:
-        return len(self._buffer) == 0
+        return self._engine.empty()
 
     def clear(self) -> None:
-        self._buffer.clear()
+        self._engine.clear()
         self._arrival_flag = False
 
 

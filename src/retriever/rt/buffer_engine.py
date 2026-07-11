@@ -6,7 +6,7 @@ runtime hot-path (buffering + adapter sampling) to be swapped for a faster
 implementation (eventually Rust, e.g. via a native extension).
 
 Today we provide:
-  - PythonBufferEngine: reference implementation backed by a deque
+  - PythonBufferEngine: reference implementation backed by a timestamp-sorted list
 
 Future:
   - NativeBufferEngine: drop-in implementation (Rust) with identical semantics
@@ -14,14 +14,17 @@ Future:
 
 from __future__ import annotations
 
-from collections import deque
+from bisect import insort_right
 from dataclasses import dataclass
-from typing import Any, Deque, Generic, Literal, Optional, TypeVar
+from operator import itemgetter
+from typing import Any, Generic, Literal, Optional, TypeVar
 
 from retriever.flow.adapter import Adapter, Latest
 from retriever.flow.types import TimedBuffer
 
 T = TypeVar("T")
+
+_EVENT_TIMESTAMP = itemgetter(0)
 
 BufferEngineKind = Literal["python", "native"]
 
@@ -50,9 +53,9 @@ class PythonBufferEngine(BufferEngine[T]):
     """
     Reference buffer engine implementation.
 
-    Stores a bounded `(timestamp, value)` deque and samples it using built-in
-    adapters. This keeps semantics in one place and gives us a clean seam to
-    swap in a Rust implementation later.
+    Stores a bounded, timestamp-sorted `(timestamp, value)` list and samples it
+    using built-in adapters. This keeps semantics in one place and gives us a
+    clean seam to swap in a Rust implementation later.
     """
 
     buffer_size: int
@@ -60,17 +63,17 @@ class PythonBufferEngine(BufferEngine[T]):
     def __post_init__(self) -> None:
         if self.buffer_size < 1:
             raise ValueError(f"buffer_size must be >= 1 (got {self.buffer_size})")
-        self._buffer: Deque[tuple[float, T]] = deque()
+        self._buffer: list[tuple[float, T]] = []
 
     def push(self, timestamp: float, value: T) -> None:
-        # Keep buffer semantics timestamp-based even when transports drain fan-in
-        # queues in a different append order. Ties preserve arrival order.
-        items = list(self._buffer)
-        items.append((timestamp, value))
-        items.sort(key=lambda item: item[0])
-        if len(items) > self.buffer_size:
-            items = items[-self.buffer_size:]
-        self._buffer = deque(items)
+        # Sorted insert keeps buffer semantics timestamp-based even when transports
+        # drain fan-in queues in a different append order. `insort_right` places an
+        # equal timestamp after existing ones, so ties preserve arrival order.
+        insort_right(self._buffer, (timestamp, value), key=_EVENT_TIMESTAMP)
+        if len(self._buffer) > self.buffer_size:
+            # Evict the oldest timestamp (front) — a late-arriving old event can
+            # never evict a newer one.
+            del self._buffer[0]
 
     def empty(self) -> bool:
         return len(self._buffer) == 0
@@ -87,12 +90,12 @@ class PythonBufferEngine(BufferEngine[T]):
 
         # Fast-path common adapters where performance is critical and logic is trivial.
         if isinstance(adapter, Latest):
-            candidates = self._buffer
-            if now is not None:
-                candidates = deque((ts, value) for ts, value in self._buffer if ts <= now)
-            if not candidates:
-                raise IndexError("cannot sample Latest() from buffer before first event")
-            return candidates[-1][1]
+            # The buffer is timestamp-sorted with ties in arrival order, so the
+            # newest visible event is the rightmost one at or before `now`.
+            for ts, value in reversed(self._buffer):
+                if now is None or ts <= now:
+                    return value
+            raise IndexError("cannot sample Latest() from buffer before first event")
 
         # For complex adapters (Window, Events, Hold, Custom), delegate to the Adapter implementation.
         # This ensures the Adapter class (and EventStream/TimedBuffer definitions) is the single source of truth.
