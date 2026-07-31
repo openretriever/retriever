@@ -1,0 +1,11 @@
+# Code owners are automatically requested for review on matching pull requests.
+# See https://docs.github.com/articles/about-code-owners
+#
+# Order matters: the last matching pattern wins.
+
+# Default owner for everything in the repo.
+*                       @linfeng-z
+
+# CI, release, and publishing are sensitive — keep an explicit owner.
+/.github/workflows/     @linfeng-z
+/pyproject.toml         @linfeng-z
