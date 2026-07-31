@@ -14,3 +14,4 @@
 - [ ] No credentials, private paths, private endpoints, or unpublished artifacts
 - [ ] No heavyweight robot/model/demo assets added to core runtime
 - [ ] Runtime vs companion-repo boundary is clear
+- [ ] Commits are signed off (`git commit -s`) per the [DCO](../CONTRIBUTING.md#licensing--sign-off-dco)
