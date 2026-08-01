@@ -29,3 +29,17 @@ Include:
 - any compatibility notes for examples, backends, or Hub behavior.
 
 Keep robot-specific integrations, heavyweight model stacks, datasets, and system demos in companion repositories unless the code is runtime-generic.
+
+## Sign off your commits
+
+Contributions are under [Apache-2.0](LICENSE), same as the project — **no CLA to
+sign**. Just add a sign-off line so we know you have the right to contribute the
+change ([DCO](https://developercertificate.org/)):
+
+```bash
+git commit -s -m "your message"
+```
+
+## Code of Conduct
+
+Be respectful — see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

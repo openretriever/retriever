@@ -1,0 +1,6 @@
+# Owners are auto-requested to review matching pull requests.
+# https://docs.github.com/articles/about-code-owners
+
+*                       @linfeng-z
+/.github/workflows/     @linfeng-z
+/pyproject.toml         @linfeng-z

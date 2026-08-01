@@ -1,16 +1,11 @@
-## Summary
+## What changed and why
 
 -
 
-## Validation
+## Checks
 
-- [ ] `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q`
-- [ ] `pixi run p0-release-readiness`
-- [ ] `pixi run -e docs docs-build`
-- [ ] Docs updated if public behavior changed
-
-## Public-Release Checklist
-
-- [ ] No credentials, private paths, private endpoints, or unpublished artifacts
-- [ ] No heavyweight robot/model/demo assets added to core runtime
-- [ ] Runtime vs companion-repo boundary is clear
+- [ ] `pixi run test` passes
+- [ ] `pixi run -e docs docs-build` (if docs or public behavior changed)
+- [ ] Commits signed off — `git commit -s` ([why](https://github.com/openretriever/retriever/blob/main/CONTRIBUTING.md#sign-off-your-commits))
+- [ ] No credentials, private paths, or large model/robot assets added
+- [ ] Runtime-generic — robot/model-specific code belongs in a companion repo
