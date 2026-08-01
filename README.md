@@ -140,7 +140,7 @@ retriever run p0-release-readiness
 retriever run public-surface-check    # external launch check
 ```
 
-The source checkout uses [Pixi](https://pixi.sh) as its environment/task backend, and `retriever run <task>` wraps it. `main` is canonical — a fresh clone and ordinary `git pull` fast-forward. See [docs/contributing.md](docs/contributing.md).
+The source checkout uses [Pixi](https://pixi.sh) as its environment/task backend, and `retriever run <task>` wraps it. `main` is canonical — a fresh clone and ordinary `git pull` fast-forward. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 </details>
 

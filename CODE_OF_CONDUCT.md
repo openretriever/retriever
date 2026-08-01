@@ -8,8 +8,10 @@ for everyone.
 **Welcome:** empathy and kindness, respect for differing views, graceful
 feedback, and focusing on what's best for the community.
 
-**Not accepted:** harassment, insults, personal or political attacks, sexualized
-language or attention, publishing someone's private information, or anything else
+**Not accepted:** harassment; discrimination or derogatory remarks based on age,
+disability, ethnicity, gender identity or expression, nationality, race, religion,
+or sexual orientation; insults or personal and political attacks; sexualized
+language or attention; publishing someone's private information; or anything else
 you wouldn't do in a professional setting.
 
 ## Where it applies
@@ -28,6 +30,9 @@ may warn or ban anyone whose behavior warrants it.
 
 ## Attribution
 
-Adapted from the [Contributor Covenant](https://www.contributor-covenant.org)
-v2.1 (CC BY 4.0). Full text:
-<https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>
+This is a shortened adaptation of the
+[Contributor Covenant](https://www.contributor-covenant.org), version 2.1, which
+is licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The text
+here has been condensed and rewritten, so it is not the Covenant itself. The
+unabridged version 2.1 is at
+<https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>.

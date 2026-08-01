@@ -4,6 +4,11 @@ title: "Contributing"
 
 # Contributing
 
+> The canonical contributor guide is
+> [CONTRIBUTING.md](https://github.com/openretriever/retriever/blob/main/CONTRIBUTING.md)
+> in the repository root — it covers setup, pull requests, and commit sign-off.
+> This page covers the same ground for readers browsing the docs site.
+
 This repo is early-stage and moves fast. Keep PRs small, include tests when it makes sense, and update docs when behavior/setup changes.
 
 ## Prerequisites
