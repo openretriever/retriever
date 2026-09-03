@@ -20,10 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: prefix-dev/setup-pixi@v0.9.6
         with:
           pixi-version: v0.70.1
           cache: true
+      - name: Public history guardrail
+        if: github.event_name == 'pull_request'
+        env:
+          PUBLIC_PR_TITLE: ${{ github.event.pull_request.title }}
+          PUBLIC_PR_BODY: ${{ github.event.pull_request.body }}
+        run: >-
+          pixi run python scripts/release/check_public_history.py
+          --base "${{ github.event.pull_request.base.sha }}"
+          --head "${{ github.event.pull_request.head.sha }}"
       - name: Core tests
         run: PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pixi run python -m pytest tests -q
       - name: Release readiness smoke

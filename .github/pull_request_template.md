@@ -12,5 +12,6 @@
 ## Public-Release Checklist
 
 - [ ] No credentials, private paths, private endpoints, or unpublished artifacts
+- [ ] No agent attribution, generation markers, or session links in commits or public content
 - [ ] No heavyweight robot/model/demo assets added to core runtime
 - [ ] Runtime vs companion-repo boundary is clear
