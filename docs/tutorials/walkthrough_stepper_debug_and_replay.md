@@ -4,6 +4,16 @@ title: "Walkthrough: Stepper, Debugger, and MCAP Replay"
 
 # Walkthrough: Stepper, Debugger, and MCAP Replay
 
+For MCAP session inspection, `MCAPReader.read_all()` uses the writer's step
+boundaries in file order. Nearby or equal timestamps do not merge steps. Keep
+each step's metadata before its payloads when processing a recording; orphaned,
+duplicate, or timestamp-mismatched payloads raise `ValueError` instead of being
+silently dropped or reassigned. The writer's format is unchanged.
+
+`pipe.replay(...)` supplies a source's recorded values sequentially. If a
+downstream decision depends on time, drive the original clock schedule as well;
+equal replayed values alone do not establish equal timing-dependent decisions.
+
 This is the shortest operational path for debugging in Retriever.
 
 ## Why this workflow exists

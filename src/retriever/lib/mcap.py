@@ -449,45 +449,44 @@ class MCAPReader:
 
     def __iter__(self) -> Iterator[Dict[str, Any]]:
         """Iterate over step results."""
-        # Group messages by step
+        # write_step emits a metadata message followed by that step's outputs.
+        # Keep file order: nearby or equal timestamps cannot identify a step.
         messages_by_step: Dict[int, Dict[str, Any]] = {}
+        current_step: Optional[Dict[str, Any]] = None
+        current_timestamp: Optional[int] = None
 
-        for schema, channel, message in self._reader.iter_messages():
+        for schema, channel, message in self._reader.iter_messages(log_time_order=False):
             topic = channel.topic
 
             if topic == "/retriever/step":
                 meta = json.loads(message.data.decode("utf-8"))
                 step_idx = meta["step"]
-                if step_idx not in messages_by_step:
-                    messages_by_step[step_idx] = {
-                        "step": step_idx,
-                        "now": meta["now"],
-                        "executed": meta["executed"],
-                        "inputs": {},
-                        "outputs": {},
-                    }
-            elif "/output" in topic:
-                # Extract flow name from topic
+                if step_idx in messages_by_step:
+                    raise ValueError(f"Duplicate Retriever step index: {step_idx}")
+                current_step = {
+                    "step": step_idx,
+                    "now": meta["now"],
+                    "executed": meta["executed"],
+                    "inputs": {},
+                    "outputs": {},
+                }
+                current_timestamp = message.log_time
+                messages_by_step[step_idx] = current_step
+            elif topic.startswith("/retriever/flows/"):
                 parts = topic.split("/")
-                flow_name = parts[3]  # /retriever/flows/{flow_name}/output
-
-                # Find step by timestamp
-                for step_data in messages_by_step.values():
-                    if abs((step_data["now"] or 0) * 1e9 - message.log_time) < 1e6:
-                        step_data["outputs"][flow_name] = _deserialize_value(
-                            message.data, schema.name
-                        )
-                        break
-            elif "/input" in topic:
-                parts = topic.split("/")
+                if len(parts) != 5 or parts[4] not in {"input", "output"}:
+                    continue
+                if current_step is None or message.log_time != current_timestamp:
+                    raise ValueError(
+                        f"Retriever payload {topic!r} has no matching preceding step metadata"
+                    )
                 flow_name = parts[3]
-
-                for step_data in messages_by_step.values():
-                    if abs((step_data["now"] or 0) * 1e9 - message.log_time) < 1e6:
-                        step_data["inputs"][flow_name] = _deserialize_value(
-                            message.data, schema.name
-                        )
-                        break
+                values = current_step[f"{parts[4]}s"]
+                if flow_name in values:
+                    raise ValueError(
+                        f"Duplicate Retriever payload {topic!r} in step {current_step['step']}"
+                    )
+                values[flow_name] = _deserialize_value(message.data, schema.name)
 
         # Yield in step order
         for step_idx in sorted(messages_by_step.keys()):
