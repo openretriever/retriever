@@ -78,21 +78,15 @@ def test_recording_supported_values_roundtrip(tmp_path, suffix, value, output_ty
         assert "rerun-sdk<0.29" in message
         return
     rows = open_recording_reader(path).read_node_stream("Source", output_type=output_type)
-    assert [stamp for stamp, _ in rows] == pytest.approx([0.1, 0.37])
+    # Legacy RRD readback retains its existing sequence-index time fallback.
+    expected_times = [0.1, 0.37] if suffix == ".mcap" else [0.0, 1.0]
+    assert [stamp for stamp, _ in rows] == pytest.approx(expected_times)
     for _, actual in rows:
         assert_same(actual, value)
 
 
-def test_rrd_contains_visual_and_replay_entity_paths(tmp_path, monkeypatch):
+def test_rrd_contains_visual_and_replay_entity_paths(tmp_path):
     rr = pytest.importorskip("rerun")
-    logged = []
-    real_log = rr.log
-
-    def capture(path, *args, **kwargs):
-        logged.append(path)
-        return real_log(path, *args, **kwargs)
-
-    monkeypatch.setattr(rr, "log", capture)
     path = tmp_path / "entities.rrd"
     sink = build_recording_sink(RecordConfig(path=path), app_id="entities")
     sink.open()
@@ -101,10 +95,16 @@ def test_rrd_contains_visual_and_replay_entity_paths(tmp_path, monkeypatch):
                                    outputs={"Source": 7}), 0)
     finally:
         sink.close()
-    assert "flows/Source/output" in logged
-    assert "retriever_recording/flows/Source/output/payload" in logged
-    assert "retriever_recording/flows/Source/spec" in logged
-    assert path.stat().st_size > 0
+    if hasattr(rr, "dataframe"):
+        schema = rr.dataframe.load_recording(str(path)).schema()
+        paths = {column.entity_path.lstrip("/") for column in schema.component_columns()}
+    else:
+        from rerun.chunk import RrdReader
+
+        paths = {chunk.entity_path.lstrip("/") for chunk in RrdReader(path).stream()}
+    assert "flows/Source/output" in paths
+    assert "retriever_recording/flows/Source/output/payload" in paths
+    assert "retriever_recording/flows/Source/spec" in paths
 
 
 def test_mcap_restores_legacy_array_and_current_lossless_markers():
@@ -116,3 +116,43 @@ def test_mcap_restores_legacy_array_and_current_lossless_markers():
     assert_same(restored, original)
     old = {"__numpy__": True, "data": [], "dtype": "float32", "shape": [0, 3]}
     assert_same(_restore_numpy(old), original["image"])
+
+
+
+def test_legacy_rrd_tuple_encoding_stays_list_compatible():
+    from retriever.recording import _serialize_rrd_replay_value, _deserialize_rrd_replay_value
+
+    value = {"pair": (1, 2)}
+    assert _deserialize_rrd_replay_value(_serialize_rrd_replay_value(value)) == {"pair": [1, 2]}
+
+
+MARKER_MAPPINGS = [
+    {"__bytes__": "YWJj"},
+    {"__bytes__": "YWJj", "label": "user data"},
+    {"__tuple__": [1, 2]},
+    {"__tuple__": [1, 2], "label": "user data"},
+    {"__numpy__": True, "data": [1], "dtype": "int16"},
+    {"__mapping__": [["a", 1]]},
+]
+
+
+@pytest.mark.parametrize("value", MARKER_MAPPINGS)
+def test_legacy_json_schema_keeps_ordinary_marker_mappings(value):
+    import json
+    from retriever.lib.mcap import _deserialize_value
+
+    assert_same(_deserialize_value(json.dumps(value).encode(), "json"), value)
+
+
+@pytest.mark.parametrize("value", MARKER_MAPPINGS)
+def test_new_mcap_roundtrip_keeps_literal_marker_mappings(tmp_path, value):
+    path = tmp_path / "literal.mcap"
+    sink = build_recording_sink(RecordConfig(path=path), app_id="literal-mappings")
+    sink.open()
+    try:
+        sink.write_step(StepResult(now=0.1, executed=["Source"], inputs={},
+                                   outputs={"Source": {"nested": value}}), 0)
+    finally:
+        sink.close()
+    rows = open_recording_reader(path).read_node_stream("Source", output_type=dict[str, Any])
+    assert_same(rows[0][1], {"nested": value})
