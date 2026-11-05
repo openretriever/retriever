@@ -134,3 +134,111 @@ def test_empty_timestamped_replay_finishes_without_publishing():
         assert sink.flow.seen == []
     finally:
         pipe.close_stepper()
+
+
+def test_timestamped_mcap_replay_matches_original_fractional_ticks(tmp_path):
+    from retriever.lib.mcap import MCAPReader, MCAPWriter
+
+    path = tmp_path / "fractional.mcap"
+    times = [1.0812599999999999, 1.0812599999999999, 1.0812600000000001,
+             1.37, 2.8123399999999998]
+    original = Pipeline("fractional")
+    source = Source() @ Rate(hz=10)
+    sink = Sink() @ Trigger("value")
+    original.connect(source, sink, sync=Latest(buffer_size=8))
+    try:
+        with MCAPWriter(path) as writer:
+            for index, now in enumerate(times):
+                writer.write_step(original.step(now=now), index)
+        expected = sink.flow.seen[:]
+        node_id = original.get_node_id(source)
+    finally:
+        original.close_stepper()
+
+    # Legacy reads keep their existing nanosecond-derived timestamps.
+    with MCAPReader(path) as reader:
+        assert [ts for ts, _ in reader.read_node_stream(node_id)] == [
+            int(now * 1e9) / 1e9 for now in times
+        ]
+
+    replayed = Pipeline("fractional")
+    replacement = Source() @ Rate(hz=10)
+    target = Sink() @ Trigger("value")
+    replayed.connect(replacement, target, sync=Latest(buffer_size=8))
+    replayed.replay(replacement, path=path, timestamped=True)
+    try:
+        for index, now in enumerate(times):
+            replayed.step(now=now)
+            assert target.flow.seen == expected[: index + 1]
+        target_id = replayed.get_node_id(target)
+        assert [
+            ts for ts, _ in replayed._stepper._inputs[target_id]["value"].get_all()
+        ] == times
+    finally:
+        replayed.close_stepper()
+
+
+def test_timestamped_replay_rejects_rrd_before_reading(tmp_path):
+    pipe = Pipeline("unsupported_timing")
+    source = Source() @ Rate(hz=10)
+    sink = Sink() @ Trigger("value")
+    pipe.connect(source, sink, sync=Latest())
+    with pytest.raises(ValueError, match="Timestamped.*MCAP|timestamped.*MCAP"):
+        pipe.replay(source, path=tmp_path / "session.rrd", timestamped=True)
+
+
+def test_default_replay_publishes_at_current_tick():
+    pipe = Pipeline("sequential_times")
+    source = Source() @ Rate(hz=10)
+    sink = Sink() @ Trigger("value")
+    pipe.connect(source, sink, sync=Latest(buffer_size=8))
+    pipe.replay(source, buffer=[(100.0, Value(value=7)), (200.0, Value(value=8))])
+    try:
+        pipe.step(now=1.0)
+        pipe.step(now=2.0)
+        assert sink.flow.seen == [7, 8]
+        node_id = pipe.get_node_id(sink)
+        assert [ts for ts, _ in pipe._stepper._inputs[node_id]["value"].get_all()] == [
+            1.0,
+            2.0,
+        ]
+    finally:
+        pipe.close_stepper()
+
+
+def test_timestamped_dt_replay_requires_anchor_then_waits():
+    pipe = Pipeline("delta_times")
+    source = replay_handle(
+        [(0.25, Value(value=1)), (1.5, Value(value=2))],
+        Rate(hz=10),
+        output_type=Value,
+        timestamped=True,
+    )
+    sink = Sink() @ Trigger("value")
+    pipe.connect(source, sink, sync=Latest())
+    try:
+        with pytest.raises(ValueError, match="now=.*before.*dt"):
+            pipe.step(dt=0.25)
+        assert sink.flow.seen == []
+        pipe.step(now=0.0)
+        pipe.step(dt=0.25)
+        assert sink.flow.seen == [1]
+        pipe.step(dt=0.5)
+        assert sink.flow.seen == [1]
+        pipe.step(dt=0.75)
+        assert sink.flow.seen == [1, 2]
+    finally:
+        pipe.close_stepper()
+
+
+def test_replay_from_default_supports_existing_replay_override(tmp_path):
+    class CustomPipeline(Pipeline):
+        def replay(self, handle, *, path):
+            self.called = (handle, path)
+            return handle
+
+    pipe = CustomPipeline("override")
+    source = Source() @ Rate(hz=10)
+    path = tmp_path / "session.mcap"
+    pipe.replay_from(path, inputs=[source])
+    assert pipe.called == (source, path)
