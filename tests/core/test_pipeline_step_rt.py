@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -11,6 +12,23 @@ from retriever.flow import Flow, Pipeline, Rate, Trigger, Latest, io
 from retriever.lib.mcap import _deserialize_value
 from retriever.recording import build_recording_sink, read_node_stream_from_recording
 from retriever.rt.stepper import EventStreamRecorder, StepResult
+
+
+def _recording_sdk_reader_available():
+    rr = pytest.importorskip("rerun")
+    expected_version = os.environ.get("RETRIEVER_TEST_RERUN_VERSION")
+    if expected_version is not None:
+        assert rr.__version__ == expected_version
+    available = callable(getattr(getattr(rr, "dataframe", None), "load_recording", None))
+    # Pin known SDK contracts independently of the branch chosen by replay tests.
+    expected_reader = {"0.23.4": True, "0.42.0": False}.get(rr.__version__)
+    if expected_reader is not None:
+        assert available is expected_reader
+    return available
+
+
+def test_recording_sdk_reader_contract():
+    _recording_sdk_reader_available()
 
 
 @io
@@ -272,8 +290,8 @@ def test_pipeline_run_record_rejects_authored_host_affinity(tmp_path, monkeypatc
 
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
-    if suffix == ".rrd":
-        pytest.importorskip("rerun")
+    if suffix == ".rrd" and not _recording_sdk_reader_available():
+        pytest.skip("Installed Rerun SDK has no legacy dataframe reader")
 
     record_path = tmp_path / f"session{suffix}"
 
@@ -330,8 +348,8 @@ def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path)
 
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
-    if suffix == ".rrd":
-        pytest.importorskip("rerun")
+    if suffix == ".rrd" and not _recording_sdk_reader_available():
+        pytest.skip("Installed Rerun SDK has no legacy dataframe reader")
 
     record_path = tmp_path / f"optional_session{suffix}"
     sink = build_recording_sink(RecordConfig(path=record_path), app_id="optional_demo")

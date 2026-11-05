@@ -712,8 +712,7 @@ class RerunManager:
 
         rr_module = _ensure_rerun()
 
-        # `.rrd` files are not reliably queryable until the recording stream is
-        # explicitly finalized. This matters for tutorial replay-from-rrd.
+        # Finalize the recording stream before a viewer opens the file.
         if self.config.mode == "record" and hasattr(rr_module, "disconnect"):
             rr_module.disconnect()
         self._initialized = False
@@ -814,7 +813,7 @@ def record_session(
     """
     Context manager for recording a debugging session.
 
-    Records all step() calls to an .rrd file for later replay.
+    Records all step() calls to an .rrd file for later visualization.
     Optionally saves raw inputs for re-execution.
 
     Args:

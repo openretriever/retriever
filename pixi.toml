@@ -105,7 +105,7 @@ retriever-core = { path = ".", editable = true, extras = [
     "web",
     "recording",
 ] }
-rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
+rerun-sdk = ">=0.23.4,<0.43" # RRD query support is feature-detected; MCAP replay is independent
 mcap = "*" # MCAP recording support
 google-genai = "*" # VLM Support
 build = "*" # For building wheels

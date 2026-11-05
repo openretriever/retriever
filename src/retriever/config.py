@@ -38,12 +38,15 @@ class RecordConfig:
         format: Primary persisted recording format ("mcap" or "rrd").
                 Auto-detected from the primary path if None.
         auto_open: Whether a `.rrd` recording should auto-open in Rerun on cleanup.
+        mcap_lossless: Opt into versioned lossless MCAP outputs (default False).
+            Older Retriever readers reject these files. Does not affect RRD.
     """
     path: Union[str, Path]
     mirrors: tuple[Union[str, Path], ...] = field(default_factory=tuple)
     visualize: bool = False
     format: Optional[str] = None
     auto_open: bool = False
+    mcap_lossless: bool = False
 
     def __post_init__(self):
         self.path = Path(self.path)

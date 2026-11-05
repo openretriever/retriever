@@ -43,3 +43,24 @@ jobs:
         run: pixi run -e docs docs-build
       - name: Package build
         run: pixi run build
+
+  recording-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rerun-sdk: ["0.23.4", "0.42.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install recording test dependencies
+        run: >-
+          python -m pip install -e '.[dev,recording]'
+          'rerun-sdk==${{ matrix.rerun-sdk }}' pyarrow pandas opencv-python-headless dora-rs
+      - name: Full suite with the pinned recording SDK
+        env:
+          RETRIEVER_TEST_RERUN_VERSION: ${{ matrix.rerun-sdk }}
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+        run: python -m pytest tests -q

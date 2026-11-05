@@ -87,7 +87,9 @@ For deterministic persisted recordings, prefer the explicit stepper surface:
 pipe.record("session.rrd", steps=50, dt=0.1, visualize=True)
 ```
 
-`.rrd` is the native Rerun inspection artifact and is replayable for Retriever session recordings. `.mcap` remains the mirror/interchange artifact:
+`.rrd` is the native Rerun inspection artifact. Direct replay requires the legacy
+SDK dataframe API (below 0.29). MCAP replay works on every supported SDK; request
+an explicit mirror when needed:
 
 ```python
 from retriever import RecordConfig
@@ -108,7 +110,7 @@ pipe.run(
 To replay:
 ```python
 # Inject recorded data into a flow source
-pipe.replay(camera, path="session.rrd")  # `.mcap` works too
+pipe.replay(camera, path="session.mcap")
 pipe.run(backend="in-process")
 ```
 

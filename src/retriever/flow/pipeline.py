@@ -516,7 +516,7 @@ class Pipeline:
 
         The format is auto-detected from the file extension:
         - `.mcap`: Records ALL pipeline outputs (session recording, replayable).
-        - `.rrd`: Records ALL pipeline outputs as a native Rerun recording (inspectable and replayable).
+        - `.rrd`: Records ALL pipeline outputs as a native Rerun recording (inspectable; replay requires the SDK dataframe reader).
         - `.pkl.gz`: Records ONLY the specified handle (stream recording).
 
         Usage:
@@ -662,7 +662,9 @@ class Pipeline:
         - `path`: path to a recording (.mcap, .rrd, or .pkl.gz)
 
         The format is auto-detected from the file extension.
-        `.mcap` and `.rrd` are replayable when they contain Retriever replay payloads.
+        MCAP stores replay outputs independently of Rerun. RRD replay remains
+        available when the installed SDK exposes its legacy dataframe reader;
+        otherwise record an explicit MCAP mirror or use rerun-sdk<0.29.
         By default, the replay node reuses the replaced handle's clock and output type.
         """
         from retriever.rt.stepper import load_timed_buffer, replay_flow
@@ -711,7 +713,7 @@ class Pipeline:
             inputs: List of source handles to replace with recorded data
 
         Example:
-            pipe.replay_from("session.rrd", inputs=[camera, lidar])
+            pipe.replay_from("session.mcap", inputs=[camera, lidar])
         """
         for handle in inputs:
             self.replay(handle, path=path)

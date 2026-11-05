@@ -38,7 +38,7 @@ What this path covers:
 - typed `Flow` and `Pipeline` authoring
 - adapters and execution surfaces
 - stepper debugging
-- `.rrd` / `.mcap` recording and replay
+- `.rrd` visualization and `.mcap` recording and replay
 - primitive-first typed boundaries
 
 ## Choose By Functionality

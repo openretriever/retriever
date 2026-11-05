@@ -8,8 +8,9 @@ The intent is:
 - keep runtime `StepResult` / tuple-buffer semantics unchanged
 - make persisted recording targets pluggable
 
-`.mcap` remains the mirror/interchange format. `.rrd` is the native Rerun
-artifact, and Retriever session recordings in either format can be replayed.
+MCAP supports typed replay independently of Rerun. RRD replay remains available
+when the installed Rerun SDK exposes its legacy dataframe reader. Newer SDKs
+can record and visualize RRD; request an explicit MCAP mirror for portable replay.
 """
 
 from __future__ import annotations
@@ -162,8 +163,9 @@ class CompositeRecordingSink:
 class McapRecordingSink:
     """Persist step results to MCAP."""
 
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, lossless: bool = False):
         self.path = Path(path)
+        self.lossless = lossless
         self._writer = None
         self._written_specs: set[str] = set()
 
@@ -172,7 +174,7 @@ class McapRecordingSink:
 
         if self._writer is not None:
             return
-        self._writer = MCAPWriter(self.path)
+        self._writer = MCAPWriter(self.path, lossless=self.lossless)
         self._writer.__enter__()
 
     def write_step(self, result: Any, step_idx: int) -> None:
@@ -279,7 +281,7 @@ class McapRecordingReader:
             buffer = reader.read_node_stream(recorded_node_id)
         if output_type is None:
             return buffer
-        return [(ts, _hydrate_recorded_value(value, output_type)) for ts, value in buffer]
+        return [(ts, _hydrate_recorded_value(value, output_type, already_decoded=True)) for ts, value in buffer]
 
     def get_stream_spec(self, node_id: str) -> Optional[RecordingStreamSpec]:
         from retriever.lib.mcap import MCAPReader
@@ -292,22 +294,35 @@ class McapRecordingReader:
         return None
 
 
-# TODO(rerun-latest): this `.rrd` reader depends on rerun's dataframe query API
-# (rr.dataframe / Recording.view), which rerun deprecated in 0.28 and removed by
-# 0.29 (absent in 0.34), so the `recording` extra pins rerun-sdk<0.24. The write/
-# viz path still works on latest; migrate replay to the rerun-independent MCAP
-# reader below, then lift the pin. Tracked in pyproject `recording` extra.
-def _load_rrd_recording(path: str | Path) -> Any:
-    """Open an `.rrd` recording, tolerating rerun-sdk's relocation of the loader."""
+def _rrd_recording_loader(path: str | Path) -> Any:
+    """Find the optional legacy query API without changing recording targets."""
     try:
         import rerun as rr
     except ImportError:
-        raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
+        raise ImportError(
+            f"RRD replay for `{path}` requires rerun-sdk. Install rerun-sdk<0.29 "
+            "or record an explicit MCAP mirror with "
+            "RecordConfig(path='x.rrd', mirrors=('x.mcap',))."
+        ) from None
+    dataframe = getattr(rr, "dataframe", None)
+    loader = (
+        getattr(getattr(rr, "recording", None), "load_recording", None)
+        or getattr(dataframe, "load_recording", None)
+    )
+    if dataframe is None or not callable(loader):
+        version = getattr(rr, "__version__", "unknown")
+        raise RuntimeError(
+            f"RRD replay for `{path}` is unavailable with installed rerun-sdk {version}: "
+            "the legacy dataframe reader is absent. For future recordings, use "
+            "RecordConfig(path='x.rrd', mirrors=('x.mcap',)) and replay the MCAP path. "
+            "To read this RRD directly, install rerun-sdk<0.29."
+        )
+    return loader
 
-    loader = getattr(getattr(rr, "recording", None), "load_recording", None)
-    if loader is None:
-        loader = rr.dataframe.load_recording
-    return loader(str(path))
+
+def _load_rrd_recording(path: str | Path) -> Any:
+    """Open an RRD only when the installed SDK exposes its dataframe loader."""
+    return _rrd_recording_loader(path)(str(path))
 
 
 def _read_rrd_columns(recording: Any) -> dict[str, Any]:
@@ -451,7 +466,9 @@ def build_recording_sink(record_config: Any, *, app_id: str) -> CompositeRecordi
     sinks: list[RecordingSink] = []
     for artifact in build_recording_artifacts(record_config):
         if artifact.format == "mcap":
-            sinks.append(McapRecordingSink(artifact.path))
+            sinks.append(McapRecordingSink(
+                artifact.path, lossless=bool(getattr(record_config, "mcap_lossless", False))
+            ))
         elif artifact.format == "rrd":
             sinks.append(
                 RrdRecordingSink(
@@ -470,6 +487,7 @@ def open_recording_reader(path: str | Path) -> RecordingReader:
     if fmt == "mcap":
         return McapRecordingReader(path)
     if fmt == "rrd":
+        _rrd_recording_loader(path)
         return RrdRecordingReader(path)
     raise ValueError(
         f"Unsupported recording path: {path}. Supported replay/view formats are .mcap and .rrd."
@@ -589,7 +607,7 @@ def _deserialize_rrd_replay_value(payload: bytes) -> Any:
     return _restore_recorded_value(envelope.get("value"))
 
 
-def _encode_recorded_value(value: Any) -> Any:
+def _encode_recorded_value(value: Any, *, lossless: bool = False) -> Any:
     if isinstance(value, np.ndarray):
         buf = io.BytesIO()
         np.save(buf, value, allow_pickle=False)
@@ -598,11 +616,27 @@ def _encode_recorded_value(value: Any) -> Any:
             "npy_b64": base64.b64encode(buf.getvalue()).decode("ascii"),
         }
     if is_dataclass(value) and not isinstance(value, type):
-        return {field.name: _encode_recorded_value(getattr(value, field.name)) for field in fields(value)}
+        return _encode_recorded_value(
+            {field.name: getattr(value, field.name) for field in fields(value)},
+            lossless=lossless,
+        )
     if isinstance(value, (list, tuple)):
-        return [_encode_recorded_value(item) for item in value]
+        items = [_encode_recorded_value(item, lossless=lossless) for item in value]
+        if lossless and isinstance(value, tuple):
+            return {"__tuple__": items}
+        return items
     if isinstance(value, dict):
-        return {key: _encode_recorded_value(item) for key, item in value.items()}
+        if lossless and {
+            "__numpy__", "__bytes__", "__tuple__", "__mapping__"
+        }.intersection(value):
+            return {"__mapping__": [
+                [key, _encode_recorded_value(item, lossless=True)]
+                for key, item in value.items()
+            ]}
+        return {
+            key: _encode_recorded_value(item, lossless=lossless)
+            for key, item in value.items()
+        }
     if isinstance(value, bytes):
         return {"__bytes__": base64.b64encode(value).decode("ascii")}
     if isinstance(value, (str, int, float, bool)) or value is None:
@@ -624,28 +658,38 @@ def _unwrap_optional_type(expected_type: Any) -> Any:
     return expected_type
 
 
-def _restore_recorded_value(value: Any) -> Any:
+def _restore_recorded_value(value: Any, *, lossless: bool = False) -> Any:
     if isinstance(value, dict):
         if value.get("__numpy__"):
             if "npy_b64" in value:
                 buf = io.BytesIO(base64.b64decode(value["npy_b64"]))
                 return np.load(buf, allow_pickle=False)
-            return np.array(value["data"], dtype=value.get("dtype"))
+            array = np.array(value["data"], dtype=value.get("dtype"))
+            return array.reshape(value["shape"]) if "shape" in value else array
         if "__bytes__" in value:
             return base64.b64decode(value["__bytes__"])
-        return {k: _restore_recorded_value(v) for k, v in value.items()}
+        if lossless and "__tuple__" in value:
+            return tuple(_restore_recorded_value(item, lossless=True) for item in value["__tuple__"])
+        if lossless and "__mapping__" in value:
+            return {key: _restore_recorded_value(item, lossless=True)
+                    for key, item in value["__mapping__"]}
+        return {k: _restore_recorded_value(v, lossless=lossless) for k, v in value.items()}
     if isinstance(value, list):
-        return [_restore_recorded_value(v) for v in value]
+        return [_restore_recorded_value(v, lossless=lossless) for v in value]
     return value
 
 
-def _hydrate_recorded_value(value: Any, output_type: Optional[Type[Any]]) -> Any:
+def _hydrate_recorded_value(
+    value: Any, output_type: Optional[Type[Any]], *, already_decoded: bool = False
+) -> Any:
+    def restore(item: Any) -> Any:
+        return item if already_decoded else _restore_recorded_value(item)
     if output_type is None:
-        return _restore_recorded_value(value)
+        return restore(value)
 
     expected = _unwrap_optional_type(output_type)
     if expected in (Any, object, None):
-        return _restore_recorded_value(value)
+        return restore(value)
 
     try:
         if isinstance(value, expected):
@@ -656,20 +700,21 @@ def _hydrate_recorded_value(value: Any, output_type: Optional[Type[Any]]) -> Any
     origin = get_origin(expected)
     if origin in (list, Sequence):
         elem_type = get_args(expected)[0] if get_args(expected) else None
-        return [_hydrate_recorded_value(item, elem_type) for item in (value or [])]
+        return [_hydrate_recorded_value(item, elem_type, already_decoded=already_decoded) for item in (value or [])]
     if origin is tuple:
         elem_types = get_args(expected)
         return tuple(
-            _hydrate_recorded_value(item, elem_types[idx] if idx < len(elem_types) else None)
+            _hydrate_recorded_value(item, elem_types[idx] if idx < len(elem_types) else None,
+                                    already_decoded=already_decoded)
             for idx, item in enumerate(value or [])
         )
     if origin is dict:
         args = get_args(expected)
         value_type = args[1] if len(args) > 1 else None
-        return {k: _hydrate_recorded_value(v, value_type) for k, v in (value or {}).items()}
+        return {k: _hydrate_recorded_value(v, value_type, already_decoded=already_decoded) for k, v in (value or {}).items()}
 
     if expected is np.ndarray:
-        restored = _restore_recorded_value(value)
+        restored = restore(value)
         if isinstance(restored, np.ndarray):
             return restored
         return np.array(restored)
@@ -678,10 +723,12 @@ def _hydrate_recorded_value(value: Any, output_type: Optional[Type[Any]]) -> Any
         kwargs = {}
         for field in fields(expected):
             if field.name in value:
-                kwargs[field.name] = _hydrate_recorded_value(value[field.name], field.type)
+                kwargs[field.name] = _hydrate_recorded_value(
+                    value[field.name], field.type, already_decoded=already_decoded
+                )
         return expected(**kwargs)
 
-    restored = _restore_recorded_value(value)
+    restored = restore(value)
     try:
         if expected in (int, float, str, bool, bytes):
             return expected(restored)

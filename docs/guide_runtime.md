@@ -79,8 +79,8 @@ pipe.run(backend="in-process", duration=1.0, record="log.mcap")
 For explicit stepper-driven recording and replay, use:
 
 ```py
-pipe.record("logs/camera_recording.rrd", steps=10, dt=0.05)
-pipe.replay(camera, path="logs/camera_recording.rrd")
+pipe.record("logs/camera_recording.mcap", steps=10, dt=0.05)
+pipe.replay(camera, path="logs/camera_recording.mcap")
 ```
 
 ## 2) Core concepts
