@@ -22,7 +22,7 @@ forward pass, so time is part of the program, not an accident of scheduling.
 - **Step-debug in-process.** `Pipeline.step(...)` runs the graph in your Python
   process with real breakpoints before you scale to a backend.
 - **Record and replay.** Recording-enabled runs can persist MCAP or Rerun
-  artifacts and replay the consumed streams later.
+  artifacts and replay recorded node outputs later.
 - **One graph, many backends.** Author once; run in-process, with
   multiprocessing, or on a Dora backend when the integration path is ready.
 

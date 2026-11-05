@@ -188,7 +188,7 @@ retriever run webcam-dora   # dora
 
 ## Record and replay turn runs into evidence
 
-Recording preserves the consumed, ordered input history. Replaying that history through deterministic Flows reconstructs the same discrete-event outputs; stochastic model calls must come from logged seeds or logged outputs.
+Recording stores per-node output snapshots with step timestamps. It does not capture the exact input sampled by every consumer, transport arrival order, or an asynchronous wake schedule. Replacing a source with its recorded outputs gives downstream logic a repeatable input sequence. Reproducing a whole run also requires the same initial state, step schedule, sync behavior, and deterministic Flow bodies; stochastic calls need logged seeds or outputs.
 
 ```bash
 retriever run record-replay     # record a run, then replay it step-for-step
@@ -196,3 +196,24 @@ retriever run incident-replay   # replay a captured incident and diff the diagno
 ```
 
 Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay drives the same graph from the recording instead of live inputs. See [Debug and Visualize](/tutorials/debug-and-visualize/) for the full record/replay walkthrough.
+
+
+By default, `pipe.replay(source, path="session.mcap")` emits one recorded output
+per tick and ignores its recorded time. Use `timestamped=True` to honor recorded
+times during in-process stepping:
+
+```python
+source = pipe.replay(source, path="session.mcap", timestamped=True)
+pipe.step(now=10.0)  # seconds, using the recording's time origin
+```
+
+Timestamped replay publishes at most one due output per tick. It publishes nothing
+before the next recorded time and retains that output's recorded publication time.
+Times must be finite, nondecreasing seconds. MCAP stores nanoseconds on disk; its
+reader converts them to seconds. There is no automatic rebasing or sleeping.
+Equal timestamps retain recorded order and need separate ticks. Decreasing recorded
+times and backward replay ticks raise `ValueError`; reset the stepper to restart.
+Coarse ticks can delay delivery and change downstream sampling. For a timing
+comparison, supply the original step times and graph configuration. Existing output
+fields that specify port timestamps still take precedence over publication time.
+The same option is available on `replay_from`, `replay_flow`, and `replay_handle`.

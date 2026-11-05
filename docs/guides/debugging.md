@@ -221,3 +221,24 @@ Perception example:
 
 The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
 Replay accepts either artifact.
+
+
+### Replay timing and recording scope
+
+Recordings store node output snapshots and step timestamps. They do not store the
+exact inputs sampled by each consumer, transport arrival order, or an asynchronous
+wake schedule. Source replay makes downstream input sequences repeatable; it does
+not by itself reproduce every live execution.
+
+`pipe.replay(source, path="session.mcap")` keeps its existing behavior: one output
+per tick, without checking recorded timestamps. Opt into timestamped replay with
+`pipe.replay(source, path="session.mcap", timestamped=True)` and advance the
+in-process pipeline with `pipe.step(now=...)` in the recording's time origin.
+Times are finite, nondecreasing seconds; the MCAP reader converts on-disk
+nanoseconds to seconds. This mode neither rebases time nor sleeps. It emits at most
+one due output per tick and keeps the recorded publication timestamp, subject to
+existing per-port timestamp fields. Equal times retain recorded order and require
+separate ticks. Decreasing recorded times or backward replay ticks raise
+`ValueError`. Reset the stepper to restart replay. Coarse ticks can delay delivery
+and change sync results, so use the original step schedule for timing comparisons.
+`replay_from`, `replay_flow`, and `replay_handle` accept the same explicit option.
