@@ -271,12 +271,16 @@ class McapRecordingReader:
         node_id: str,
         *,
         output_type: Optional[Type[Any]] = None,
+        preserve_step_time: bool = False,
     ) -> list[tuple[float, Any]]:
         from retriever.lib.mcap import MCAPReader
         recorded_node_id = _resolve_recorded_node_id(node_id, self.list_node_ids())
 
         with MCAPReader(self.path) as reader:
-            buffer = reader.read_node_stream(recorded_node_id)
+            if preserve_step_time:
+                buffer = reader.read_node_stream(recorded_node_id, preserve_step_time=True)
+            else:
+                buffer = reader.read_node_stream(recorded_node_id)
         if output_type is None:
             return buffer
         return [(ts, _hydrate_recorded_value(value, output_type)) for ts, value in buffer]
@@ -481,8 +485,15 @@ def read_node_stream_from_recording(
     node_id: str,
     *,
     output_type: Optional[Type[Any]] = None,
+    preserve_step_time: bool = False,
 ) -> list[tuple[float, Any]]:
-    """Read one node's replay stream from any supported recording artifact."""
+    """Read one node's stream; exact step times require MCAP metadata."""
+    if preserve_step_time:
+        if detect_recording_format(path) != "mcap":
+            raise ValueError("Timestamped recording replay requires MCAP step metadata.")
+        return McapRecordingReader(path).read_node_stream(
+            node_id, output_type=output_type, preserve_step_time=True
+        )
     return open_recording_reader(path).read_node_stream(node_id, output_type=output_type)
 
 

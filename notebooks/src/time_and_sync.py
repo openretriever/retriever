@@ -233,7 +233,8 @@ hold.close_stepper()
 # accepts one, then ignores updates for 0.25 s and re-serves the held value —
 # so a downstream Flow sees a calm, rate-limited signal without adding its own
 # state. Clocks and sync are also the determinism boundary: the wall clock
-# decides which records land in a buffer, while replay preserves the ordered
-# timestamped history consumed by each sync policy. Replay that history and
-# every deterministic `step()` sees the same input. Next:
+# decides which records land in a buffer. Deterministic replay requires the
+# same ordered timestamped history and wake schedule for each sync policy.
+# Current recordings capture node outputs and step times, so source replay
+# alone does not guarantee the same consumer inputs. Next:
 # [Runtime](/concepts/runtime/) states the exact timestamp and tie-order contract.

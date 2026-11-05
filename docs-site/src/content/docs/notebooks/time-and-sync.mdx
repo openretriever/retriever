@@ -225,7 +225,7 @@ tick | Latest() | Hold(debounce=0.25)
   5  |     6    |  4
 ```
 
-<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Latest()</code> passes every reading; <code>Hold(debounce=0.25)</code> accepts one, ignores updates for 0.25&nbsp;s, then re-serves the held value — a calm, rate-limited signal with no extra state downstream. Clocks and sync are also the determinism boundary: the wall clock decides which records land in a buffer, while replay preserves the ordered timestamped history consumed by each sync policy. Replay that history and every deterministic <code>step()</code> sees the same input. Next: <a href="/concepts/runtime/">Runtime</a> states the exact timestamp and tie-order contract.</p>
+<p class="notebook-takeaway"><strong>Takeaway:</strong> <code>Latest()</code> passes every reading; <code>Hold(debounce=0.25)</code> accepts one, ignores updates for 0.25&nbsp;s, then re-serves the held value — a calm, rate-limited signal with no extra state downstream. Clocks and sync are also the determinism boundary: the wall clock decides which records land in a buffer, while deterministic replay requires the same ordered timestamped history and wake schedule for each sync policy. Current recordings capture node outputs and step times, so source replay alone does not guarantee the same consumer inputs. Next: <a href="/concepts/runtime/">Runtime</a> states the exact timestamp and tie-order contract.</p>
 
 ---
 

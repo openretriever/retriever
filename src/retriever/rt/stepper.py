@@ -14,6 +14,7 @@ It is **not** a production backend; it is a lightweight debugging tool.
 from __future__ import annotations
 
 import gzip
+import math
 import pickle
 import time
 import types
@@ -309,6 +310,16 @@ class PipelineStepper:
         Returns:
             StepResult with per-node input/output snapshots.
         """
+        if (
+            now is None
+            and dt is not None
+            and self._now is None
+            and any(
+                isinstance(handle.flow, _ReplaySource) and handle.flow.requires_time_anchor
+                for handle in self._flows.values()
+            )
+        ):
+            raise ValueError("Set step(now=...) before using dt with timestamped replay.")
         self._ensure_initialized()
         step_now = self._compute_now(now=now, dt=dt)
         step_token = _CURRENT_STEP_TIME.set(step_now)
@@ -346,6 +357,11 @@ class PipelineStepper:
                     )
 
                 outputs_snapshot[node_id] = signal.instance
+                if (
+                    isinstance(handle.flow, _ReplaySource)
+                    and handle.flow.publication_time is not None
+                ):
+                    signal.now = handle.flow.publication_time
                 signal.publish(self._outputs[node_id])
 
                 executed.append(node_id)
@@ -406,9 +422,27 @@ def load_timed_buffer(path: str | Path) -> TimedBuffer[Any]:
         return pickle.load(f)
 
 
-def replay_flow(buffer: TimedBuffer[T], *, output_type: Type[T]) -> Flow[None, T]:
+class _ReplaySource:
+    """Internal publication-time marker for the in-process stepper."""
+
+    publication_time: Optional[float] = None
+    requires_time_anchor: bool = False
+
+
+def replay_flow(
+    buffer: TimedBuffer[T], *, output_type: Type[T], timestamped: bool = False
+) -> Flow[None, T]:
     """
     Create a replay source flow that outputs recorded items sequentially.
+
+    By default, emit one item per call and ignore recorded timestamps. With
+    `timestamped=True`, require in-process stepping and emit at most one item
+    whose timestamp is <= the current step time. Times are finite, nondecreasing
+    seconds in the same time origin as `Pipeline.step(now=...)`; no rebasing or
+    sleeping occurs. Equal timestamps retain input order. Publication retains
+    the recorded timestamp, even when a step is late. Coarse steps can therefore
+    delay delivery; replay does not recreate an asynchronous execution schedule.
+    Anchor with `Pipeline.step(now=...)` before using `dt` stepping.
 
     Notes:
     - `output_type` must be an `@io` dataclass type.
@@ -416,19 +450,44 @@ def replay_flow(buffer: TimedBuffer[T], *, output_type: Type[T]) -> Flow[None, T
       so no outputs are published.
     """
     items = list(buffer)
+    if timestamped:
+        times = [float(ts) for ts, _ in items]
+        if any(not math.isfinite(ts) for ts in times) or any(
+            later < earlier for earlier, later in zip(times, times[1:])
+        ):
+            raise ValueError("Replay timestamps must be finite and nondecreasing seconds.")
+        items = list(zip(times, (value for _, value in items)))
 
     Base = Flow[None, output_type]  # type: ignore[misc]
 
-    class _ReplayFlow(Base):
+    class _ReplayFlow(_ReplaySource, Base):
+        requires_time_anchor = timestamped
+
         def reset(self) -> None:
             self._i = 0
             self.done = False
+            self.publication_time = None
+            self._last_now = None
 
         def step(self, _):  # type: ignore[override]
+            self.publication_time = None
+            if timestamped:
+                now = current_step_time()
+                if now is None:
+                    raise RuntimeError("Timestamped replay requires in-process Pipeline.step().")
+                if not math.isfinite(now) or (
+                    self._last_now is not None and now < self._last_now
+                ):
+                    raise ValueError("Replay step times must be finite and nondecreasing.")
+                self._last_now = now
             if self._i >= len(items):
                 self.done = True
                 return output_type()
-            _ts, value = items[self._i]
+            ts, value = items[self._i]
+            if timestamped:
+                if ts > now:
+                    return output_type()
+                self.publication_time = ts
             self._i += 1
             return value
 
@@ -436,9 +495,11 @@ def replay_flow(buffer: TimedBuffer[T], *, output_type: Type[T]) -> Flow[None, T
     return _ReplayFlow()
 
 
-def replay_handle(buffer: TimedBuffer[T], clock: Any, *, output_type: Type[T]) -> TemporalFlow:
+def replay_handle(
+    buffer: TimedBuffer[T], clock: Any, *, output_type: Type[T], timestamped: bool = False
+) -> TemporalFlow:
     """Convenience: bind `replay_flow(...)` to a clock via `@`."""
-    return replay_flow(buffer, output_type=output_type) @ clock
+    return replay_flow(buffer, output_type=output_type, timestamped=timestamped) @ clock
 
 
 class EventStreamRecorder(Generic[T]):

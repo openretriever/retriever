@@ -653,6 +653,7 @@ class Pipeline:
         path: str | Path | None = None,
         clock: Optional[Any] = None,
         output_type: Optional[Type] = None,
+        timestamped: bool = False,
     ) -> TemporalFlow:
         """
         Replace `handle` with an in-process replay source and return the new handle.
@@ -664,6 +665,13 @@ class Pipeline:
         The format is auto-detected from the file extension.
         `.mcap` and `.rrd` are replayable when they contain Retriever replay payloads.
         By default, the replay node reuses the replaced handle's clock and output type.
+        It emits one recorded output per tick, ignoring timestamps. Opt into
+        `timestamped=True` to wait for each recorded time and retain its publication
+        timestamp. Times are nondecreasing seconds, with the same origin as
+        `step(now=...)`. At most one due output is emitted per tick; no sleeping
+        or rebasing occurs. This mode requires in-process stepping. Anchor with
+        `step(now=...)` before advancing with `dt`. MCAP replay uses exact step
+        metadata times; timestamped RRD replay is not supported.
         """
         from retriever.rt.stepper import load_timed_buffer, replay_flow
 
@@ -687,11 +695,18 @@ class Pipeline:
             if suffix in {".mcap", ".rrd"}:
                 from retriever.recording import read_node_stream_from_recording
 
-                buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
+                if timestamped:
+                    buffer = read_node_stream_from_recording(
+                        path, node_id, output_type=output_type, preserve_step_time=True
+                    )
+                else:
+                    buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
             else:
                 buffer = load_timed_buffer(path)
 
-        replay = replay_flow(buffer, output_type=output_type) @ clock  # type: ignore[arg-type]
+        replay = replay_flow(
+            buffer, output_type=output_type, timestamped=timestamped
+        ) @ clock  # type: ignore[arg-type]
         self.replace(handle, replay)
         return replay
 
@@ -699,6 +714,8 @@ class Pipeline:
         self,
         path: str | Path,
         inputs: List[TemporalFlow],
+        *,
+        timestamped: bool = False,
     ) -> None:
         """
         Configure multiple inputs to replay from one recording artifact.
@@ -709,12 +726,16 @@ class Pipeline:
         Args:
             path: Path to the recording (.mcap or .rrd)
             inputs: List of source handles to replace with recorded data
+            timestamped: Honor recorded times as in `replay(timestamped=True)`
 
         Example:
             pipe.replay_from("session.rrd", inputs=[camera, lidar])
         """
         for handle in inputs:
-            self.replay(handle, path=path)
+            if timestamped:
+                self.replay(handle, path=path, timestamped=True)
+            else:
+                self.replay(handle, path=path)
 
     def reset_stepper(self) -> None:
         """Reset in-process stepper state (buffers + Flow.reset)."""

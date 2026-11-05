@@ -304,7 +304,10 @@ def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
     assert sink2.flow.seen == [1, 2, 3]
 
 
-def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path):
+@pytest.mark.parametrize("timestamped", [False, True])
+def test_pipeline_replay_from_calls_replay_for_each_input(
+    monkeypatch, tmp_path, timestamped
+):
     pipe = Pipeline("replay_many_demo")
     src1 = Counter() @ Rate(hz=10)
     src2 = Counter() @ Rate(hz=10)
@@ -315,16 +318,18 @@ def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path)
 
     calls = []
 
-    def fake_replay(handle, *, buffer=None, path=None, clock=None, output_type=None):
-        calls.append((handle, path))
+    def fake_replay(
+        handle, *, buffer=None, path=None, clock=None, output_type=None, timestamped=False
+    ):
+        calls.append((handle, path, timestamped))
         return handle
 
     monkeypatch.setattr(pipe, "replay", fake_replay)
 
     record_path = tmp_path / "session.mcap"
-    pipe.replay_from(path=record_path, inputs=[src1, src2])
+    pipe.replay_from(path=record_path, inputs=[src1, src2], timestamped=timestamped)
 
-    assert calls == [(src1, record_path), (src2, record_path)]
+    assert calls == [(src1, record_path, timestamped), (src2, record_path, timestamped)]
 
 
 
