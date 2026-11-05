@@ -62,7 +62,10 @@ def assert_same(actual, expected):
 def test_recording_supported_values_roundtrip(tmp_path, suffix, value, output_type):
     rr = pytest.importorskip("rerun")
     path = tmp_path / ("values" + suffix)
-    sink = build_recording_sink(RecordConfig(path=path), app_id="value-roundtrip")
+    sink = build_recording_sink(
+        RecordConfig(path=path, mcap_lossless=(suffix == ".mcap")),
+        app_id="value-roundtrip",
+    )
     sink.open()
     try:
         for index, stamp in enumerate([0.1, 0.37]):
@@ -125,7 +128,7 @@ def test_mcap_restores_legacy_array_and_current_lossless_markers():
     from retriever.lib.mcap import _deserialize_dataclass, _restore_numpy, MCAPWriter
 
     original = {"image": np.empty((0, 3), dtype=np.float32), "raw": b"\x00\xff"}
-    encoded = MCAPWriter("unused.mcap")._to_json(original)
+    encoded = MCAPWriter("unused.mcap", lossless=True)._to_json(original)
     restored = _deserialize_dataclass(encoded)
     assert_same(restored, original)
     old = {"__numpy__": True, "data": [], "dtype": "float32", "shape": [0, 3]}
@@ -165,7 +168,9 @@ def test_legacy_json_schema_keeps_ordinary_marker_mappings(value):
 @pytest.mark.parametrize("value", MARKER_MAPPINGS)
 def test_new_mcap_roundtrip_keeps_literal_marker_mappings(tmp_path, value):
     path = tmp_path / "literal.mcap"
-    sink = build_recording_sink(RecordConfig(path=path), app_id="literal-mappings")
+    sink = build_recording_sink(
+        RecordConfig(path=path, mcap_lossless=True), app_id="literal-mappings"
+    )
     sink.open()
     try:
         sink.write_step(
@@ -191,7 +196,9 @@ def test_new_mcap_escapes_reserved_dataclass_fields(tmp_path):
     MarkerFields = make_dataclass("MarkerFields", [("__bytes__", str), ("label", str)])
     value = MarkerFields("YWJj", "user data")
     path = tmp_path / "fields.mcap"
-    sink = build_recording_sink(RecordConfig(path=path), app_id="literal-fields")
+    sink = build_recording_sink(
+        RecordConfig(path=path, mcap_lossless=True), app_id="literal-fields"
+    )
     sink.open()
     try:
         sink.write_step(
