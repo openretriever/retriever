@@ -156,7 +156,7 @@ Boundaries worth knowing:
 
 - `step(now=...)` is exact relative to the supplied ordered input history. `step(dt=...)` keeps logical deltas stable but anchors the first tick at the stepper's starting time.
 - Determinism concerns the discrete event path, not bitwise GPU numerics.
-- A live async run (`multiprocessing`, `dora`) does not replay its wall-clock scheduling. Its scheduling determines the captured input history; replay reproduces that history, not the original process schedule.
+- A live async run (`multiprocessing`, `dora`) chooses transport arrivals and wake times. Current recordings store node outputs and step times, not each consumer's sampled input history or the original process schedule.
 - Equal timestamps require a fixed tie order. The runtime resolves ties as last-inserted on every sampling path; use monotonic timestamps or sequence keys when multiple producers can emit at exactly the same time.
 - An event stamped after the sampling tick is not yet visible: the field reads as absent that tick and the event is delivered once `now` passes its timestamp. On distributed transports this also absorbs producer/consumer clock skew instead of erroring.
 
@@ -209,8 +209,13 @@ pipe.step(now=10.0)  # seconds, using the recording's time origin
 
 Timestamped replay publishes at most one due output per tick. It publishes nothing
 before the next recorded time and retains that output's recorded publication time.
-Times must be finite, nondecreasing seconds. MCAP stores nanoseconds on disk; its
-reader converts them to seconds. There is no automatic rebasing or sleeping.
+Times must be finite, nondecreasing seconds. Default MCAP reads convert on-disk
+nanoseconds to seconds. Timestamped replay instead uses the exact seconds stored
+in step metadata, so floating-point conversion does not delay an original tick.
+It requires matching step metadata; timestamped RRD replay is rejected. Use MCAP
+for timestamped recordings. There is no automatic rebasing or sleeping. Before
+using `step(dt=...)`, set an explicit anchor with `step(now=...)`; an unanchored first delta tick raises
+`ValueError` before any Flow is initialized.
 Equal timestamps retain recorded order and need separate ticks. Decreasing recorded
 times and backward replay ticks raise `ValueError`; reset the stepper to restart.
 Coarse ticks can delay delivery and change downstream sampling. For a timing

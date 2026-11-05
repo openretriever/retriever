@@ -669,7 +669,9 @@ class Pipeline:
         `timestamped=True` to wait for each recorded time and retain its publication
         timestamp. Times are nondecreasing seconds, with the same origin as
         `step(now=...)`. At most one due output is emitted per tick; no sleeping
-        or rebasing occurs. This mode requires in-process stepping.
+        or rebasing occurs. This mode requires in-process stepping. Anchor with
+        `step(now=...)` before advancing with `dt`. MCAP replay uses exact step
+        metadata times; timestamped RRD replay is not supported.
         """
         from retriever.rt.stepper import load_timed_buffer, replay_flow
 
@@ -693,7 +695,12 @@ class Pipeline:
             if suffix in {".mcap", ".rrd"}:
                 from retriever.recording import read_node_stream_from_recording
 
-                buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
+                if timestamped:
+                    buffer = read_node_stream_from_recording(
+                        path, node_id, output_type=output_type, preserve_step_time=True
+                    )
+                else:
+                    buffer = read_node_stream_from_recording(path, node_id, output_type=output_type)
             else:
                 buffer = load_timed_buffer(path)
 
@@ -725,7 +732,10 @@ class Pipeline:
             pipe.replay_from("session.rrd", inputs=[camera, lidar])
         """
         for handle in inputs:
-            self.replay(handle, path=path, timestamped=timestamped)
+            if timestamped:
+                self.replay(handle, path=path, timestamped=True)
+            else:
+                self.replay(handle, path=path)
 
     def reset_stepper(self) -> None:
         """Reset in-process stepper state (buffers + Flow.reset)."""

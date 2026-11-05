@@ -497,18 +497,48 @@ class MCAPReader:
         """Read all step results into a list."""
         return list(self)
 
-    def read_node_stream(self, node_id: str) -> List[Tuple[float, Any]]:
+    def read_node_stream(
+        self, node_id: str, *, preserve_step_time: bool = False
+    ) -> List[Tuple[float, Any]]:
         """
         Read time-series stream for a specific node.
 
         Args:
             node_id: Node ID to read (e.g. "camera")
+            preserve_step_time: Use exact step metadata times for timestamped replay.
+                Requires output messages to follow their step metadata in file order.
+                The default keeps nanosecond-derived message timestamps.
 
         Returns:
             List of (timestamp, value) tuples
         """
         topic = f"/retriever/flows/{node_id}/output"
         buffer: List[Tuple[float, Any]] = []
+
+        if preserve_step_time:
+            # File order pairs each output with its preceding step metadata even
+            # when multiple distinct float times map to the same nanosecond.
+            step_time = None
+            step_log_time = None
+            for schema, channel, message in self._reader.iter_messages(
+                topics=["/retriever/step", topic], log_time_order=False
+            ):
+                if channel.topic == "/retriever/step":
+                    meta = json.loads(message.data.decode("utf-8"))
+                    step_time = meta.get("now")
+                    step_log_time = message.log_time
+                else:
+                    if (
+                        not isinstance(step_time, (int, float))
+                        or step_log_time != message.log_time
+                    ):
+                        raise ValueError(
+                            "Timestamped MCAP replay requires matching step time metadata."
+                        )
+                    buffer.append(
+                        (float(step_time), _deserialize_value(message.data, schema.name))
+                    )
+            return buffer
 
         # Filter by topic
         for schema, channel, message in self._reader.iter_messages(topics=[topic]):

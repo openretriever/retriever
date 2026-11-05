@@ -140,8 +140,13 @@ def test_timestamped_mcap_replay_matches_original_fractional_ticks(tmp_path):
     from retriever.lib.mcap import MCAPReader, MCAPWriter
 
     path = tmp_path / "fractional.mcap"
-    times = [1.0812599999999999, 1.0812599999999999, 1.0812600000000001,
-             1.37, 2.8123399999999998]
+    times = [
+        1.0812599999999999,
+        1.0812599999999999,
+        1.0812600000000001,
+        1.37,
+        2.8123399999999998,
+    ]
     original = Pipeline("fractional")
     source = Source() @ Rate(hz=10)
     sink = Sink() @ Trigger("value")
@@ -219,7 +224,7 @@ def test_timestamped_dt_replay_requires_anchor_then_waits():
     try:
         with pytest.raises(ValueError, match="now=.*before.*dt"):
             pipe.step(dt=0.25)
-        assert sink.flow.seen == []
+        assert not hasattr(sink.flow, "seen")
         pipe.step(now=0.0)
         pipe.step(dt=0.25)
         assert sink.flow.seen == [1]
@@ -242,3 +247,42 @@ def test_replay_from_default_supports_existing_replay_override(tmp_path):
     path = tmp_path / "session.mcap"
     pipe.replay_from(path, inputs=[source])
     assert pipe.called == (source, path)
+
+
+def test_timestamped_replay_does_not_round_future_buffer_time():
+    pipe = Pipeline("future_precision")
+    before = 1.0812599999999999
+    due = 1.0812600000000001
+    source = replay_handle(
+        [(due, Value(value=1))], Rate(hz=10), output_type=Value, timestamped=True
+    )
+    sink = Sink() @ Trigger("value")
+    pipe.connect(source, sink, sync=Latest())
+    try:
+        pipe.step(now=before)
+        assert sink.flow.seen == []
+        pipe.step(now=due)
+        assert sink.flow.seen == [1]
+    finally:
+        pipe.close_stepper()
+
+
+def test_timestamped_mcap_rejects_missing_step_metadata(tmp_path):
+    from retriever.lib.mcap import MCAPReader, MCAPWriter
+
+    path = tmp_path / "missing_step.mcap"
+    with MCAPWriter(path) as writer:
+        channel = writer._get_channel_id(
+            "/retriever/flows/source/output", "retriever.Value", b'{"type":"object"}'
+        )
+        writer._writer.add_message(
+            channel_id=channel,
+            log_time=1000000000,
+            data=b'{"value":1}',
+            publish_time=1000000000,
+        )
+    with MCAPReader(path) as reader:
+        assert len(reader.read_node_stream("source")) == 1
+    with MCAPReader(path) as reader:
+        with pytest.raises(ValueError, match="matching step time metadata"):
+            reader.read_node_stream("source", preserve_step_time=True)

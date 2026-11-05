@@ -310,6 +310,16 @@ class PipelineStepper:
         Returns:
             StepResult with per-node input/output snapshots.
         """
+        if (
+            now is None
+            and dt is not None
+            and self._now is None
+            and any(
+                isinstance(handle.flow, _ReplaySource) and handle.flow.requires_time_anchor
+                for handle in self._flows.values()
+            )
+        ):
+            raise ValueError("Set step(now=...) before using dt with timestamped replay.")
         self._ensure_initialized()
         step_now = self._compute_now(now=now, dt=dt)
         step_token = _CURRENT_STEP_TIME.set(step_now)
@@ -416,6 +426,7 @@ class _ReplaySource:
     """Internal publication-time marker for the in-process stepper."""
 
     publication_time: Optional[float] = None
+    requires_time_anchor: bool = False
 
 
 def replay_flow(
@@ -431,6 +442,7 @@ def replay_flow(
     sleeping occurs. Equal timestamps retain input order. Publication retains
     the recorded timestamp, even when a step is late. Coarse steps can therefore
     delay delivery; replay does not recreate an asynchronous execution schedule.
+    Anchor with `Pipeline.step(now=...)` before using `dt` stepping.
 
     Notes:
     - `output_type` must be an `@io` dataclass type.
@@ -449,6 +461,8 @@ def replay_flow(
     Base = Flow[None, output_type]  # type: ignore[misc]
 
     class _ReplayFlow(_ReplaySource, Base):
+        requires_time_anchor = timestamped
+
         def reset(self) -> None:
             self._i = 0
             self.done = False

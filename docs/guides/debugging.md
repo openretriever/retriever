@@ -234,8 +234,12 @@ not by itself reproduce every live execution.
 per tick, without checking recorded timestamps. Opt into timestamped replay with
 `pipe.replay(source, path="session.mcap", timestamped=True)` and advance the
 in-process pipeline with `pipe.step(now=...)` in the recording's time origin.
-Times are finite, nondecreasing seconds; the MCAP reader converts on-disk
-nanoseconds to seconds. This mode neither rebases time nor sleeps. It emits at most
+Times are finite, nondecreasing seconds. Default MCAP reads convert on-disk
+nanoseconds to seconds. Timestamped replay uses exact seconds from matching
+step metadata, so it does not round a sample past its original tick. It rejects
+missing step metadata and RRD input; use MCAP for timestamped recordings. Before
+using `step(dt=...)`, set the time origin with `step(now=...)`. An unanchored first
+delta tick raises `ValueError` before Flow initialization. This mode neither rebases time nor sleeps. It emits at most
 one due output per tick and keeps the recorded publication timestamp, subject to
 existing per-port timestamp fields. Equal times retain recorded order and require
 separate ticks. Decreasing recorded times or backward replay ticks raise
