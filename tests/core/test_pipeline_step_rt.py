@@ -270,7 +270,7 @@ def test_pipeline_run_record_rejects_authored_host_affinity(tmp_path, monkeypatc
     assert not calls
 
 
-@pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
+@pytest.mark.parametrize("suffix", [".mcap"])
 def test_pipeline_replay_supports_session_recordings(tmp_path, suffix):
     if suffix == ".rrd":
         pytest.importorskip("rerun")
@@ -328,7 +328,7 @@ def test_pipeline_replay_from_calls_replay_for_each_input(monkeypatch, tmp_path)
 
 
 
-@pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
+@pytest.mark.parametrize("suffix", [".mcap"])
 def test_session_recordings_preserve_optional_none_outputs(tmp_path, suffix):
     if suffix == ".rrd":
         pytest.importorskip("rerun")

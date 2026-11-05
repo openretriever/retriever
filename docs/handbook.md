@@ -290,9 +290,9 @@ The recorder advances logical steps at simulation speed, so `duration=...` limit
 pipe.record("session.rrd", steps=50, dt=0.1, visualize=True)
 ```
 
-Live Rerun viewing is a local-desktop convenience. On multiprocessing and Dora backends, Retriever reuses one shared recording id so worker logs land in the same viewer session when the viewer is reachable. For portable inspection and replay, prefer saved `.rrd` / `.mcap` artifacts.
+Live Rerun viewing is a local-desktop convenience. On multiprocessing and Dora backends, Retriever reuses one shared recording id so worker logs land in the same viewer session when the viewer is reachable. Use `.rrd` for visualization and `.mcap` for typed replay.
 
-This generates `session.rrd` containing all flow I/O. If you also want an interchange artifact, mirror to `.mcap`:
+This generates `session.rrd` for visualization. To read or replay output snapshots, record an explicit `.mcap` mirror:
 
 ```py
 from retriever import RecordConfig
@@ -305,7 +305,7 @@ To replay data into a pipeline (e.g. replacing a camera source), use `replay()`:
 
 ```py
 # Inject recorded data into 'camera' flow
-pipe.replay(camera, path="session.rrd")  # `.mcap` works too
+pipe.replay(camera, path="session.mcap")
 pipe.step(dt=0.1)
 pipe.close_stepper()
 ```
@@ -381,7 +381,7 @@ pixi run demo-webcam-detection
 pixi run demo-webcam-detection-mp-rerun
 pixi run demo-webcam-detection-dora-rerun
 pixi run demo-webcam-record
-pixi run demo-webcam-replay-rrd
+pixi run demo-webcam-replay-mcap
 pixi run demo-webcam-replay-mcap
 ```
 

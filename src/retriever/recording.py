@@ -8,8 +8,8 @@ The intent is:
 - keep runtime `StepResult` / tuple-buffer semantics unchanged
 - make persisted recording targets pluggable
 
-`.mcap` remains the mirror/interchange format. `.rrd` is the native Rerun
-artifact, and Retriever session recordings in either format can be replayed.
+MCAP stores typed outputs for readback and replay. Rerun `.rrd` files are
+visualization artifacts only; record an explicit MCAP mirror when replay is needed.
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from __future__ import annotations
 import base64
 import io
 import json
-import zlib
 from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path
 try:
@@ -32,8 +31,6 @@ from retriever.types.schema import ClockDomain, SchemaRef, StreamId
 from retriever.registry.types import resolve_schema_ref
 
 RecordingFormat = Literal["mcap", "rrd"]
-_RRD_REPLAY_CODEC = "retriever.json-zlib-v1"
-_RRD_REPLAY_ROOT = "retriever_recording"
 
 
 def detect_recording_format(path: str | Path) -> Optional[RecordingFormat]:
@@ -210,7 +207,6 @@ class RrdRecordingSink:
         self.app_id = app_id
         self.auto_open = auto_open
         self._manager = None
-        self._written_specs: set[str] = set()
 
     def open(self) -> None:
         from retriever.lib.rerun import RerunConfig, RerunManager
@@ -230,23 +226,12 @@ class RrdRecordingSink:
         if self._manager is None:
             raise RuntimeError("RRD recording sink is not open")
         self._manager.log_step_result(result, step_idx)
-        self._manager.set_time(float(getattr(result, "now", 0.0) or 0.0), step_idx)
-        for spec in infer_output_stream_specs(result):
-            if spec.node_id in self._written_specs:
-                continue
-            payload = np.frombuffer(_serialize_rrd_stream_spec(spec), dtype=np.uint8).copy()
-            self._manager.log(_rrd_replay_spec_path(str(spec.node_id)), payload)
-            self._written_specs.add(spec.node_id)
-        for node_id, output in (getattr(result, "outputs", None) or {}).items():
-            payload = np.frombuffer(_serialize_rrd_replay_value(output), dtype=np.uint8).copy()
-            self._manager.log(_rrd_replay_payload_path(str(node_id)), payload)
 
     def close(self) -> None:
         if self._manager is None:
             return
         self._manager.cleanup()
         self._manager = None
-        self._written_specs.clear()
 
 
 class McapRecordingReader:
@@ -292,141 +277,6 @@ class McapRecordingReader:
         return None
 
 
-# TODO(rerun-latest): this `.rrd` reader depends on rerun's dataframe query API
-# (rr.dataframe / Recording.view), which rerun deprecated in 0.28 and removed by
-# 0.29 (absent in 0.34), so the `recording` extra pins rerun-sdk<0.24. The write/
-# viz path still works on latest; migrate replay to the rerun-independent MCAP
-# reader below, then lift the pin. Tracked in pyproject `recording` extra.
-def _load_rrd_recording(path: str | Path) -> Any:
-    """Open an `.rrd` recording, tolerating rerun-sdk's relocation of the loader."""
-    try:
-        import rerun as rr
-    except ImportError:
-        raise ImportError("rerun-sdk is required to replay from `.rrd` recordings.") from None
-
-    loader = getattr(getattr(rr, "recording", None), "load_recording", None)
-    if loader is None:
-        loader = rr.dataframe.load_recording
-    return loader(str(path))
-
-
-def _read_rrd_columns(recording: Any) -> dict[str, Any]:
-    """Select every column from a recording view.
-
-    `Recording.view()` accepts different keyword arguments across rerun-sdk
-    releases: `include_indicator_columns` was removed in 0.28. Try the richest
-    signature first and degrade only on an unknown-keyword error, so a single
-    build works against both old and new rerun.
-    """
-    base = {"index": "log_time", "contents": "/**"}
-    attempts = (
-        {"include_semantically_empty_columns": True, "include_indicator_columns": True},
-        {"include_semantically_empty_columns": True},
-        {},
-    )
-    for extra in attempts:
-        try:
-            view = recording.view(**base, **extra)
-        except TypeError as exc:
-            if "unexpected keyword argument" not in str(exc):
-                raise
-            continue
-        return view.select().read_all().to_pydict()
-
-    raise RuntimeError(
-        "Unsupported rerun-sdk: `Recording.view()` rejected every known argument set."
-    )
-
-
-class RrdRecordingReader:
-    """Read node streams from Rerun `.rrd` recordings."""
-
-    def __init__(self, path: str | Path):
-        self.path = Path(path)
-
-    def list_node_ids(self) -> list[str]:
-        columns = _read_rrd_columns(_load_rrd_recording(self.path))
-        prefix = f"/{_RRD_REPLAY_ROOT}/flows/"
-        payload_suffix = "/output/payload:TensorData"
-        spec_suffix = "/spec:TensorData"
-        node_ids = []
-        for key in columns:
-            if key.startswith(prefix) and key.endswith(payload_suffix):
-                node_ids.append(key[len(prefix) : -len(payload_suffix)])
-            if key.startswith(prefix) and key.endswith(spec_suffix):
-                node_ids.append(key[len(prefix) : -len(spec_suffix)])
-        return sorted(set(node_ids))
-
-    def read_node_stream(
-        self,
-        node_id: str,
-        *,
-        output_type: Optional[Type[Any]] = None,
-    ) -> list[tuple[float, Any]]:
-        recorded_node_id = _resolve_recorded_node_id(node_id, self.list_node_ids())
-
-        columns = _read_rrd_columns(_load_rrd_recording(self.path))
-        payload_key = f"/{_rrd_replay_payload_path(recorded_node_id)}:TensorData"
-        if payload_key not in columns:
-            raise RuntimeError(
-                f"No replay payload found for node `{recorded_node_id}` in `{self.path}`. "
-                "Re-record with the current build to enable generic `.rrd` replay."
-            )
-
-        raw_payloads = columns.get(payload_key) or []
-        raw_steps = columns.get("step") or []
-        raw_times = columns.get("retriever_time") or columns.get("log_time") or []
-        row_count = max((len(col) for col in columns.values() if isinstance(col, list)), default=0)
-
-        grouped: dict[Any, dict[str, Any]] = {}
-        for idx in range(row_count):
-            step_value = raw_steps[idx] if idx < len(raw_steps) else idx
-            group = grouped.setdefault(step_value, {"time": None, "payload": None})
-
-            payload_cell = _unwrap_rrd_cell(raw_payloads[idx]) if idx < len(raw_payloads) else None
-            if payload_cell not in (None, []):
-                group["payload"] = payload_cell
-                if idx < len(raw_times):
-                    group["time"] = raw_times[idx]
-
-        buffer: list[tuple[float, Any]] = []
-        for step_idx, group in grouped.items():
-            payload_cell = group["payload"]
-            if payload_cell in (None, []):
-                continue
-            if not isinstance(payload_cell, dict) or "buffer" not in payload_cell:
-                raise RuntimeError(
-                    f"Malformed replay payload for node `{recorded_node_id}` in `{self.path}`."
-                )
-
-            value = _deserialize_rrd_replay_value(bytes(payload_cell["buffer"]))
-            value = _hydrate_recorded_value(value, output_type)
-            ts = _coerce_recording_time(group["time"], float(step_idx) if isinstance(step_idx, int) else float(len(buffer)))
-            buffer.append((ts, value))
-
-        if not buffer:
-            raise RuntimeError(
-                f"Replay payload for node `{recorded_node_id}` in `{self.path}` contained no steps."
-            )
-        return buffer
-
-    def get_stream_spec(self, node_id: str) -> Optional[RecordingStreamSpec]:
-        available = self.list_node_ids()
-        recorded_node_id = _resolve_recorded_node_id(node_id, available)
-
-        columns = _read_rrd_columns(_load_rrd_recording(self.path))
-        spec_key = f"/{_rrd_replay_spec_path(recorded_node_id)}:TensorData"
-        raw_specs = columns.get(spec_key) or []
-        for cell in raw_specs:
-            payload_cell = _unwrap_rrd_cell(cell)
-            if payload_cell in (None, []):
-                continue
-            if not isinstance(payload_cell, dict) or "buffer" not in payload_cell:
-                continue
-            return _deserialize_rrd_stream_spec(bytes(payload_cell["buffer"]))
-        return None
-
-
 def build_recording_artifacts(record_config: Any) -> tuple[RecordingArtifactSpec, ...]:
     """Resolve persisted artifacts from a RecordConfig-like object."""
     seen: set[Path] = set()
@@ -464,15 +314,15 @@ def build_recording_sink(record_config: Any, *, app_id: str) -> CompositeRecordi
 
 
 def open_recording_reader(path: str | Path) -> RecordingReader:
-    """Open a recording reader for `.mcap` or `.rrd`."""
+    """Open an MCAP reader without importing the visualization SDK."""
     path = Path(path)
     fmt = detect_recording_format(path)
     if fmt == "mcap":
         return McapRecordingReader(path)
     if fmt == "rrd":
-        return RrdRecordingReader(path)
+        raise ValueError("RRD is visualization-only. Replay the explicitly recorded MCAP (.mcap) artifact instead.")
     raise ValueError(
-        f"Unsupported recording path: {path}. Supported replay/view formats are .mcap and .rrd."
+        f"Unsupported recording path: {path}. Supported replay format is .mcap."
     )
 
 
@@ -513,36 +363,6 @@ def view_recording(path: str | Path) -> None:
     )
 
 
-def _rrd_replay_payload_path(node_id: str) -> str:
-    return f"{_RRD_REPLAY_ROOT}/flows/{node_id}/output/payload"
-
-
-def _rrd_replay_spec_path(node_id: str) -> str:
-    return f"{_RRD_REPLAY_ROOT}/flows/{node_id}/spec"
-
-
-def _serialize_rrd_replay_value(value: Any) -> bytes:
-    envelope = {
-        "codec": _RRD_REPLAY_CODEC,
-        "value": _encode_recorded_value(value),
-    }
-    raw = json.dumps(envelope, separators=(",", ":")).encode("utf-8")
-    return zlib.compress(raw, level=3)
-
-
-def _serialize_rrd_stream_spec(spec: RecordingStreamSpec) -> bytes:
-    raw = json.dumps(_stream_spec_to_json(spec), separators=(",", ":")).encode("utf-8")
-    return zlib.compress(raw, level=3)
-
-
-def _deserialize_rrd_stream_spec(payload: bytes) -> RecordingStreamSpec:
-    try:
-        data = json.loads(zlib.decompress(payload).decode("utf-8"))
-    except Exception as exc:
-        raise RuntimeError("Could not decode Retriever stream spec from `.rrd`.") from exc
-    return _stream_spec_from_json(data)
-
-
 def _stream_spec_to_json(spec: RecordingStreamSpec) -> dict[str, Any]:
     return {
         "stream_id": str(spec.stream_id),
@@ -569,47 +389,6 @@ def _stream_spec_from_json(data: dict[str, Any]) -> RecordingStreamSpec:
             version=str(schema_data.get("version", "v1")),
             encoding=str(schema_data.get("encoding", "python")),
         ),
-    )
-
-
-def _deserialize_rrd_replay_value(payload: bytes) -> Any:
-    try:
-        envelope = json.loads(zlib.decompress(payload).decode("utf-8"))
-    except Exception as exc:
-        raise RuntimeError(
-            "Could not decode Retriever replay payload from `.rrd`. "
-            "Re-record with the current build to enable generic `.rrd` replay."
-        ) from exc
-
-    if envelope.get("codec") != _RRD_REPLAY_CODEC:
-        raise RuntimeError(
-            f"Unsupported `.rrd` replay payload codec: {envelope.get('codec')!r}. "
-            f"Expected `{_RRD_REPLAY_CODEC}`."
-        )
-    return _restore_recorded_value(envelope.get("value"))
-
-
-def _encode_recorded_value(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        buf = io.BytesIO()
-        np.save(buf, value, allow_pickle=False)
-        return {
-            "__numpy__": True,
-            "npy_b64": base64.b64encode(buf.getvalue()).decode("ascii"),
-        }
-    if is_dataclass(value) and not isinstance(value, type):
-        return {field.name: _encode_recorded_value(getattr(value, field.name)) for field in fields(value)}
-    if isinstance(value, (list, tuple)):
-        return [_encode_recorded_value(item) for item in value]
-    if isinstance(value, dict):
-        return {key: _encode_recorded_value(item) for key, item in value.items()}
-    if isinstance(value, bytes):
-        return {"__bytes__": base64.b64encode(value).decode("ascii")}
-    if isinstance(value, (str, int, float, bool)) or value is None:
-        return value
-    raise TypeError(
-        f"Unsupported value for session recording: {type(value)!r}. "
-        "Use `@io` dataclasses, numpy arrays, or JSON-like values."
     )
 
 
@@ -690,27 +469,6 @@ def _hydrate_recorded_value(value: Any, output_type: Optional[Type[Any]]) -> Any
     return restored
 
 
-def _unwrap_rrd_cell(value: Any) -> Any:
-    current = value
-    while isinstance(current, list) and len(current) == 1:
-        current = current[0]
-    return current
-
-
-def _coerce_recording_time(value: Any, default: float) -> float:
-    if value is None:
-        return default
-    if hasattr(value, "timestamp"):
-        try:
-            return float(value.timestamp())
-        except Exception:
-            pass
-    try:
-        return float(value)
-    except Exception:
-        return default
-
-
 def _resolve_recorded_node_id(requested_node_id: str, available_node_ids: Sequence[str]) -> str:
     if requested_node_id in available_node_ids:
         return requested_node_id
@@ -738,7 +496,6 @@ __all__ = [
     "RecordingReader",
     "RecordingSink",
     "RecordingStreamSpec",
-    "RrdRecordingReader",
     "build_recording_artifacts",
     "build_recording_sink",
     "detect_recording_format",

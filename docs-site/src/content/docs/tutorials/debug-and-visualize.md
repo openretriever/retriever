@@ -201,7 +201,7 @@ retriever run record
 retriever run replay
 ```
 
-The record command writes replayable artifacts:
+The record command writes a Rerun visualization and an MCAP replay artifact:
 
 ```text
 logs/perception.rrd

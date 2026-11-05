@@ -101,7 +101,7 @@ This split is intentional: debug the graph in one process first, then move the s
 
     ```bash
     pixi run demo-webcam-record
-    pixi run demo-webcam-replay-rrd
+    pixi run demo-webcam-replay-mcap
     ```
 
 ## Rules Of Thumb

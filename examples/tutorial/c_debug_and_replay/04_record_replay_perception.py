@@ -10,7 +10,7 @@ This is a stepper-first workflow:
 
 Run:
   pixi run demo-webcam-record
-  pixi run demo-webcam-replay-rrd
+  pixi run demo-webcam-replay-mcap
   pixi run demo-webcam-replay-mcap
 """
 
@@ -69,8 +69,8 @@ def parse_args() -> argparse.Namespace:
     replay.add_argument(
         "--recording",
         type=Path,
-        default=Path("logs/perception.rrd"),
-        help="Input recording path (.rrd or .mcap).",
+        default=Path("logs/perception.mcap"),
+        help="Input MCAP recording path for replay.",
     )
     replay.add_argument("--steps", type=int, default=10, help="Max number of step iterations")
     replay.add_argument("--dt", type=float, default=0.05, help="Logical dt used for timestamps (seconds)")

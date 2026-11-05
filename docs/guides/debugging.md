@@ -217,7 +217,7 @@ Library helpers (stepper-first):
 Perception example:
 - `examples/tutorial/c_debug_and_replay/04_record_replay_perception.py`:
   - Record: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record ...`
-  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --visualize stdout`
+  - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --visualize stdout`
 
 The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
 Replay accepts either artifact.

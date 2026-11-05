@@ -18,5 +18,5 @@ If you want one longer walkthrough first, read:
 ## What To Expect
 
 - Use the stepper to isolate logic errors.
-- Record `.rrd` / `.mcap` artifacts and replay them deterministically.
+- Record `.rrd` for visualization and `.mcap` for typed replay.
 - Move from local debugging to incident-response drills without changing the core workflow.

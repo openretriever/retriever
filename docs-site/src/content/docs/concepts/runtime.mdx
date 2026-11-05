@@ -195,4 +195,23 @@ retriever run record-replay     # record a run, then replay it step-for-step
 retriever run incident-replay   # replay a captured incident and diff the diagnosis
 ```
 
-Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay drives the same graph from the recording instead of live inputs. See [Debug and Visualize](/tutorials/debug-and-visualize/) for the full record/replay walkthrough.
+Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay reads MCAP outputs into the graph instead of live inputs. See [Debug and Visualize](/tutorials/debug-and-visualize/) for the full record/replay walkthrough.
+
+## Recording formats and SDK versions
+
+Use MCAP for typed readback and replay. Use Rerun recordings for visualization.
+The recording extra supports Rerun SDK 0.23.4 and later; logging is checked with
+0.23.4 and 0.42.0. Version 0.21.0 lacks the scalar archetype used by the logger.
+
+```python
+from retriever.config import RecordConfig
+
+pipe.record(RecordConfig(path="session.mcap", mirrors=("session.rrd",)), steps=50)
+pipe.replay(camera, path="session.mcap")
+```
+
+RRD readback through the SDK dataframe API has been removed. Existing standalone
+RRD files remain viewable in a compatible Rerun viewer, but Core does not read
+them as replay input. Record an explicit MCAP artifact for replay; Core does not
+infer a matching file or convert old RRD recordings. The tutorial replay command
+now defaults to its recorded MCAP mirror.

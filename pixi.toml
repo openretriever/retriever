@@ -105,7 +105,7 @@ retriever-core = { path = ".", editable = true, extras = [
     "web",
     "recording",
 ] }
-rerun-sdk = ">=0.21.0" # 0.21+ for better MCAP support
+rerun-sdk = ">=0.23.4" # Visualization SDK; replay uses MCAP
 mcap = "*" # MCAP recording support
 google-genai = "*" # VLM Support
 build = "*" # For building wheels
@@ -176,7 +176,6 @@ demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_executi
 demo-webcam-stepper = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
 demo-webcam-window = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 200 --sleep 0.05 --show-window"
 demo-webcam-record = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --camera-mode mock --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10"
-demo-webcam-replay-rrd = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10"
 demo-webcam-replay-mcap = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10"
 demo-stepper = "python -m examples.tutorial.c_debug_and_replay.01_debug_stepper"
 demo-perception-stepper = "python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper"
@@ -187,7 +186,7 @@ docs-tutorial-perception-html = "python scripts/docs/render_tutorial_graph.py pe
 docs-tutorial-composable-html = "python scripts/docs/render_tutorial_graph.py composable --out artifacts/tutorial_composable.html"
 demo-closed-loop-env = "python -m examples.tutorial.d_closed_loop_state_feedback.01_closed_loop_env"
 demo-stateful-reset = "python -m examples.tutorial.d_closed_loop_state_feedback.04_stateful_flow_reset"
-demo-record-replay = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10 && python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10"
+demo-record-replay = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10 && python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10"
 demo-symbolic-planning = "python -m examples.tutorial.d_closed_loop_state_feedback.02_symbolic_planning"
 demo-feedback-intro = "python -m examples.tutorial.d_closed_loop_state_feedback.07_feedback_intro"
 demo-belief-updater = "python -m examples.tutorial.d_closed_loop_state_feedback.05_belief_updater"

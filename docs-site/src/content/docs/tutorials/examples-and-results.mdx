@@ -191,7 +191,7 @@ retriever run replay
   Frame 8: 1 objects - [('blue_object', '0.95')]
   Frame 9: 1 objects - [('blue_object', '0.95')]
   Frame 10: 1 objects - [('blue_object', '0.95')]
-[Replay] ran 10 steps from logs/perception.rrd
+[Replay] ran 10 steps from logs/perception.mcap
 ```
 
 <p class="notebook-takeaway"><strong>What this teaches:</strong> a run becomes a portable artifact (<code>.rrd</code> and <code>.mcap</code>). Replay reproduces the exact trace — watch the red-object confidence decay from 0.95 to 0.66 and then drop out at frame 7 — so you can debug downstream logic without the original sensor timing. This is functional determinism made concrete: the same recorded input yields the same output.</p>
