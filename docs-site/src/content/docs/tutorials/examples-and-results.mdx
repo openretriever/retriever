@@ -172,11 +172,14 @@ retriever run record
 [Recording] mock frame mode was used for deterministic artifact generation.
 ```
 
-<p class="notebook-label">Command: replay the recording</p>
+<p class="notebook-label">Command: replay the explicit MCAP mirror</p>
 
 ```bash
-retriever run replay
+retriever run replay -- --recording logs/perception.mcap
 ```
+
+This example selects MCAP explicitly. The bare `retriever run replay` command
+still selects RRD, which needs an SDK with the legacy dataframe reader.
 
 <p class="notebook-label output-label">Output</p>
 
