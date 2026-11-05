@@ -269,6 +269,10 @@ class Synchronized(Trigger):
     
     The multiprocessing and Dora schedulers require exact timestamp equality.
     They currently store but do not apply ``tolerance`` when matching records.
+    Matched timestamps execute at most once, in increasing order; records at or
+    before the last execution are skipped. Multiprocessing also skips timestamps
+    at or below zero, while Dora accepts them. The in-process backend and manual
+    stepping use trigger arrival checks instead of this timestamp barrier.
     """
     tolerance: float
     

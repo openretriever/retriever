@@ -56,9 +56,12 @@ Tip: This run is using mock frames. Use --camera-mode real to require a live web
 
 `Synchronized("a", "b")` from `retriever.flow.clock` waits for records with
 exactly equal timestamps in all named fields in the multiprocessing and Dora
-schedulers. Each matching timestamp executes once. The `tolerance` argument
-is stored but is currently ignored by these schedulers. Manual `pipe.step()`
-uses trigger arrival checks and does not provide this timestamp barrier.
+schedulers. Each matched timestamp executes at most once, in increasing order.
+Records at or before the last executed timestamp are skipped. The multiprocessing
+scheduler also skips timestamps at or below zero; Dora accepts them. The
+`tolerance` argument is stored but is currently ignored by these schedulers.
+The in-process backend and manual `pipe.step()` use trigger arrival checks and
+do not provide this timestamp barrier.
 
 ## What happens at a firing time
 
