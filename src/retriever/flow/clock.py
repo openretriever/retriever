@@ -267,7 +267,12 @@ class Synchronized(Trigger):
     """
     Synchronized execution - executes only when ALL specified fields have matching timestamps.
     
-    This acts like an AND gate on input arrival, enforced by timestamp equality (within tolerance).
+    The multiprocessing and Dora schedulers require exact timestamp equality.
+    They currently store but do not apply ``tolerance`` when matching records.
+    Matched timestamps execute at most once, in increasing order; records at or
+    before the last execution are skipped. Multiprocessing also skips timestamps
+    at or below zero, while Dora accepts them. The in-process backend and manual
+    stepping use trigger arrival checks instead of this timestamp barrier.
     """
     tolerance: float
     
@@ -275,10 +280,8 @@ class Synchronized(Trigger):
         self,
         *on_fields: str,
         tolerance: float = 1e-5,
-        fields: Optional[Any] = None,
-        on: Optional[Any] = None,
     ):
-        super().__init__(*on_fields, fields=fields, on=on)
+        super().__init__(*on_fields)
         self.tolerance = tolerance
         
     def __repr__(self) -> str:

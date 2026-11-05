@@ -252,6 +252,17 @@ class ActionChunking(Chunking):
 
 ## 6. Runtime Details
 
+### Synchronized clock timestamps
+
+`Synchronized("a", "b")` from `retriever.flow.clock` waits for records with
+exactly equal timestamps in all named fields in the multiprocessing and Dora
+schedulers. Each matched timestamp executes at most once, in increasing order.
+Records at or before the last executed timestamp are skipped. The multiprocessing
+scheduler also skips timestamps at or below zero; Dora accepts them. The
+`tolerance` argument is stored but is currently ignored by these schedulers.
+The in-process backend and manual `pipe.step()` use trigger arrival checks and
+do not provide this timestamp barrier.
+
 ### Execution Step (`sample → step → publish`)
 
 At each step `now`:
