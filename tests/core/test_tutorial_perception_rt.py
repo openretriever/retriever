@@ -118,8 +118,14 @@ def test_record_replay_cli_roundtrip_emits_rrd_and_mcap(tmp_path: Path) -> None:
         '--sleep', '0.0',
         '--visualize', 'stdout',
     )
-    assert replay_rrd.returncode != 0
-    assert "MCAP" in replay_rrd.stderr
+    import rerun as rr
+    if hasattr(rr, "dataframe"):
+        assert replay_rrd.returncode == 0, replay_rrd.stderr
+    else:
+        assert replay_rrd.returncode != 0
+        assert "MCAP" in replay_rrd.stderr
+        assert rr.__version__ in replay_rrd.stderr
+        assert str(rrd_path) in replay_rrd.stderr
 
     replay_mcap = _run_script(
         'examples/tutorial/c_debug_and_replay/04_record_replay_perception.py',

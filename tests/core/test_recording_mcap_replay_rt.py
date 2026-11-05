@@ -17,8 +17,12 @@ class Sample:
     image: np.ndarray | None = None
 
 
-def test_rrd_reader_explains_mcap_replay_path(tmp_path):
-    with pytest.raises(ValueError, match="MCAP"):
+def test_rrd_reader_explains_mcap_replay_path(tmp_path, monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    monkeypatch.setitem(sys.modules, "rerun", SimpleNamespace(__version__="0.42.0"))
+    with pytest.raises(RuntimeError, match="MCAP"):
         open_recording_reader(tmp_path / "session.rrd")
 
 

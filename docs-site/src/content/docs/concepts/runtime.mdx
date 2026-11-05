@@ -199,19 +199,32 @@ Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay reads MCAP ou
 
 ## Recording formats and SDK versions
 
-Use MCAP for typed readback and replay. Use Rerun recordings for visualization.
-The recording extra supports Rerun SDK 0.23.4 and later; logging is checked with
-0.23.4 and 0.42.0. Version 0.21.0 lacks the scalar archetype used by the logger.
+The recording extra supports `rerun-sdk>=0.23.4,<0.43`. Tests cover 0.23.4 and
+0.42.0. MCAP readback does not import Rerun. New MCAP outputs use an explicit
+codec schema that preserves array dtype and shape, bytes, tuples, and literal
+mapping keys; older JSON and array payloads remain readable.
+RRD recording still writes both visual
+entities and typed replay payloads on these SDKs.
+
+RRD replay remains available when the installed SDK exposes `rr.dataframe`
+(legacy SDKs below 0.29). Newer SDKs can record and view RRD but cannot read it
+through this API. The error names the installed version and file path, and gives
+two recovery paths: use a recorded MCAP mirror, or install `rerun-sdk<0.29` to read
+the RRD directly. Legacy RRD readback retains its existing time conversion and
+sequence-index fallback; use MCAP when recorded step timestamps matter.
 
 ```python
 from retriever.config import RecordConfig
 
-pipe.record(RecordConfig(path="session.mcap", mirrors=("session.rrd",)), steps=50)
+pipe.record(RecordConfig(path="session.rrd", mirrors=("session.mcap",)), steps=50)
 pipe.replay(camera, path="session.mcap")
 ```
 
-RRD readback through the SDK dataframe API has been removed. Existing standalone
-RRD files remain viewable in a compatible Rerun viewer, but Core does not read
-them as replay input. Record an explicit MCAP artifact for replay; Core does not
-infer a matching file or convert old RRD recordings. The tutorial replay command
-now defaults to its recorded MCAP mirror.
+Mirrors are explicit. Recording an RRD alone does not create an MCAP, and replay
+does not infer a sibling file. `retriever run replay` keeps its RRD default;
+`retriever run replay -- --recording logs/perception.mcap` selects MCAP on any
+supported SDK. The `demo-webcam-replay-rrd` task remains available with the same
+SDK-dependent readback behavior.
+
+Current viewers open RRD files produced with SDK 0.23 and later. Older recordings
+may need the viewer version that produced them or another compatible older viewer.

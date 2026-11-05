@@ -10,7 +10,7 @@ This is a stepper-first workflow:
 
 Run:
   pixi run demo-webcam-record
-  pixi run demo-webcam-replay-mcap
+  pixi run demo-webcam-replay-rrd   # requires the legacy SDK dataframe API
   pixi run demo-webcam-replay-mcap
 """
 

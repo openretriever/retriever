@@ -201,12 +201,25 @@ retriever run record
 retriever run replay
 ```
 
-The record command writes a Rerun visualization and an MCAP replay artifact:
+The tutorial explicitly records a Rerun visualization and an MCAP replay artifact:
 
 ```text
 logs/perception.rrd
 logs/perception.mcap
 ```
+
+`retriever run replay` retains its RRD default. RRD readback works when the
+installed SDK exposes the legacy dataframe API (below 0.29). With newer SDKs,
+select the explicit MCAP artifact:
+
+```bash
+retriever run replay -- --recording logs/perception.mcap
+```
+
+The error for unsupported RRD readback gives the SDK version, file path, and
+recovery steps. Recording does not create a mirror unless requested. Current
+viewers open RRD files from SDK 0.23 onward; older files may need their producing
+or compatible older viewer.
 
 Replay consumes recorded events instead of relying on live camera timing. Use this when behavior changes between runs, when you need to share evidence, or when downstream logic should be debugged without a sensor attached.
 

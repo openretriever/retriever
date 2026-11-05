@@ -79,7 +79,7 @@ That gives you two complementary artifacts:
 Replay keeps the input fixed while you change code.
 
 ```bash
-pixi run demo-webcam-replay-mcap
+pixi run demo-webcam-replay-rrd   # requires the legacy SDK dataframe API
 pixi run demo-webcam-replay-mcap
 ```
 

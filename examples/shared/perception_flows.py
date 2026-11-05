@@ -527,6 +527,11 @@ def load_camera_buffer_from_mcap(path: Path) -> list[tuple[float, CameraData]]:
 
 
 def load_camera_buffer_from_rrd(path: Path) -> list[tuple[float, CameraData]]:
+    """Read camera payloads through the optional legacy Rerun dataframe API.
+
+    New SDKs raise a version-specific error with explicit MCAP mirror and
+    legacy SDK recovery steps. No sibling file is inferred.
+    """
     return _load_camera_buffer_generic(path)
 
 

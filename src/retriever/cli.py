@@ -36,7 +36,7 @@ RUN_TARGETS: dict[str, str] = {
     "graph-perception": "docs-tutorial-perception-html",
     "graph-composable": "docs-tutorial-composable-html",
     "record": "demo-webcam-record",
-    "replay": "demo-webcam-replay-mcap",
+    "replay": "demo-webcam-replay-rrd",
     "incident-replay": "demo-incident-replay",
     "docs": "docs-serve",
     "docs-build": "docs-build",

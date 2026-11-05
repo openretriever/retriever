@@ -282,3 +282,15 @@ def test_cli_hub_parse_prints_json(capsys) -> None:
         "ref": "openretriever/hello-world:HelloFlow",
         "version": None,
     }
+
+
+
+def test_cli_replay_keeps_rrd_default_and_accepts_explicit_formats():
+    assert build_run_command(parse_command(["run", "replay"])) == [
+        "pixi", "run", "demo-webcam-replay-rrd"
+    ]
+    for suffix in ["rrd", "mcap"]:
+        path = "logs/perception." + suffix
+        assert build_run_command(parse_command([
+            "run", "replay", "--", "--recording", path
+        ])) == ["pixi", "run", "demo-webcam-replay-rrd", "--recording", path]

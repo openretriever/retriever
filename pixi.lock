@@ -9278,7 +9278,7 @@ packages:
   - pynput ; extra == 'demo'
   - mcap>=1.0.0 ; extra == 'recording'
   - numpy ; extra == 'recording'
-  - rerun-sdk>=0.23.4 ; extra == 'recording'
+  - rerun-sdk>=0.23.4,<0.43 ; extra == 'recording'
   - mcp>=1.25.0,<2 ; extra == 'mcp'
   - mkdocs>=1.6 ; extra == 'docs'
   - mkdocs-material>=9.5 ; extra == 'docs'

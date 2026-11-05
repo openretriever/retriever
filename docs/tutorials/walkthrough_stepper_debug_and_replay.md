@@ -42,7 +42,7 @@ pixi run python -m examples.tutorial.c_debug_and_replay.04_record_replay_percept
 ## Phase 3: Replay the Same Session
 
 ```bash
-pixi run demo-webcam-replay-mcap
+pixi run demo-webcam-replay-rrd   # requires the legacy SDK dataframe API
 pixi run demo-webcam-replay-mcap
 ```
 

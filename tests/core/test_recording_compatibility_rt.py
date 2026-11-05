@@ -1,4 +1,5 @@
 """Lossless recording values and SDK-dependent RRD readback."""
+
 from dataclasses import dataclass, fields, is_dataclass
 from typing import Any
 
@@ -52,8 +53,11 @@ def assert_same(actual, expected):
         assert actual == expected
 
 
-@pytest.mark.parametrize("value,output_type", CASES,
-                         ids=["nested", "tuple", "dict", "image", "bytes", "empty"])
+@pytest.mark.parametrize(
+    "value,output_type",
+    CASES,
+    ids=["nested", "tuple", "dict", "image", "bytes", "empty"],
+)
 @pytest.mark.parametrize("suffix", [".mcap", ".rrd"])
 def test_recording_supported_values_roundtrip(tmp_path, suffix, value, output_type):
     rr = pytest.importorskip("rerun")
@@ -62,8 +66,12 @@ def test_recording_supported_values_roundtrip(tmp_path, suffix, value, output_ty
     sink.open()
     try:
         for index, stamp in enumerate([0.1, 0.37]):
-            sink.write_step(StepResult(now=stamp, executed=["Source"], inputs={},
-                                       outputs={"Source": value}), index)
+            sink.write_step(
+                StepResult(
+                    now=stamp, executed=["Source"], inputs={}, outputs={"Source": value}
+                ),
+                index,
+            )
     finally:
         sink.close()
     assert path.stat().st_size > 0
@@ -77,7 +85,9 @@ def test_recording_supported_values_roundtrip(tmp_path, suffix, value, output_ty
         assert "RecordConfig" in message and "mirrors=" in message
         assert "rerun-sdk<0.29" in message
         return
-    rows = open_recording_reader(path).read_node_stream("Source", output_type=output_type)
+    rows = open_recording_reader(path).read_node_stream(
+        "Source", output_type=output_type
+    )
     # Legacy RRD readback retains its existing sequence-index time fallback.
     expected_times = [0.1, 0.37] if suffix == ".mcap" else [0.0, 1.0]
     assert [stamp for stamp, _ in rows] == pytest.approx(expected_times)
@@ -91,13 +101,17 @@ def test_rrd_contains_visual_and_replay_entity_paths(tmp_path):
     sink = build_recording_sink(RecordConfig(path=path), app_id="entities")
     sink.open()
     try:
-        sink.write_step(StepResult(now=0.1, executed=["Source"], inputs={},
-                                   outputs={"Source": 7}), 0)
+        sink.write_step(
+            StepResult(now=0.1, executed=["Source"], inputs={}, outputs={"Source": 7}),
+            0,
+        )
     finally:
         sink.close()
     if hasattr(rr, "dataframe"):
         schema = rr.dataframe.load_recording(str(path)).schema()
-        paths = {column.entity_path.lstrip("/") for column in schema.component_columns()}
+        paths = {
+            column.entity_path.lstrip("/") for column in schema.component_columns()
+        }
     else:
         from rerun.chunk import RrdReader
 
@@ -118,12 +132,16 @@ def test_mcap_restores_legacy_array_and_current_lossless_markers():
     assert_same(_restore_numpy(old), original["image"])
 
 
-
 def test_legacy_rrd_tuple_encoding_stays_list_compatible():
-    from retriever.recording import _serialize_rrd_replay_value, _deserialize_rrd_replay_value
+    from retriever.recording import (
+        _serialize_rrd_replay_value,
+        _deserialize_rrd_replay_value,
+    )
 
     value = {"pair": (1, 2)}
-    assert _deserialize_rrd_replay_value(_serialize_rrd_replay_value(value)) == {"pair": [1, 2]}
+    assert _deserialize_rrd_replay_value(_serialize_rrd_replay_value(value)) == {
+        "pair": [1, 2]
+    }
 
 
 MARKER_MAPPINGS = [
@@ -150,9 +168,41 @@ def test_new_mcap_roundtrip_keeps_literal_marker_mappings(tmp_path, value):
     sink = build_recording_sink(RecordConfig(path=path), app_id="literal-mappings")
     sink.open()
     try:
-        sink.write_step(StepResult(now=0.1, executed=["Source"], inputs={},
-                                   outputs={"Source": {"nested": value}}), 0)
+        sink.write_step(
+            StepResult(
+                now=0.1,
+                executed=["Source"],
+                inputs={},
+                outputs={"Source": {"nested": value}},
+            ),
+            0,
+        )
     finally:
         sink.close()
-    rows = open_recording_reader(path).read_node_stream("Source", output_type=dict[str, Any])
+    rows = open_recording_reader(path).read_node_stream(
+        "Source", output_type=dict[str, Any]
+    )
     assert_same(rows[0][1], {"nested": value})
+
+
+def test_new_mcap_escapes_reserved_dataclass_fields(tmp_path):
+    from dataclasses import make_dataclass
+
+    MarkerFields = make_dataclass("MarkerFields", [("__bytes__", str), ("label", str)])
+    value = MarkerFields("YWJj", "user data")
+    path = tmp_path / "fields.mcap"
+    sink = build_recording_sink(RecordConfig(path=path), app_id="literal-fields")
+    sink.open()
+    try:
+        sink.write_step(
+            StepResult(
+                now=0.1, executed=["Source"], inputs={}, outputs={"Source": value}
+            ),
+            0,
+        )
+    finally:
+        sink.close()
+    rows = open_recording_reader(path).read_node_stream(
+        "Source", output_type=MarkerFields
+    )
+    assert_same(rows[0][1], value)

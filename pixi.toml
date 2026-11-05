@@ -105,7 +105,7 @@ retriever-core = { path = ".", editable = true, extras = [
     "web",
     "recording",
 ] }
-rerun-sdk = ">=0.23.4" # Visualization SDK; replay uses MCAP
+rerun-sdk = ">=0.23.4,<0.43" # RRD query support is feature-detected; MCAP replay is independent
 mcap = "*" # MCAP recording support
 google-genai = "*" # VLM Support
 build = "*" # For building wheels
@@ -176,6 +176,7 @@ demo-webcam-detection-dora-rerun = "python -m examples.tutorial.b_ir_and_executi
 demo-webcam-stepper = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 10 --sleep 0.05"
 demo-webcam-window = "python -m examples.tutorial.c_debug_and_replay.03_debug_perception_stepper_real_camera --steps 200 --sleep 0.05 --show-window"
 demo-webcam-record = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception record --camera-mode mock --out logs/perception.rrd --replay-out logs/perception.mcap --steps 10"
+demo-webcam-replay-rrd = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.rrd --steps 10"
 demo-webcam-replay-mcap = "python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --steps 10"
 demo-stepper = "python -m examples.tutorial.c_debug_and_replay.01_debug_stepper"
 demo-perception-stepper = "python -m examples.tutorial.c_debug_and_replay.02_debug_perception_stepper"

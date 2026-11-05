@@ -220,4 +220,14 @@ Perception example:
   - Replay: `python -m examples.tutorial.c_debug_and_replay.04_record_replay_perception replay --recording logs/perception.mcap --visualize stdout`
 
 The tutorial record path writes `logs/perception.rrd` by default and mirrors the same run to `logs/perception.mcap`.
-Replay accepts either artifact.
+MCAP replay works without Rerun. RRD replay works when the installed SDK exposes
+its legacy dataframe API (below 0.29); newer SDKs report the installed version,
+file path, and recovery instructions. Use `RecordConfig(path="session.rrd",
+mirrors=("session.mcap",))` for an explicit mirror, or `rerun-sdk<0.29` for direct
+RRD readback. Mirrors are never inferred or created automatically. Legacy RRD
+readback keeps its existing sequence-index time fallback; MCAP keeps recorded
+step timestamps. `retriever run replay` retains the RRD default; select MCAP with
+`retriever run replay -- --recording logs/perception.mcap`.
+
+Current viewers open files produced with SDK 0.23 and later. Older files may need
+the viewer that produced them or another compatible older viewer.
