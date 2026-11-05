@@ -163,8 +163,9 @@ class CompositeRecordingSink:
 class McapRecordingSink:
     """Persist step results to MCAP."""
 
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, lossless: bool = False):
         self.path = Path(path)
+        self.lossless = lossless
         self._writer = None
         self._written_specs: set[str] = set()
 
@@ -173,7 +174,7 @@ class McapRecordingSink:
 
         if self._writer is not None:
             return
-        self._writer = MCAPWriter(self.path)
+        self._writer = MCAPWriter(self.path, lossless=self.lossless)
         self._writer.__enter__()
 
     def write_step(self, result: Any, step_idx: int) -> None:
@@ -465,7 +466,9 @@ def build_recording_sink(record_config: Any, *, app_id: str) -> CompositeRecordi
     sinks: list[RecordingSink] = []
     for artifact in build_recording_artifacts(record_config):
         if artifact.format == "mcap":
-            sinks.append(McapRecordingSink(artifact.path))
+            sinks.append(McapRecordingSink(
+                artifact.path, lossless=bool(getattr(record_config, "mcap_lossless", False))
+            ))
         elif artifact.format == "rrd":
             sinks.append(
                 RrdRecordingSink(

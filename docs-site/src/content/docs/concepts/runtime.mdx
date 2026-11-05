@@ -200,11 +200,13 @@ Record with `pipe.record(...)` (in-process) to MCAP or RRD; replay reads MCAP ou
 ## Recording formats and SDK versions
 
 The recording extra supports `rerun-sdk>=0.23.4,<0.43`. Tests cover 0.23.4 and
-0.42.0. MCAP readback does not import Rerun. New MCAP outputs use an explicit
-codec schema that preserves array dtype and shape, bytes, tuples, and literal
-mapping keys; older JSON and array payloads remain readable.
-RRD recording still writes both visual
-entities and typed replay payloads on these SDKs.
+0.42.0. MCAP readback does not import Rerun. By default, MCAP output keeps the
+legacy schema and encoding, so existing readers can replay supported values.
+To preserve bytes, tuple identity and array details that the legacy encoding
+cannot retain, set `RecordConfig(path="session.mcap", mcap_lossless=True)` or
+use `MCAPWriter("session.mcap", lossless=True)`. This opt-in format needs the new
+reader; old readers reject it. RRD encoding is not affected. RRD recording still
+writes visual entities and typed replay payloads on both tested SDKs.
 
 RRD replay remains available when the installed SDK exposes `rr.dataframe`
 (legacy SDKs below 0.29). Newer SDKs can record and view RRD but cannot read it

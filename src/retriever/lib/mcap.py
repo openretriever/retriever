@@ -34,6 +34,8 @@ import numpy as np
 
 _LOSSLESS_SCHEMA = "retriever.recording.json-v1"
 _LOSSLESS_CODEC = "retriever.mcap.json-v1"
+_LOSSLESS_HEADER = b"\x89RTRVMCAP1\n"
+_LOSSLESS_MESSAGE_ENCODING = "retriever.lossless-json-v1"
 
 
 def _ensure_mcap():
@@ -55,25 +57,12 @@ def _ensure_mcap():
 # =============================================================================
 
 
-def _serialize_value(value: Any) -> bytes:
-    """Serialize supported recording values without losing array shape or bytes."""
-    if isinstance(value, np.ndarray):
-        import io
-
-        buf = io.BytesIO()
-        np.save(buf, value, allow_pickle=False)
-        return buf.getvalue()
-    if is_dataclass(value) and not isinstance(value, type):
-        return _serialize_dataclass(value)
-    from retriever.recording import _encode_recorded_value
-
-    return json.dumps(_encode_recorded_value(value, lossless=True)).encode("utf-8")
-
-
 def _deserialize_value(data: bytes, schema_name: str) -> Any:
     """Deserialize bytes back to Python value."""
     if schema_name == _LOSSLESS_SCHEMA:
-        return _decode_lossless_payload(json.loads(data.decode("utf-8")))
+        if not data.startswith(_LOSSLESS_HEADER):
+            raise RuntimeError("Lossless MCAP payload is missing its versioned header.")
+        return _decode_lossless_payload(json.loads(data[len(_LOSSLESS_HEADER):].decode("utf-8")))
     if schema_name == "numpy.ndarray":
         import io
 
@@ -125,19 +114,10 @@ def _decode_lossless_payload(envelope: Any) -> Any:
     return _restore_recorded_value(envelope["value"], lossless=True)
 
 
-def _serialize_dataclass(obj: Any) -> bytes:
-    """Serialize typed values with an explicit lossless codec envelope."""
-    from retriever.recording import _encode_recorded_value
-
-    envelope = {
-        "codec": _LOSSLESS_CODEC,
-        "value": _encode_recorded_value(obj, lossless=True),
-    }
-    return json.dumps(envelope).encode("utf-8")
-
-
 def _deserialize_dataclass(data: bytes) -> Dict[str, Any]:
     """Read versioned values or legacy dataclass JSON with array markers."""
+    if data.startswith(_LOSSLESS_HEADER):
+        return _deserialize_value(data, _LOSSLESS_SCHEMA)
     obj = json.loads(data.decode("utf-8"))
     if (
         isinstance(obj, dict)
@@ -157,6 +137,10 @@ class MCAPWriter:
     """
     Write pipeline step results to MCAP format.
 
+    The default preserves the original JSON schema and payload encoding.
+    `lossless=True` explicitly enables a versioned format for arrays, bytes,
+    tuples and literal marker mappings. Older Retriever readers reject it.
+
     Usage:
         with MCAPWriter("session.mcap") as writer:
             for step in range(100):
@@ -164,8 +148,9 @@ class MCAPWriter:
                 writer.write_step(result, step)
     """
 
-    def __init__(self, path: Union[str, Path]):
+    def __init__(self, path: Union[str, Path], *, lossless: bool = False):
         self.path = Path(path)
+        self.lossless = lossless
         self._file = None
         self._writer = None
         self._channels: Dict[str, int] = {}
@@ -200,7 +185,8 @@ class MCAPWriter:
         return schema_id
 
     def _get_channel_id(
-        self, topic: str, schema_name: str, schema_data: bytes = b""
+        self, topic: str, schema_name: str, schema_data: bytes = b"",
+        *, message_encoding: str = "json",
     ) -> int:
         """Get or create channel ID."""
         if topic in self._channels:
@@ -210,7 +196,7 @@ class MCAPWriter:
         channel_id = self._writer.register_channel(
             schema_id=schema_id,
             topic=topic,
-            message_encoding="json",
+            message_encoding=message_encoding,
         )
         self._channels[topic] = channel_id
         return channel_id
@@ -269,7 +255,9 @@ class MCAPWriter:
             topic = f"/retriever/flows/{flow_name}/output"
             obj_schema = json.dumps({"type": "object"}).encode("utf-8")
             channel_id = self._get_channel_id(
-                topic, _LOSSLESS_SCHEMA, obj_schema
+                topic, _LOSSLESS_SCHEMA if self.lossless else f"retriever.{flow_name}",
+                obj_schema,
+                message_encoding=_LOSSLESS_MESSAGE_ENCODING if self.lossless else "json",
             )
 
             # Convert output to JSON-safe format
@@ -387,6 +375,35 @@ class MCAPWriter:
         )
 
     def _to_json(self, obj: Any) -> bytes:
+        """Keep legacy encoding by default; lossless encoding requires opt-in."""
+        if self.lossless:
+            return self._to_lossless_payload(obj)
+
+        def convert(v):
+            if isinstance(v, np.ndarray):
+                return {
+                    "__numpy__": True,
+                    "shape": list(v.shape),
+                    "dtype": str(v.dtype),
+                    "data": v.tolist(),
+                }
+            elif is_dataclass(v) and not isinstance(v, type):
+                return {k: convert(getattr(v, k)) for k in v.__dataclass_fields__}
+            elif isinstance(v, (list, tuple)):
+                return [convert(x) for x in v]
+            elif isinstance(v, dict):
+                return {k: convert(val) for k, val in v.items()}
+            elif isinstance(v, (str, int, float, bool)) or v is None:
+                return v
+            raise TypeError(
+                f"Unsupported value for stable MCAP recording: {type(v)!r}. "
+                "Use @io dataclasses, numpy arrays, or JSON-like values."
+            )
+
+        return json.dumps(convert(obj)).encode("utf-8")
+
+
+    def _to_lossless_payload(self, obj: Any) -> bytes:
         """Encode arrays, bytes and typed values with the shared recording codec."""
         from retriever.recording import _encode_recorded_value
 
@@ -397,7 +414,9 @@ class MCAPWriter:
                 f"Unsupported value for stable MCAP recording: {type(obj)!r}. "
                 "Use @io dataclasses, numpy arrays, bytes, or JSON-like values."
             ) from exc
-        return json.dumps({"codec": _LOSSLESS_CODEC, "value": encoded}).encode("utf-8")
+        return _LOSSLESS_HEADER + json.dumps(
+            {"codec": _LOSSLESS_CODEC, "value": encoded}
+        ).encode("utf-8")
 
 
 # =============================================================================

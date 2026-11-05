@@ -229,5 +229,10 @@ readback keeps its existing sequence-index time fallback; MCAP keeps recorded
 step timestamps. `retriever run replay` retains the RRD default; select MCAP with
 `retriever run replay -- --recording logs/perception.mcap`.
 
+MCAP keeps its legacy encoding by default. Use
+`RecordConfig(path="session.mcap", mcap_lossless=True)` only when lossless bytes,
+tuples or array details are needed. The opt-in file requires the new reader;
+older readers reject it. The option does not change RRD files or create mirrors.
+
 Current viewers open files produced with SDK 0.23 and later. Older files may need
 the viewer that produced them or another compatible older viewer.
