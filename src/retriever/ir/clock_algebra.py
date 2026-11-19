@@ -2,8 +2,8 @@
 Clock algebra for groups of Flows.
 
 A finite group of Flows behaves as one Flow on a *covering clock*: the union of the
-inner Rate clocks and the event times of the boundary inputs that the inner clocks
-read. The covering clock may tick when no inner Flow runs; the group then emits no
+inner Rate, Tick and Hybrid clocks and the event times of the boundary inputs that the
+inner Trigger, Synchronized and Hybrid clocks read. The covering clock may tick when no inner Flow runs; the group then emits no
 event. This holds when the group has no same-instant cycle, that is, no cycle made only
 of activation edges (an edge into a field that triggers its destination's clock).
 
@@ -30,11 +30,12 @@ _TRIGGER_TYPES = ("Trigger", "Synchronized")
 
 
 def _clock_of(node: IRNode) -> Tuple[Optional[str], Dict]:
-    clock = node.config.get("clock") or {}
-    if not clock:
+    clock = node.config.get("clock")
+    if not isinstance(clock, dict) or not clock:
         return None, {}
     ctype = next(iter(clock.keys()))
-    return ctype, dict(clock[ctype] or {})
+    params = clock[ctype]
+    return ctype, dict(params) if isinstance(params, dict) else {}
 
 
 def _trigger_fields(ctype: Optional[str], params: Mapping) -> List[str]:
@@ -85,13 +86,13 @@ class CoveringClock:
             return []
         out: List[float] = []
         for hz in self.rates_hz:
+            if hz <= 0:
+                continue
             period = 1.0 / hz
-            k = math.ceil(start / period - 1e-9)
-            t = k * period
-            while t < stop - 1e-12:
-                out.append(t)
-                k += 1
-                t = k * period
+            # Same relative tolerance on both ends, so adjacent windows never share a tick.
+            k_first = math.ceil(start / period - 1e-9)
+            k_stop = math.ceil(stop / period - 1e-9)
+            out.extend(k * period for k in range(k_first, k_stop))
         out.sort()
         merged: List[float] = []
         for t in out:
@@ -157,11 +158,13 @@ def activation_edges(ir: IR) -> List[Tuple[str, str]]:
         ctype, params = _clock_of(node)
         triggers[node.id] = set(_trigger_fields(ctype, params))
     out: List[Tuple[str, str]] = []
+    seen: set = set()
     for edge in ir.edges:
         dst = edge.destination.node
         if IR.get_logical_port(edge.destination.port) in triggers.get(dst, ()):
             pair = (edge.source.node, dst)
-            if pair not in out:
+            if pair not in seen:
+                seen.add(pair)
                 out.append(pair)
     return out
 

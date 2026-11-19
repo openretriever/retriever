@@ -131,3 +131,8 @@ def test_ticks_window_and_empty_cover():
     assert CoveringClock(rates_hz=(10.0,)).ticks(0.25, 0.5) == pytest.approx([0.3, 0.4])
     assert CoveringClock(rates_hz=(10.0,)).ticks(0.5, 0.5) == []
     assert str(CoveringClock()) == "Cover[∅]"
+    # Adjacent windows never share a tick, also for slow clocks.
+    slow = CoveringClock(rates_hz=(0.001,))
+    assert slow.ticks(0.0, 1000.0) == pytest.approx([0.0])
+    assert slow.ticks(1000.0, 2000.0) == pytest.approx([1000.0])
+    assert CoveringClock(rates_hz=(0.0, 10.0)).ticks(0.0, 0.2) == pytest.approx([0.0, 0.1])

@@ -45,15 +45,16 @@ Timing of a nested wrapper:
 
 The group as one Flow (covering clock):
 
-- a group of Flows behaves as one Flow on its covering clock: the union of the inner `Rate` clocks and the events of the boundary inputs that inner `Trigger` clocks read; the covering clock may tick when no inner Flow runs, and the group then emits no event
+- a group of Flows behaves as one Flow on its covering clock: the union of the inner `Rate`, `Tick` and `Hybrid` clocks and the events of the boundary inputs that inner `Trigger`, `Synchronized` and `Hybrid` clocks read; the covering clock may tick when no inner Flow runs, and the group then emits no event
 - the wrapper exposes it as `wrapper.covering_clock` (for example `Cover[Rate(20 Hz) ∪ Rate(30 Hz) ∪ events(go)]`) and in `viz_metadata()["covering_clock"]`, for grouping and for views of large graphs; execution still runs each inner Flow on its own clock
-- this needs no same-instant cycle: a cycle made only of trigger edges would make its Flows trigger each other again at one instant. `retriever.ir.clock_algebra.same_instant_cycles(ir)` lists such cycles, and compiling a pipeline logs a warning for each one
+- this needs no same-instant cycle: a cycle made only of trigger edges would make its Flows trigger each other again at one instant. `retriever.ir.clock_algebra.same_instant_cycles(ir)` lists such cycles, and `pipe.validate()` logs a warning for each one
 
 ```python
 from retriever.ir.clock_algebra import covering_clock, same_instant_cycles
 
 ir = pipe.validate()
 covering_clock(ir).ticks(0.0, 1.0)   # Rate ticks of the group in [0, 1)
+# pass boundary={"go": ("gate", "go")} to also list boundary trigger inputs
 same_instant_cycles(ir)              # [] when the group is admissible
 ```
 
