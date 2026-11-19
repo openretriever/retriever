@@ -595,6 +595,23 @@ def _build_pipeline_flow_from_surface(
     output_type = _make_surface_io_type(f"{class_stem}Output", output_bindings)
     pipeline_viz = _build_pipeline_viz_metadata(name, ir, surface)
 
+    # The group's covering clock: inner Rate clocks plus the boundary inputs that inner
+    # clocks trigger on. It describes the group as one Flow (for grouping and for views of
+    # large graphs); execution still runs each inner Flow on its own clock.
+    from retriever.ir.clock_algebra import covering_clock as _covering_clock
+    from retriever.ir.clock_algebra import same_instant_cycles as _same_instant_cycles
+
+    cover = _covering_clock(
+        ir,
+        boundary={
+            b.surface_port.external_name: (b.surface_port.node_id, b.surface_port.port)
+            for b in input_bindings
+        },
+    )
+    cycles = _same_instant_cycles(ir)
+    if isinstance(pipeline_viz, dict):
+        pipeline_viz = {**pipeline_viz, "covering_clock": str(cover)}
+
     base = Flow[input_type or None, output_type or None]  # type: ignore[misc]
 
     class _PipelineFlow(base):
@@ -610,6 +627,8 @@ def _build_pipeline_flow_from_surface(
             self.surface = surface
             self.input_bindings = input_bindings
             self.output_bindings = output_bindings
+            self.covering_clock = cover
+            self.same_instant_cycles = cycles
             self._stepper = None
 
         def init_config(self) -> dict:

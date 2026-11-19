@@ -43,6 +43,20 @@ Timing of a nested wrapper:
 - in `Pipeline.step()`, the wrapper runs on every step, passes in only inputs that received a new event, and emits only outputs that an inner Flow produced in that step, so a stepped nested pipeline behaves like the same Flows inlined
 - an output with no new value carries no event; use `sync=Latest()` downstream to keep the previous value
 
+The group as one Flow (covering clock):
+
+- a group of Flows behaves as one Flow on its covering clock: the union of the inner `Rate` clocks and the events of the boundary inputs that inner `Trigger` clocks read; the covering clock may tick when no inner Flow runs, and the group then emits no event
+- the wrapper exposes it as `wrapper.covering_clock` (for example `Cover[Rate(20 Hz) ∪ Rate(30 Hz) ∪ events(go)]`) and in `viz_metadata()["covering_clock"]`, for grouping and for views of large graphs; execution still runs each inner Flow on its own clock
+- this needs no same-instant cycle: a cycle made only of trigger edges would make its Flows trigger each other again at one instant. `retriever.ir.clock_algebra.same_instant_cycles(ir)` lists such cycles, and compiling a pipeline logs a warning for each one
+
+```python
+from retriever.ir.clock_algebra import covering_clock, same_instant_cycles
+
+ir = pipe.validate()
+covering_clock(ir).ticks(0.0, 1.0)   # Rate ticks of the group in [0, 1)
+same_instant_cycles(ir)              # [] when the group is admissible
+```
+
 ## Surface Grammar
 
 Explicit pipeline surfaces use:

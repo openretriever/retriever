@@ -539,6 +539,17 @@ class PipelineBuilder:
         if lower_composite_flows:
             ir = self._lower_composite_flow_nodes(ir)
 
+        from retriever.ir.clock_algebra import same_instant_cycles
+
+        for cycle in same_instant_cycles(ir):
+            logger.warning(
+                "Same-instant cycle of trigger edges in '%s': %s. These Flows trigger each "
+                "other again at one instant; break the cycle with a Rate clock or a "
+                "non-trigger input on one edge.",
+                pipeline_name,
+                " -> ".join(cycle),
+            )
+
         logger.info(
             f"Compilation complete: {len(ir.nodes)} nodes, "
             f"{len(ir.edges)} edges, "
