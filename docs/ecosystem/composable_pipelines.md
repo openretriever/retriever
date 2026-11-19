@@ -37,6 +37,12 @@ Important boundary:
 - the wrapper itself is not the backend artifact
 - when nested inside a larger `Pipeline`, Retriever lowers the wrapper into flat IR so multiprocessing and dora backends can execute the inner nodes normally
 
+Timing of a nested wrapper:
+
+- the inner Flows keep their own clocks; the clock attached to the wrapper (`@ Rate(hz=10)` above) does not gate them, on any backend
+- in `Pipeline.step()`, the wrapper runs on every step, passes in only inputs that received a new event, and emits only outputs that an inner Flow produced in that step, so a stepped nested pipeline behaves like the same Flows inlined
+- an output with no new value carries no event; use `sync=Latest()` downstream to keep the previous value
+
 ## Surface Grammar
 
 Explicit pipeline surfaces use:

@@ -587,7 +587,7 @@ def _build_pipeline_flow_from_surface(
     ir: IR,
 ):
     from retriever.flow import Flow
-    from retriever.rt.stepper import PipelineStepper, current_step_time
+    from retriever.rt.stepper import PipelineStepper, current_fresh_inputs, current_step_time
 
     input_bindings, output_bindings = _build_surface_bindings(ctx, surface)
     class_stem = _sanitize_identifier(name.title())
@@ -596,7 +596,6 @@ def _build_pipeline_flow_from_surface(
     pipeline_viz = _build_pipeline_viz_metadata(name, ir, surface)
 
     base = Flow[input_type or None, output_type or None]  # type: ignore[misc]
-    output_cache_init = {binding.surface_port.external_name: None for binding in output_bindings}
 
     class _PipelineFlow(base):
         in_process_only = True
@@ -612,7 +611,6 @@ def _build_pipeline_flow_from_surface(
             self.input_bindings = input_bindings
             self.output_bindings = output_bindings
             self._stepper = None
-            self._output_cache = dict(output_cache_init)
 
         def init_config(self) -> dict:
             # Validation still needs a serializable placeholder when this wrapper is
@@ -629,7 +627,6 @@ def _build_pipeline_flow_from_surface(
             return self._stepper
 
         def reset(self) -> None:
-            self._output_cache = dict(output_cache_init)
             if self._stepper is not None:
                 self._stepper.reset()
 
@@ -640,12 +637,20 @@ def _build_pipeline_flow_from_surface(
 
         def step(self, input):  # type: ignore[override]
             stepper = self._ensure_stepper()
-            step_now = current_step_time() or time.time()
+            step_now = current_step_time()
+            if step_now is None:  # 0.0 is a valid outer step time
+                step_now = time.time()
 
             if input is not None:
+                # Inside an outer PipelineStepper, inject only inputs that received a new
+                # event; a held (e.g. Latest-sampled) value must not reach the inner flows
+                # as a new arrival. A direct `flow.step(...)` call injects what it is given.
+                fresh = current_fresh_inputs()
                 injected: Dict[str, Dict[str, Any]] = {}
                 for binding in self.input_bindings:
                     ext = binding.surface_port.external_name
+                    if fresh is not None and ext not in fresh:
+                        continue
                     if input._has_signal(ext):
                         injected.setdefault(binding.surface_port.node_id, {})[
                             binding.surface_port.port
@@ -655,21 +660,21 @@ def _build_pipeline_flow_from_surface(
 
             result = stepper.step(now=step_now)
 
+            if output_type is None:
+                return None
+
+            # Emit only values the inner flows produced in this step: a surfaced output
+            # whose producer did not run carries no event (downstream sync policies such
+            # as Latest() keep the previous value where that is wanted).
+            payload: Dict[str, Any] = {}
             for binding in self.output_bindings:
                 node_output = result.outputs.get(binding.surface_port.node_id)
                 if node_output is None:
                     continue
                 if node_output._has_signal(binding.surface_port.port):
-                    self._output_cache[binding.surface_port.external_name] = node_output._get_signal(
+                    payload[binding.surface_port.external_name] = node_output._get_signal(
                         binding.surface_port.port
                     )
-
-            if output_type is None:
-                return None
-
-            payload = {
-                key: value for key, value in self._output_cache.items() if value is not None
-            }
             return output_type(**payload)
 
     _PipelineFlow.__name__ = f"{class_stem}Flow"

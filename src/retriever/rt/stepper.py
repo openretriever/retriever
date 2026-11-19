@@ -20,7 +20,7 @@ import types
 from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Dict, FrozenSet, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
 from retriever.flow.adapter import Adapter, Latest
@@ -44,6 +44,22 @@ _CURRENT_STEP_TIME: ContextVar[Optional[float]] = ContextVar(
 def current_step_time() -> Optional[float]:
     """Return the logical time of the active in-process step, if any."""
     return _CURRENT_STEP_TIME.get()
+
+
+_CURRENT_FRESH_INPUTS: ContextVar[Optional[FrozenSet[str]]] = ContextVar(
+    "retriever_current_fresh_inputs",
+    default=None,
+)
+
+
+def current_fresh_inputs() -> Optional[FrozenSet[str]]:
+    """Return the input ports that received a new event since the executing nested
+    Pipeline-Flow last ran.
+
+    Set only while `PipelineStepper.step()` runs a nested Pipeline-Flow wrapper;
+    `None` everywhere else (for example on a direct `flow.step(...)` call).
+    """
+    return _CURRENT_FRESH_INPUTS.get()
 
 
 class InMemoryChannel:
@@ -113,6 +129,12 @@ class PipelineStepper:
         self._adapters: Dict[str, Dict[str, Adapter]] = {}
 
         self._node_order: List[str] = [nid for group in self._ir.topology.groups for nid in group]
+        # Nested Pipeline-Flow wrappers stand for their inner flows. They run on every
+        # step (their own attached clock is ignored, as it is when backends lower them),
+        # and they learn which inputs are new so held values do not re-trigger inner flows.
+        self._composite_nodes: FrozenSet[str] = frozenset(
+            nid for nid, handle in self._flows.items() if getattr(handle.flow, "_pipeline_flow_wrapper", False)
+        )
 
         self._initialized = False
         self._now: Optional[float] = None
@@ -301,6 +323,9 @@ class PipelineStepper:
           - Rate/Tick flows execute once per step.
           - Trigger flows execute when a new arrival is observed on a trigger field.
           - Hybrid flows prefer trigger execution; otherwise execute once per step.
+          - Nested Pipeline-Flow wrappers execute once per step whatever clock is
+            attached to them, and see which of their inputs are new (see
+            `current_fresh_inputs`), so they behave like their inner flows inlined.
 
         Args:
             now: Optional wall-clock timestamp to associate with this step.
@@ -322,7 +347,14 @@ class PipelineStepper:
                 handle = self._flows[node_id]
                 clock = handle.config.clock
 
-                should_execute, fields = self._should_execute(clock, self._inputs[node_id])
+                composite = node_id in self._composite_nodes
+                if composite:
+                    should_execute, fields = True, ["..."]
+                    fresh = frozenset(
+                        port for port, ch in self._inputs[node_id].items() if ch.new_arrival()
+                    )
+                else:
+                    should_execute, fields = self._should_execute(clock, self._inputs[node_id])
                 if not should_execute:
                     continue
 
@@ -335,7 +367,14 @@ class PipelineStepper:
                 signal.sample(handle.flow.input_types, self._adapters[node_id], now=step_now)
                 inputs_snapshot[node_id] = signal.instance
 
-                signal.transform(handle.flow.step)
+                if composite:
+                    fresh_token = _CURRENT_FRESH_INPUTS.set(fresh)
+                    try:
+                        signal.transform(handle.flow.step)
+                    finally:
+                        _CURRENT_FRESH_INPUTS.reset(fresh_token)
+                else:
+                    signal.transform(handle.flow.step)
 
                 # Basic support for generator-returning flows (services not supported here)
                 if isinstance(signal.instance, types.GeneratorType):
