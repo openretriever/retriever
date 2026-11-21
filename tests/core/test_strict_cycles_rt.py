@@ -238,3 +238,87 @@ def test_equivalent_feedback_paths_give_the_same_trace(relay, reverse):
     for t in range(4):
         s = p.step(now=t)
         assert (s.outputs["A"].value, s.outputs["B"].value) == (2*t + 1, 2*t + 2)
+
+
+def test_injected_prev_never_wakes_and_reads_only_earlier_commits():
+    p = Pipeline(cycles="strict")
+    silent = (Add() @ Trigger("extra")).named("silent")
+    sink = (Add() @ Trigger("value", "extra")).named("sink")
+    p.connect(silent, sink, sync=Prev(buffer_size=1, initial=-7))
+
+    def read(t, expected):
+        p.inject_input(sink, "extra", 1, timestamp=t)
+        s = p.step(now=t)
+        assert s.executed == ["sink"]
+        assert (s.inputs["sink"].value, s.inputs["sink"].extra) == (expected, 1)
+
+    assert p.step(now=0).executed == []
+    for t in (10, 11, 12):
+        p.inject_input(sink, "value", t, timestamp=t)
+    assert p.step(now=1).executed == []
+    read(1, -7)
+    p.inject_input(sink, "value", 5, timestamp=0.5)
+    read(1, -7)  # Backdated, but committed at this tick.
+    read(2, 5)
+    for i in range(20):
+        p.inject_input(sink, "value", i, timestamp=2)
+    read(2, 5)  # A same-tick burst cannot evict the eligible sample.
+    assert p.step(now=3).executed == []
+    read(3, 19)
+    read(10, 19)
+    assert p.step(now=11).executed == []
+    read(11, 10)
+    p.reset()
+    assert p.step(now=0).executed == []
+    read(13, -7)  # Neither pending nor already-visible values survive reset.
+
+
+def test_rate_10_and_rate_30_coincident_logical_ticks():
+    p = Pipeline(cycles="strict")
+    fast = (Source() @ Rate(30)).named("fast")
+    slow = (Relay() @ Rate(10)).named("slow")
+    p.connect(fast, slow, sync=Prev(buffer_size=1))
+    # Rate flows execute per step here. Supply the two clocks' representations
+    # of their shared instant explicitly, in both raw floating-point orders.
+    ticks = (8 / 30, 9 / 30, 3 * 0.1, 9 / 30, 10 / 30)
+    samples = [p.step(now=t) for t in ticks]
+    assert all(s.executed == ["fast", "slow"] for s in samples)
+    assert [s.inputs["slow"].value for s in samples] == [None, 1, 1, 1, 4]
+
+
+@pytest.mark.parametrize("delay_return", [True, False])
+def test_parallel_ports_keep_distinct_same_tick_dependencies(delay_return):
+    p = Pipeline(cycles="strict")
+    a, b = [(Add() @ Rate(10)).named(n) for n in ("A", "B")]
+    p.connect(a, b, map={"value": "extra"}, sync=Prev())
+    p.connect(a, b, sync=Latest())
+    p.connect(b, a, sync=Prev() if delay_return else Latest())
+    if not delay_return:
+        with pytest.raises(FlowError, match="A -> B -> A"):
+            p.validate()
+        return
+    steps = [p.step(now=t) for t in range(3)]
+    assert all(s.executed == ["A", "B"] for s in steps)
+    assert [(s.inputs["B"].value, s.inputs["B"].extra) for s in steps] == [
+        (1, None), (3, 1), (6, 3),
+    ]
+
+
+@pytest.mark.parametrize("branch", [False, True])
+def test_two_loops_sharing_one_node_keep_groups_and_trace(branch):
+    p, a, b = feedback()
+    c = (Add() @ Rate(10)).named("C")
+    p.connect(a, c, sync=Latest())
+    p.connect(c, a, map={"value": "extra"}, sync=Prev())
+    if branch:
+        sink = (Relay() @ Rate(10)).named("observer")
+        p.connect(b, sink, sync=Latest())
+    graph = p.get_graph()
+    loops = {frozenset(g) for g in graph.get_cycles()}
+    assert loops == {frozenset(("A", "B", "C"))}
+    assert loops == {frozenset(g) for g in graph.get_topological_groups() if len(g) > 1}
+    assert graph.get_topological_groups() == p.validate().topology.groups
+    for t, expected in enumerate(((1, 2, 2), (5, 6, 6), (13, 14, 14))):
+        s = p.step(now=t)
+        assert set(s.executed) == ({"A", "B", "C", "observer"} if branch else {"A", "B", "C"})
+        assert tuple(s.outputs[n].value for n in ("A", "B", "C")) == expected
