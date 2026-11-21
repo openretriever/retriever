@@ -1,3 +1,6 @@
+import warnings
+from time import perf_counter
+
 import pytest
 
 from retriever.error import FlowError
@@ -55,16 +58,49 @@ def test_reject_same_tick_cycle():
         pipe.validate()
 
 
-def test_warn_per_cycle_and_keep_legacy_order():
+def test_warn_per_group_and_keep_legacy_order():
     pipe, _, _ = feedback(delay=False, shape=True, mode="warn")
     with pytest.warns(UserWarning) as seen:
         pipe.validate()
-    assert len(seen) == 2
-    assert any("A -> B -> A" in str(w.message) for w in seen)
-    assert any("A -> B -> C -> A" in str(w.message) for w in seen)
+    assert len(seen) == 1
+    assert "A -> B -> A" in str(seen[0].message)
     pair, _, _ = feedback(delay=False, mode="warn")
     with pytest.warns(UserWarning):
         assert pair.step(now=1).executed == ["B", "A"]
+
+
+def test_dense_feedback_group_reports_one_witness(monkeypatch):
+    def complete_graph(mode):
+        pipe = Pipeline(cycles=mode)
+        nodes = [(Add() @ Rate(10)).named(f"N{i:02}") for i in range(12)]
+        for src in nodes:
+            for dst in nodes:
+                if src is not dst:
+                    pipe.connect(src, dst, sync=Latest())
+        return pipe
+
+    messages = []
+
+    def capture(message, *args, **kwargs):
+        # Fail on the second warning rather than collecting millions on regression.
+        assert not messages, "more than one warning for a single feedback group"
+        messages.append(str(message))
+
+    legacy = complete_graph("warn")
+    with warnings.catch_warnings():
+        warnings.simplefilter("always")
+        monkeypatch.setattr(warnings, "showwarning", capture)
+        start = perf_counter()
+        ir = legacy.validate()
+        assert perf_counter() - start < 5
+    assert len(ir.nodes) == 12 and len(ir.edges) == 132
+    assert len(messages) == 1 and "N00 -> N01 -> N00" in messages[0]
+
+    strict = complete_graph("strict")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(FlowError, match=r"N00 -> N01 -> N00.*Prev\(\)"):
+            strict.validate()
 
 
 @pytest.mark.parametrize("reverse", [False, True])
