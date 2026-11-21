@@ -69,6 +69,30 @@ def test_warn_per_group_and_keep_legacy_order():
         assert pair.step(now=1).executed == ["B", "A"]
 
 
+def test_unmarked_cycle_still_builds_and_steps_as_before():
+    class Counter(Flow[Value, Value]):
+        def reset(self):
+            self.k = 0
+
+        def step(self, inputs):
+            self.k += 1
+            return Value(value=10 * self.k)
+
+    class Echo(Flow[Value, Value]):
+        def step(self, inputs):
+            return Value(value=-1 if inputs.value is None else inputs.value + 1)
+
+    with Pipeline("legacy_loop") as pipe:
+        a = (Counter() @ Rate(10)).named("A")
+        b = (Echo() @ Rate(10)).named("B")
+        a.then(b, sync=Latest())
+        b.then(a, sync=Latest())
+
+    steps = [pipe.step(now=k * 0.1) for k in range(4)]
+    assert [s.inputs["B"].value for s in steps] == [None, 10, 20, 30]
+    assert [s.inputs["A"].value for s in steps] == [-1, 11, 21, 31]
+
+
 def test_dense_feedback_group_reports_one_witness(monkeypatch):
     def complete_graph(mode):
         pipe = Pipeline(cycles=mode)
