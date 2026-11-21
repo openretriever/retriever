@@ -375,6 +375,11 @@ class PipelineGraph:
         return graph
 
     def same_tick_cycles(self):
+        """Yield one real closed path per instantaneous feedback group."""
+        for _, path in self._same_tick_cycle_groups():
+            yield path
+
+    def _same_tick_cycle_groups(self):
         """Yield one same-tick cycle per strongly connected group, starting at its smallest node.
 
         One witness per group is enough to warn or reject; listing every simple cycle can take
@@ -408,7 +413,22 @@ class PipelineGraph:
                 node = parent[node]
             path.extend(reversed(back))
             path.append(start)
-            yield path
+            yield members, path
+
+    def same_tick_cycle_hints(self):
+        """Report backward port edges without assigning a delay or changing the order."""
+        from retriever.flow.adapter import has_strict_prefix
+
+        order = None
+        for members, path in self._same_tick_cycle_groups():
+            if order is None:
+                order = {node: i for group in self.get_topological_groups()
+                         for i, node in enumerate(group)}
+            backward = [e for e in self.edges
+                        if e.src_node in members and e.dst_node in members
+                        and order[e.src_node] >= order[e.dst_node]
+                        and not has_strict_prefix(e.metadata.get("adapter", {}))]
+            yield path, backward
 
     def get_topological_groups(self) -> List[List[str]]:
         """

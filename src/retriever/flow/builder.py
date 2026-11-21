@@ -281,8 +281,27 @@ class PipelineBuilder:
         return graph
 
     def _check_cycles(self, graph: PipelineGraph, trigger_nodes: set) -> None:
-        for cycle in graph.same_tick_cycles():
-            message = f"Same-tick cycle: {' -> '.join(cycle)}. Mark a feedback edge with sync=Prev()."
+        from keyword import iskeyword
+
+        for cycle, backward in graph.same_tick_cycle_hints():
+            def handle_name(node):
+                name = node.lower()
+                if name.isidentifier() and not iskeyword(name) and name != "pipe":
+                    return name
+                return f"pipe.get_handle_for_node({node!r})"
+
+            hints = []
+            for e in backward:
+                src, dst = e.src_node, e.dst_node
+                matching = graph.nodes[src].output_ports.keys() & graph.nodes[dst].input_ports.keys()
+                mapping = "" if e.src_port == e.dst_port and matching == {e.src_port} else (
+                    f"map={{{e.src_port!r}: {e.dst_port!r}}}, "
+                )
+                hints.append(f"{src}.{e.src_port} -> {dst}.{e.dst_port}: "
+                             f"pipe.connect({handle_name(src)}, {handle_name(dst)}, {mapping}sync=Prev())")
+            message = (f"Same-tick cycle: {' -> '.join(cycle)}; "
+                       "backward edges in the legacy step order (candidates for sync=Prev()). "
+                       "Edit the existing connections (handles shown by node name): " + "; ".join(hints))
             if self._cycles == "strict":
                 raise FlowError(ErrCode.FLOW_CONNECTION_INVALID, message)
             warnings.warn(message, UserWarning, stacklevel=3)

@@ -65,8 +65,12 @@ def test_warn_per_group_and_keep_legacy_order():
     assert len(seen) == 1
     assert "A -> B -> A" in str(seen[0].message)
     pair, _, _ = feedback(delay=False, mode="warn")
-    with pytest.warns(UserWarning):
+    with pytest.warns(UserWarning) as pair_warnings:
         assert pair.step(now=1).executed == ["B", "A"]
+    message = str(pair_warnings[0].message)
+    assert "backward edges in the legacy step order (candidates for sync=Prev())" in message
+    assert "A.value -> B.value: pipe.connect(a, b, sync=Prev())" in message
+    assert "pipe.connect(b, a" not in message
 
 
 def test_unmarked_cycle_still_builds_and_steps_as_before():
