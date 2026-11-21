@@ -468,6 +468,19 @@ class IR:
 
         topo_graph = self.data_graph()
 
+        # The 0.0.4 writer counted port edges. Its reader counted each node
+        # pair once, which can also change the legacy in-degree step order.
+        if self.version == "1.0.0" and topo.edge_count < topo_graph.get_edge_count():
+            from retriever.flow.adapter import has_strict_prefix
+
+            by_pair = {}
+            for edge in topo_graph.edges:
+                by_pair.setdefault((edge.src_node, edge.dst_node), edge)
+            if topo.edge_count == len(by_pair) and not any(
+                has_strict_prefix(e.metadata["adapter"]) for e in topo_graph.edges
+            ):
+                topo_graph.edges = list(by_pair.values())
+
         expected_sources = topo_graph.find_sources()
         expected_sinks = topo_graph.find_sinks()
         expected_groups = topo_graph.get_topological_groups()

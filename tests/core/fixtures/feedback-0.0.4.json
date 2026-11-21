@@ -1,0 +1,172 @@
+{
+  "version": "1.0.0",
+  "metadata": {
+    "name": "legacy_parallel",
+    "created_at": "2026-11-21T15:18:28.047892",
+    "validated": true,
+    "optimized": false
+  },
+  "nodes": [
+    {
+      "id": "A",
+      "type": "Split",
+      "module": "test_legacy_cycle_ir_rt",
+      "init_config": {},
+      "config": {
+        "clock": {
+          "Rate": {
+            "hz": 10,
+            "on_lag": "warn"
+          }
+        },
+        "resources": {
+          "cpu": 1.0,
+          "gpu": 0.0,
+          "memory": 1.0,
+          "gpu_memory": 0.0,
+          "disk": 0.0,
+          "custom": {},
+          "node_type": null,
+          "host_affinity": [],
+          "max_runtime": null,
+          "priority": 0,
+          "preemptible": true
+        }
+      },
+      "viz_policy": null,
+      "inputs": {
+        "value": "int"
+      },
+      "outputs": {
+        "value": "int",
+        "extra": "int"
+      },
+      "successors": [
+        "B"
+      ],
+      "predecessors": [
+        "B"
+      ],
+      "service_handlers": [],
+      "service_callers": []
+    },
+    {
+      "id": "B",
+      "type": "Join",
+      "module": "test_legacy_cycle_ir_rt",
+      "init_config": {},
+      "config": {
+        "clock": {
+          "Rate": {
+            "hz": 10,
+            "on_lag": "warn"
+          }
+        },
+        "resources": {
+          "cpu": 1.0,
+          "gpu": 0.0,
+          "memory": 1.0,
+          "gpu_memory": 0.0,
+          "disk": 0.0,
+          "custom": {},
+          "node_type": null,
+          "host_affinity": [],
+          "max_runtime": null,
+          "priority": 0,
+          "preemptible": true
+        }
+      },
+      "viz_policy": null,
+      "inputs": {
+        "value": "int",
+        "extra": "int"
+      },
+      "outputs": {
+        "value": "int"
+      },
+      "successors": [
+        "A"
+      ],
+      "predecessors": [
+        "A"
+      ],
+      "service_handlers": [],
+      "service_callers": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "A.value->B.value",
+      "type": "int",
+      "source": {
+        "node": "A",
+        "port": "value"
+      },
+      "destination": {
+        "node": "B",
+        "port": "value"
+      },
+      "adapter": {
+        "Latest": {
+          "buffer_size": 1
+        }
+      },
+      "qsize": 10,
+      "on_full": null
+    },
+    {
+      "id": "A.extra->B.extra",
+      "type": "int",
+      "source": {
+        "node": "A",
+        "port": "extra"
+      },
+      "destination": {
+        "node": "B",
+        "port": "extra"
+      },
+      "adapter": {
+        "Latest": {
+          "buffer_size": 1
+        }
+      },
+      "qsize": 10,
+      "on_full": null
+    },
+    {
+      "id": "B.value->A.value",
+      "type": "int",
+      "source": {
+        "node": "B",
+        "port": "value"
+      },
+      "destination": {
+        "node": "A",
+        "port": "value"
+      },
+      "adapter": {
+        "Latest": {
+          "buffer_size": 1
+        }
+      },
+      "qsize": 10,
+      "on_full": null
+    }
+  ],
+  "topology": {
+    "sources": [],
+    "sinks": [],
+    "groups": [
+      [
+        "A",
+        "B"
+      ]
+    ],
+    "node_count": 2,
+    "edge_count": 3,
+    "has_cycle": true,
+    "is_connected": true
+  },
+  "optimization": null,
+  "_cached_analysis": null
+}
