@@ -30,8 +30,8 @@ class Pipeline:
     - or debug locally with `pipeline.step(...)`
     """
 
-    def __init__(self, name: str = "pipeline", *, on_lag: Optional[str] = None):
-        self._builder = PipelineBuilder(name=name)
+    def __init__(self, name: str = "pipeline", *, on_lag: Optional[str] = None, cycles: str = "warn"):
+        self._builder = PipelineBuilder(name=name, cycles=cycles)
         self._builder.owner = self
         self._name = name
         self._context_token = None

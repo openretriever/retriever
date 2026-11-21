@@ -132,7 +132,8 @@ These are intentional constraints for the first version:
 - Generator-based flows / services are **not supported** in `Pipeline.step(...)` yet.
   - The dora executor supports generators for RPC; the stepper currently raises an error if `Flow.step()` yields.
 - Service edges (`_request_out`, `_response_in/...`) are ignored by the stepper for now.
-- Cycles are executed once per step using the IR’s SCC groups order; this is a debug approximation.
+- For feedback, use `pipe.connect(controller, plant, sync=Prev())`. Within a feedback group the stepper follows the same-tick edges in topological order. A delayed edge exposes earlier publications only after the tick advances; calling `step(now=t)` twice does not advance the delay. Reset before rewinding time.
+- With `Pipeline(cycles="strict")`, validation rejects any cycle without a `Prev()` edge. The default warns and keeps the old order for an unmarked cycle. This orders local steps, not clocks on separate machines.
 
 If you need “real execution semantics”, use `Pipeline.run(...)` on a backend.
 

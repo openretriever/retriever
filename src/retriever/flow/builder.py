@@ -8,6 +8,7 @@ from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, is_dataclass
 import sys
+import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from retriever.error import ErrCode, FlowError
@@ -75,8 +76,11 @@ class PipelineBuilder:
             graph = ctx.build_graph()
     """
 
-    def __init__(self, name: str = "pipeline"):
+    def __init__(self, name: str = "pipeline", *, cycles: str = "warn"):
         """Initialize empty context."""
+        if cycles not in ("warn", "strict"):
+            raise ValueError("cycles must be 'warn' or 'strict'")
+        self._cycles = cycles
         self._name: str = name
         self._context_token = None
 
@@ -267,12 +271,20 @@ class PipelineBuilder:
         for conn in self._connections:
             self._create_edges(graph, conn.src_node_id, conn.dst_node_id, conn)
 
+        self._check_cycles(graph)
         self._graph = graph
         logger.info(
             f"Graph built: {graph.get_node_count()} nodes, "
             f"{graph.get_edge_count()} edges"
         )
         return graph
+
+    def _check_cycles(self, graph: PipelineGraph) -> None:
+        for cycle in graph.same_tick_cycles():
+            message = f"Same-tick cycle: {' -> '.join(cycle)}. Mark a feedback edge with sync=Prev()."
+            if self._cycles == "strict":
+                raise FlowError(ErrCode.FLOW_CONNECTION_INVALID, message)
+            warnings.warn(message, UserWarning, stacklevel=3)
 
     def _extract_ports(
         self, io_types: Union[Type, Tuple[Type, ...]]
@@ -928,11 +940,8 @@ class PipelineBuilder:
             node.successors = []
             node.predecessors = []
 
-        topo_graph = PipelineGraph()
-        for node in ir.nodes:
-            topo_graph.add_node(node.id, {"_in": object}, {"_out": object})
-
-        seen_pairs = set()
+        topo_graph = ir.data_graph()
+        self._check_cycles(topo_graph)
         for edge in ir.edges:
             if not self._is_topology_edge(edge):
                 continue
@@ -942,18 +951,13 @@ class PipelineBuilder:
                 src.successors.append(edge.destination.node)
             if dst and edge.source.node not in dst.predecessors:
                 dst.predecessors.append(edge.source.node)
-            pair = (edge.source.node, edge.destination.node)
-            if pair in seen_pairs:
-                continue
-            seen_pairs.add(pair)
-            topo_graph.connect(edge.source.node, "_out", edge.destination.node, "_in", {})
 
         ir.topology = IRTopology(
             sources=topo_graph.find_sources(),
             sinks=topo_graph.find_sinks(),
             groups=topo_graph.get_topological_groups(),
             node_count=len(ir.nodes),
-            edge_count=len(ir.edges),
+            edge_count=topo_graph.get_edge_count(),
             has_cycle=topo_graph.has_cycles(),
             is_connected=topo_graph.is_connected(),
         )

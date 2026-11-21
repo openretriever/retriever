@@ -419,10 +419,25 @@ class IR:
         self._validate_topology_metadata(nodes_by_id)
         return self
 
+    def data_graph(self):
+        """Reconstruct port-level data edges, including their sampling policies."""
+        from retriever.flow.graph import PipelineGraph
+
+        graph = PipelineGraph()
+        for node in self.nodes:
+            graph.add_node(node.id, {}, {})
+        for edge in self.edges:
+            src, dst = edge.source, edge.destination
+            if any(self.get_logical_port(p).startswith("_") for p in (src.port, dst.port)):
+                continue
+            graph.nodes[src.node].output_ports[src.port] = object
+            graph.nodes[dst.node].input_ports[dst.port] = object
+            graph.connect(src.node, src.port, dst.node, dst.port, {"adapter": edge.adapter})
+        return graph
+
     def _validate_topology_metadata(self, nodes_by_id: Mapping[str, IRNode]) -> None:
         """Ensure serialized topology cannot change runtime execution order."""
         from retriever.error import ErrCode, IRError
-        from retriever.flow.graph import PipelineGraph
 
         topo = self.topology
         if topo.node_count != len(self.nodes):
@@ -451,20 +466,7 @@ class IR:
                 f"Topology groups omit nodes: {missing_grouped}",
             )
 
-        topo_graph = PipelineGraph()
-        for node_id in nodes_by_id:
-            topo_graph.add_node(node_id, {"_in": object}, {"_out": object})
-
-        seen_pairs: Set[Tuple[str, str]] = set()
-        for edge in self.edges:
-            if (self.get_logical_port(edge.source.port).startswith('_')
-                    or self.get_logical_port(edge.destination.port).startswith('_')):
-                continue
-            pair = (edge.source.node, edge.destination.node)
-            if pair in seen_pairs:
-                continue
-            seen_pairs.add(pair)
-            topo_graph.connect(edge.source.node, "_out", edge.destination.node, "_in", {})
+        topo_graph = self.data_graph()
 
         expected_sources = topo_graph.find_sources()
         expected_sinks = topo_graph.find_sinks()

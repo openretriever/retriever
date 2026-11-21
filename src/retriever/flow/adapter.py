@@ -156,6 +156,23 @@ class Latest(Adapter[T]):
         return value
 
 
+@register_adapter("prev")
+@dataclass
+class Prev(Adapter[T]):
+    """Latest retained event strictly before the consumer tick."""
+    buffer_size: int = 2
+
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+        cutoff = time.time() if now is None else now
+        best = None
+        for ts, value in buffer:
+            if ts < cutoff and (best is None or ts >= best[0]):
+                best = (ts, value)
+        if best is None:
+            raise IndexError("no event before the consumer tick")
+        return best[1]
+
+
 @register_adapter("hold")
 @dataclass
 class Hold(Adapter[T]):

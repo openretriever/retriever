@@ -38,7 +38,7 @@ def _resolve_version() -> str:
 __version__ = _resolve_version()
 
 from retriever.flow import Flow, Rate, Clock, Trigger, Hybrid, Tick
-from retriever.flow.adapter import Latest, Hold, Window, Events
+from retriever.flow.adapter import Latest, Prev, Hold, Window, Events
 from retriever.flow.pipeline import (
     Pipeline,
     clear_default_pipeline,
@@ -150,6 +150,7 @@ __all__ = [
     "Hybrid",
     "Tick",
     "Latest",
+    "Prev",
     "Hold",
     "Window",
     "Events",

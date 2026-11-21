@@ -135,6 +135,12 @@ Two independent runs produce the identical trace because they use the same fixed
 
 **The contract, precisely.** Fix a graph with deterministic `Flow.step()` bodies and sync policies, fixed initial states, strictly causal cycles, and the same ordered timestamped external input history; replay stochastic model calls from logged seeds or logged outputs. Then the discrete-event output history is uniquely determined. `Latest(now=t)` selects the event with the greatest timestamp satisfying `timestamp <= t`; without `now`, it selects the greatest timestamp in the buffer. Buffers retain timestamp order even when a transport drains fan-in queues in another arrival order. Events with equal timestamps currently preserve insertion order, so scheduler-independent replay requires that tie order to be part of the recorded input history (or that producers attach a deterministic sequence key).
 
+For strict feedback, use `Pipeline(cycles="strict")` and mark a return edge with
+`pipe.connect(controller, plant, sync=Prev())`. Every directed cycle needs a
+marked edge. The stepper orders the other edges producer first; a delayed input
+reads only earlier ticks. Before any earlier value exists, it has no signal.
+The default warns about unmarked cycles and preserves their old stepping order.
+
 ### `Latest()` uses event time, not append order
 
 Suppose a transport appends these records out of order:

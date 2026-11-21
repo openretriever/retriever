@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, FrozenSet, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter, Latest
+from retriever.flow.adapter import Adapter, Latest, Prev
 from retriever.flow.types import TimedBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
@@ -99,6 +99,35 @@ class InMemoryChannel:
         self._arrival_flag = False
 
 
+class _PreviousTickChannel(InMemoryChannel):
+    """Stage publications until the next distinct tick, including trigger arrivals."""
+
+    def __init__(self, buffer_size: int):
+        super().__init__(buffer_size)
+        self._pending = PythonBufferEngine(buffer_size)
+        self._tick: Optional[float] = None
+
+    def advance(self, now: float) -> None:
+        if self._tick is not None and now < self._tick:
+            raise ValueError("Prev() requires nondecreasing step times; reset before rewinding")
+        if now != self._tick:
+            for timestamp, value in self._pending.events():
+                super().put_one(value, timestamp)
+            self._pending.clear()
+            self._tick = now
+
+    def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:
+        if current_step_time() is None:
+            super().put_one(value, timestamp, block)
+        else:
+            self._pending.push(timestamp, value)
+
+    def clear(self) -> None:
+        super().clear()
+        self._pending.clear()
+        self._tick = None
+
+
 @dataclass(frozen=True)
 class StepResult:
     """Result of one `Pipeline.step()` call."""
@@ -124,6 +153,7 @@ class PipelineStepper:
         self._flows: Dict[str, TemporalFlow] = {n.id: ctx.get_handle_for_node(n.id) for n in self._ir.nodes}
 
         self._channels: Dict[str, InMemoryChannel] = {}
+        self._delayed: List[_PreviousTickChannel] = []
         self._inputs: Dict[str, Dict[str, InMemoryChannel]] = {}
         self._outputs: Dict[str, Dict[str, List[InMemoryChannel]]] = {}
         self._adapters: Dict[str, Dict[str, Adapter]] = {}
@@ -212,22 +242,16 @@ class PipelineStepper:
             actual_port = edge.destination.port
             logical_port = IR.get_logical_port(actual_port)
 
-            if IR.is_fan_in_port(actual_port):
-                # Fan-in: share one channel for all edges to same logical port
-                if logical_port not in self._inputs[dst]:
-                    adapter = edge.instantiate_adapter()
-                    channel = InMemoryChannel(buffer_size=adapter.buffer_size)
-                    self._inputs[dst][logical_port] = channel
-                    self._adapters[dst][logical_port] = adapter
-                # Reuse existing channel for this edge
-                self._channels[edge.id] = self._inputs[dst][logical_port]
-            else:
-                # Normal: one channel per edge
+            if logical_port not in self._inputs[dst]:
                 adapter = edge.instantiate_adapter()
-                channel = InMemoryChannel(buffer_size=adapter.buffer_size)
-                self._channels[edge.id] = channel
+                if isinstance(adapter, Prev):
+                    channel = _PreviousTickChannel(adapter.buffer_size)
+                    self._delayed.append(channel)
+                else:
+                    channel = InMemoryChannel(adapter.buffer_size)
                 self._inputs[dst][logical_port] = channel
                 self._adapters[dst][logical_port] = adapter
+            self._channels[edge.id] = self._inputs[dst][logical_port]
 
         # Build per-node output publishers (support broadcasting)
         for edge in self._ir.edges:
@@ -336,6 +360,8 @@ class PipelineStepper:
         """
         self._ensure_initialized()
         step_now = self._compute_now(now=now, dt=dt)
+        for channel in self._delayed:
+            channel.advance(step_now)
         step_token = _CURRENT_STEP_TIME.set(step_now)
 
         try:

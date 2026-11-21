@@ -363,20 +363,51 @@ class PipelineGraph:
 
         return sccs
 
+    def _same_tick_graph(self, nodes) -> "PipelineGraph":
+        graph = PipelineGraph()
+        graph.nodes = {n: self.nodes[n] for n in sorted(nodes)}
+        graph.edges = sorted((
+            e for e in self.edges if e.src_node in graph.nodes and e.dst_node in graph.nodes
+            and next(iter(e.metadata.get("adapter") or {}), "").lower() != "prev"
+        ), key=lambda e: (e.src_node, e.dst_node, e.src_port, e.dst_port))
+        return graph
+
+    def same_tick_cycles(self):
+        """Yield each simple directed cycle once, starting at its smallest node."""
+        graph = self._same_tick_graph(self.nodes)
+        for component in graph.find_strongly_connected_components():
+            if len(component) == 1 and component[0] not in graph.get_successors(component[0]):
+                continue
+            members = set(component)
+            successors = {n: sorted(members.intersection(graph.get_successors(n))) for n in members}
+            for start in sorted(members):
+                path = [start]
+
+                def visit(node):
+                    for dst in successors[node]:
+                        if dst == start:
+                            yield path + [start]
+                        elif dst > start and dst not in path:
+                            path.append(dst)
+                            yield from visit(dst)
+                            path.pop()
+
+                yield from visit(start)
+
     def get_topological_groups(self) -> List[List[str]]:
         """
         Get SCCs in topological order, with nodes ordered within each SCC.
 
         Returns list where each element is a group (SCC) of node IDs:
         - Single-node list: node not in a cycle
-        - Multi-node list: nodes in same cycle, ordered by in-degree + DFS
+        - Multi-node list: feedback group, respecting same-tick dependencies
 
         Example:
             Graph: A -> B <-> C -> D
             Returns: [['A'], ['B', 'C'], ['D']]
 
         SCCs are ordered topologically (respects inter-SCC dependencies).
-        Nodes within each SCC are ordered starting from minimum in-degree node.
+        Unmarked cycles retain the legacy order for compatibility.
 
         This preserves cycle structure while maintaining topological ordering,
         useful for partition algorithms and visualization.
@@ -432,8 +463,12 @@ class PipelineGraph:
             if len(scc) == 1:
                 groups.append(scc)
             else:
-                # Cycle: order nodes within SCC
-                groups.append(self._order_nodes_in_scc(scc))
+                local = self._same_tick_graph(scc)
+                members = set(scc)
+                if len(local.edges) == sum(e.src_node in members and e.dst_node in members for e in self.edges):
+                    groups.append(self._order_nodes_in_scc(scc))
+                else:
+                    groups.append([n for group in local.get_topological_groups() for n in group])
 
         return groups
 

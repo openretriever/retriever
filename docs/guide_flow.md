@@ -301,11 +301,30 @@ Notes:
 
 Retriever allows **feedback edges** (cycles). Cycles are represented as SCC groups in `IR.topology.groups`.
 
+Mark at least one edge on **each** directed cycle with `Prev()`. Removing those
+edges must leave an acyclic graph. Unlike `Latest()`, which includes events at
+the consumer tick, `Prev()` selects the newest retained event strictly before
+that tick. Before the first such event, the input has no signal.
+
+```python
+from retriever.flow import Latest, Pipeline, Prev
+
+pipe = Pipeline("feedback", cycles="strict")
+pipe.connect(plant, controller, sync=Latest())
+pipe.connect(controller, plant, sync=Prev())
+```
+
+The stepper runs the plant before the controller: the controller sees the new
+observation, and the plant reads an earlier command. Reversing the two connection
+statements does not change that rule. Strict validation rejects an unmarked
+cycle and names its nodes. The default (`cycles="warn"`) warns and retains
+legacy ordering for unmarked cycles. Direct self-connections remain invalid.
+
 Practical guidance:
 
 - Avoid a “Trigger-only” cycle (`Trigger(...)` on every node): it may deadlock with no initial event.
 - Prefer a **clocked plant/env** and an **event-driven controller**:
-  - env: `Rate(hz=...)` (steps periodically, samples latest action)
+  - env: `Rate(hz=...)` (steps periodically, samples the latest earlier action)
   - controller: `Trigger("obs")` (runs when a new observation arrives)
 
 This yields a stable distributed closed-loop where the env tick uses the most recent action.
