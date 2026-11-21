@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional, Any, Iterable
-from typing import Type, List, Dict, Literal
+from typing import ClassVar, Type, List, Dict, Literal
 from retriever.error import FlowError, ErrCode
 from retriever.flow.types import Behavior, TimedBuffer, EventStream
 # Forward references
@@ -31,6 +31,7 @@ class Adapter(ABC, Generic[T]):
     All adapters must specify buffer_size to control history depth.
     """
     buffer_size: int
+    strict_prefix: ClassVar[bool] = False
 
     def __post_init__(self):
         if self.buffer_size < 1:
@@ -97,7 +98,7 @@ def register_adapter(name: Optional[str] = None):
             )
 
         # Determine adapter name
-        adapter_name = name if name is not None else cls.__name__
+        adapter_name = (name if name is not None else cls.__name__).lower()
 
         # Check for name collision
         if adapter_name in _adapter_registry:
@@ -118,6 +119,7 @@ def register_adapter(name: Optional[str] = None):
 
 def get_adapter(name: str) -> Type[Adapter]:
     """Get adapter class by name."""
+    name = name.lower()
     if name not in _adapter_registry:
         raise FlowError(
             ErrCode.FLOW_ADAPTER_INVALID,
@@ -130,6 +132,27 @@ def get_adapter(name: str) -> Type[Adapter]:
 def list_adapters() -> List[str]:
     """Get all registered adapter names."""
     return list(_adapter_registry.keys())
+
+
+def has_strict_prefix(tag: dict) -> bool:
+    cls = _adapter_registry.get(next(iter(tag or {}), "").lower())
+    return cls is not None and cls.strict_prefix
+
+
+def adapter_tag(adapter):
+    """Keep existing IR tags; use the registry key for explicitly aliased types."""
+    from retriever._internal import as_tagged
+
+    tag = as_tagged(adapter)
+    alias = type(adapter).__dict__.get("__adapter_name__")
+    if alias and alias != type(adapter).__name__.lower():
+        return {alias: tag[type(adapter).__name__]}
+    return tag
+
+
+def tick_key(timestamp: float) -> int:
+    """Nanosecond logical instant for strict-prefix comparisons only."""
+    return round(timestamp * 1_000_000_000)
 
 
 def is_adapter(cls) -> bool:
@@ -161,15 +184,21 @@ class Latest(Adapter[T]):
 class Prev(Adapter[T]):
     """Latest retained event strictly before the consumer tick."""
     buffer_size: int = 2
+    strict_prefix: ClassVar[bool] = True
+    initial: Optional[T] = None
 
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         if now is None:
             raise ValueError("Prev() requires an explicit consumer time (now)")
         best = None
+        cutoff = tick_key(now)
         for ts, value in buffer:
-            if ts < now and (best is None or ts >= best[0]):
-                best = (ts, value)
+            stamp = tick_key(ts)
+            if stamp < cutoff and (best is None or stamp >= best[0]):
+                best = (stamp, value)
         if best is None:
+            if self.initial is not None:
+                return self.initial
             raise IndexError("no event before the consumer tick")
         return best[1]
 

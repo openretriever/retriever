@@ -364,11 +364,13 @@ class PipelineGraph:
         return sccs
 
     def _same_tick_graph(self, nodes) -> "PipelineGraph":
+        from retriever.flow.adapter import has_strict_prefix
+
         graph = PipelineGraph()
         graph.nodes = {n: self.nodes[n] for n in sorted(nodes)}
         graph.edges = sorted((
             e for e in self.edges if e.src_node in graph.nodes and e.dst_node in graph.nodes
-            and next(iter(e.metadata.get("adapter") or {}), "").lower() != "prev"
+            and not has_strict_prefix(e.metadata.get("adapter", {}))
         ), key=lambda e: (e.src_node, e.dst_node, e.src_port, e.dst_port))
         return graph
 

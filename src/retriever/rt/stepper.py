@@ -14,6 +14,7 @@ It is **not** a production backend; it is a lightweight debugging tool.
 from __future__ import annotations
 
 import gzip
+import heapq
 import pickle
 import time
 import types
@@ -23,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, FrozenSet, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter, Latest, Prev
+from retriever.flow.adapter import Adapter, Latest, tick_key
 from retriever.flow.types import TimedBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
@@ -100,31 +101,41 @@ class InMemoryChannel:
 
 
 class _PreviousTickChannel(InMemoryChannel):
-    """Stage publications until the next distinct tick, including trigger arrivals."""
+    """Read on another clock; publications on this channel never trigger a step."""
 
-    def __init__(self, buffer_size: int):
-        super().__init__(buffer_size)
-        self._pending = PythonBufferEngine(buffer_size)
-        self._tick: Optional[float] = None
+    def __init__(self, adapter: Adapter):
+        super().__init__(adapter.buffer_size)
+        self._has_initial = getattr(adapter, "initial", None) is not None
+        self._pending: dict[int, tuple[float, Any]] = {}
+        self._release_keys: list[int] = []
+        self._tick: Optional[int] = None
 
     def advance(self, now: float) -> None:
-        if self._tick is not None and now < self._tick:
+        key = tick_key(now)
+        if self._tick is not None and key < self._tick:
             raise ValueError("Prev() requires nondecreasing step times; reset before rewinding")
-        if now != self._tick:
-            for timestamp, value in self._pending.events():
-                super().put_one(value, timestamp)
-            self._pending.clear()
-            self._tick = now
+        while self._release_keys and self._release_keys[0] < key:
+            timestamp, value = self._pending.pop(heapq.heappop(self._release_keys))
+            self._engine.push(timestamp, value)
+        self._tick = key
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:
-        if current_step_time() is None:
-            super().put_one(value, timestamp, block)
-        else:
-            self._pending.push(timestamp, value)
+        stamp = tick_key(timestamp)
+        # Before the first step an injection has no prior local commit tick.
+        release = stamp if self._tick is None else max(stamp, self._tick)
+        if release not in self._pending:
+            heapq.heappush(self._release_keys, release)
+        elif tick_key(self._pending[release][0]) > stamp:
+            return
+        self._pending[release] = (stamp / 1_000_000_000, value)
+
+    def empty(self) -> bool:
+        return not self._has_initial and super().empty()
 
     def clear(self) -> None:
         super().clear()
         self._pending.clear()
+        self._release_keys.clear()
         self._tick = None
 
 
@@ -244,8 +255,8 @@ class PipelineStepper:
 
             if logical_port not in self._inputs[dst]:
                 adapter = edge.instantiate_adapter()
-                if isinstance(adapter, Prev):
-                    channel = _PreviousTickChannel(adapter.buffer_size)
+                if adapter.strict_prefix:
+                    channel = _PreviousTickChannel(adapter)
                     self._delayed.append(channel)
                 else:
                     channel = InMemoryChannel(adapter.buffer_size)

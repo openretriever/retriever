@@ -271,7 +271,8 @@ class PipelineBuilder:
         for conn in self._connections:
             self._create_edges(graph, conn.src_node_id, conn.dst_node_id, conn)
 
-        self._check_cycles(graph)
+        from retriever.flow.clock import Trigger
+        self._check_cycles(graph, {n for n, h in self._handles.items() if isinstance(h.config.clock, Trigger)})
         self._graph = graph
         logger.info(
             f"Graph built: {graph.get_node_count()} nodes, "
@@ -279,12 +280,22 @@ class PipelineBuilder:
         )
         return graph
 
-    def _check_cycles(self, graph: PipelineGraph) -> None:
+    def _check_cycles(self, graph: PipelineGraph, trigger_nodes: set) -> None:
         for cycle in graph.same_tick_cycles():
             message = f"Same-tick cycle: {' -> '.join(cycle)}. Mark a feedback edge with sync=Prev()."
             if self._cycles == "strict":
                 raise FlowError(ErrCode.FLOW_CONNECTION_INVALID, message)
             warnings.warn(message, UserWarning, stacklevel=3)
+
+        if self._cycles == "strict" and trigger_nodes:
+            trigger_graph = PipelineGraph()
+            trigger_graph.nodes = {n: graph.nodes[n] for n in trigger_nodes}
+            trigger_graph.edges = [e for e in graph.edges
+                                   if e.src_node in trigger_nodes and e.dst_node in trigger_nodes]
+            for group in trigger_graph.get_cycles():
+                raise FlowError(ErrCode.FLOW_CONNECTION_INVALID,
+                                f"Feedback loop among {', '.join(sorted(group))} needs a clock-driven node; "
+                                "Prev() is sampled but never triggers its consumer.")
 
     def _extract_ports(
         self, io_types: Union[Type, Tuple[Type, ...]]
@@ -331,7 +342,7 @@ class PipelineBuilder:
         self, graph: PipelineGraph, src_id: str, dst_id: str, conn: Pipe
     ) -> None:
         """Create edges for connection with adapter and qsize metadata."""
-        from retriever._internal import as_tagged
+        from retriever.flow.adapter import adapter_tag
 
         def resolve_port_config(port: str):
             """Resolve qsize, on_full, and adapter for a specific port."""
@@ -388,7 +399,7 @@ class PipelineBuilder:
                         dst_id,
                         src_port,
                         {
-                            "adapter": as_tagged(adapter),
+                            "adapter": adapter_tag(adapter),
                             "qsize": qsize,
                             "on_full": on_full,
                         },
@@ -407,7 +418,7 @@ class PipelineBuilder:
                     src_field,
                     dst_id,
                     dst_field,
-                    {"adapter": as_tagged(adapter), "qsize": qsize, "on_full": on_full},
+                    {"adapter": adapter_tag(adapter), "qsize": qsize, "on_full": on_full},
                 )
                 logger.debug(
                     f"Created composite edge: {src_id}.{src_field} -> "
@@ -941,7 +952,7 @@ class PipelineBuilder:
             node.predecessors = []
 
         topo_graph = ir.data_graph()
-        self._check_cycles(topo_graph)
+        self._check_cycles(topo_graph, {n.id for n in ir.nodes if "Trigger" in n.config.get("clock", {})})
         for edge in ir.edges:
             if not self._is_topology_edge(edge):
                 continue

@@ -153,8 +153,34 @@ def test_delayed_trigger_and_strict_timestamp_cutoff():
     a = (Source() @ Rate(10)).named("A")
     b = (Add() @ Trigger("value")).named("B")
     p.connect(a, b, sync=Prev())
-    assert [p.step(now=t).executed for t in (1, 1, 2)] == [["A"], ["A"], ["A", "B"]]
+    assert [p.step(now=t).executed for t in (1, 1, 2)] == [["A"], ["A"], ["A"]]
     assert Prev()([(3, 30), (1, 10), (1, 11), (2, 20)], now=2) == 11
+
+
+def test_prev_subclass_supplies_initial_without_triggering():
+    from retriever.flow.adapter import register_adapter
+
+    @register_adapter("fixture_initialized_delay")
+    class InitializedDelay(Prev):
+        pass
+
+    pipe = Pipeline(cycles="strict")
+    a = (Add() @ Rate(10)).named("A")
+    b = (Add() @ Trigger("value")).named("B")
+    pipe.connect(a, b, sync=Latest())
+    pipe.connect(b, a, sync=InitializedDelay(initial=0))
+    steps = [pipe.step(now=t) for t in (1, 2)]
+    assert [s.executed for s in steps] == [["A", "B"], ["A", "B"]]
+    assert [s.inputs["A"].value for s in steps] == [0, 2]
+
+
+def test_strict_rejects_feedback_with_no_clock_driven_node():
+    pipe = Pipeline(cycles="strict")
+    a, b = [(Add() @ Trigger("value")).named(n) for n in ("A", "B")]
+    pipe.connect(a, b, sync=Latest())
+    pipe.connect(b, a, sync=Prev(initial=3))
+    with pytest.raises(FlowError, match="A, B needs a clock-driven node"):
+        pipe.validate()
 
 
 def test_record_replay_recomputes_both_feedback_nodes(tmp_path):

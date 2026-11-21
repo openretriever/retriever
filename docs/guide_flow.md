@@ -304,7 +304,9 @@ Retriever allows **feedback edges** (cycles). Cycles are represented as SCC grou
 Mark at least one edge on **each** directed cycle with `Prev()`. Removing those
 edges must leave an acyclic graph. Unlike `Latest()`, which includes events at
 the consumer tick, `Prev()` selects the newest retained event strictly before
-that tick. Before the first such event, the input has no signal.
+that tick, committed before the tick began. It never triggers its consumer.
+Before any eligible event, the input has no signal unless you set
+`Prev(initial=value)`. An initial value is data, not a trigger.
 
 ```python
 from retriever.flow import Latest, Pipeline, Prev
@@ -322,7 +324,10 @@ legacy ordering for unmarked cycles. Direct self-connections remain invalid.
 
 Practical guidance:
 
-- Avoid a “Trigger-only” cycle (`Trigger(...)` on every node): it may deadlock with no initial event.
+- Every feedback loop needs a clock-driven node. Strict mode rejects trigger-only
+  loops. A triggered node may sample a delayed input when another input wakes it.
+- These delay and trigger rules apply to local stepped execution. Do not rely on
+  them for scheduling across distributed workers.
 - Prefer a **clocked plant/env** and an **event-driven controller**:
   - env: `Rate(hz=...)` (steps periodically, samples the latest earlier action)
   - controller: `Trigger("obs")` (runs when a new observation arrives)

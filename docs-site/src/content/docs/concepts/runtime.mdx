@@ -138,7 +138,9 @@ Two independent runs produce the identical trace because they use the same fixed
 For strict feedback, use `Pipeline(cycles="strict")` and mark a return edge with
 `pipe.connect(controller, plant, sync=Prev())`. Every directed cycle needs a
 marked edge. The stepper orders the other edges producer first; a delayed input
-reads only earlier ticks. Before any earlier value exists, it has no signal.
+reads only earlier ticks and never triggers its consumer. Each feedback loop
+needs a clock-driven node. Before any earlier value exists, the input has no
+signal unless you set `Prev(initial=value)`. These are local stepper guarantees.
 The default warns about unmarked cycles and preserves their old stepping order.
 
 ### `Latest()` uses event time, not append order

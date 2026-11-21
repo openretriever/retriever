@@ -134,6 +134,8 @@ These are intentional constraints for the first version:
 - Service edges (`_request_out`, `_response_in/...`) are ignored by the stepper for now.
 - For feedback, use `pipe.connect(controller, plant, sync=Prev())`. Within a feedback group the stepper follows the same-tick edges in topological order. A delayed edge exposes earlier publications only after the tick advances; calling `step(now=t)` twice does not advance the delay. Reset before rewinding time.
 - With `Pipeline(cycles="strict")`, validation rejects any cycle without a `Prev()` edge. The default warns and keeps the old order for an unmarked cycle. This orders local steps, not clocks on separate machines.
+- A delayed input never wakes its consumer. Each loop needs a clock-driven node. Use `Prev(initial=value)` to supply a sample before any earlier event exists.
+- An external injection follows the same rule as a publication: its timestamp and the last step at injection must both precede the read. Pass an explicit timestamp for logical-time injections before the first step. Equal instants compare at nanosecond resolution. Reset clears pending and visible samples.
 
 If you need “real execution semantics”, use `Pipeline.run(...)` on a backend.
 
