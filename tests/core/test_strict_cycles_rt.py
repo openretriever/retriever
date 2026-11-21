@@ -140,6 +140,14 @@ def test_feedback_uses_only_earlier_commits(reverse, shape):
     assert [s.inputs["A"].value for s in got] == [None, None, 2, expected[2][1]]
 
 
+def test_prev_requires_consumer_time_even_with_an_empty_buffer():
+    for events in ([], [(1, 11)]):
+        with pytest.raises(ValueError, match="explicit consumer time"):
+            Prev()(events)
+    with pytest.raises(IndexError, match="no event before"):
+        Prev()([(1, 11)], now=1)
+
+
 def test_delayed_trigger_and_strict_timestamp_cutoff():
     p = Pipeline(cycles="strict")
     a = (Source() @ Rate(10)).named("A")

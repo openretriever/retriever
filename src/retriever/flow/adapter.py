@@ -163,10 +163,11 @@ class Prev(Adapter[T]):
     buffer_size: int = 2
 
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
-        cutoff = time.time() if now is None else now
+        if now is None:
+            raise ValueError("Prev() requires an explicit consumer time (now)")
         best = None
         for ts, value in buffer:
-            if ts < cutoff and (best is None or ts >= best[0]):
+            if ts < now and (best is None or ts >= best[0]):
                 best = (ts, value)
         if best is None:
             raise IndexError("no event before the consumer tick")
