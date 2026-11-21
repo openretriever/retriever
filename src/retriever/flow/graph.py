@@ -373,26 +373,40 @@ class PipelineGraph:
         return graph
 
     def same_tick_cycles(self):
-        """Yield each simple directed cycle once, starting at its smallest node."""
+        """Yield one same-tick cycle per strongly connected group, starting at its smallest node.
+
+        One witness per group is enough to warn or reject; listing every simple cycle can take
+        exponential time on large legacy graphs.
+        """
         graph = self._same_tick_graph(self.nodes)
         for component in graph.find_strongly_connected_components():
             if len(component) == 1 and component[0] not in graph.get_successors(component[0]):
                 continue
             members = set(component)
             successors = {n: sorted(members.intersection(graph.get_successors(n))) for n in members}
-            for start in sorted(members):
-                path = [start]
-
-                def visit(node):
-                    for dst in successors[node]:
-                        if dst == start:
-                            yield path + [start]
-                        elif dst > start and dst not in path:
-                            path.append(dst)
-                            yield from visit(dst)
-                            path.pop()
-
-                yield from visit(start)
+            start = min(members)
+            # Breadth-first search for the shortest path back to start (always exists in an SCC).
+            parent = {start: None}
+            queue = [start]
+            found = None
+            while queue and found is None:
+                node = queue.pop(0)
+                for dst in successors[node]:
+                    if dst == start:
+                        found = node
+                        break
+                    if dst not in parent:
+                        parent[dst] = node
+                        queue.append(dst)
+            path = [start]
+            node = found
+            back = []
+            while node is not None and node != start:
+                back.append(node)
+                node = parent[node]
+            path.extend(reversed(back))
+            path.append(start)
+            yield path
 
     def get_topological_groups(self) -> List[List[str]]:
         """
