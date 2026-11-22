@@ -645,8 +645,14 @@ def _build_pipeline_flow_from_surface(
                 self._stepper = PipelineStepper(ctx)
             return self._stepper
 
+        def _previous_input_channel(self, port, adapter):
+            target = next(b.surface_port for b in self.input_bindings if b.surface_port.external_name == port)
+            return self._ensure_stepper().share_previous_input(target.node_id, target.port, adapter)
+
         def reset(self) -> None:
-            if self._stepper is not None:
+            # Binding a delayed input may create the inner stepper before its first step.
+            # Its own initialization will reset the flows in that case.
+            if self._stepper is not None and self._stepper.initialized:
                 self._stepper.reset()
 
         def finalize(self) -> None:

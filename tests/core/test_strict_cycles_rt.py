@@ -6,6 +6,7 @@ import pytest
 from retriever.error import FlowError
 from retriever.flow import Flow, Latest, Pipeline, Prev, Rate, Trigger, io
 from retriever.ir.core import IR
+from retriever.registry.pipeline import build_pipeline_flow, register_pipeline
 
 
 @io
@@ -36,6 +37,75 @@ class Source(Flow[None, Value]):
 class Relay(Flow[Value, Value]):
     def step(self, inputs):
         return Value(value=inputs.value)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("sample_only_trigger", [False, True])
+def test_prev_feedback_across_pipeline_flow_boundary(reverse, sample_only_trigger):
+    trace = []
+    resets = []
+
+    class Consumer(Flow[Value, Value]):
+        def reset(self):
+            resets.append("consumer")
+
+        def step(self, inputs):
+            trace.append(("consumer", inputs.value))
+            return Value(value=(inputs.value or 0) + 1)
+
+    class Producer(Flow[Value, Value]):
+        def step(self, inputs):
+            trace.append(("producer", inputs.value))
+            return Value(value=(inputs.value or 0) + 10)
+
+    clock = Trigger("value") if sample_only_trigger else Rate(10)
+
+    @register_pipeline("strict_boundary_consumer", overwrite=True)
+    def build():
+        with Pipeline("consumer_group") as inner:
+            (Consumer() @ clock).named("consumer")
+        return inner
+
+    def run(wrapped):
+        with Pipeline(cycles="strict") as pipe:
+            def make_consumer():
+                flow = build_pipeline_flow("strict_boundary_consumer") if wrapped else Consumer()
+                return (flow @ (Rate(10) if wrapped else clock)).named("consumer")
+
+            if reverse:
+                producer = (Producer() @ Rate(30)).named("producer")
+                consumer = make_consumer()
+            else:
+                consumer = make_consumer()
+                producer = (Producer() @ Rate(30)).named("producer")
+            consumer.then(producer, sync=Latest())
+            producer.then(consumer, sync=Prev(initial=7))
+
+        result = []
+        try:
+            # Parent-owned history survives inner initialization, but not a parent reset.
+            pipe.inject_input(consumer, "value", 90, timestamp=-1)
+            trace.clear()
+            resets.clear()
+            pipe.step(now=0)
+            assert resets == ["consumer"]
+            assert trace == ([("producer", None)] if sample_only_trigger else
+                             [("consumer", 90), ("producer", 91)])
+            pipe.reset_stepper()
+            for t in (0, 1 / 30, 2 / 30, 0.1, 3 / 30, 4 / 30):
+                trace.clear()
+                pipe.step(now=t)
+                result.append(trace.copy())
+        finally:
+            pipe.close_stepper()
+        return result
+
+    flat = run(False)
+    if sample_only_trigger:
+        assert flat == [[("producer", None)]] * 6
+    else:
+        assert flat == [[("consumer", v), ("producer", v + 1)] for v in (7, 18, 29, 40, 40, 51)]
+    assert run(True) == flat
 
 
 def feedback(*, reverse=False, shape=False, delay=True, mode="strict"):

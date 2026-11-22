@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, FrozenSet, Generic, List, Optional, Type, TypeVar
 
 from retriever.error import FlowError, RTError, ErrCode
-from retriever.flow.adapter import Adapter, Latest, tick_key
+from retriever.flow.adapter import Adapter, Latest, adapter_tag, tick_key
 from retriever.flow.types import TimedBuffer
 from retriever.flow.base import Flow
 from retriever.flow.clock import Clock, Hybrid, Rate, Trigger
@@ -165,6 +165,7 @@ class PipelineStepper:
 
         self._channels: Dict[str, InMemoryChannel] = {}
         self._delayed: List[_PreviousTickChannel] = []
+        self._parent_channels: set[_PreviousTickChannel] = set()
         self._inputs: Dict[str, Dict[str, InMemoryChannel]] = {}
         self._outputs: Dict[str, Dict[str, List[InMemoryChannel]]] = {}
         self._adapters: Dict[str, Dict[str, Adapter]] = {}
@@ -187,6 +188,10 @@ class PipelineStepper:
     def ir(self) -> IR:
         return self._ir
 
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
+
     def close(self) -> None:
         """Finalize all flows and clear buffers."""
         if self._initialized:
@@ -200,7 +205,8 @@ class PipelineStepper:
         self.reset_buffers()
 
     def reset_buffers(self) -> None:
-        seen: set[int] = set()
+        # The enclosing stepper owns the clock and lifetime of boundary histories.
+        seen: set[int] = {id(ch) for ch in self._parent_channels}
         for ch in self._channels.values():
             if id(ch) in seen:
                 continue
@@ -256,7 +262,7 @@ class PipelineStepper:
             if logical_port not in self._inputs[dst]:
                 adapter = edge.instantiate_adapter()
                 if adapter.strict_prefix:
-                    channel = _PreviousTickChannel(adapter)
+                    channel = self._previous_channel(dst, logical_port, adapter)
                     self._delayed.append(channel)
                 else:
                     channel = InMemoryChannel(adapter.buffer_size)
@@ -272,6 +278,27 @@ class PipelineStepper:
             port = edge.source.port
 
             self._outputs[src].setdefault(port, []).append(self._channels[edge.id])
+
+    def _previous_channel(self, node: str, port: str, adapter: Adapter) -> _PreviousTickChannel:
+        if node in self._composite_nodes:
+            return self._flows[node].flow._previous_input_channel(port, adapter)
+        return _PreviousTickChannel(adapter)
+
+    def share_previous_input(self, node: str, port: str, adapter: Adapter) -> _PreviousTickChannel:
+        """Bind a surfaced input to its parent's delayed edge, without re-publishing a sample."""
+        channel = self._inputs[node].get(port)
+        if channel is None:
+            channel = self._previous_channel(node, port, adapter)
+            self._inputs[node][port] = channel
+            self._adapters[node][port] = adapter
+        elif not isinstance(channel, _PreviousTickChannel) or (
+            adapter_tag(self._adapters[node][port]) != adapter_tag(adapter)
+        ):
+            raise ValueError(f"Fan-in adapter mismatch on {node}.{port}")
+        elif channel in self._delayed:
+            self._delayed.remove(channel)
+        self._parent_channels.add(channel)
+        return channel
 
     @staticmethod
     def _is_runtime_edge(edge: IREdge) -> bool:
