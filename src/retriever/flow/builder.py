@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 _active_context: ContextVar[Optional["PipelineBuilder"]] = ContextVar(
     "flow_context", default=None
 )
+_lowering_child = ContextVar("lowering_child", default=False)
 
 
 @dataclass
@@ -271,8 +272,6 @@ class PipelineBuilder:
         for conn in self._connections:
             self._create_edges(graph, conn.src_node_id, conn.dst_node_id, conn)
 
-        from retriever.flow.clock import Trigger
-        self._check_cycles(graph, {n for n, h in self._handles.items() if isinstance(h.config.clock, Trigger)})
         self._graph = graph
         logger.info(
             f"Graph built: {graph.get_node_count()} nodes, "
@@ -299,7 +298,7 @@ class PipelineBuilder:
                 )
                 hints.append(f"{src}.{e.src_port} -> {dst}.{e.dst_port}: "
                              f"pipe.connect({handle_name(src)}, {handle_name(dst)}, {mapping}sync=Prev())")
-            message = (f"Same-tick cycle: {' -> '.join(cycle)}; "
+            message = (f"Same-tick data cycle: {' -> '.join(cycle)}; "
                        "backward edges in the legacy step order (candidates for sync=Prev()). "
                        "Edit the existing connections (handles shown by node name): " + "; ".join(hints))
             if self._cycles == "strict":
@@ -578,23 +577,19 @@ class PipelineBuilder:
             edges=ir_edges,
             topology=topology,
         )
-        if lower_composite_flows:
+        check_graph = flow_graph
+        if lower_composite_flows and any(
+            self._is_composite_flow_wrapper(handle.flow) for handle in self._handles.values()
+        ):
             ir = self._lower_composite_flow_nodes(ir)
+            check_graph = ir.data_graph()
 
-        # Advisory check only: it must never fail a build.
-        try:
-            from retriever.ir.clock_algebra import same_instant_cycles
-
-            for cycle in same_instant_cycles(ir):
-                logger.warning(
-                    "Same-instant cycle of trigger edges in '%s', among: %s. These Flows "
-                    "trigger each other again at one instant; break the cycle with a Rate "
-                    "clock or a non-trigger input on one edge.",
-                    pipeline_name,
-                    ", ".join(cycle),
-                )
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.debug("Same-instant cycle check skipped: %s", exc)
+        # Every trigger cycle is a same-tick data cycle. Check the final graph
+        # once; the parent reports inlined children using their final port names.
+        if self._cycles == "strict" or not _lowering_child.get():
+            self._check_cycles(check_graph, {
+                n.id for n in ir.nodes if {"Trigger", "Synchronized"}.intersection(n.config.get("clock") or {})
+            })
 
         logger.info(
             f"Compilation complete: {len(ir.nodes)} nodes, "
@@ -720,7 +715,11 @@ class PipelineBuilder:
 
     def _inline_composite_flow_node(self, ir: IR, node_id: str, flow: Any) -> IR:
         nested_ctx = flow._pipeline_flow_context
-        nested_ir = nested_ctx.validate(lower_composite_flows=True)
+        token = _lowering_child.set(True)
+        try:
+            nested_ir = nested_ctx.validate(lower_composite_flows=True)
+        finally:
+            _lowering_child.reset(token)
         node_map = self._make_lowered_node_map(ir, node_id, nested_ir.nodes)
         pipeline_group = self._build_lowered_pipeline_group(flow, node_id, node_map)
 
@@ -971,7 +970,6 @@ class PipelineBuilder:
             node.predecessors = []
 
         topo_graph = ir.data_graph()
-        self._check_cycles(topo_graph, {n.id for n in ir.nodes if "Trigger" in n.config.get("clock", {})})
         for edge in ir.edges:
             if not self._is_topology_edge(edge):
                 continue

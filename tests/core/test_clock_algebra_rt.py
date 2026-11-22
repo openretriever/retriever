@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from retriever.flow import Flow, Latest, Pipeline, PipelineBuilder, Rate, Trigger, io
+from retriever.flow import Flow, Latest, Pipeline, PipelineBuilder, Prev, Rate, Trigger, io
 from retriever.ir.clock_algebra import (
     CoveringClock,
     activation_edges,
@@ -74,20 +74,21 @@ def test_covering_clock_of_20_and_30_hz_has_40_ticks_per_second():
     assert str(cover) == "Cover[Rate(20 Hz) ∪ Rate(30 Hz)]"
 
 
-def test_trigger_cycle_is_a_same_instant_cycle_and_is_logged(caplog):
+def test_trigger_cycle_shares_the_data_cycle_warning(caplog):
     pipe = Pipeline("clock_algebra_trigger_cycle")
     env = Env() @ Trigger("action")
     ctrl = Controller() @ Trigger("obs")
     pipe.connect(env, ctrl, sync=Latest())
     pipe.connect(ctrl, env, sync=Latest())
 
-    with caplog.at_level(logging.WARNING, logger="retriever.flow.builder"):
+    with caplog.at_level(logging.WARNING, logger="retriever.flow.builder"), pytest.warns(UserWarning, match="Same-tick data cycle") as seen:
         ir = pipe.validate()
 
     cycles = same_instant_cycles(ir)
     assert len(cycles) == 1 and len(cycles[0]) == 2
     assert len(activation_edges(ir)) == 2
-    assert any("Same-instant cycle" in r.getMessage() for r in caplog.records)
+    assert len(seen) == 1
+    assert not caplog.records
 
 
 def test_rate_clock_on_one_node_breaks_the_same_instant_cycle(caplog):
@@ -97,13 +98,29 @@ def test_rate_clock_on_one_node_breaks_the_same_instant_cycle(caplog):
     pipe.connect(env, ctrl, sync=Latest())
     pipe.connect(ctrl, env, sync=Latest())
 
-    with caplog.at_level(logging.WARNING, logger="retriever.flow.builder"):
+    with caplog.at_level(logging.WARNING, logger="retriever.flow.builder"), pytest.warns(UserWarning, match="Same-tick data cycle") as seen:
         ir = pipe.validate()
 
     assert ir.topology.has_cycle is True  # still a feedback loop
     assert same_instant_cycles(ir) == []  # but not a same-instant one
-    assert not any("Same-instant cycle" in r.getMessage() for r in caplog.records)
+    assert len(seen) == 1
+    assert not caplog.records
     assert covering_clock(ir).rates_hz == (10.0,)
+
+
+def test_prev_on_trigger_port_is_not_an_activation_edge():
+    pipe = Pipeline()
+    env = (Env() @ Trigger("action")).named("env")
+    ctrl = (Controller() @ Trigger("obs")).named("ctrl")
+    pipe.connect(env, ctrl, sync=Latest())
+    pipe.connect(ctrl, env, sync=Prev())
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        ir = pipe.validate()
+    assert activation_edges(ir) == [("env", "ctrl")]
+    assert same_instant_cycles(ir) == []
+    assert ir.topology.has_cycle
 
 
 def test_wrapper_exposes_covering_clock_with_boundary_trigger():

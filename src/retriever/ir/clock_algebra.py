@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple
 
 from retriever.ir.core import IR, IRNode
+from retriever.flow.adapter import has_strict_prefix
 
 _RATE_TYPES = ("Rate", "Tick")
 _TRIGGER_TYPES = ("Trigger", "Synchronized")
@@ -152,7 +153,7 @@ def covering_clock(
 
 def activation_edges(ir: IR) -> List[Tuple[str, str]]:
     """Edges (source node, destination node) whose destination port triggers the
-    destination's clock. These are the same-instant dependencies of a Retriever graph."""
+    destination's clock at the same tick. Sample-only edges never activate it."""
     triggers: Dict[str, set] = {}
     for node in ir.nodes:
         ctype, params = _clock_of(node)
@@ -160,6 +161,8 @@ def activation_edges(ir: IR) -> List[Tuple[str, str]]:
     out: List[Tuple[str, str]] = []
     seen: set = set()
     for edge in ir.edges:
+        if has_strict_prefix(edge.adapter):
+            continue
         dst = edge.destination.node
         if IR.get_logical_port(edge.destination.port) in triggers.get(dst, ()):
             pair = (edge.source.node, dst)
@@ -173,7 +176,8 @@ def same_instant_cycles(ir: IR) -> List[List[str]]:
     """Return the cycles made only of activation edges, as sorted lists of node ids.
 
     Such a cycle would make its Flows trigger each other again at the same instant, so
-    the group has no single step sequence. An empty list means the group is admissible.
+    the activation order is cyclic. An empty list rules out trigger cycles only:
+    ordinary sampled data edges may still form same-tick cycles.
     """
     adj: Dict[str, List[str]] = {node.id: [] for node in ir.nodes}
     self_loops: set = set()
