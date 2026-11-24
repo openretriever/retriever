@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from retriever.error import IRError
-from retriever.flow import Flow, Hold, Pipeline, PipelineBuilder, Rate, io, Latest
+from retriever.flow import Flow, Hold, Pipeline, PipelineBuilder, Rate, Trigger, io, Latest
 from retriever.ir.core import IR
 from retriever.registry.pipeline import (
     build_ir,
@@ -286,6 +286,30 @@ def test_pipeline_registry_flow_wrapper_can_be_nested_in_outer_pipeline(monkeypa
         outer.close_stepper()
 
 
+def test_pipeline_registry_flow_wrapper_uses_outer_step_time_zero():
+    @register_pipeline("test_pipeline_registry_nested_wrapper_t0", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_registry_nested_wrapper_t0") as ctx:
+            src = (CountingRichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    outer = Pipeline("test_pipeline_registry_outer_t0")
+    with outer:
+        bias = (BiasSource(bias=4) @ Rate(hz=10)).named("bias")
+        stage = (build_pipeline_flow("test_pipeline_registry_nested_wrapper_t0") @ Rate(hz=10)).named("stage")
+        bias.then(stage, sync=Latest())
+
+    try:
+        # now=0.0 must be used as the inner step time, not replaced by wall-clock time;
+        # otherwise the values held at t=0 look like future events at t=0.1.
+        values = [outer.step(now=t).outputs["stage"].value for t in (0.0, 0.1)]
+    finally:
+        outer.close_stepper()
+    assert values == [5, 6]
+
+
 def test_pipeline_registry_flow_wrapper_lowering_normalizes_exposed_connected_inputs():
     @register_pipeline(
         "test_pipeline_registry_flow_wrapper_connected_input",
@@ -428,3 +452,181 @@ def test_pipeline_registry_flow_wrapper_rejects_ir_only_factories():
 
     with pytest.raises(TypeError, match="requires a live Pipeline or PipelineBuilder"):
         build_pipeline_flow("test_pipeline_registry_flow_wrapper_ir_only")
+
+
+# A nested Pipeline-Flow must behave like its flattened inner Flows when stepped
+# in-process: held boundary inputs must not re-trigger inner Trigger flows, and
+# outputs must only carry values the inner flows produced in that step.
+
+
+@io
+class GoOut:
+    go: int
+
+
+@io
+class GateOut:
+    value: int
+
+
+class PulseOnce(Flow[None, GoOut]):
+    """Emits one event on its first step and nothing afterwards."""
+
+    def reset(self) -> None:
+        self.count = 0
+
+    def step(self, _):  # type: ignore[override]
+        self.count += 1
+        return GoOut(go=1) if self.count == 1 else None
+
+
+class Gate(Flow[GoOut, GateOut]):
+    def step(self, input: GoOut) -> GateOut:
+        return GateOut(value=input.go)
+
+
+class CountArrivals(Flow[GateOut, None]):
+    def step(self, input: GateOut) -> None:
+        return None
+
+
+def _register_gate_pipeline(name: str) -> None:
+    @register_pipeline(name, overwrite=True)
+    def build():
+        with PipelineBuilder(name) as ctx:
+            (Gate() @ Trigger("go")).named("gate")
+            return ctx
+
+
+def _count_executions(outer: Pipeline, node_id: str, steps: int) -> tuple[list[int], list[bool]]:
+    """Step `outer` in-process; return how often `node_id` ran and whether `stage`/`gate` emitted."""
+    ran: list[int] = []
+    emitted: list[bool] = []
+    try:
+        for k in range(steps):
+            result = outer.step(now=0.1 * k)
+            ran.append(int(node_id in result.executed))
+            out = result.outputs.get("stage", result.outputs.get("gate"))
+            emitted.append(out is not None and out._has_signal("value"))
+    finally:
+        outer.close_stepper()
+    return ran, emitted
+
+
+@pytest.mark.parametrize("wrapper_clock", [Rate(hz=10), Trigger("go")])
+def test_pipeline_flow_wrapper_matches_flattened_flows_in_process(wrapper_clock):
+    _register_gate_pipeline("test_pipeline_flow_wrapper_gate")
+
+    flat = Pipeline("test_pipeline_flow_wrapper_gate_flat")
+    with flat:
+        pulse = (PulseOnce() @ Rate(hz=10)).named("pulse")
+        gate = (Gate() @ Trigger("go")).named("gate")
+        counter = (CountArrivals() @ Trigger("value")).named("counter")
+        pulse.then(gate, sync=Latest())
+        gate.then(counter, sync=Latest())
+
+    grouped = Pipeline("test_pipeline_flow_wrapper_gate_grouped")
+    with grouped:
+        pulse = (PulseOnce() @ Rate(hz=10)).named("pulse")
+        stage = (build_pipeline_flow("test_pipeline_flow_wrapper_gate") @ wrapper_clock).named("stage")
+        counter = (CountArrivals() @ Trigger("value")).named("counter")
+        pulse.then(stage, sync=Latest())
+        stage.then(counter, sync=Latest())
+
+    flat_ran, flat_emitted = _count_executions(flat, "counter", steps=5)
+    grouped_ran, grouped_emitted = _count_executions(grouped, "counter", steps=5)
+
+    assert flat_ran == [1, 0, 0, 0, 0]
+    assert flat_emitted == [True, False, False, False, False]
+    assert grouped_ran == flat_ran
+    assert grouped_emitted == flat_emitted
+
+
+class BiasOnce(Flow[None, BiasOut]):
+    """Emits bias=4 on its first step and nothing afterwards."""
+
+    def reset(self) -> None:
+        self.count = 0
+
+    def step(self, _):  # type: ignore[override]
+        self.count += 1
+        return BiasOut(bias=4) if self.count == 1 else None
+
+
+def _collect_values(outer: Pipeline, node_id: str, steps: int) -> list[int | None]:
+    values: list[int | None] = []
+    try:
+        for k in range(steps):
+            out = outer.step(now=0.1 * k).outputs.get(node_id)
+            values.append(out.value if out is not None and out._has_signal("value") else None)
+    finally:
+        outer.close_stepper()
+    return values
+
+
+def test_pipeline_flow_wrapper_keeps_inner_rate_clocks_under_trigger_wrapper():
+    @register_pipeline("test_pipeline_flow_wrapper_inner_rate", overwrite=True)
+    def build():
+        with PipelineBuilder("test_pipeline_flow_wrapper_inner_rate") as ctx:
+            src = (CountingRichSource() @ Rate(hz=10)).named("source")
+            proc = (RichProc() @ Rate(hz=10)).named("processor")
+            src.then(proc, map={"value": "value"}, sync=Latest())
+            return ctx
+
+    flat = Pipeline("test_pipeline_flow_wrapper_inner_rate_flat")
+    with flat:
+        bias = (BiasOnce() @ Rate(hz=10)).named("bias")
+        src = (CountingRichSource() @ Rate(hz=10)).named("source")
+        proc = (RichProc() @ Rate(hz=10)).named("processor")
+        src.then(proc, map={"value": "value"}, sync=Latest())
+        bias.then(proc, sync=Latest())
+
+    grouped = Pipeline("test_pipeline_flow_wrapper_inner_rate_grouped")
+    with grouped:
+        bias = (BiasOnce() @ Rate(hz=10)).named("bias")
+        stage = (build_pipeline_flow("test_pipeline_flow_wrapper_inner_rate") @ Trigger("bias")).named(
+            "stage"
+        )
+        bias.then(stage, sync=Latest())
+
+    # The inner Rate flows keep running after the one bias event; the bias is held.
+    assert _collect_values(flat, "processor", steps=5) == [5, 6, 7, 8, 9]
+    assert _collect_values(grouped, "stage", steps=5) == [5, 6, 7, 8, 9]
+
+
+def test_pipeline_flow_wrapper_direct_step_returns_only_fresh_outputs():
+    _register_gate_pipeline("test_pipeline_flow_wrapper_gate_direct")
+    flow = build_pipeline_flow("test_pipeline_flow_wrapper_gate_direct")
+    try:
+        first = flow.step(flow.input_type(go=1))
+        second = flow.step(None)
+    finally:
+        flow.finalize()
+
+    assert first.value == 1
+    assert not second._has_signal("value")
+
+
+def test_direct_wrapper_call_does_not_inherit_another_wrappers_input_state():
+    _register_gate_pipeline("test_direct_wrapper_call_inside_step")
+    gate = build_pipeline_flow("test_direct_wrapper_call_inside_step")
+
+    class CallGate(Flow[None, GateOut]):
+        def step(self, _):
+            result = gate.step(gate.input_type(go=7))
+            return GateOut(value=result.value) if result._has_signal("value") else None
+
+    @register_pipeline("test_wrapper_containing_direct_call", overwrite=True)
+    def build():
+        with PipelineBuilder("test_wrapper_containing_direct_call") as ctx:
+            (CallGate() @ Rate(hz=10)).named("caller")
+            return ctx
+
+    outer = Pipeline("test_wrapper_direct_call_outer")
+    with outer:
+        (build_pipeline_flow("test_wrapper_containing_direct_call") @ Rate(hz=10)).named("stage")
+
+    try:
+        assert _collect_values(outer, "stage", steps=2) == [7, 7]
+    finally:
+        gate.finalize()
