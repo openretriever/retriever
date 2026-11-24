@@ -607,6 +607,26 @@ def test_pipeline_flow_wrapper_direct_step_returns_only_fresh_outputs():
     assert not second._has_signal("value")
 
 
+def test_pipeline_flow_wrapper_forwards_input_when_its_timestamp_becomes_visible():
+    _register_gate_pipeline("test_pipeline_flow_wrapper_gate_future_input")
+
+    outer = Pipeline("test_pipeline_flow_wrapper_future_input_outer")
+    with outer:
+        (build_pipeline_flow("test_pipeline_flow_wrapper_gate_future_input") @ Rate(hz=10)).named("stage")
+
+    def emitted(result):
+        out = result.outputs.get("stage")
+        return out.value if out is not None and out._has_signal("value") else None
+
+    try:
+        # One event stamped 1.0, injected once: invisible at 0.0, forwarded at 1.0, not again at 2.0.
+        outer.inject_input("stage", "go", 1, timestamp=1.0)
+        values = [emitted(outer.step(now=t)) for t in (0.0, 1.0, 2.0)]
+    finally:
+        outer.close_stepper()
+    assert values == [None, 1, None]
+
+
 def test_direct_wrapper_call_does_not_inherit_another_wrappers_input_state():
     _register_gate_pipeline("test_direct_wrapper_call_inside_step")
     gate = build_pipeline_flow("test_direct_wrapper_call_inside_step")

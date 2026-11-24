@@ -74,10 +74,12 @@ class InMemoryChannel:
     def __init__(self, buffer_size: int):
         self._engine: PythonBufferEngine[Any] = PythonBufferEngine(buffer_size=buffer_size)
         self._arrival_flag = False
+        self._pending_stamps: List[float] = []
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:  # noqa: ARG002
         self._engine.push(timestamp, value)
         self._arrival_flag = True
+        self._pending_stamps.append(timestamp)
 
     def get_all(self):
         return self._engine.events()
@@ -85,7 +87,24 @@ class InMemoryChannel:
     def new_arrival(self) -> bool:
         result = self._arrival_flag
         self._arrival_flag = False
+        self._pending_stamps.clear()
         return result
+
+    def take_visible_arrival(self, now: Optional[float]) -> bool:
+        """Consume the arrivals whose timestamps are visible at ``now``.
+
+        Arrivals stamped after ``now`` stay pending, so they count as new on
+        the first step that can sample them. Each arrival is consumed once.
+        """
+        if not self._arrival_flag:
+            return False
+        if now is None:
+            return self.new_arrival()
+        if not any(ts <= now for ts in self._pending_stamps):
+            return False
+        self._pending_stamps = [ts for ts in self._pending_stamps if ts > now]
+        self._arrival_flag = bool(self._pending_stamps)
+        return True
 
     def empty(self) -> bool:
         return self._engine.empty()
@@ -93,6 +112,7 @@ class InMemoryChannel:
     def clear(self) -> None:
         self._engine.clear()
         self._arrival_flag = False
+        self._pending_stamps.clear()
 
 
 @dataclass(frozen=True)
@@ -347,7 +367,9 @@ class PipelineStepper:
                 if composite:
                     should_execute, fields = True, ["..."]
                     fresh = frozenset(
-                        port for port, ch in self._inputs[node_id].items() if ch.new_arrival()
+                        port
+                        for port, ch in self._inputs[node_id].items()
+                        if ch.take_visible_arrival(step_now)
                     )
                 else:
                     should_execute, fields = self._should_execute(clock, self._inputs[node_id])
