@@ -341,7 +341,13 @@ class Pipeline:
         ir = self._build_ir()
         return ir.compile(policy=policy, **kwargs)
 
-    def step(self, *, now: Optional[float] = None, dt: Optional[float] = None):
+    def step(
+        self,
+        *,
+        now: Optional[float] = None,
+        dt: Optional[float] = None,
+        honor_rates: bool = False,
+    ):
         """
         Execute one discrete debugging step in-process.
 
@@ -351,6 +357,9 @@ class Pipeline:
         Args:
             now: Optional wall-clock timestamp to associate with this step.
             dt: Optional logical time delta (seconds) to advance an internal clock.
+            honor_rates: If True, a Rate flow runs only when a tick of its own rate falls
+                in (previous step time, this step time]. Default False: every Rate flow
+                runs once per debugging step.
 
         Returns:
             `StepResult` (see `retriever.rt.stepper.StepResult`)
@@ -360,7 +369,29 @@ class Pipeline:
         if self._stepper is None:
             self._stepper = PipelineStepper(self)
 
+        if honor_rates:
+            return self._stepper.step(now=now, dt=dt, honor_rates=True)
         return self._stepper.step(now=now, dt=dt)
+
+    def run_logical(self, until: float, *, start: float = 0.0):
+        """
+        Run the pipeline in deterministic logical time over [start, until).
+
+        Steps at every tick of the pipeline's covering clock (the union of its Rate
+        clocks, nested groups included). At each tick, only the Rate flows whose own
+        rate ticks there run, Trigger flows run on new arrivals, and flows run in
+        dependency order, so each Flow keeps its declared rate. For the same inputs
+        and initial state the returned trace is the same on every call.
+
+        Returns:
+            List of `StepResult`, one per covering tick.
+        """
+        from retriever.ir.clock_algebra import covering_clock
+
+        cover = covering_clock(self._build_ir())
+        if not cover.rates_hz:
+            raise ValueError("run_logical needs at least one Rate clock in the pipeline")
+        return [self.step(now=t, honor_rates=True) for t in cover.ticks(start, until)]
 
     def inject_input(
         self,

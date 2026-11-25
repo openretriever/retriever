@@ -42,10 +42,30 @@ _CURRENT_STEP_TIME: ContextVar[Optional[float]] = ContextVar(
 )
 
 
+def _rate_tick_in(clock: Rate, prev: Optional[float], now: float) -> bool:
+    """True when a tick k/hz of the Rate grid (phase 0) lies in (prev, now].
+
+    The first logical step (prev is None) runs every Rate flow once. The 1e-9
+    relative tolerance matches `CoveringClock.ticks`.
+    """
+    hz = getattr(clock, "hz", None)
+    if not hz or hz <= 0 or prev is None:
+        return True
+    import math
+
+    k = math.floor(now * hz + 1e-9)
+    return k / hz > prev + 1e-9 * max(1.0, abs(prev))
+
+
 def current_step_time() -> Optional[float]:
     """Return the logical time of the active in-process step, if any."""
     return _CURRENT_STEP_TIME.get()
 
+
+_CURRENT_HONOR_RATES: ContextVar[bool] = ContextVar(
+    "retriever_current_honor_rates",
+    default=False,
+)
 
 _CURRENT_FRESH_INPUTS: ContextVar[Optional[FrozenSet[str]]] = ContextVar(
     "retriever_current_fresh_inputs",
@@ -181,6 +201,9 @@ class PipelineStepper:
         self._initialized = False
         self._now: Optional[float] = None
         self._logical_start_time: Optional[float] = None
+        # Logical-time stepping (honor_rates=True): time of the previous step, so a Rate
+        # flow runs only when a tick k/hz of its own grid falls in (previous step, now].
+        self._prev_rate_now: Optional[float] = None
 
         self._build_io()
 
@@ -377,7 +400,13 @@ class PipelineStepper:
         self._inputs[node_id][logical_port] = channel
         self._adapters[node_id][logical_port] = adapter
 
-    def step(self, *, now: Optional[float] = None, dt: Optional[float] = None) -> StepResult:
+    def step(
+        self,
+        *,
+        now: Optional[float] = None,
+        dt: Optional[float] = None,
+        honor_rates: bool = False,
+    ) -> StepResult:
         """
         Execute one discrete debugging step in-process.
 
@@ -388,6 +417,10 @@ class PipelineStepper:
           - Nested Pipeline-Flow wrappers execute once per step whatever clock is
             attached to them, and see which of their inputs are new (see
             `current_fresh_inputs`), so they behave like their inner flows inlined.
+          - With `honor_rates=True` (logical-time stepping, used by
+            `Pipeline.run_logical`), a Rate flow runs only when a tick k/hz of its own
+            grid falls in (previous step time, this step time]; nested groups inherit
+            the setting, so their inner Rate flows also keep their own rates.
 
         Args:
             now: Optional wall-clock timestamp to associate with this step.
@@ -401,6 +434,10 @@ class PipelineStepper:
         for channel in self._delayed:
             channel.advance(step_now)
         step_token = _CURRENT_STEP_TIME.set(step_now)
+        honor = honor_rates or _CURRENT_HONOR_RATES.get()
+        honor_token = _CURRENT_HONOR_RATES.set(honor)
+        prev_rate_now = self._prev_rate_now
+        self._prev_rate_now = step_now
 
         try:
             executed: List[str] = []
@@ -419,6 +456,8 @@ class PipelineStepper:
                     )
                 else:
                     should_execute, fields = self._should_execute(clock, self._inputs[node_id])
+                    if should_execute and honor and isinstance(clock, Rate):
+                        should_execute = _rate_tick_in(clock, prev_rate_now, step_now)
                 if not should_execute:
                     continue
 
@@ -460,6 +499,7 @@ class PipelineStepper:
                 outputs=outputs_snapshot,
             )
         finally:
+            _CURRENT_HONOR_RATES.reset(honor_token)
             _CURRENT_STEP_TIME.reset(step_token)
 
     @staticmethod

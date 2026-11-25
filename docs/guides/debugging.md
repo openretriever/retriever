@@ -132,8 +132,9 @@ These are intentional constraints for the first version:
 - Generator-based flows / services are **not supported** in `Pipeline.step(...)` yet.
   - The dora executor supports generators for RPC; the stepper currently raises an error if `Flow.step()` yields.
 - Service edges (`_request_out`, `_response_in/...`) are ignored by the stepper for now.
+- `step()` runs every Rate flow once per call, for debugging. For a run in logical time, such as a simulated mission or a benchmark episode, use `pipe.run_logical(until)`: it steps at every tick of the covering clock (the union of the Rate clocks, nested groups included) and runs each Rate flow only at its own ticks, Trigger flows on arrivals, in dependency order. The same inputs give the same trace.
 - For feedback, use `pipe.connect(controller, plant, sync=Prev())`. Within a feedback group the stepper follows the same-tick edges in topological order. A delayed edge exposes earlier publications only after the tick advances; calling `step(now=t)` twice does not advance the delay. Reset before rewinding time.
-- With `Pipeline(cycles="strict")`, validation rejects any cycle without a `Prev()` edge. The default warns and keeps the old order for an unmarked cycle. This orders local steps, not clocks on separate machines.
+- By default (`cycles="strict"`), validation rejects any cycle without a `Prev()` edge. `Pipeline(cycles="warn")` warns and keeps the old order for an unmarked cycle. This orders local steps, not clocks on separate machines.
 - A delayed input never wakes its consumer. Each loop needs a clock-driven node. Use `Prev(initial=value)` to supply a sample before any earlier event exists.
 - An external injection follows the same rule as a publication: its timestamp and the last step at injection must both precede the read. Pass an explicit timestamp for logical-time injections before the first step. Equal instants compare at nanosecond resolution. Reset clears pending and visible samples.
 
