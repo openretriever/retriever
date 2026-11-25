@@ -156,7 +156,7 @@ def test_unmarked_cycle_still_builds_and_steps_as_before():
         def step(self, inputs):
             return Value(value=-1 if inputs.value is None else inputs.value + 1)
 
-    with Pipeline("legacy_loop") as pipe:
+    with Pipeline("legacy_loop", cycles="warn") as pipe:
         a = (Counter() @ Rate(10)).named("A")
         b = (Echo() @ Rate(10)).named("B")
         a.then(b, sync=Latest())

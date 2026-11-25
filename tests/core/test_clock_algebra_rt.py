@@ -75,7 +75,7 @@ def test_covering_clock_of_20_and_30_hz_has_40_ticks_per_second():
 
 
 def test_trigger_cycle_shares_the_data_cycle_warning(caplog):
-    pipe = Pipeline("clock_algebra_trigger_cycle")
+    pipe = Pipeline("clock_algebra_trigger_cycle", cycles="warn")
     env = Env() @ Trigger("action")
     ctrl = Controller() @ Trigger("obs")
     pipe.connect(env, ctrl, sync=Latest())
@@ -92,7 +92,7 @@ def test_trigger_cycle_shares_the_data_cycle_warning(caplog):
 
 
 def test_rate_clock_on_one_node_breaks_the_same_instant_cycle(caplog):
-    pipe = Pipeline("clock_algebra_rate_breaks_cycle")
+    pipe = Pipeline("clock_algebra_rate_breaks_cycle", cycles="warn")
     env = Env() @ Rate(hz=10)
     ctrl = Controller() @ Trigger("obs")
     pipe.connect(env, ctrl, sync=Latest())
@@ -109,7 +109,7 @@ def test_rate_clock_on_one_node_breaks_the_same_instant_cycle(caplog):
 
 
 def test_prev_on_trigger_port_is_not_an_activation_edge():
-    pipe = Pipeline()
+    pipe = Pipeline(cycles="warn")  # a Trigger-only loop; strict mode rejects it at build
     env = (Env() @ Trigger("action")).named("env")
     ctrl = (Controller() @ Trigger("obs")).named("ctrl")
     pipe.connect(env, ctrl, sync=Latest())

@@ -311,16 +311,16 @@ Before any eligible event, the input has no signal unless you set
 ```python
 from retriever.flow import Latest, Pipeline, Prev
 
-pipe = Pipeline("feedback", cycles="strict")
+pipe = Pipeline("feedback")
 pipe.connect(plant, controller, sync=Latest())
 pipe.connect(controller, plant, sync=Prev())
 ```
 
 The stepper runs the plant before the controller: the controller sees the new
 observation, and the plant reads an earlier command. Reversing the two connection
-statements does not change that rule. Strict validation rejects an unmarked
-cycle and names its nodes. The default (`cycles="warn"`) warns and retains
-legacy ordering for unmarked cycles. Direct self-connections remain invalid.
+statements does not change that rule. Validation rejects an unmarked
+cycle and names its nodes (strict by default). `Pipeline(cycles="warn")` only warns and
+retains legacy ordering for unmarked cycles, for older graphs. Direct self-connections remain invalid.
 
 Practical guidance:
 

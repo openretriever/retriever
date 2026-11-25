@@ -77,7 +77,7 @@ class PipelineBuilder:
             graph = ctx.build_graph()
     """
 
-    def __init__(self, name: str = "pipeline", *, cycles: str = "warn"):
+    def __init__(self, name: str = "pipeline", *, cycles: str = "strict"):
         """Initialize empty context."""
         if cycles not in ("warn", "strict"):
             raise ValueError("cycles must be 'warn' or 'strict'")

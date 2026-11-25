@@ -48,7 +48,7 @@ The group as one Flow (covering clock):
 - a group of Flows behaves as one Flow on its covering clock: the union of the inner `Rate`, `Tick` and `Hybrid` clocks and the events of the boundary inputs that inner `Trigger`, `Synchronized` and `Hybrid` clocks read; the covering clock may tick when no inner Flow runs, and the group then emits no event
 - the wrapper exposes it as `wrapper.covering_clock` (for example `Cover[Rate(20 Hz) ∪ Rate(30 Hz) ∪ events(go)]`) and in `viz_metadata()["covering_clock"]`, for grouping and for views of large graphs; execution still runs each inner Flow on its own clock
 - `same_instant_cycles(ir)` lists groups with a **same-tick trigger cycle**: each edge can wake its consumer. A `Prev()` edge never wakes its consumer. Changing a trigger to a rate can break a trigger cycle without breaking the underlying **same-tick data cycle**.
-- Validation checks data cycles, which include trigger cycles. The default warns once per offending group and preserves the legacy stepping order; `Pipeline(cycles="strict")` rejects it. See [closed loops](../guide_flow.md#7-closed-loops-cycles).
+- Validation checks data cycles, which include trigger cycles. The default (`cycles="strict"`) rejects it; `Pipeline(cycles="warn")` warns once per offending group and preserves the legacy stepping order. See [closed loops](../guide_flow.md#7-closed-loops-cycles).
 
 ```python
 from retriever.ir.clock_algebra import covering_clock, same_instant_cycles

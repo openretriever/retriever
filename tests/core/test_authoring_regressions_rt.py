@@ -49,7 +49,7 @@ def test_tick_normalizes_on_lag_aliases() -> None:
 
 
 def test_self_connection_is_rejected() -> None:
-    pipe = Pipeline("self_loop")
+    pipe = Pipeline("self_loop", cycles="warn")
     node = Echo() @ Rate(hz=10)
     with pytest.raises(FlowError) as excinfo:
         pipe.connect(node, node, sync=Latest())
@@ -57,7 +57,7 @@ def test_self_connection_is_rejected() -> None:
 
 
 def test_chain_partitioner_terminates_on_cycle() -> None:
-    pipe = Pipeline("cycle")
+    pipe = Pipeline("cycle", cycles="warn")
     a = Echo() @ Rate(hz=10)
     b = Echo() @ Rate(hz=10)
     pipe.connect(a, b, sync=Latest())

@@ -35,7 +35,7 @@ from retriever import set_global_config
 
 def test_cycle_pipeline_is_valid_and_reports_scc_group():
     set_global_config(default_sync="liberal")
-    pipe = Pipeline("cycle_demo")
+    pipe = Pipeline("cycle_demo", cycles="warn")
 
     env = Env() @ Rate(hz=10)
     ctrl = Controller() @ Trigger("obs")
