@@ -178,7 +178,7 @@ from retriever.flow.adapter import Exact, Linear, Chunking
 ```
 
 ### `Exact`
-Finds the value with a timestamp *exactly matching* `now` (within tolerance).
+Finds the value with a timestamp *exactly matching* `now` (within tolerance, at or before `now`).
 - **Use case**: Strictly synchronized sensor fusion where data is expected to be aligned.
 - **Parameters**: `tolerance` (seconds, default 1e-6).
 
@@ -187,7 +187,7 @@ pipe.connect(cam_left, fusion, sync=Exact())
 ```
 
 ### `Linear`
-Linearly interpolates between the two closest timestamps around `now`.
+Linearly interpolates between the two closest timestamps around `now`. A sync read sees only events at or before `now` (no look-ahead), so past the newest visible event `Linear` holds that value.
 - **Use case**: Smooth trajectory sampling, continuous control.
 
 ```python

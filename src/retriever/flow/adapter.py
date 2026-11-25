@@ -325,7 +325,7 @@ class Window(Adapter[T]):
                 duration=self.duration
             )
 
-    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
+    def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
         current_time = time.time() if now is None else now
 
         # Declarative selection of relevant events
@@ -408,7 +408,8 @@ class Exact(Adapter[T]):
     """
     Samples value with the exact matching timestamp.
 
-    Requires `now` to be provided (usually by Synchronized clock).
+    Requires `now` to be provided (usually by Synchronized clock). Only events
+    at or before `now` are visible, so a match lies in `[now - tolerance, now]`.
     """
     buffer_size: int = 10
     tolerance: float = 1e-6
@@ -422,7 +423,7 @@ class Exact(Adapter[T]):
 
         # Find match within tolerance
         for ts, value in reversed(buffer):
-            if abs(ts - now) <= self.tolerance:
+            if now - self.tolerance <= ts <= now:
                 return value
 
         raise FlowError(
@@ -437,10 +438,12 @@ class Exact(Adapter[T]):
 class Linear(Adapter[float]):
     """
     Linearly interpolates between the two closest values to `now`.
-    
+
     Assumes values are floats (or support arithmetic operations).
     Uses the two closest points in time, one before and one after `now`.
-    
+    With `now` given, only events at or before `now` are visible (no
+    look-ahead), so after the newest visible event this is a hold of that value.
+
     If `now` is outside the range of buffer events:
     - If after latest: returns latest (0-order hold / clamping).
     - If before earliest: returns earliest.
@@ -457,7 +460,12 @@ class Linear(Adapter[float]):
         if now is None:
             # Fallback to latest
             return buffer[-1][1]
-            
+
+        # Causal read: drop events stamped after `now`.
+        buffer = TimedBuffer([(ts, v) for ts, v in buffer if ts <= now])
+        if not buffer:
+            raise IndexError("Linear adapter: no event at or before now")
+
         # 1. Check bounds
         if now >= buffer[-1][0]:
             return buffer[-1][1]

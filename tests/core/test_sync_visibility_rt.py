@@ -146,3 +146,19 @@ def test_latest_max_age():
 def test_latest_max_age_must_be_non_negative():
     with pytest.raises(FlowError):
         Latest(max_age=-0.1)
+
+
+def test_linear_and_exact_have_no_look_ahead_on_direct_calls():
+    buf = TimedBuffer([(0.0, 0.0), (1.0, 10.0)])
+    # Same answer as through the engine: the future point at 1.0 is not visible at 0.5.
+    assert Linear()(buf, now=0.5) == 0.0
+    engine = PythonBufferEngine(buffer_size=10)
+    engine.push(0.0, 0.0)
+    engine.push(1.0, 10.0)
+    assert engine.sample(Linear(), now=0.5) == 0.0
+    # Interpolation inside the visible history still works.
+    assert Linear()(TimedBuffer([(0.0, 0.0), (1.0, 10.0), (2.0, 0.0)]), now=1.5) == 10.0
+    # Exact matches only at or before now.
+    with pytest.raises(FlowError):
+        Exact(tolerance=1e-3)(TimedBuffer([(0.5005, 7)]), now=0.5)
+    assert Exact(tolerance=1e-3)(TimedBuffer([(0.4995, 7)]), now=0.5) == 7

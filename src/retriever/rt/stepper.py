@@ -114,7 +114,8 @@ class InMemoryChannel:
         self._arrival_flag = True
         heapq.heappush(self._pending_arrivals, timestamp)
         if len(self._pending_arrivals) > self._MAX_PENDING_ARRIVALS:
-            # Merge the oldest stamp into the next one; it is reported no later.
+            # Drop the oldest stamp; that arrival is then reported at the next
+            # stamp's time, no earlier than its own.
             heapq.heappop(self._pending_arrivals)
 
     def get_all(self):
@@ -125,14 +126,15 @@ class InMemoryChannel:
 
         Without `now`, any arrival since the last call counts. With `now`
         (logical-time stepping), only arrivals stamped at or before
-        `now + 1e-9` count; later-stamped arrivals stay pending until their time.
+        `now` count (the same cutoff as sync visibility); later-stamped arrivals
+        stay pending until their time.
         """
         if now is None:
             result = self._arrival_flag
             self._arrival_flag = False
             self._pending_arrivals.clear()
             return result
-        cutoff = now + 1e-9
+        cutoff = now
         result = False
         while self._pending_arrivals and self._pending_arrivals[0] <= cutoff:
             heapq.heappop(self._pending_arrivals)
