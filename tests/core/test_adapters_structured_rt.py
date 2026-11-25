@@ -49,9 +49,10 @@ class TestWindow:
 
     def test_window_empty_fallback(self, simple_buffer):
         # Window of 0.1s at time 10.0 covers [9.9, 10.0]. Empty.
-        # Should fall back to latest value "c"
+        # An empty window gives no signal (IndexError), not the latest value.
         adapter = Window(buffer_size=10, duration=0.1, agg="last")
-        assert adapter(simple_buffer, now=10.0) == "c"
+        with pytest.raises(IndexError):
+            adapter(simple_buffer, now=10.0)
 
 class TestEvents:
     def test_events_slice(self, simple_buffer):

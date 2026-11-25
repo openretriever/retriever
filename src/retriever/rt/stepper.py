@@ -42,15 +42,19 @@ _CURRENT_STEP_TIME: ContextVar[Optional[float]] = ContextVar(
 )
 
 
-def _rate_tick_in(clock: Rate, prev: Optional[float], now: float) -> bool:
-    """True when a tick k/hz of the Rate grid (phase 0) lies in (prev, now].
+def _rate_tick_in(clock: Clock, prev: Optional[float], now: float) -> bool:
+    """True when a tick k/hz of the clock's grid (phase 0) lies in (prev, now].
 
-    The first logical step (prev is None) runs every Rate flow once. The 1e-9
-    relative tolerance matches `CoveringClock.ticks`.
+    On the first logical step (prev is None) the flow runs only if `now` itself is
+    on its grid, so `run_logical(..., start=s)` with an off-grid `s` does not add
+    an extra tick. The 1e-9 relative tolerance matches `CoveringClock.ticks`.
     """
     hz = getattr(clock, "hz", None)
-    if not hz or hz <= 0 or prev is None:
+    if not hz or hz <= 0:
         return True
+    if prev is None:
+        x = now * hz
+        return abs(x - round(x)) <= 1e-9 * max(1.0, abs(x))
     import math
 
     k = math.floor(now * hz + 1e-9)
@@ -96,20 +100,44 @@ class InMemoryChannel:
     for `inject_input()` calls with out-of-order custom timestamps.
     """
 
+    # Bound on remembered pending arrival stamps for ports nobody polls with `now`.
+    _MAX_PENDING_ARRIVALS = 1024
+
     def __init__(self, buffer_size: int):
         self._engine: PythonBufferEngine[Any] = PythonBufferEngine(buffer_size=buffer_size)
         self._arrival_flag = False
+        # Min-heap of arrival timestamps not yet reported by `new_arrival(now)`.
+        self._pending_arrivals: List[float] = []
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:  # noqa: ARG002
         self._engine.push(timestamp, value)
         self._arrival_flag = True
+        heapq.heappush(self._pending_arrivals, timestamp)
+        if len(self._pending_arrivals) > self._MAX_PENDING_ARRIVALS:
+            # Merge the oldest stamp into the next one; it is reported no later.
+            heapq.heappop(self._pending_arrivals)
 
     def get_all(self):
         return self._engine.events()
 
-    def new_arrival(self) -> bool:
-        result = self._arrival_flag
-        self._arrival_flag = False
+    def new_arrival(self, now: Optional[float] = None) -> bool:
+        """Report (and consume) a new arrival.
+
+        Without `now`, any arrival since the last call counts. With `now`
+        (logical-time stepping), only arrivals stamped at or before
+        `now + 1e-9` count; later-stamped arrivals stay pending until their time.
+        """
+        if now is None:
+            result = self._arrival_flag
+            self._arrival_flag = False
+            self._pending_arrivals.clear()
+            return result
+        cutoff = now + 1e-9
+        result = False
+        while self._pending_arrivals and self._pending_arrivals[0] <= cutoff:
+            heapq.heappop(self._pending_arrivals)
+            result = True
+        self._arrival_flag = bool(self._pending_arrivals)
         return result
 
     def empty(self) -> bool:
@@ -118,6 +146,7 @@ class InMemoryChannel:
     def clear(self) -> None:
         self._engine.clear()
         self._arrival_flag = False
+        self._pending_arrivals.clear()
 
 
 class _PreviousTickChannel(InMemoryChannel):
@@ -254,6 +283,7 @@ class PipelineStepper:
             except Exception:
                 pass
         self._now = None
+        self._prev_rate_now = None
         _CURRENT_STEP_TIME.set(None)
         self.reset_buffers()
 
@@ -419,8 +449,12 @@ class PipelineStepper:
             `current_fresh_inputs`), so they behave like their inner flows inlined.
           - With `honor_rates=True` (logical-time stepping, used by
             `Pipeline.run_logical`), a Rate flow runs only when a tick k/hz of its own
-            grid falls in (previous step time, this step time]; nested groups inherit
-            the setting, so their inner Rate flows also keep their own rates.
+            grid falls in (previous step time, this step time] (on the first step:
+            only when this step time is on its grid); a Hybrid flow's periodic
+            fallback is gated the same way, while a trigger arrival still runs it;
+            Trigger/Hybrid arrivals stamped after this step time stay pending.
+            Nested groups inherit the setting, so their inner Rate flows also keep
+            their own rates.
 
         Args:
             now: Optional wall-clock timestamp to associate with this step.
@@ -448,15 +482,26 @@ class PipelineStepper:
                 handle = self._flows[node_id]
                 clock = handle.config.clock
 
+                # Logical time: an arrival stamped after this tick stays pending.
+                arrival_now = step_now if honor else None
                 composite = node_id in self._composite_nodes
                 if composite:
                     should_execute, fields = True, ["..."]
                     fresh = frozenset(
-                        port for port, ch in self._inputs[node_id].items() if ch.new_arrival()
+                        port
+                        for port, ch in self._inputs[node_id].items()
+                        if self._new_arrival(ch, arrival_now)
                     )
                 else:
-                    should_execute, fields = self._should_execute(clock, self._inputs[node_id])
-                    if should_execute and honor and isinstance(clock, Rate):
+                    should_execute, fields = self._should_execute(
+                        clock, self._inputs[node_id], arrival_now
+                    )
+                    # A Rate flow, or a Hybrid flow on its periodic fallback, keeps
+                    # its own rate; a real Hybrid trigger arrival still runs it.
+                    periodic = isinstance(clock, Rate) or (
+                        isinstance(clock, Hybrid) and fields == ["..."]
+                    )
+                    if should_execute and honor and periodic:
                         should_execute = _rate_tick_in(clock, prev_rate_now, step_now)
                 if not should_execute:
                     continue
@@ -503,21 +548,30 @@ class PipelineStepper:
             _CURRENT_STEP_TIME.reset(step_token)
 
     @staticmethod
-    def _should_execute(clock: Clock, inputs: Dict[str, InMemoryChannel]) -> tuple[bool, List[str]]:
+    def _new_arrival(ch: InMemoryChannel, now: Optional[float]) -> bool:
+        return ch.new_arrival() if now is None else ch.new_arrival(now)
+
+    @staticmethod
+    def _should_execute(
+        clock: Clock,
+        inputs: Dict[str, InMemoryChannel],
+        now: Optional[float] = None,
+    ) -> tuple[bool, List[str]]:
+        new_arrival = PipelineStepper._new_arrival
         if isinstance(clock, Rate):
             return True, ["..."]
 
         if isinstance(clock, Trigger):
             for field in clock.fields:
                 ch = inputs.get(field)
-                if ch is not None and ch.new_arrival():
+                if ch is not None and new_arrival(ch, now):
                     return True, [field]
             return False, []
 
         if isinstance(clock, Hybrid):
             for field in clock.trigger_fields:
                 ch = inputs.get(field)
-                if ch is not None and ch.new_arrival():
+                if ch is not None and new_arrival(ch, now):
                     return True, [field]
             return True, ["..."]
 

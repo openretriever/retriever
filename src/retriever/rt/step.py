@@ -29,6 +29,7 @@ from typing import (
 
 from retriever.flow.adapter import Adapter, Latest
 from retriever.flow.types import EventStream
+from retriever.rt.buffer_engine import visible_for
 from retriever.error import ErrCode, FlowError
 from dataclasses import fields, is_dataclass
 
@@ -321,7 +322,8 @@ class IOStep:
                 if hasattr(subscriber, "sample"):
                     value = subscriber.sample(adapter, now=effective_now)
                 else:
-                    value = adapter.sample(subscriber.get_all(), now=effective_now)
+                    events = visible_for(adapter, subscriber.get_all(), effective_now)
+                    value = adapter.sample(events, now=effective_now)
             except IndexError:
                 # Nothing visible at this tick: a buffered event stamped after
                 # `now` (e.g. a producer clock running ahead of the consumer's

@@ -167,16 +167,36 @@ def is_adapter(cls) -> bool:
 @register_adapter("latest")
 @dataclass
 class Latest(Adapter[T]):
-    """Samples the newest-by-timestamp value available at ``now``."""
+    """Samples the newest-by-timestamp value available at ``now`` (sample-and-hold).
+
+    With ``max_age`` set and ``now`` given, an event older than ``now - max_age``
+    is stale: the read gives no signal instead of holding it.
+    """
     buffer_size: int = 1
+    max_age: Optional[float] = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.max_age is not None and self.max_age < 0:
+            raise FlowError(
+                ErrCode.FLOW_ADAPTER_INVALID,
+                "Latest max_age must be non-negative",
+                max_age=self.max_age,
+            )
 
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
         if not buffer:
             raise IndexError("list index out of range")
-        value = buffer.latest(now=now)
-        if value is None:
+        best = None
+        for ts, value in buffer:
+            # Equal timestamps resolve to the last-inserted event.
+            if (now is None or ts <= now) and (best is None or ts >= best[0]):
+                best = (ts, value)
+        if best is None or best[1] is None:
             raise IndexError("cannot sample Latest() from buffer before first event")
-        return value
+        if self.max_age is not None and now is not None and best[0] < now - self.max_age:
+            raise IndexError("Latest() event is older than max_age")
+        return best[1]
 
 
 @register_adapter("prev")
@@ -282,16 +302,19 @@ class Window(Adapter[T]):
     """
     Collects samples from [t-W, t] and applies aggregation.
 
+    An empty window gives no signal (IndexError).
+
     Aggregation functions:
+    - "list": List of window values in time order (default)
     - "first": First value in window
     - "last": Last value in window
     - "max": Maximum value in window
     - "min": Minimum value in window
     - "mean": Average of values in window
     """
-    buffer_size: int
-    duration: float
-    agg: Literal["first", "last", "max", "min", "mean"] = "last"
+    buffer_size: int = 64
+    duration: float = 0.0
+    agg: Literal["list", "first", "last", "max", "min", "mean"] = "list"
 
     def __post_init__(self):
         super().__post_init__()
@@ -309,17 +332,16 @@ class Window(Adapter[T]):
         # Note: within() includes start and end boundaries and enforces ts <= now
         relevant_events = buffer.within(duration=self.duration, now=current_time)
 
-        if not relevant_events:  # falls back to latest in buffer (even if outside window?)
-            # Original logic: "if not window_values: falls back to latest"
-            # Maintain this fallback behavior
-            if not buffer:
-                 raise IndexError("Window adapter needs data")
-            return buffer.latest() # type: ignore
+        if not relevant_events:
+            raise IndexError("Window adapter has no event in [now - duration, now]")
 
-        window_values = [v for _, v in relevant_events]
+        # Time order (stable: equal timestamps keep arrival order).
+        window_values = [v for _, v in sorted(relevant_events, key=lambda e: e[0])]
 
         # Apply aggregation function based on string name
-        if self.agg == "first":
+        if self.agg == "list":
+            return window_values
+        elif self.agg == "first":
             return window_values[0]
         elif self.agg == "last":
             return window_values[-1]

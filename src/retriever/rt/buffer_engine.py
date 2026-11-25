@@ -20,7 +20,7 @@ from operator import itemgetter
 from typing import Any, Generic, Literal, Optional, TypeVar
 
 from retriever.flow.adapter import Adapter, Latest
-from retriever.flow.types import TimedBuffer
+from retriever.flow.types import TimedBuffer, visible
 
 T = TypeVar("T")
 
@@ -89,7 +89,8 @@ class PythonBufferEngine(BufferEngine[T]):
             raise IndexError("cannot sample empty buffer")
 
         # Fast-path common adapters where performance is critical and logic is trivial.
-        if isinstance(adapter, Latest):
+        # Latest with a staleness bound needs the event timestamp: use the general path.
+        if isinstance(adapter, Latest) and adapter.max_age is None:
             # The buffer is timestamp-sorted with ties in arrival order, so the
             # newest visible event is the rightmost one at or before `now`.
             for ts, value in reversed(self._buffer):
@@ -100,7 +101,22 @@ class PythonBufferEngine(BufferEngine[T]):
         # For complex adapters (Window, Events, Hold, Custom), delegate to the Adapter implementation.
         # This ensures the Adapter class (and EventStream/TimedBuffer definitions) is the single source of truth.
         # Note: This involves converting deque -> TimedBuffer (list copy), which is O(N).
-        return adapter.sample(TimedBuffer(self._buffer), now=now)
+        return adapter.sample(visible_for(adapter, self._buffer, now), now=now)
+
+
+def visible_for(adapter: Adapter[T], events, now: Optional[float]) -> TimedBuffer[T]:
+    """The events a sync read at `now` may see: entries with ts <= now.
+
+    No filter when `now` is None. Strict-prefix adapters (Prev) apply their own,
+    stricter cutoff and keep their `initial` fallback, so they get the full buffer.
+    Raises IndexError (no signal) when nothing is visible.
+    """
+    if now is None or adapter.strict_prefix:
+        return TimedBuffer(events)
+    buf = visible(events, now)
+    if not buf:
+        raise IndexError("no event at or before the consumer tick")
+    return buf
 
 
 def create_buffer_engine(kind: BufferEngineKind, *, buffer_size: int) -> BufferEngine[Any]:

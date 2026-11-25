@@ -659,6 +659,15 @@ class EventManager:
         return EventStream(merged_stream_fn)
 
 
+def visible(buffer: Iterable[Tuple[float, T]], now: float) -> TimedBuffer[T]:
+    """Events committed up to the consumer tick: entries with ``ts <= now``.
+
+    A buffered event stamped after ``now`` (for example from a producer clock
+    running ahead) is not yet visible to a sync read at ``now``.
+    """
+    return TimedBuffer([(ts, v) for ts, v in buffer if ts <= now])
+
+
 def behavior_from_events(stream: EventStream[T], adapter: "Adapter[T]") -> Behavior[T]:
     """Create a behavior by sampling an event stream with an adapter."""
     return Behavior(lambda t: stream.sample(adapter, now=t))

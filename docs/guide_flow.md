@@ -241,7 +241,7 @@ Adapters define how a downstream samples its input **buffer**:
 
 - `Latest()` (default if configured globally)
 - `Hold(debounce=...)`
-- `Window(duration=..., agg=..., buffer_size=...)`
+- `Window(duration=..., agg=..., buffer_size=...)`: by default (`agg="list"`, `buffer_size=64`) returns the list of values in `[now - duration, now]` in time order; an empty window gives no signal
 - `Events(duration=..., include_timestamps=..., buffer_size=...)`
 - `Chunking(dt=...)`
 - `Linear()`

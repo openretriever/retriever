@@ -127,12 +127,14 @@ Rules:
 Adapters inherit from `Adapter` and implement `__call__(buffer, now)`. They define the sampling logic.
 
 ### `Latest`
-Returns the most recent value in the buffer.
+Returns the most recent value at or before `now` (sample-and-hold).
 - **Use case**: General purpose, most common default.
 - **Behavior**: fast, 0-order hold (implicit).
+- **Parameters**: `max_age` (seconds, optional): bounded staleness. If the newest visible event is older than `now - max_age`, the read gives no signal.
 
 ```python
 pipe.connect(a, b, sync=Latest())
+pipe.connect(a, b, sync=Latest(max_age=0.2))  # no signal when older than 200 ms
 ```
 
 ### `Hold`
@@ -146,11 +148,16 @@ pipe.connect(sensor, ctrl, sync=Hold(debounce=0.05))
 ```
 
 ### `Window`
-Aggregates values over a time window `[now - duration, now]`.
+Collects the values in the time window `[now - duration, now]`.
 - **Use case**: Smoothing, filtering, computing statistics.
-- **Parameters**: `duration` (seconds), `agg` (`"first"`, `"last"`, `"max"`, `"min"`, `"mean"`).
+- **Parameters**: `duration` (seconds, required), `agg` (`"list"` default, `"first"`, `"last"`, `"max"`, `"min"`, `"mean"`), `buffer_size` (default 64).
+- **Default output**: the list of window values in time order.
+- **Empty window**: no signal (the field is not set this tick).
 
 ```python
+# List of values from the last 0.5s
+pipe.connect(sensor, filter, sync=Window(duration=0.5))
+
 # Average of last 0.5s
 pipe.connect(sensor, filter, sync=Window(duration=0.5, agg="mean"))
 ```
