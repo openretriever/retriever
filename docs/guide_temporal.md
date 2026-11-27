@@ -153,6 +153,7 @@ Collects the values in the time window `[now - duration, now]`.
 - **Parameters**: `duration` (seconds, required), `agg` (`"list"` default, `"first"`, `"last"`, `"max"`, `"min"`, `"mean"`), `buffer_size` (default 64).
 - **Default output**: the list of window values in time order.
 - **Empty window**: no signal (the field is not set this tick).
+- **Migration**: older releases returned the newest value (`agg="last"`) by default and fell back to the newest event when the window was empty. Pass `agg="last"` to keep a scalar output; saved IR from older releases already carries an explicit `agg`. Pass `duration` by keyword: the first positional argument is `buffer_size`.
 
 ```python
 # List of values from the last 0.5s
@@ -187,7 +188,7 @@ pipe.connect(cam_left, fusion, sync=Exact())
 ```
 
 ### `Linear`
-Linearly interpolates between the two closest timestamps around `now`. A sync read sees only events at or before `now` (no look-ahead), so past the newest visible event `Linear` holds that value.
+Linearly interpolates between buffered samples that bracket the read time. A sync read sees only events at or before `now` (no look-ahead), so on a sorted history `Linear` returns the newest visible sample, the same as a hold. Interpolating toward a later sample needs a delayed read, which `Linear` does not provide yet.
 - **Use case**: Smooth trajectory sampling, continuous control.
 
 ```python

@@ -78,6 +78,10 @@ class PythonBufferEngine(BufferEngine[T]):
     def empty(self) -> bool:
         return len(self._buffer) == 0
 
+    def oldest_timestamp(self) -> Optional[float]:
+        """Timestamp of the oldest retained event, or None when empty."""
+        return self._buffer[0][0] if self._buffer else None
+
     def clear(self) -> None:
         self._buffer.clear()
 

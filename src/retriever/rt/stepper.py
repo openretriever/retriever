@@ -100,22 +100,22 @@ class InMemoryChannel:
     for `inject_input()` calls with out-of-order custom timestamps.
     """
 
-    # Bound on remembered pending arrival stamps for ports nobody polls with `now`.
-    _MAX_PENDING_ARRIVALS = 1024
-
     def __init__(self, buffer_size: int):
         self._engine: PythonBufferEngine[Any] = PythonBufferEngine(buffer_size=buffer_size)
         self._arrival_flag = False
         # Min-heap of arrival timestamps not yet reported by `new_arrival(now)`.
+        # Invariant: every pending stamp belongs to a retained event, so a reported
+        # arrival always has a readable value and the heap never outgrows the buffer.
         self._pending_arrivals: List[float] = []
 
     def put_one(self, value: Any, timestamp: float, block: bool = True) -> None:  # noqa: ARG002
         self._engine.push(timestamp, value)
         self._arrival_flag = True
         heapq.heappush(self._pending_arrivals, timestamp)
-        if len(self._pending_arrivals) > self._MAX_PENDING_ARRIVALS:
-            # Drop the oldest stamp; that arrival is then reported at the next
-            # stamp's time, no earlier than its own.
+        # The buffer evicts the oldest timestamp; drop the notification of any
+        # evicted event with it (a trigger must not fire on a value it cannot read).
+        oldest = self._engine.oldest_timestamp()
+        while self._pending_arrivals and oldest is not None and self._pending_arrivals[0] < oldest:
             heapq.heappop(self._pending_arrivals)
 
     def get_all(self):
@@ -284,10 +284,28 @@ class PipelineStepper:
                 handle.flow.reset()
             except Exception:
                 pass
+        # Stateful sync policies (e.g. a debounced Hold) cache values from the
+        # previous run; clear them with the buffers.
+        for node_adapters in self._adapters.values():
+            for adapter in node_adapters.values():
+                adapter.reset()
         self._now = None
         self._prev_rate_now = None
         _CURRENT_STEP_TIME.set(None)
         self.reset_buffers()
+
+    def restart_rate_cursor(self) -> None:
+        """Forget the previous step time used by `honor_rates`.
+
+        The next rate-honoring step then runs only the Rate flows whose grid
+        includes that step time, as on a fresh stepper. State and buffers are kept.
+        Nested pipeline groups restart their own cursors too.
+        """
+        self._prev_rate_now = None
+        for handle in self._flows.values():
+            inner = getattr(handle.flow, "_stepper", None)
+            if isinstance(inner, PipelineStepper):
+                inner.restart_rate_cursor()
 
     def _ensure_initialized(self) -> None:
         if self._initialized:

@@ -88,7 +88,7 @@ Every edge accumulates a timestamped buffer of upstream outputs. The `sync=` pol
 | Policy | What it returns |
 | --- | --- |
 | `Latest(max_age=None)` | The most recent value at or before `t`; with `max_age`, no signal when that value is older than `t - max_age`. |
-| `Window(duration, agg="list")` | The list of values in `[t - duration, t]` in time order (default), or an aggregate (`mean`/`last`/`max`/`min`/`first`); no signal when the window is empty. |
+| `Window(duration=..., agg="list")` | The list of values in `[t - duration, t]` in time order (default), or an aggregate (`mean`/`last`/`max`/`min`/`first`); no signal when the window is empty. |
 | `Hold(debounce=...)` | Zero-order hold of the last value, optionally rate-limited. |
 | `Events(buffer_size, duration)` | A slice of recent history, for Flows that reason over a stream. |
 

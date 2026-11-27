@@ -383,14 +383,25 @@ class Pipeline:
         dependency order, so each Flow keeps its declared rate. For the same inputs
         and initial state the returned trace is the same on every call.
 
+        Only the periodic ticks of the covering clock are stepped: an input injected
+        between ticks (for example at 0.35 with ticks at 0.3 and 0.4) is read, and
+        wakes Trigger/Hybrid flows, at the next tick. The run starts a fresh rate
+        cursor at `start`, so earlier manual `step()` calls do not suppress its first
+        ticks; Flow state and buffered inputs are kept (call `reset()` for a fresh
+        run). It returns step snapshots, not a replay log of inputs or decisions.
+
         Returns:
             List of `StepResult`, one per covering tick.
         """
         from retriever.ir.clock_algebra import covering_clock
+        from retriever.rt.stepper import PipelineStepper
 
         cover = covering_clock(self._build_ir())
         if not cover.rates_hz:
             raise ValueError("run_logical needs at least one Rate clock in the pipeline")
+        if self._stepper is None:
+            self._stepper = PipelineStepper(self)
+        self._stepper.restart_rate_cursor()
         return [self.step(now=t, honor_rates=True) for t in cover.ticks(start, until)]
 
     def inject_input(

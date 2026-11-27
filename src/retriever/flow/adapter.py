@@ -12,6 +12,15 @@ from typing import TypeVar, Generic, Optional, Any, Iterable
 from typing import ClassVar, Type, List, Dict, Literal
 from retriever.error import FlowError, ErrCode
 from retriever.flow.types import Behavior, TimedBuffer, EventStream
+
+
+def _visible_sorted(buffer: Iterable, now: float) -> TimedBuffer:
+    """Events at or before `now`, in timestamp order (stable: ties keep arrival order).
+
+    The causal view a direct adapter call at `now` sees; it matches what the
+    buffer engine passes in, so direct and runtime reads agree.
+    """
+    return TimedBuffer(sorted(((ts, v) for ts, v in buffer if ts <= now), key=lambda e: e[0]))
 # Forward references
 T = TypeVar('T')
 U = TypeVar('U')
@@ -268,6 +277,15 @@ class Hold(Adapter[T]):
 
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> T:
 
+        if now is not None:
+            if self._last_value is not None and self._last_time > now:
+                # The held value is stamped after this read (time was rewound or
+                # restarted): it is not visible here, so drop it.
+                self.reset()
+            buffer = _visible_sorted(buffer, now)
+            if not buffer:
+                raise IndexError("Hold adapter: no event at or before now")
+
         # Safe access to latest event using TimedBuffer API
         timestamp, value = buffer[-1]
 
@@ -390,8 +408,10 @@ class Events(Adapter[T]):
     def __call__(self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs) -> Any:
         events: TimedBuffer[T]
         if self.duration is None:
-            # Return full buffer
-            events = TimedBuffer(buffer)
+            # Full buffer; with `now`, only events at or before it (no look-ahead).
+            events = TimedBuffer(buffer) if now is None else TimedBuffer(
+                (ts, v) for ts, v in buffer if ts <= now
+            )
         else:
             current_time = time.time() if now is None else now
             # Use declarative within()
@@ -421,9 +441,14 @@ class Exact(Adapter[T]):
                  raise IndexError("Exact adapter needs data")
             return buffer.latest() # type: ignore
 
+        # Causal, time-ordered read (same as through the buffer engine).
+        visible_events = _visible_sorted(buffer, now)
+        if not visible_events:
+            raise IndexError("Exact adapter: no event at or before now")
+
         # Find match within tolerance
-        for ts, value in reversed(buffer):
-            if now - self.tolerance <= ts <= now:
+        for ts, value in reversed(visible_events):
+            if now - self.tolerance <= ts:
                 return value
 
         raise FlowError(
@@ -440,9 +465,10 @@ class Linear(Adapter[float]):
     Linearly interpolates between the two closest values to `now`.
 
     Assumes values are floats (or support arithmetic operations).
-    Uses the two closest points in time, one before and one after `now`.
+    Uses the two closest points in time, one before and one after the read time.
     With `now` given, only events at or before `now` are visible (no
-    look-ahead), so after the newest visible event this is a hold of that value.
+    look-ahead), so on a sorted history this returns the newest visible
+    sample (a hold). Interpolating toward a later sample needs a delayed read.
 
     If `now` is outside the range of buffer events:
     - If after latest: returns latest (0-order hold / clamping).
@@ -461,8 +487,8 @@ class Linear(Adapter[float]):
             # Fallback to latest
             return buffer[-1][1]
 
-        # Causal read: drop events stamped after `now`.
-        buffer = TimedBuffer([(ts, v) for ts, v in buffer if ts <= now])
+        # Causal, time-ordered read: drop events stamped after `now`.
+        buffer = _visible_sorted(buffer, now)
         if not buffer:
             raise IndexError("Linear adapter: no event at or before now")
 
@@ -537,11 +563,14 @@ class Chunking(Adapter[T]):
     def __call__(
         self, buffer: TimedBuffer[T], now: Optional[float] = None, **kwargs
     ) -> Any:
-        if not buffer:
-            return None
-
         if now is None:
             now = time.time()
+        else:
+            # Only chunks stamped at or before `now` are visible (no look-ahead).
+            buffer = _visible_sorted(buffer, now)
+
+        if not buffer:
+            return None
 
         # Get latest chunk
         chunk_ts, chunk_value = buffer[-1]

@@ -158,7 +158,11 @@ def test_linear_and_exact_have_no_look_ahead_on_direct_calls():
     assert engine.sample(Linear(), now=0.5) == 0.0
     # Interpolation inside the visible history still works.
     assert Linear()(TimedBuffer([(0.0, 0.0), (1.0, 10.0), (2.0, 0.0)]), now=1.5) == 10.0
-    # Exact matches only at or before now.
-    with pytest.raises(FlowError):
+    # Exact matches only at or before now; a future-only buffer gives no signal,
+    # as through the engine.
+    with pytest.raises(IndexError):
         Exact(tolerance=1e-3)(TimedBuffer([(0.5005, 7)]), now=0.5)
+    # Visible events but none within tolerance: no match.
+    with pytest.raises(FlowError):
+        Exact(tolerance=1e-3)(TimedBuffer([(0.40, 7), (0.5005, 8)]), now=0.5)
     assert Exact(tolerance=1e-3)(TimedBuffer([(0.4995, 7)]), now=0.5) == 7
